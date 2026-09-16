@@ -404,6 +404,11 @@ def test_run_main_returns_zero_when_preflight_passes(tmp_path, monkeypatch, caps
         lambda settings, budget_spent_usd: PreflightResult(passed=True),
     )
 
+    async def successful_stage(source_images_dir, settings, manifest):
+        return 0
+
+    monkeypatch.setattr(run_module, "run_screenshot_stage", successful_stage)
+
     exit_code = run_module.main([str(tmp_path / "source_images")])
 
     assert exit_code == 0

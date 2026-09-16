@@ -1,20 +1,12 @@
 {
-  "generated_at_utc": "2026-09-14T04:57:47.580899+00:00",
-  "schema_version": "2.0",
-  "model": "gemini-2.5-flash",
-  "asset_count_in_manifest": 6,
-  "analyzed_asset_count": 6,
-  "important_note": "Array order is processing order only and must not be treated as narrative order.",
+  "produced_by": "asset_analyst",
   "assets": [
     {
       "asset_id": "img_dcfce1645810",
       "source_path": "source_images/IMG_8802.PNG",
       "original_filename": "IMG_8802.PNG",
-      "model": "gemini-2.5-flash",
-      "schema_version": "2.0",
-      "analyzed_at_utc": "2026-09-14T04:56:08.275995+00:00",
       "analysis": {
-        "content_type": "illustrated_story_card",
+        "content_type": "Story app intro/title screen with speech bubble and illustrated mascot character",
         "source_text": {
           "heading": "The Backwards Law",
           "body_text": "Starting with the 1st idea: The Backwards Law. Smart people love complexity. Brains don't.",
@@ -22,616 +14,363 @@
           "other_story_text": [],
           "ui_text": [
             "9:47",
-            "41%",
-            "AX",
-            "X",
-            "<",
-            ">",
-            "Play button"
+            "41"
           ],
           "verbatim_blocks": [
             {
               "reading_order": 1,
-              "block_type": "UI",
-              "text": "9:47",
+              "block_type": "HEADING",
+              "text": "The Backwards Law",
               "region": {
-                "x_min": 140,
-                "y_min": 40,
-                "x_max": 220,
-                "y_max": 65
+                "x_min": 56,
+                "y_min": 118,
+                "x_max": 540,
+                "y_max": 150
               }
             },
             {
               "reading_order": 2,
-              "block_type": "UI",
-              "text": "41%",
-              "region": {
-                "x_min": 850,
-                "y_min": 40,
-                "x_max": 900,
-                "y_max": 65
-              }
-            },
-            {
-              "reading_order": 3,
-              "block_type": "HEADING",
-              "text": "The Backwards Law",
-              "region": {
-                "x_min": 60,
-                "y_min": 85,
-                "x_max": 400,
-                "y_max": 115
-              }
-            },
-            {
-              "reading_order": 4,
-              "block_type": "UI",
-              "text": "AX",
-              "region": {
-                "x_min": 740,
-                "y_min": 70,
-                "x_max": 820,
-                "y_max": 130
-              }
-            },
-            {
-              "reading_order": 5,
-              "block_type": "UI",
-              "text": "X",
-              "region": {
-                "x_min": 840,
-                "y_min": 70,
-                "x_max": 920,
-                "y_max": 130
-              }
-            },
-            {
-              "reading_order": 6,
               "block_type": "BODY",
               "text": "Starting with the 1st idea: The Backwards Law. Smart people love complexity. Brains don't.",
               "region": {
-                "x_min": 150,
-                "y_min": 350,
-                "x_max": 850,
-                "y_max": 440
-              }
-            },
-            {
-              "reading_order": 7,
-              "block_type": "UI",
-              "text": "<",
-              "region": {
-                "x_min": 90,
-                "y_min": 870,
-                "x_max": 190,
-                "y_max": 930
-              }
-            },
-            {
-              "reading_order": 8,
-              "block_type": "UI",
-              "text": ">",
-              "region": {
-                "x_min": 210,
-                "y_min": 870,
-                "x_max": 310,
-                "y_max": 930
-              }
-            },
-            {
-              "reading_order": 9,
-              "block_type": "UI",
-              "text": "Play button",
-              "region": {
-                "x_min": 800,
-                "y_min": 870,
-                "x_max": 900,
-                "y_max": 930
+                "x_min": 56,
+                "y_min": 370,
+                "x_max": 945,
+                "y_max": 500
               }
             }
           ],
-          "transcription_confidence": 0.95
+          "transcription_confidence": 0.97
         },
         "visual": {
-          "description": "An orange, blob-like cartoon character with large eyes and a wide smile, pointing one finger upwards, positioned below a text bubble on a light purple background.",
+          "description": "A rounded speech-bubble panel with introductory text sits above a large illustrated orange flame-shaped cartoon mascot with a friendly cartoon face, standing and pointing one finger upward, set against a plain light lavender-pink gradient background.",
           "main_elements": [
-            "Cartoon character",
-            "Text bubble"
+            "speech bubble with intro text",
+            "orange flame-shaped cartoon mascot pointing upward",
+            "light lavender background",
+            "app navigation controls"
           ],
           "visual_subjects": [
             {
               "subject_type": "CARTOON_CHARACTER",
-              "description": "An orange, blob-like cartoon character with large, black eyes, a wide smile, and a flame-like shape on its head, pointing its right index finger upwards.",
+              "description": "Orange flame-shaped mascot with large cartoon eyes and a smiling mouth, standing on two legs, one arm raised with index finger pointing up",
               "region": {
-                "x_min": 300,
-                "y_min": 520,
-                "x_max": 700,
-                "y_max": 750
+                "x_min": 355,
+                "y_min": 555,
+                "x_max": 600,
+                "y_max": 760
               }
             }
           ],
           "real_people_visible": false,
           "illustrated_or_cartoon_figures_visible": true,
           "figure_descriptions": [
-            "An orange, blob-like cartoon character with large, black eyes, a wide smile, and a flame-like shape on its head, pointing its right index finger upwards."
+            "Orange flame-shaped cartoon mascot with a friendly face, pointing upward with one hand"
           ],
-          "environment": "A simple, light purple background.",
+          "environment": "Plain light lavender/pink gradient app background",
           "important_actions": [
-            "Pointing upwards",
-            "Smiling"
+            "Mascot pointing upward, as if introducing or emphasizing a point"
           ],
-          "composition_notes": "The cartoon character is centrally placed in the lower half of the image, looking up and pointing towards the text bubble above it. The text bubble is also centrally aligned in the upper middle section."
+          "composition_notes": "Speech bubble centered near top third, mascot character centered below with generous negative space, bottom app navigation bar"
         },
         "semantic_summary": {
-          "core_idea": "The image introduces 'The Backwards Law' as the first idea, stating that smart people appreciate complexity while brains prefer simplicity, and features a cartoon character seemingly emphasizing this point.",
+          "core_idea": "Introduces the first idea to be explored in the story: the 'Backwards Law', framed around brains preferring simplicity over complexity.",
           "concepts": [
-            "The Backwards Law",
-            "Complexity",
-            "Simplicity",
-            "Intelligence",
-            "Brain function",
-            "First idea"
+            "Backwards Law",
+            "simplicity vs. complexity",
+            "story introduction"
           ],
           "emotional_tone": [
-            "Informative",
-            "Engaging",
-            "Playful"
+            "curious",
+            "inviting",
+            "playful"
           ],
           "requires_external_context": true,
           "context_needed": [
-            "A detailed explanation of 'The Backwards Law'",
-            "The overall topic or series of ideas this '1st idea' belongs to",
-            "The source or author of this concept"
+            "Source material this app is summarizing (referenced later as 'Manson')"
           ]
         },
         "named_entities": [
           {
             "name": "The Backwards Law",
-            "entity_type": "concept",
-            "evidence": "Visible text in heading and body."
+            "entity_type": "Concept/Title",
+            "evidence": "Heading text 'The Backwards Law' and body text referencing it as 'the 1st idea'"
           }
         ],
         "possible_story_roles": [
           "HOOK",
-          "SETUP",
-          "EXPLANATION"
+          "SETUP"
         ],
         "production": {
           "contains_app_ui": true,
           "story_art_region_present": true,
           "story_art_region": {
-            "x_min": 300,
-            "y_min": 520,
-            "x_max": 700,
-            "y_max": 750
+            "x_min": 355,
+            "y_min": 555,
+            "x_max": 600,
+            "y_max": 760
           },
           "story_text_region": {
-            "x_min": 100,
-            "y_min": 330,
-            "x_max": 900,
-            "y_max": 460
+            "x_min": 56,
+            "y_min": 370,
+            "x_max": 945,
+            "y_max": 500
           },
           "ui_regions": [
             {
-              "description": "Status bar (time and battery)",
+              "description": "Status bar (time, signal, wifi, battery)",
               "region": {
                 "x_min": 0,
                 "y_min": 0,
                 "x_max": 1000,
-                "y_max": 70
+                "y_max": 60
               }
             },
             {
-              "description": "Top right navigation icons (translate and close)",
+              "description": "Header with title and translate/close icons",
               "region": {
-                "x_min": 720,
-                "y_min": 60,
-                "x_max": 940,
-                "y_max": 140
+                "x_min": 0,
+                "y_min": 100,
+                "x_max": 1000,
+                "y_max": 230
               }
             },
             {
-              "description": "Bottom left navigation buttons (back and forward)",
+              "description": "Bottom navigation with back/forward arrows and play button",
               "region": {
-                "x_min": 80,
-                "y_min": 860,
-                "x_max": 320,
-                "y_max": 940
-              }
-            },
-            {
-              "description": "Bottom right play button",
-              "region": {
-                "x_min": 790,
-                "y_min": 860,
-                "x_max": 910,
-                "y_max": 940
+                "x_min": 0,
+                "y_min": 900,
+                "x_max": 1000,
+                "y_max": 1000
               }
             }
           ],
-          "story_art_description": "An orange, blob-like cartoon character with large eyes, a wide smile, and a flame-like head, pointing one finger upwards.",
+          "story_art_description": "Orange flame-shaped cartoon mascot character pointing upward, friendly and energetic pose, centered on plain background",
           "vertical_video_suitability": "high",
           "recommended_crop_strategy": "CROP_TO_TEXT_AND_ART",
           "safe_to_crop_ui_without_losing_story": true,
           "suggested_motion": [
-            "Subtle bounce or wiggle for the cartoon character",
-            "Slight zoom into the text bubble",
-            "Gentle pan across the character and text"
+            "Gentle zoom in on mascot",
+            "Fade/scale in of speech bubble text"
           ],
           "visual_cleanup_needed": [
-            "Status bar (time, battery, signal)",
-            "Top right navigation icons (translate, close)",
-            "Bottom navigation buttons (back, forward, play)"
+            "Remove status bar and app chrome (close/translate icons, nav arrows, play button) for final video"
           ]
         },
-        "uncertainties": []
+        "uncertainties": [
+          "Exact name/identity of the mascot character is not stated on screen"
+        ]
       }
     },
     {
       "asset_id": "img_badc7b4efc85",
       "source_path": "source_images/IMG_8803.PNG",
       "original_filename": "IMG_8803.PNG",
-      "model": "gemini-2.5-flash",
-      "schema_version": "2.0",
-      "analyzed_at_utc": "2026-09-14T04:56:35.717244+00:00",
       "analysis": {
-        "content_type": "illustrated_story_card",
+        "content_type": "Story app content card (1st of 4) with body text and full-width illustration",
         "source_text": {
           "heading": "The Backwards Law",
-          "body_text": "Manson opens his whole argument with the least likely role model imaginable: Charles Bukowski.A drunk and a gambler, Bukowski spent 30 years getting rejected by every publisher he wrote to, filing mail at a post office and drinking away the rest.Wnen he finally broke through at 50, it looked like the ultimate underdog story: the",
+          "body_text": "Manson opens his whole argument with the least likely role model imaginable: Charles Bukowski.\n\nA drunk and a gambler, Bukowski spent 30 years getting rejected by every publisher he wrote to, filing mail at a post office and drinking away the rest.",
           "prominent_quote": "",
-          "other_story_text": [],
+          "other_story_text": [
+            "When he finally broke through at 50, it looked like the ultimate underdog story: the"
+          ],
           "ui_text": [
             "9:47",
-            "The Backwards Law",
-            "41%"
+            "41"
           ],
           "verbatim_blocks": [
             {
               "reading_order": 1,
-              "block_type": "UI",
-              "text": "9:47",
+              "block_type": "HEADING",
+              "text": "The Backwards Law",
               "region": {
-                "x_min": 58,
-                "y_min": 36,
-                "x_max": 120,
-                "y_max": 58
+                "x_min": 56,
+                "y_min": 118,
+                "x_max": 540,
+                "y_max": 150
               }
             },
             {
               "reading_order": 2,
-              "block_type": "UI",
-              "text": "The Backwards Law",
+              "block_type": "BODY",
+              "text": "Manson opens his whole argument with the least likely role model imaginable: Charles Bukowski.",
               "region": {
-                "x_min": 58,
-                "y_min": 80,
-                "x_max": 390,
-                "y_max": 102
+                "x_min": 56,
+                "y_min": 200,
+                "x_max": 945,
+                "y_max": 320
               }
             },
             {
               "reading_order": 3,
-              "block_type": "UI",
-              "text": "41%",
+              "block_type": "BODY",
+              "text": "A drunk and a gambler, Bukowski spent 30 years getting rejected by every publisher he wrote to, filing mail at a post office and drinking away the rest.",
               "region": {
-                "x_min": 870,
-                "y_min": 36,
-                "x_max": 910,
-                "y_max": 58
+                "x_min": 56,
+                "y_min": 350,
+                "x_max": 945,
+                "y_max": 500
               }
             },
             {
               "reading_order": 4,
-              "block_type": "HEADING",
-              "text": "The Backwards Law",
+              "block_type": "OTHER",
+              "text": "When he finally broke through at 50, it looked like the ultimate underdog story: the",
               "region": {
-                "x_min": 58,
-                "y_min": 158,
-                "x_max": 640,
-                "y_max": 198
-              }
-            },
-            {
-              "reading_order": 5,
-              "block_type": "BODY",
-              "text": "Manson opens his whole argument with the least likely role model imaginable: Charles Bukowski.",
-              "region": {
-                "x_min": 58,
-                "y_min": 220,
-                "x_max": 910,
-                "y_max": 290
-              }
-            },
-            {
-              "reading_order": 6,
-              "block_type": "BODY",
-              "text": "A drunk and a gambler, Bukowski spent 30 years getting rejected by every publisher he wrote to, filing mail at a post office and drinking away the rest.",
-              "region": {
-                "x_min": 58,
-                "y_min": 320,
-                "x_max": 910,
-                "y_max": 410
-              }
-            },
-            {
-              "reading_order": 7,
-              "block_type": "BODY",
-              "text": "Wnen he finally broke through at 50, it looked like the ultimate underdog story: the",
-              "region": {
-                "x_min": 58,
-                "y_min": 920,
-                "x_max": 910,
-                "y_max": 980
+                "x_min": 56,
+                "y_min": 955,
+                "x_max": 945,
+                "y_max": 990
               }
             }
           ],
           "transcription_confidence": 0.95
         },
         "visual": {
-          "description": "An illustration depicting a dimly lit room with a wooden desk, a vintage typewriter, an ashtray with a smoking cigarette, a coffee mug with coffee stains, and crumpled papers. A bed with blue bedding is visible in the background. The scene suggests a writer's humble and perhaps messy workspace.",
+          "description": "A painterly, illustrated night-time scene of a writer's desk: a lit desk lamp illuminates a manual typewriter with a sheet of paper loaded, beside an ashtray with a lit cigarette, a coffee mug with a spill stain, and crumpled balls of paper; an unmade bed with a blue blanket sits behind the desk.",
           "main_elements": [
-            "Desk",
-            "Typewriter",
-            "Lamp",
-            "Bed",
-            "Coffee mug",
-            "Ashtray",
-            "Crumpled papers"
+            "vintage typewriter with paper",
+            "lit desk lamp",
+            "ashtray with lit cigarette",
+            "coffee mug with spill stain",
+            "crumpled paper balls",
+            "unmade bed"
           ],
           "visual_subjects": [
             {
               "subject_type": "OBJECT",
-              "description": "Vintage typewriter with paper",
+              "description": "Vintage black typewriter with a blank sheet of paper loaded, under lamp light",
               "region": {
-                "x_min": 300,
-                "y_min": 500,
+                "x_min": 270,
+                "y_min": 620,
                 "x_max": 600,
-                "y_max": 650
-              }
-            },
-            {
-              "subject_type": "OBJECT",
-              "description": "Desk lamp illuminating the desk",
-              "region": {
-                "x_min": 50,
-                "y_min": 450,
-                "x_max": 300,
-                "y_max": 600
-              }
-            },
-            {
-              "subject_type": "OBJECT",
-              "description": "Ashtray with a smoking cigarette",
-              "region": {
-                "x_min": 250,
-                "y_min": 550,
-                "x_max": 350,
-                "y_max": 600
-              }
-            },
-            {
-              "subject_type": "OBJECT",
-              "description": "Coffee mug with stains on the desk",
-              "region": {
-                "x_min": 600,
-                "y_min": 590,
-                "x_max": 700,
-                "y_max": 650
-              }
-            },
-            {
-              "subject_type": "OBJECT",
-              "description": "Crumpled papers on the desk",
-              "region": {
-                "x_min": 700,
-                "y_min": 580,
-                "x_max": 800,
-                "y_max": 630
+                "y_max": 800
               }
             },
             {
               "subject_type": "ENVIRONMENT",
-              "description": "Bed with blue bedding in the background",
+              "description": "Dim, moody bedroom/writer's room at night with warm lamp lighting",
               "region": {
-                "x_min": 500,
-                "y_min": 450,
-                "x_max": 950,
-                "y_max": 650
-              }
-            },
-            {
-              "subject_type": "OBJECT",
-              "description": "Wooden desk",
-              "region": {
-                "x_min": 0,
-                "y_min": 550,
-                "x_max": 950,
-                "y_max": 700
+                "x_min": 55,
+                "y_min": 570,
+                "x_max": 940,
+                "y_max": 900
               }
             }
           ],
           "real_people_visible": false,
           "illustrated_or_cartoon_figures_visible": false,
           "figure_descriptions": [],
-          "environment": "A small, dimly lit room, likely a bedroom or study, suggesting a humble living space.",
-          "important_actions": [
-            "Writing (implied)",
-            "Smoking (implied)",
-            "Drinking coffee (implied)"
-          ],
-          "composition_notes": "The illustration is centered horizontally, occupying the middle section of the screen. The light source from the lamp draws attention to the desk and typewriter, creating a focused workspace ambiance."
+          "environment": "Dim, moody bedroom writer's desk scene at night, warm lamp lighting, painterly illustration style",
+          "important_actions": [],
+          "composition_notes": "Two paragraphs of text stacked above a full-width, edge-to-edge rounded-corner illustration; progress bar shows 1 of 4 segments filled"
         },
         "semantic_summary": {
-          "core_idea": "The text introduces Charles Bukowski as an unlikely role model, highlighting his long struggle with rejection as a writer, his lifestyle as a \"drunk and a gambler,\" and his eventual breakthrough at age 50. The illustration visually supports the theme of a struggling writer's environment.",
+          "core_idea": "Introduces Charles Bukowski as an unlikely role model who spent decades being rejected, struggling, and drinking before any success.",
           "concepts": [
-            "Writing",
-            "Struggle",
-            "Rejection",
-            "Perseverance",
-            "Unconventional role models",
-            "Underdog story",
-            "Literary life"
+            "unlikely role models",
+            "struggle before success",
+            "rejection",
+            "perseverance"
           ],
           "emotional_tone": [
-            "Gritty",
-            "Realistic",
-            "Melancholic",
-            "Determined",
-            "Underdog"
+            "gritty",
+            "somber",
+            "intriguing"
           ],
           "requires_external_context": true,
           "context_needed": [
-            "The full context of \"Manson's argument\" and \"The Backwards Law\"",
-            "More details about Charles Bukowski's life and work",
-            "The complete last sentence of the story text"
+            "Identity of 'Manson' (implied author of the source material)",
+            "Background on Charles Bukowski's life and writing career"
           ]
         },
         "named_entities": [
           {
             "name": "Manson",
-            "entity_type": "person",
-            "evidence": "Manson opens his whole argument"
+            "entity_type": "Person (referenced author)",
+            "evidence": "'Manson opens his whole argument with the least likely role model imaginable'"
           },
           {
             "name": "Charles Bukowski",
-            "entity_type": "person",
-            "evidence": "least likely role model imaginable: Charles Bukowski."
-          },
-          {
-            "name": "Bukowski",
-            "entity_type": "person",
-            "evidence": "Bukowski spent 30 years"
-          },
-          {
-            "name": "The Backwards Law",
-            "entity_type": "concept",
-            "evidence": "The Backwards Law"
+            "entity_type": "Person",
+            "evidence": "'the least likely role model imaginable: Charles Bukowski'"
           }
         ],
         "possible_story_roles": [
           "SETUP",
-          "CONTEXT",
           "EXAMPLE",
-          "BUILDUP"
+          "CONTEXT"
         ],
         "production": {
           "contains_app_ui": true,
           "story_art_region_present": true,
           "story_art_region": {
-            "x_min": 0,
-            "y_min": 440,
-            "x_max": 1000,
-            "y_max": 700
+            "x_min": 55,
+            "y_min": 570,
+            "x_max": 940,
+            "y_max": 900
           },
           "story_text_region": {
-            "x_min": 58,
-            "y_min": 158,
-            "x_max": 910,
-            "y_max": 980
+            "x_min": 56,
+            "y_min": 200,
+            "x_max": 945,
+            "y_max": 500
           },
           "ui_regions": [
             {
-              "description": "Time display",
+              "description": "Status bar",
               "region": {
-                "x_min": 58,
-                "y_min": 36,
-                "x_max": 120,
-                "y_max": 58
+                "x_min": 0,
+                "y_min": 0,
+                "x_max": 1000,
+                "y_max": 60
               }
             },
             {
-              "description": "App bar title",
+              "description": "Header with title, translate/close icons",
               "region": {
-                "x_min": 58,
-                "y_min": 80,
-                "x_max": 390,
-                "y_max": 102
+                "x_min": 0,
+                "y_min": 100,
+                "x_max": 1000,
+                "y_max": 165
               }
             },
             {
-              "description": "Battery status",
+              "description": "Progress bar (4 segments, 1st filled)",
               "region": {
-                "x_min": 870,
-                "y_min": 36,
-                "x_max": 910,
-                "y_max": 58
+                "x_min": 56,
+                "y_min": 170,
+                "x_max": 945,
+                "y_max": 182
               }
             },
             {
-              "description": "Text settings icon",
+              "description": "Bottom nav with back/forward/play buttons and truncated preview of next card's text",
               "region": {
-                "x_min": 740,
-                "y_min": 70,
-                "x_max": 830,
-                "y_max": 110
-              }
-            },
-            {
-              "description": "Close button icon",
-              "region": {
-                "x_min": 850,
-                "y_min": 70,
-                "x_max": 940,
-                "y_max": 110
-              }
-            },
-            {
-              "description": "Progress indicator dots",
-              "region": {
-                "x_min": 650,
-                "y_min": 165,
-                "x_max": 940,
-                "y_max": 185
-              }
-            },
-            {
-              "description": "Left navigation button",
-              "region": {
-                "x_min": 80,
-                "y_min": 890,
-                "x_max": 160,
-                "y_max": 960
-              }
-            },
-            {
-              "description": "Right navigation button",
-              "region": {
-                "x_min": 180,
-                "y_min": 890,
-                "x_max": 260,
-                "y_max": 960
-              }
-            },
-            {
-              "description": "Play button",
-              "region": {
-                "x_min": 840,
-                "y_min": 890,
-                "x_max": 920,
-                "y_max": 960
+                "x_min": 0,
+                "y_min": 940,
+                "x_max": 1000,
+                "y_max": 1000
               }
             }
           ],
-          "story_art_description": "An illustration of a writer's desk with a typewriter, lamp, ashtray, coffee mug, and crumpled papers, set in a dimly lit room with a bed in the background.",
+          "story_art_description": "Illustrated painterly night scene of a cluttered writer's desk with a typewriter, lamp, ashtray and unmade bed, conveying a gritty struggling-artist atmosphere",
           "vertical_video_suitability": "high",
           "recommended_crop_strategy": "CROP_TO_TEXT_AND_ART",
           "safe_to_crop_ui_without_losing_story": true,
           "suggested_motion": [
-            "Subtle zoom into the typewriter and desk area",
-            "Gentle pan across the desk from left to right, highlighting the lamp, typewriter, and coffee mug",
-            "Flicker effect on the desk lamp light",
-            "Subtle smoke animation from the cigarette in the ashtray"
+            "Slow pan across the desk illustration",
+            "Ken Burns zoom toward the typewriter"
           ],
           "visual_cleanup_needed": [
-            "Remove top status bar (time, battery, wifi)",
-            "Remove top app bar (title, settings, close buttons)",
-            "Remove bottom navigation buttons (left, right, play)",
-            "Remove progress indicator dots below the main heading"
+            "Remove status bar and app chrome",
+            "Crop out truncated preview text at bottom belonging to the next card"
           ]
         },
         "uncertainties": [
-          "The exact identity of 'Manson' is not specified in the text.",
-          "The last sentence of the body text is cut off, making the full meaning incomplete."
+          "Bottom preview text is cut off by the UI and belongs to the next card; only a partial sentence is visible",
+          "Full identity of 'Manson' is not confirmed within this single screenshot"
         ]
       }
     },
@@ -639,336 +378,189 @@
       "asset_id": "img_fe38b500f8d1",
       "source_path": "source_images/IMG_8804.PNG",
       "original_filename": "IMG_8804.PNG",
-      "model": "gemini-2.5-flash",
-      "schema_version": "2.0",
-      "analyzed_at_utc": "2026-09-14T04:56:52.904978+00:00",
       "analysis": {
-        "content_type": "illustrated_story_card",
+        "content_type": "Story app content card (2nd of 4) with body text and full-width illustration",
         "source_text": {
-          "heading": "The Backwards Law",
-          "body_text": "When he finally broke through at 50, it looked like the ultimate underdog story: the man who never gave up and made it. But on his tombstone, Bukowski didn't leave a message about hustling or believing in yourself. He left two words: Don't try.",
+          "heading": "",
+          "body_text": "When he finally broke through at 50, it looked like the ultimate underdog story: the man who never gave up and made it.\n\nBut on his tombstone, Bukowski didn't leave a message about hustling or believing in yourself. He left two words: Don't try.",
           "prominent_quote": "Don't try.",
           "other_story_text": [
             "His success didn't come from wanting it more; it came from accepting who he was"
           ],
           "ui_text": [
             "9:47",
-            "414",
-            "<",
-            ">"
+            "41"
           ],
           "verbatim_blocks": [
             {
               "reading_order": 1,
-              "block_type": "UI",
-              "text": "9:47",
+              "block_type": "BODY",
+              "text": "When he finally broke through at 50, it looked like the ultimate underdog story: the man who never gave up and made it.",
               "region": {
-                "x_min": 40,
-                "y_min": 40,
-                "x_max": 120,
-                "y_max": 60
+                "x_min": 56,
+                "y_min": 200,
+                "x_max": 945,
+                "y_max": 330
               }
             },
             {
               "reading_order": 2,
-              "block_type": "UI",
-              "text": "414",
+              "block_type": "BODY",
+              "text": "But on his tombstone, Bukowski didn't leave a message about hustling or believing in yourself. He left two words: Don't try.",
               "region": {
-                "x_min": 880,
-                "y_min": 40,
-                "x_max": 950,
-                "y_max": 60
+                "x_min": 56,
+                "y_min": 360,
+                "x_max": 945,
+                "y_max": 500
               }
             },
             {
               "reading_order": 3,
-              "block_type": "HEADING",
-              "text": "The Backwards Law",
-              "region": {
-                "x_min": 50,
-                "y_min": 80,
-                "x_max": 400,
-                "y_max": 120
-              }
-            },
-            {
-              "reading_order": 4,
-              "block_type": "UI",
-              "text": "A",
-              "region": {
-                "x_min": 720,
-                "y_min": 70,
-                "x_max": 820,
-                "y_max": 120
-              }
-            },
-            {
-              "reading_order": 5,
-              "block_type": "UI",
-              "text": "X",
-              "region": {
-                "x_min": 840,
-                "y_min": 70,
-                "x_max": 940,
-                "y_max": 120
-              }
-            },
-            {
-              "reading_order": 6,
-              "block_type": "BODY",
-              "text": "When he finally broke through at 50, it looked like the ultimate underdog story: the man who never gave up and made it.",
-              "region": {
-                "x_min": 50,
-                "y_min": 160,
-                "x_max": 950,
-                "y_max": 270
-              }
-            },
-            {
-              "reading_order": 7,
-              "block_type": "BODY",
-              "text": "But on his tombstone, Bukowski didn't leave a message about hustling or believing in yourself. He left two words: Don't try.",
-              "region": {
-                "x_min": 50,
-                "y_min": 280,
-                "x_max": 950,
-                "y_max": 380
-              }
-            },
-            {
-              "reading_order": 8,
-              "block_type": "UI",
-              "text": "<",
-              "region": {
-                "x_min": 70,
-                "y_min": 900,
-                "x_max": 150,
-                "y_max": 980
-              }
-            },
-            {
-              "reading_order": 9,
-              "block_type": "UI",
-              "text": ">",
-              "region": {
-                "x_min": 180,
-                "y_min": 900,
-                "x_max": 260,
-                "y_max": 980
-              }
-            },
-            {
-              "reading_order": 10,
               "block_type": "OTHER",
               "text": "His success didn't come from wanting it more; it came from accepting who he was",
               "region": {
-                "x_min": 50,
-                "y_min": 920,
-                "x_max": 950,
-                "y_max": 1000
+                "x_min": 56,
+                "y_min": 955,
+                "x_max": 945,
+                "y_max": 990
               }
             }
           ],
-          "transcription_confidence": 0.98
+          "transcription_confidence": 0.96
         },
         "visual": {
-          "description": "An illustration depicting a single, plain, light-colored tombstone standing in a field of tall, dry, golden-brown grass under a warm, light orange and yellow sky, possibly at sunrise or sunset. The art style features visible texture and a subtle halftone dot pattern.",
+          "description": "A painterly illustration of a single blank stone gravestone standing amid tall golden grass, under a warm, pale sky, with scattered orange leaves on the ground.",
           "main_elements": [
-            "tombstone",
-            "tall grass",
-            "sky",
-            "fallen leaves"
+            "blank stone gravestone",
+            "golden grass field",
+            "warm pastel sky",
+            "scattered leaves"
           ],
           "visual_subjects": [
             {
               "subject_type": "OBJECT",
-              "description": "A plain, light-colored tombstone, slightly off-center to the right.",
+              "description": "Blank stone gravestone with no visible inscription, standing in a field",
               "region": {
-                "x_min": 390,
-                "y_min": 460,
-                "x_max": 610,
-                "y_max": 700
+                "x_min": 400,
+                "y_min": 620,
+                "x_max": 590,
+                "y_max": 800
               }
             },
             {
               "subject_type": "ENVIRONMENT",
-              "description": "A field of tall, dry, golden-brown grass with scattered fallen leaves.",
+              "description": "Golden/amber grass field at sunset or sunrise",
               "region": {
-                "x_min": 40,
-                "y_min": 500,
-                "x_max": 960,
-                "y_max": 850
-              }
-            },
-            {
-              "subject_type": "ENVIRONMENT",
-              "description": "A warm, light orange and yellow sky.",
-              "region": {
-                "x_min": 40,
-                "y_min": 380,
-                "x_max": 960,
-                "y_max": 550
+                "x_min": 55,
+                "y_min": 570,
+                "x_max": 940,
+                "y_max": 900
               }
             }
           ],
           "real_people_visible": false,
           "illustrated_or_cartoon_figures_visible": false,
           "figure_descriptions": [],
-          "environment": "An open, grassy field at dawn or dusk.",
+          "environment": "Open golden grass field under a warm pastel sky, painterly illustration style",
           "important_actions": [],
-          "composition_notes": "The tombstone is centrally placed in the lower half of the illustration, framed by the grass and sky. The warm color palette creates a reflective or melancholic mood."
+          "composition_notes": "Two text paragraphs stacked above a full-width rounded-corner illustration; progress bar shows 2 of 4 segments filled"
         },
         "semantic_summary": {
-          "core_idea": "The image and text convey a message about unconventional success and legacy, specifically referencing Charles Bukowski's philosophy of 'Don't try' as a counterpoint to traditional notions of perseverance and hustling.",
+          "core_idea": "Reveals the twist that Bukowski's actual tombstone epitaph, 'Don't try,' contradicts the typical hustle-culture underdog narrative about his success.",
           "concepts": [
-            "unconventional success",
-            "legacy",
-            "philosophy",
-            "perseverance",
-            "self-acceptance",
-            "death",
-            "irony"
+            "subverted expectations",
+            "anti-hustle philosophy",
+            "acceptance vs. striving"
           ],
           "emotional_tone": [
-            "reflective",
-            "thought-provoking",
-            "ironic",
-            "slightly melancholic"
+            "surprising",
+            "poignant",
+            "reflective"
           ],
           "requires_external_context": true,
           "context_needed": [
-            "Who is Bukowski?",
-            "What is 'The Backwards Law'?",
-            "Understanding the common interpretation of 'Don't try' versus its philosophical context."
+            "Knowledge that Charles Bukowski's real tombstone reads 'Don't Try'"
           ]
         },
         "named_entities": [
           {
-            "name": "The Backwards Law",
-            "entity_type": "concept",
-            "evidence": "heading text"
-          },
-          {
             "name": "Bukowski",
-            "entity_type": "person",
-            "evidence": "body text"
+            "entity_type": "Person",
+            "evidence": "'Bukowski didn't leave a message about hustling or believing in yourself'"
           }
         ],
         "possible_story_roles": [
-          "SETUP",
-          "CONTEXT",
-          "EXPLANATION",
-          "REFLECTION"
+          "REVERSAL",
+          "REVEAL"
         ],
         "production": {
           "contains_app_ui": true,
           "story_art_region_present": true,
           "story_art_region": {
-            "x_min": 40,
-            "y_min": 380,
-            "x_max": 960,
-            "y_max": 850
+            "x_min": 55,
+            "y_min": 570,
+            "x_max": 940,
+            "y_max": 900
           },
           "story_text_region": {
-            "x_min": 50,
-            "y_min": 80,
-            "x_max": 950,
-            "y_max": 1000
+            "x_min": 56,
+            "y_min": 200,
+            "x_max": 945,
+            "y_max": 500
           },
           "ui_regions": [
             {
-              "description": "Time display",
+              "description": "Status bar",
               "region": {
-                "x_min": 40,
-                "y_min": 40,
-                "x_max": 120,
+                "x_min": 0,
+                "y_min": 0,
+                "x_max": 1000,
                 "y_max": 60
               }
             },
             {
-              "description": "Signal and battery indicator",
+              "description": "Header with title, translate/close icons",
               "region": {
-                "x_min": 700,
-                "y_min": 40,
-                "x_max": 950,
-                "y_max": 60
+                "x_min": 0,
+                "y_min": 100,
+                "x_max": 1000,
+                "y_max": 165
               }
             },
             {
-              "description": "Translate/settings button",
+              "description": "Progress bar (4 segments, 2nd filled)",
               "region": {
-                "x_min": 720,
-                "y_min": 70,
-                "x_max": 820,
-                "y_max": 120
+                "x_min": 56,
+                "y_min": 170,
+                "x_max": 945,
+                "y_max": 182
               }
             },
             {
-              "description": "Close button",
+              "description": "Bottom nav with back/forward/play buttons and truncated preview of next card's text",
               "region": {
-                "x_min": 840,
-                "y_min": 70,
-                "x_max": 940,
-                "y_max": 120
-              }
-            },
-            {
-              "description": "Progress indicators (horizontal lines)",
-              "region": {
-                "x_min": 50,
-                "y_min": 130,
-                "x_max": 950,
-                "y_max": 140
-              }
-            },
-            {
-              "description": "Left navigation button",
-              "region": {
-                "x_min": 70,
-                "y_min": 900,
-                "x_max": 150,
-                "y_max": 980
-              }
-            },
-            {
-              "description": "Right navigation button",
-              "region": {
-                "x_min": 180,
-                "y_min": 900,
-                "x_max": 260,
-                "y_max": 980
-              }
-            },
-            {
-              "description": "Play button",
-              "region": {
-                "x_min": 830,
-                "y_min": 900,
-                "x_max": 920,
-                "y_max": 980
+                "x_min": 0,
+                "y_min": 940,
+                "x_max": 1000,
+                "y_max": 1000
               }
             }
           ],
-          "story_art_description": "An illustration of a tombstone in a grassy field under a warm sky.",
+          "story_art_description": "Illustrated painterly scene of a solitary blank gravestone in a golden grass field, evoking mortality and legacy",
           "vertical_video_suitability": "high",
           "recommended_crop_strategy": "CROP_TO_TEXT_AND_ART",
           "safe_to_crop_ui_without_losing_story": true,
           "suggested_motion": [
-            "subtle slow zoom into the tombstone",
-            "subtle slow pan across the grassy field",
-            "gentle, slow movement of clouds in the sky (if generated)"
+            "Slow push-in toward the gravestone",
+            "Subtle grass sway parallax"
           ],
           "visual_cleanup_needed": [
-            "remove top status bar (time, signal, battery)",
-            "remove top right control buttons (translate, close)",
-            "remove progress indicator lines",
-            "remove bottom navigation buttons (left, right, play)",
-            "ensure the partially visible text at the bottom is either fully visible or removed cleanly"
+            "Remove status bar and app chrome",
+            "Crop out truncated preview text at bottom belonging to the next card"
           ]
         },
         "uncertainties": [
-          "The exact meaning of 'The Backwards Law' is not fully explained within this single card.",
-          "The full context of the partially visible text at the bottom is unknown."
+          "Bottom preview text is cut off by the UI and belongs to the next card"
         ]
       }
     },
@@ -976,341 +568,194 @@
       "asset_id": "img_6f6dabaab3eb",
       "source_path": "source_images/IMG_8805.PNG",
       "original_filename": "IMG_8805.PNG",
-      "model": "gemini-2.5-flash",
-      "schema_version": "2.0",
-      "analyzed_at_utc": "2026-09-14T04:57:12.966448+00:00",
       "analysis": {
-        "content_type": "illustrated_story_card",
+        "content_type": "Story app content card (3rd of 4) with body text and full-width illustration",
         "source_text": {
-          "heading": "The Backwards Law",
-          "body_text": "His success didn't come from wanting it more; it came from accepting who he was and writing from that honest baseline without trying to prove anything. Manson saw the same law in his own life. The boldest moves he ever made (quitting a corporate job and moving overseas) only happened when he stopped obsessing over the outcome.",
+          "heading": "",
+          "body_text": "His success didn't come from wanting it more; it came from accepting who he was and writing from that honest baseline without trying to prove anything.\n\nManson saw the same law in his own life. The boldest moves he ever made (quitting a corporate job and moving overseas) only happened when he stopped obsessing over the outcome.",
           "prominent_quote": "",
           "other_story_text": [
             "Lifting the concept from philosopher Alan Watts, Manson calls this the Backwards Law."
           ],
           "ui_text": [
             "9:47",
-            "41%",
-            "A",
-            "X",
-            "<",
-            ">"
+            "41"
           ],
           "verbatim_blocks": [
             {
               "reading_order": 1,
-              "block_type": "UI",
-              "text": "9:47",
-              "region": {
-                "x_min": 143,
-                "y_min": 24,
-                "x_max": 230,
-                "y_max": 47
-              }
-            },
-            {
-              "reading_order": 2,
-              "block_type": "UI",
-              "text": "41%",
-              "region": {
-                "x_min": 839,
-                "y_min": 24,
-                "x_max": 884,
-                "y_max": 47
-              }
-            },
-            {
-              "reading_order": 3,
-              "block_type": "HEADING",
-              "text": "The Backwards Law",
-              "region": {
-                "x_min": 56,
-                "y_min": 80,
-                "x_max": 400,
-                "y_max": 108
-              }
-            },
-            {
-              "reading_order": 4,
-              "block_type": "UI",
-              "text": "A",
-              "region": {
-                "x_min": 737,
-                "y_min": 70,
-                "x_max": 807,
-                "y_max": 118
-              }
-            },
-            {
-              "reading_order": 5,
-              "block_type": "UI",
-              "text": "X",
-              "region": {
-                "x_min": 850,
-                "y_min": 70,
-                "x_max": 919,
-                "y_max": 118
-              }
-            },
-            {
-              "reading_order": 6,
               "block_type": "BODY",
               "text": "His success didn't come from wanting it more; it came from accepting who he was and writing from that honest baseline without trying to prove anything.",
               "region": {
                 "x_min": 56,
-                "y_min": 160,
-                "x_max": 894,
-                "y_max": 273
+                "y_min": 200,
+                "x_max": 945,
+                "y_max": 360
               }
             },
             {
-              "reading_order": 7,
+              "reading_order": 2,
               "block_type": "BODY",
               "text": "Manson saw the same law in his own life. The boldest moves he ever made (quitting a corporate job and moving overseas) only happened when he stopped obsessing over the outcome.",
               "region": {
                 "x_min": 56,
-                "y_min": 294,
-                "x_max": 894,
-                "y_max": 429
+                "y_min": 390,
+                "x_max": 945,
+                "y_max": 560
               }
             },
             {
-              "reading_order": 8,
-              "block_type": "UI",
-              "text": "<",
-              "region": {
-                "x_min": 82,
-                "y_min": 900,
-                "x_max": 149,
-                "y_max": 967
-              }
-            },
-            {
-              "reading_order": 9,
-              "block_type": "UI",
-              "text": ">",
-              "region": {
-                "x_min": 178,
-                "y_min": 900,
-                "x_max": 245,
-                "y_max": 967
-              }
-            },
-            {
-              "reading_order": 10,
+              "reading_order": 3,
               "block_type": "OTHER",
               "text": "Lifting the concept from philosopher Alan Watts, Manson calls this the Backwards Law.",
               "region": {
                 "x_min": 56,
-                "y_min": 940,
-                "x_max": 943,
-                "y_max": 980
+                "y_min": 955,
+                "x_max": 945,
+                "y_max": 990
               }
             }
           ],
-          "transcription_confidence": 0.95
+          "transcription_confidence": 0.96
         },
         "visual": {
-          "description": "An illustration depicting a stick figure standing on the edge of a grassy cliff, dropping a black briefcase into the ocean below. The sky is a warm orange and pink with clouds, suggesting either sunrise or sunset. Small birds fly in the distance over the ocean.",
+          "description": "A minimalist, flat-illustration scene of a stick-figure-style person in a blue top and black pants standing at the edge of a grassy cliff, releasing a black briefcase that falls toward the ocean below; a warm orange sunset sky with a flock of small birds fills the background.",
           "main_elements": [
-            "stick figure",
-            "briefcase",
-            "cliff",
-            "ocean",
-            "sky",
-            "birds"
+            "cliff edge with tall grass",
+            "person releasing a briefcase",
+            "ocean below",
+            "sunset sky",
+            "flock of birds"
           ],
           "visual_subjects": [
             {
               "subject_type": "ILLUSTRATED_PERSON",
-              "description": "A simple stick figure with a round head, black eyes, and a straight mouth, wearing a blue long-sleeved shirt and black pants, standing on a cliff edge.",
+              "description": "Minimalist stick-figure-style person with a round blank face, wearing a blue top and black pants, standing at a cliff edge and letting go of a briefcase",
               "region": {
-                "x_min": 290,
-                "y_min": 490,
-                "x_max": 450,
-                "y_max": 700
+                "x_min": 230,
+                "y_min": 620,
+                "x_max": 460,
+                "y_max": 850
               }
             },
             {
               "subject_type": "OBJECT",
-              "description": "A black briefcase being dropped by the stick figure into the water.",
+              "description": "Black briefcase falling from the person's hand toward the ocean",
               "region": {
-                "x_min": 400,
-                "y_min": 590,
-                "x_max": 500,
-                "y_max": 660
-              }
-            },
-            {
-              "subject_type": "ENVIRONMENT",
-              "description": "A grassy cliff edge with dry, golden-brown grass.",
-              "region": {
-                "x_min": 0,
-                "y_min": 590,
-                "x_max": 500,
-                "y_max": 750
-              }
-            },
-            {
-              "subject_type": "ENVIRONMENT",
-              "description": "A vast blue ocean with white-capped waves.",
-              "region": {
-                "x_min": 0,
-                "y_min": 600,
-                "x_max": 1000,
-                "y_max": 800
-              }
-            },
-            {
-              "subject_type": "ENVIRONMENT",
-              "description": "An orange and pink sky with scattered clouds, indicating dawn or dusk.",
-              "region": {
-                "x_min": 0,
-                "y_min": 450,
-                "x_max": 1000,
-                "y_max": 600
-              }
-            },
-            {
-              "subject_type": "OTHER",
-              "description": "A flock of small birds flying in the distance over the ocean.",
-              "region": {
-                "x_min": 590,
-                "y_min": 500,
-                "x_max": 750,
-                "y_max": 530
+                "x_min": 390,
+                "y_min": 750,
+                "x_max": 480,
+                "y_max": 830
               }
             }
           ],
           "real_people_visible": false,
           "illustrated_or_cartoon_figures_visible": true,
           "figure_descriptions": [
-            "A simple stick figure with a neutral expression, dropping a briefcase off a cliff."
+            "Minimalist blank-faced stick-figure person in a blue top, releasing a briefcase off a cliff"
           ],
-          "environment": "A coastal cliff overlooking a vast ocean under a colorful sky at sunrise or sunset.",
+          "environment": "Grassy cliff overlooking the ocean at sunset, flat illustration style",
           "important_actions": [
-            "A stick figure dropping a briefcase into the ocean."
+            "Person releasing/dropping a briefcase off a cliff toward the ocean"
           ],
-          "composition_notes": "The stick figure is positioned on the left side of the frame, on a cliff, looking towards the right where the briefcase is falling into the ocean. The horizon line is prominent, separating the ocean from the sky. The overall composition emphasizes the act of letting go against a scenic backdrop."
+          "composition_notes": "Two text paragraphs stacked above a full-width rounded-corner illustration; progress bar shows 3 of 4 segments filled"
         },
         "semantic_summary": {
-          "core_idea": "The content explains 'The Backwards Law,' suggesting that success and desired outcomes are achieved by letting go of obsession and accepting one's current state, rather than striving harder. The illustration visually represents the act of letting go of a symbol of corporate life.",
+          "core_idea": "Illustrates the Backwards Law through the author's (Manson's) own life: his boldest career moves, like quitting a job and moving overseas, happened only once he stopped obsessing over outcomes.",
           "concepts": [
-            "The Backwards Law",
-            "acceptance",
-            "letting go",
-            "obsession",
-            "success",
-            "corporate life",
-            "philosophy"
+            "letting go of outcomes",
+            "career risk-taking",
+            "acceptance leading to action"
           ],
           "emotional_tone": [
-            "philosophical",
-            "reflective",
             "liberating",
-            "calm"
+            "contemplative",
+            "hopeful"
           ],
           "requires_external_context": true,
           "context_needed": [
-            "Who is Manson?",
-            "Who is Alan Watts?",
-            "What is the full philosophical context of 'The Backwards Law'?"
+            "Continuation of the Backwards Law concept established in earlier cards"
           ]
         },
         "named_entities": [
           {
             "name": "Manson",
-            "entity_type": "person",
-            "evidence": "Manson saw the same law in his own life."
-          },
-          {
-            "name": "The Backwards Law",
-            "entity_type": "concept",
-            "evidence": "The Backwards Law (heading), Manson calls this the Backwards Law."
-          },
-          {
-            "name": "Alan Watts",
-            "entity_type": "person",
-            "evidence": "philosopher Alan Watts"
+            "entity_type": "Person (referenced author)",
+            "evidence": "'Manson saw the same law in his own life'"
           }
         ],
         "possible_story_roles": [
-          "EXPLANATION",
           "EXAMPLE",
-          "REFLECTION"
+          "BUILDUP"
         ],
         "production": {
           "contains_app_ui": true,
           "story_art_region_present": true,
           "story_art_region": {
-            "x_min": 40,
-            "y_min": 450,
-            "x_max": 950,
-            "y_max": 800
+            "x_min": 55,
+            "y_min": 570,
+            "x_max": 940,
+            "y_max": 900
           },
           "story_text_region": {
             "x_min": 56,
-            "y_min": 160,
-            "x_max": 894,
-            "y_max": 429
+            "y_min": 200,
+            "x_max": 945,
+            "y_max": 560
           },
           "ui_regions": [
             {
-              "description": "Top status bar (time, battery, signal)",
+              "description": "Status bar",
               "region": {
                 "x_min": 0,
                 "y_min": 0,
                 "x_max": 1000,
-                "y_max": 55
+                "y_max": 60
               }
             },
             {
-              "description": "Top right action buttons",
+              "description": "Header with title, translate/close icons",
               "region": {
-                "x_min": 720,
-                "y_min": 60,
-                "x_max": 930,
-                "y_max": 130
+                "x_min": 0,
+                "y_min": 100,
+                "x_max": 1000,
+                "y_max": 165
               }
             },
             {
-              "description": "Progress indicator dots",
+              "description": "Progress bar (4 segments, 3rd filled)",
               "region": {
-                "x_min": 50,
-                "y_min": 130,
-                "x_max": 950,
-                "y_max": 150
+                "x_min": 56,
+                "y_min": 170,
+                "x_max": 945,
+                "y_max": 182
               }
             },
             {
-              "description": "Bottom navigation buttons (back, forward, play)",
+              "description": "Bottom nav with back/forward/play buttons and truncated preview of next card's text",
               "region": {
-                "x_min": 70,
-                "y_min": 890,
-                "x_max": 930,
-                "y_max": 980
+                "x_min": 0,
+                "y_min": 940,
+                "x_max": 1000,
+                "y_max": 1000
               }
             }
           ],
-          "story_art_description": "An illustrated stick figure on a cliff dropping a briefcase into the ocean, symbolizing letting go of burdens or corporate life.",
+          "story_art_description": "Flat illustration of a minimalist figure releasing a briefcase off a grassy cliff into the ocean at sunset, symbolizing letting go",
           "vertical_video_suitability": "high",
           "recommended_crop_strategy": "CROP_TO_TEXT_AND_ART",
           "safe_to_crop_ui_without_losing_story": true,
           "suggested_motion": [
-            "Subtle pan from the stick figure to the falling briefcase and the ocean.",
-            "Gentle zoom into the stick figure's action of letting go.",
-            "Subtle animation of the ocean waves or birds flying."
+            "Parallax drift of birds and clouds",
+            "Slow zoom on the falling briefcase"
           ],
           "visual_cleanup_needed": [
-            "Remove top status bar (time, battery, signal).",
-            "Remove top right action buttons (A, X).",
-            "Remove progress indicator dots.",
-            "Remove bottom navigation buttons (back, forward, play)."
+            "Remove status bar and app chrome",
+            "Crop out truncated preview text at bottom belonging to the next card"
           ]
         },
         "uncertainties": [
-          "The full text of the partially visible sentence at the bottom is not entirely clear from the image alone.",
-          "The specific identity of 'Manson' is not explicitly stated, though context suggests Mark Manson."
+          "Bottom preview text is cut off by the UI and belongs to the next card"
         ]
       }
     },
@@ -1318,690 +763,417 @@
       "asset_id": "img_ef0dc599dff0",
       "source_path": "source_images/IMG_8806.PNG",
       "original_filename": "IMG_8806.PNG",
-      "model": "gemini-2.5-flash",
-      "schema_version": "2.0",
-      "analyzed_at_utc": "2026-09-14T04:57:32.296896+00:00",
       "analysis": {
-        "content_type": "illustrated_story_card",
+        "content_type": "Story app content card (4th of 4) with body text, full-width illustration, and interactive card prompt",
         "source_text": {
-          "heading": "The Backwards Law",
-          "body_text": "Lifting the concept from philosopher Alan Watts, Manson calls this the Backwards Law. The harder you chase a good feeling, the more you remind yourself you don't have it. Straining for success makes you feel like a failure. The moment you stop fighting the burn and accept the discomfort, it loses its power over you.",
+          "heading": "",
+          "body_text": "Lifting the concept from philosopher Alan Watts, Manson calls this the Backwards Law.\n\nThe harder you chase a good feeling, the more you remind yourself you don't have it. Straining for success makes you feel like a failure.\n\nThe moment you stop fighting the burn and accept the discomfort, it loses its power over you.",
           "prominent_quote": "",
           "other_story_text": [],
           "ui_text": [
             "9:47",
-            "42%",
-            "x_A",
-            "X",
-            "Drag or tap the card to see it",
-            "<",
-            ">"
+            "42",
+            "Drag or tap the card to see it"
           ],
           "verbatim_blocks": [
             {
               "reading_order": 1,
-              "block_type": "UI",
-              "text": "9:47",
+              "block_type": "BODY",
+              "text": "Lifting the concept from philosopher Alan Watts, Manson calls this the Backwards Law.",
               "region": {
-                "x_min": 40,
-                "y_min": 30,
-                "x_max": 120,
-                "y_max": 50
+                "x_min": 56,
+                "y_min": 200,
+                "x_max": 945,
+                "y_max": 290
               }
             },
             {
               "reading_order": 2,
-              "block_type": "UI",
-              "text": "42%",
+              "block_type": "BODY",
+              "text": "The harder you chase a good feeling, the more you remind yourself you don't have it. Straining for success makes you feel like a failure.",
               "region": {
-                "x_min": 850,
-                "y_min": 30,
-                "x_max": 900,
-                "y_max": 50
+                "x_min": 56,
+                "y_min": 320,
+                "x_max": 945,
+                "y_max": 460
               }
             },
             {
               "reading_order": 3,
-              "block_type": "HEADING",
-              "text": "The Backwards Law",
+              "block_type": "BODY",
+              "text": "The moment you stop fighting the burn and accept the discomfort, it loses its power over you.",
               "region": {
-                "x_min": 50,
-                "y_min": 80,
-                "x_max": 400,
-                "y_max": 110
+                "x_min": 56,
+                "y_min": 490,
+                "x_max": 945,
+                "y_max": 590
               }
             },
             {
               "reading_order": 4,
               "block_type": "UI",
-              "text": "x_A",
-              "region": {
-                "x_min": 730,
-                "y_min": 70,
-                "x_max": 820,
-                "y_max": 120
-              }
-            },
-            {
-              "reading_order": 5,
-              "block_type": "UI",
-              "text": "X",
-              "region": {
-                "x_min": 850,
-                "y_min": 70,
-                "x_max": 940,
-                "y_max": 120
-              }
-            },
-            {
-              "reading_order": 6,
-              "block_type": "BODY",
-              "text": "Lifting the concept from philosopher Alan Watts, Manson calls this the Backwards Law.",
-              "region": {
-                "x_min": 50,
-                "y_min": 160,
-                "x_max": 950,
-                "y_max": 220
-              }
-            },
-            {
-              "reading_order": 7,
-              "block_type": "BODY",
-              "text": "The harder you chase a good feeling, the more you remind yourself you don't have it. Straining for success makes you feel like a failure.",
-              "region": {
-                "x_min": 50,
-                "y_min": 240,
-                "x_max": 950,
-                "y_max": 340
-              }
-            },
-            {
-              "reading_order": 8,
-              "block_type": "BODY",
-              "text": "The moment you stop fighting the burn and accept the discomfort, it loses its power over you.",
-              "region": {
-                "x_min": 50,
-                "y_min": 360,
-                "x_max": 950,
-                "y_max": 430
-              }
-            },
-            {
-              "reading_order": 9,
-              "block_type": "UI",
               "text": "Drag or tap the card to see it",
               "region": {
-                "x_min": 300,
-                "y_min": 860,
-                "x_max": 700,
-                "y_max": 880
-              }
-            },
-            {
-              "reading_order": 10,
-              "block_type": "UI",
-              "text": "<",
-              "region": {
-                "x_min": 80,
-                "y_min": 890,
-                "x_max": 150,
-                "y_max": 960
-              }
-            },
-            {
-              "reading_order": 11,
-              "block_type": "UI",
-              "text": ">",
-              "region": {
-                "x_min": 180,
-                "y_min": 890,
-                "x_max": 250,
-                "y_max": 960
+                "x_min": 150,
+                "y_min": 900,
+                "x_max": 800,
+                "y_max": 930
               }
             }
           ],
-          "transcription_confidence": 0.98
+          "transcription_confidence": 0.96
         },
         "visual": {
-          "description": "An illustration of a stick-figure-like person in a bathroom, seen from behind, looking into a mirror. The reflection in the mirror shows the person with a sad or neutral expression. An hourglass and a steaming mug are on the sink counter.",
+          "description": "A painterly illustration of a person in a blue top, seen from behind, standing at a bathroom sink and looking into a mirror; the mirror reflection shows a flat, expressionless face with a small hourglass on a shelf behind it, steam rising from a coffee mug on the sink, warm lamp light on the left, tiled walls.",
           "main_elements": [
-            "illustrated person",
-            "mirror",
-            "bathroom sink",
-            "hourglass",
-            "steaming mug",
-            "lamp"
+            "bathroom sink and mirror",
+            "person viewed from behind",
+            "hourglass in mirror reflection",
+            "steaming coffee mug",
+            "tiled walls",
+            "warm lamp light"
           ],
           "visual_subjects": [
             {
               "subject_type": "ILLUSTRATED_PERSON",
-              "description": "Illustrated person seen from behind, wearing a blue shirt and black pants, looking into a mirror.",
+              "description": "Person in a blue top, viewed from behind, standing at a sink and looking into a mirror at their own reflection",
               "region": {
-                "x_min": 200,
-                "y_min": 500,
-                "x_max": 500,
-                "y_max": 740
-              }
-            },
-            {
-              "subject_type": "ILLUSTRATED_PERSON",
-              "description": "Reflection of the illustrated person in the mirror, showing a sad or neutral expression, wearing a blue shirt.",
-              "region": {
-                "x_min": 550,
-                "y_min": 520,
-                "x_max": 750,
-                "y_max": 680
+                "x_min": 270,
+                "y_min": 610,
+                "x_max": 660,
+                "y_max": 870
               }
             },
             {
               "subject_type": "OBJECT",
-              "description": "Rectangular mirror with a black frame.",
+              "description": "Small hourglass sitting on a shelf, visible in the mirror reflection behind the person's face",
               "region": {
-                "x_min": 500,
-                "y_min": 490,
-                "x_max": 800,
-                "y_max": 700
-              }
-            },
-            {
-              "subject_type": "OBJECT",
-              "description": "Bathroom sink and vanity, appearing white and cracked, with a faucet.",
-              "region": {
-                "x_min": 350,
-                "y_min": 650,
-                "x_max": 850,
-                "y_max": 750
-              }
-            },
-            {
-              "subject_type": "OBJECT",
-              "description": "Hourglass on a small shelf above the sink in the mirror's reflection.",
-              "region": {
-                "x_min": 600,
-                "y_min": 520,
-                "x_max": 700,
-                "y_max": 580
-              }
-            },
-            {
-              "subject_type": "OBJECT",
-              "description": "Steaming mug on the sink counter.",
-              "region": {
-                "x_min": 750,
-                "y_min": 620,
-                "x_max": 820,
-                "y_max": 680
-              }
-            },
-            {
-              "subject_type": "OBJECT",
-              "description": "Table lamp on the left side, casting warm light.",
-              "region": {
-                "x_min": 50,
-                "y_min": 480,
-                "x_max": 250,
-                "y_max": 650
+                "x_min": 430,
+                "y_min": 605,
+                "x_max": 520,
+                "y_max": 660
               }
             }
           ],
           "real_people_visible": false,
           "illustrated_or_cartoon_figures_visible": true,
           "figure_descriptions": [
-            "A simple, stick-figure-like person with a round head, wearing a blue long-sleeved shirt and black pants. The reflection shows the person's face with a sad or neutral expression."
+            "Person in a blue top viewed from behind at a bathroom sink, facing their mirror reflection"
           ],
-          "environment": "Bathroom, with tiled walls and a sink.",
+          "environment": "Tiled bathroom at a sink, warm lamp lighting, painterly illustration style",
           "important_actions": [
-            "Looking into a mirror",
-            "Self-reflection"
+            "Person looking at their own reflection in a mirror"
           ],
-          "composition_notes": "The central figure is positioned with their back to the viewer, facing a mirror that reflects their face. The scene is lit by a lamp on the left, creating a warm glow on one side and shadows on the other, emphasizing the contrast between the person's outward appearance and inner reflection."
+          "composition_notes": "Three text paragraphs stacked above a full-width rounded-corner illustration; progress bar shows all 4 segments filled; below is an instructional prompt and the top edge of an interactive card peeking in from the bottom"
         },
         "semantic_summary": {
-          "core_idea": "The image and text explain 'The Backwards Law,' a concept suggesting that actively pursuing positive feelings or success can lead to dissatisfaction, while accepting discomfort can lead to liberation. The visual metaphor shows a person confronting their inner state through self-reflection in a mirror.",
+          "core_idea": "Explains the Backwards Law (credited to philosopher Alan Watts): chasing good feelings pushes them further away, while accepting discomfort dissolves its power.",
           "concepts": [
-            "The Backwards Law",
-            "self-acceptance",
-            "discomfort",
-            "chasing happiness",
-            "failure",
-            "self-reflection",
-            "philosophy"
+            "Backwards Law",
+            "acceptance vs. resistance",
+            "paradox of pursuing happiness"
           ],
           "emotional_tone": [
-            "reflective",
-            "philosophical",
-            "introspective",
-            "slightly melancholic",
-            "insightful"
+            "insightful",
+            "calm",
+            "philosophical"
           ],
           "requires_external_context": true,
           "context_needed": [
-            "Further explanation of Alan Watts' philosophy",
-            "Identification of 'Manson' and his connection to 'The Backwards Law'"
+            "Prior cards establishing Bukowski's story and Manson's framing of the Backwards Law"
           ]
         },
         "named_entities": [
           {
             "name": "Alan Watts",
-            "entity_type": "person",
-            "evidence": "text"
+            "entity_type": "Person (philosopher)",
+            "evidence": "'Lifting the concept from philosopher Alan Watts'"
           },
           {
             "name": "Manson",
-            "entity_type": "person",
-            "evidence": "text"
+            "entity_type": "Person (referenced author)",
+            "evidence": "'Manson calls this the Backwards Law'"
           },
           {
-            "name": "The Backwards Law",
-            "entity_type": "concept",
-            "evidence": "text"
+            "name": "Backwards Law",
+            "entity_type": "Concept",
+            "evidence": "'Manson calls this the Backwards Law'"
           }
         ],
         "possible_story_roles": [
-          "SETUP",
           "EXPLANATION",
-          "REFLECTION",
-          "CONTEXT"
+          "PAYOFF"
         ],
         "production": {
           "contains_app_ui": true,
           "story_art_region_present": true,
           "story_art_region": {
-            "x_min": 50,
-            "y_min": 470,
-            "x_max": 950,
-            "y_max": 750
+            "x_min": 55,
+            "y_min": 610,
+            "x_max": 940,
+            "y_max": 870
           },
           "story_text_region": {
-            "x_min": 50,
-            "y_min": 80,
-            "x_max": 950,
-            "y_max": 430
+            "x_min": 56,
+            "y_min": 200,
+            "x_max": 945,
+            "y_max": 590
           },
           "ui_regions": [
             {
-              "description": "Time display",
+              "description": "Status bar",
               "region": {
-                "x_min": 40,
-                "y_min": 30,
-                "x_max": 120,
-                "y_max": 50
-              }
-            },
-            {
-              "description": "Battery and signal indicators",
-              "region": {
-                "x_min": 800,
-                "y_min": 20,
-                "x_max": 950,
+                "x_min": 0,
+                "y_min": 0,
+                "x_max": 1000,
                 "y_max": 60
               }
             },
             {
-              "description": "Text settings button",
+              "description": "Header with title, translate/close icons",
               "region": {
-                "x_min": 730,
-                "y_min": 70,
-                "x_max": 820,
-                "y_max": 120
+                "x_min": 0,
+                "y_min": 100,
+                "x_max": 1000,
+                "y_max": 165
               }
             },
             {
-              "description": "Close button",
+              "description": "Progress bar (4 segments, all filled)",
               "region": {
-                "x_min": 850,
-                "y_min": 70,
-                "x_max": 940,
-                "y_max": 120
+                "x_min": 56,
+                "y_min": 170,
+                "x_max": 945,
+                "y_max": 182
               }
             },
             {
-              "description": "Navigation instruction text",
+              "description": "Instructional prompt text 'Drag or tap the card to see it'",
               "region": {
-                "x_min": 300,
-                "y_min": 860,
-                "x_max": 700,
-                "y_max": 880
-              }
-            },
-            {
-              "description": "Previous card navigation button",
-              "region": {
-                "x_min": 80,
-                "y_min": 890,
-                "x_max": 150,
-                "y_max": 960
-              }
-            },
-            {
-              "description": "Next card navigation button",
-              "region": {
-                "x_min": 180,
-                "y_min": 890,
-                "x_max": 250,
-                "y_max": 960
-              }
-            },
-            {
-              "description": "Preview of the next card in the sequence",
-              "region": {
-                "x_min": 100,
+                "x_min": 150,
                 "y_min": 900,
-                "x_max": 900,
-                "y_max": 980
+                "x_max": 800,
+                "y_max": 930
+              }
+            },
+            {
+              "description": "Bottom nav with back/forward/play buttons, plus top edge of a partially visible interactive card",
+              "region": {
+                "x_min": 0,
+                "y_min": 950,
+                "x_max": 1000,
+                "y_max": 1000
               }
             }
           ],
-          "story_art_description": "An illustrated person looking into a mirror, seeing a sad reflection of themselves in a bathroom setting.",
+          "story_art_description": "Illustrated painterly scene of a person confronting their own reflection at a bathroom mirror, with a symbolic hourglass, evoking self-reflection and the passage of time",
           "vertical_video_suitability": "high",
           "recommended_crop_strategy": "CROP_TO_TEXT_AND_ART",
           "safe_to_crop_ui_without_losing_story": true,
           "suggested_motion": [
-            "Subtle zoom into the mirror or the reflection's face",
-            "Subtle pan across the text blocks"
+            "Slow push-in on the mirror reflection",
+            "Subtle steam animation from the coffee mug"
           ],
           "visual_cleanup_needed": [
-            "Top status bar (time, signal, battery)",
-            "Top right UI buttons (text settings, close)",
-            "Bottom navigation elements (arrows, 'Drag or tap the card to see it', next card preview)"
+            "Remove status bar and app chrome",
+            "Crop out partially visible interactive card element at the very bottom edge"
           ]
         },
-        "uncertainties": []
+        "uncertainties": [
+          "The interactive card partially visible at the bottom edge is not fully shown in this screenshot; its complete content appears in the next screenshot"
+        ]
       }
     },
     {
       "asset_id": "img_37c610ebb57b",
       "source_path": "source_images/IMG_8807.PNG",
       "original_filename": "IMG_8807.PNG",
-      "model": "gemini-2.5-flash",
-      "schema_version": "2.0",
-      "analyzed_at_utc": "2026-09-14T04:57:47.572041+00:00",
       "analysis": {
-        "content_type": "illustrated_story_card",
+        "content_type": "Story app interactive summary/quote card with reflective question and share/save controls",
         "source_text": {
           "heading": "The Backwards Law",
-          "body_text": "You burn so much energy trying to feel good that the effort itself becomes the problem. What would change if you stopped trying to fix your discomfort today and just let yourself feel it?",
+          "body_text": "You burn so much energy trying to feel good that the effort itself becomes the problem.\n\nWhat would change if you stopped trying to fix your discomfort today and just let yourself feel it?",
           "prominent_quote": "Chase good feelings and they run from you; accept the bad, and it loosens its grip.",
           "other_story_text": [],
           "ui_text": [
             "9:48",
-            "The Backwards Law",
             "42",
-            "A",
-            "X",
             "Continue"
           ],
           "verbatim_blocks": [
             {
               "reading_order": 1,
-              "block_type": "UI",
-              "text": "9:48",
+              "block_type": "STORY_LABEL",
+              "text": "The Backwards Law",
               "region": {
-                "x_min": 40,
-                "y_min": 40,
-                "x_max": 120,
-                "y_max": 65
+                "x_min": 295,
+                "y_min": 610,
+                "x_max": 620,
+                "y_max": 645
               }
             },
             {
               "reading_order": 2,
-              "block_type": "UI",
-              "text": "42",
+              "block_type": "BODY",
+              "text": "You burn so much energy trying to feel good that the effort itself becomes the problem.",
               "region": {
-                "x_min": 870,
-                "y_min": 40,
-                "x_max": 900,
-                "y_max": 65
+                "x_min": 125,
+                "y_min": 770,
+                "x_max": 830,
+                "y_max": 850
               }
             },
             {
               "reading_order": 3,
-              "block_type": "UI",
-              "text": "The Backwards Law",
+              "block_type": "QUOTE",
+              "text": "Chase good feelings and they run from you; accept the bad, and it loosens its grip.",
               "region": {
-                "x_min": 50,
-                "y_min": 70,
-                "x_max": 400,
-                "y_max": 100
+                "x_min": 125,
+                "y_min": 890,
+                "x_max": 865,
+                "y_max": 970
               }
             },
             {
               "reading_order": 4,
-              "block_type": "UI",
-              "text": "A",
-              "region": {
-                "x_min": 720,
-                "y_min": 70,
-                "x_max": 800,
-                "y_max": 100
-              }
-            },
-            {
-              "reading_order": 5,
-              "block_type": "UI",
-              "text": "X",
-              "region": {
-                "x_min": 840,
-                "y_min": 70,
-                "x_max": 920,
-                "y_max": 100
-              }
-            },
-            {
-              "reading_order": 6,
-              "block_type": "STORY_LABEL",
-              "text": "The Backwards Law",
-              "region": {
-                "x_min": 300,
-                "y_min": 280,
-                "x_max": 600,
-                "y_max": 330
-              }
-            },
-            {
-              "reading_order": 7,
-              "block_type": "BODY",
-              "text": "You burn so much energy trying to feel good that the effort itself becomes the problem.",
-              "region": {
-                "x_min": 130,
-                "y_min": 350,
-                "x_max": 870,
-                "y_max": 430
-              }
-            },
-            {
-              "reading_order": 8,
-              "block_type": "QUOTE",
-              "text": "Chase good feelings and they run from you; accept the bad, and it loosens its grip.",
-              "region": {
-                "x_min": 130,
-                "y_min": 460,
-                "x_max": 870,
-                "y_max": 540
-              }
-            },
-            {
-              "reading_order": 9,
               "block_type": "BODY",
               "text": "What would change if you stopped trying to fix your discomfort today and just let yourself feel it?",
               "region": {
-                "x_min": 130,
-                "y_min": 570,
-                "x_max": 870,
-                "y_max": 660
-              }
-            },
-            {
-              "reading_order": 10,
-              "block_type": "UI",
-              "text": "Continue",
-              "region": {
-                "x_min": 350,
-                "y_min": 890,
-                "x_max": 650,
-                "y_max": 940
+                "x_min": 125,
+                "y_min": 1000,
+                "x_max": 830,
+                "y_max": 1000
               }
             }
           ],
-          "transcription_confidence": 0.98
+          "transcription_confidence": 0.97
         },
         "visual": {
-          "description": "A digital card displaying text about 'The Backwards Law' with a stylized icon, set against a light purple background.",
+          "description": "A purple-bordered rounded card centered on a plain lavender background, containing a small purple line-art icon of stacked/framed papers, a title, body text, a highlighted purple quote, and share and bookmark icons at the bottom; a solid purple 'Continue' button sits below the card.",
           "main_elements": [
-            "Rounded rectangular card",
-            "Text content",
-            "Stylized square icon with arrows",
-            "Application UI elements"
+            "purple-bordered quote card",
+            "line-art icon of stacked framed papers",
+            "highlighted quote text",
+            "share icon",
+            "bookmark icon",
+            "Continue button"
           ],
           "visual_subjects": [
             {
               "subject_type": "SYMBOL",
-              "description": "Stylized square icon with arrows forming a loop or maze, representing a cyclical or 'backwards' concept.",
+              "description": "Purple line-art icon resembling stacked framed papers or certificates, positioned at the top-left of the card",
               "region": {
-                "x_min": 240,
-                "y_min": 275,
-                "x_max": 300,
-                "y_max": 335
+                "x_min": 125,
+                "y_min": 560,
+                "x_max": 260,
+                "y_max": 650
               }
             }
           ],
           "real_people_visible": false,
           "illustrated_or_cartoon_figures_visible": false,
           "figure_descriptions": [],
-          "environment": "Digital interface, abstract background",
+          "environment": "Plain lavender app background with a centered UI card; no illustrated scene",
           "important_actions": [],
-          "composition_notes": "The primary content is presented within a large, centrally located rounded rectangle. UI elements are positioned at the top and bottom of the screen, clearly separated from the main story content. The text within the card is well-structured with a heading, body paragraphs, and a prominent quote."
+          "composition_notes": "Card dominates the frame with icon and title at top, body/quote text in middle, share and bookmark icons at bottom edge of card; Continue button and play control below"
         },
         "semantic_summary": {
-          "core_idea": "The content explains 'The Backwards Law,' a concept suggesting that actively pursuing positive feelings or avoiding negative ones can be counterproductive, and that accepting negative experiences can lead to their resolution.",
+          "core_idea": "Summarizes the Backwards Law takeaway as a shareable/savable quote card and poses a reflective question to the reader about accepting discomfort.",
           "concepts": [
-            "The Backwards Law",
-            "Self-acceptance",
-            "Emotional regulation",
-            "Paradox",
-            "Discomfort",
-            "Feelings",
-            "Psychological principles"
+            "summary quote",
+            "reflective question",
+            "acceptance of discomfort"
           ],
           "emotional_tone": [
-            "Reflective",
-            "Philosophical",
-            "Insightful",
-            "Calm",
-            "Challenging"
+            "reflective",
+            "empowering",
+            "conclusive"
           ],
-          "requires_external_context": false,
-          "context_needed": []
+          "requires_external_context": true,
+          "context_needed": [
+            "Prior cards establishing the Backwards Law concept (Bukowski example, Alan Watts framing)"
+          ]
         },
         "named_entities": [
           {
-            "name": "The Backwards Law",
-            "entity_type": "concept",
-            "evidence": "Visible text 'The Backwards Law' as a heading and label."
+            "name": "Backwards Law",
+            "entity_type": "Concept",
+            "evidence": "Card title 'The Backwards Law'"
           }
         ],
         "possible_story_roles": [
-          "EXPLANATION",
-          "CONTEXT",
-          "REFLECTION"
+          "REFLECTION",
+          "PAYOFF",
+          "ENDING"
         ],
         "production": {
           "contains_app_ui": true,
           "story_art_region_present": true,
           "story_art_region": {
-            "x_min": 240,
-            "y_min": 275,
-            "x_max": 300,
-            "y_max": 335
+            "x_min": 55,
+            "y_min": 505,
+            "x_max": 945,
+            "y_max": 995
           },
           "story_text_region": {
-            "x_min": 100,
-            "y_min": 230,
-            "x_max": 900,
-            "y_max": 790
+            "x_min": 125,
+            "y_min": 770,
+            "x_max": 865,
+            "y_max": 970
           },
           "ui_regions": [
             {
-              "description": "Top status bar (time, signal, battery)",
+              "description": "Status bar",
               "region": {
                 "x_min": 0,
                 "y_min": 0,
                 "x_max": 1000,
-                "y_max": 70
+                "y_max": 60
               }
             },
             {
-              "description": "Top navigation bar (heading, text settings, close button)",
+              "description": "Header with title, translate/close icons",
               "region": {
                 "x_min": 0,
-                "y_min": 70,
+                "y_min": 100,
                 "x_max": 1000,
-                "y_max": 110
+                "y_max": 165
               }
             },
             {
-              "description": "Progress indicators",
+              "description": "Progress bar (4 segments, all filled)",
               "region": {
-                "x_min": 50,
-                "y_min": 130,
-                "x_max": 950,
-                "y_max": 150
+                "x_min": 56,
+                "y_min": 170,
+                "x_max": 945,
+                "y_max": 182
               }
             },
             {
-              "description": "Share icon",
+              "description": "Continue button and play button",
               "region": {
-                "x_min": 120,
-                "y_min": 760,
-                "x_max": 180,
-                "y_max": 790
-              }
-            },
-            {
-              "description": "Bookmark icon",
-              "region": {
-                "x_min": 800,
-                "y_min": 760,
-                "x_max": 860,
-                "y_max": 790
-              }
-            },
-            {
-              "description": "Continue button",
-              "region": {
-                "x_min": 50,
-                "y_min": 880,
-                "x_max": 950,
-                "y_max": 950
-              }
-            },
-            {
-              "description": "Play icon next to continue button",
-              "region": {
-                "x_min": 820,
-                "y_min": 890,
-                "x_max": 920,
-                "y_max": 940
+                "x_min": 0,
+                "y_min": 940,
+                "x_max": 1000,
+                "y_max": 1000
               }
             }
           ],
-          "story_art_description": "A stylized purple square icon with arrows forming a loop or maze, representing a cyclical or 'backwards' concept.",
-          "vertical_video_suitability": "high",
+          "story_art_description": "Purple-bordered quote/summary card with a line-art icon and a highlighted takeaway quote, designed as a shareable graphic",
+          "vertical_video_suitability": "medium",
           "recommended_crop_strategy": "CROP_TO_TEXT_AND_ART",
           "safe_to_crop_ui_without_losing_story": true,
           "suggested_motion": [
-            "Subtle zoom into the main content card",
-            "Gentle pulse or glow effect on the stylized icon",
-            "Highlighting the prominent quote text"
+            "Static hold with subtle highlight/emphasis animation on the quote text",
+            "Fade-in of the quote line"
           ],
           "visual_cleanup_needed": [
-            "Top status bar (time, signal, battery)",
-            "Top navigation bar (heading, text settings, close button)",
-            "Progress indicators",
-            "Bottom navigation elements (share icon, bookmark icon, continue button, play icon)"
+            "Remove status bar, header icons, Continue button, and play button for final video use"
           ]
         },
-        "uncertainties": []
+        "uncertainties": [
+          "Whether this card functions as a standalone shareable summary or as an interactive overlay revealed by the prior card's drag/tap prompt is not fully clear from a single screenshot"
+        ]
       }
     }
   ]
