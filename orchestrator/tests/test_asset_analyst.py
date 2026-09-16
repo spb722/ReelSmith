@@ -79,6 +79,19 @@ def stage(tmp_path, monkeypatch):
         return PreflightResult(passed=True)
 
     monkeypatch.setattr(run, "run_preflight", preflight)
+
+    async def no_narration_stage(settings, manifest):
+        # This file exercises asset_analyst/run_screenshot_stage only; the
+        # narration stage (story_agent) that now runs after it in `main()`
+        # is exercised in its own test module with its own mocked query.
+        # Calls are tracked so halt-path tests can assert it was never
+        # reached -- a regression invoking narration after a screenshot-
+        # stage halt would otherwise go undetected.
+        no_narration_stage.calls.append((settings, manifest))
+        return 0
+
+    no_narration_stage.calls = []
+    monkeypatch.setattr(run, "run_narration_stage", no_narration_stage)
     source = tmp_path / "source_images"
     source.mkdir()
     for index in range(6):
@@ -159,9 +172,11 @@ def test_four_invalid_results_halt_with_diagnostics_and_no_output(stage, monkeyp
     assert len(report["partial_artifact_paths"]) == 5
     assert not run.ANALYZED_ASSETS_FILE.exists()
     assert load_run_manifest(run.RUN_STATE_DIR).budget_spent_usd == pytest.approx(0.8)
+    assert run.run_narration_stage.calls == []
     # The ceiling is persisted; restarting cannot purchase another four attempts.
     assert run.main([str(source)]) == 1
     assert len(calls) == 4
+    assert run.run_narration_stage.calls == []
 
 
 def test_valid_persisted_contract_skips_claude_but_still_preflights_and_ingests(stage, monkeypatch):
@@ -207,6 +222,7 @@ def test_budget_exhausted_at_stage_halts_before_claude(stage, monkeypatch):
     assert run.main([str(source)]) == 1
     assert calls == []
     assert failure_report()["attempt_count"] == 0
+    assert run.run_narration_stage.calls == []
 
 
 def test_budget_consumed_by_failed_attempt_prevents_next_call(stage, monkeypatch):
@@ -215,6 +231,7 @@ def test_budget_consumed_by_failed_attempt_prevents_next_call(stage, monkeypatch
     assert run.main([str(source)]) == 1
     assert len(calls) == 1
     assert "Budget exhausted" in failure_report()["reason"]
+    assert run.run_narration_stage.calls == []
 
 
 def test_sdk_budget_stop_halts_even_below_exact_ceiling(stage, monkeypatch):
@@ -223,6 +240,7 @@ def test_sdk_budget_stop_halts_even_below_exact_ceiling(stage, monkeypatch):
     assert run.main([str(source)]) == 1
     assert len(calls) == 1
     assert "budget" in failure_report()["reason"]
+    assert run.run_narration_stage.calls == []
 
 
 def test_sdk_failure_retries_with_feedback(stage, monkeypatch):
@@ -238,6 +256,7 @@ def test_result_without_usable_cost_is_not_accepted(stage, monkeypatch):
     assert run.main([str(source)]) == 1
     assert not run.ANALYZED_ASSETS_FILE.exists()
     assert "cost" in failure_report()["reason"]
+    assert run.run_narration_stage.calls == []
 
 
 def test_omitted_screenshot_fails_even_when_schema_valid(stage, monkeypatch):
@@ -256,6 +275,7 @@ def test_preflight_failure_prevents_ingest_and_claude(stage, monkeypatch):
     assert run.main([str(source)]) == 1
     assert calls == []
     assert not run.ASSETS_FILE.exists()
+    assert run.run_narration_stage.calls == []
 
 
 @pytest.mark.parametrize("mutation", ["missing", "enum", "bool", "region", "confidence"])

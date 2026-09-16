@@ -1,7 +1,10 @@
 """Orchestrator CLI entrypoint: `python -m orchestrator.run <source_images_dir>`.
 
-Runs preflight, deterministic ingestion, and bounded screenshot understanding.
-The validated analyzed-assets file is the single-stage resume checkpoint.
+Runs preflight, deterministic ingestion, and bounded screenshot understanding
+(`run_screenshot_stage`), then -- once that stage has a validated
+`AnalyzedAssetsContract` -- bounded narration writing/review/revision
+(`run_narration_stage`). Each stage's validated persisted contract is that
+stage's resume checkpoint.
 """
 
 from __future__ import annotations
@@ -12,10 +15,14 @@ import json
 import math
 import sys
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import Awaitable, Callable, Optional, Sequence
+
+from claude_agent_sdk import ResultMessage
 
 from orchestrator.agents.asset_analyst import analyze_assets
+from orchestrator.agents.story_agent import write_story
 from orchestrator.contracts.analyzed_assets import AnalyzedAssetsContract
+from orchestrator.contracts.final_story_plan import FinalStoryPlanContract
 from orchestrator.preflight import _check_budget, run_preflight
 from orchestrator.settings import Settings, SettingsError, load_settings
 from orchestrator.state.run_manifest import (
@@ -30,7 +37,9 @@ from orchestrator.state.run_manifest import (
 from orchestrator.tools.deterministic_tools import ASSETS_FILE, ingest
 
 ANALYZED_ASSETS_FILE = Path("metadata/analyzed_assets.json")
+FINAL_STORY_PLAN_FILE = Path("metadata/final_story_plan.json")
 MAX_ASSET_ANALYST_ATTEMPTS = 4
+MAX_STORY_AGENT_ATTEMPTS = 4
 
 
 def _halt(
@@ -52,60 +61,70 @@ def _halt(
     return 1
 
 
-async def run_screenshot_stage(source_images_dir: Path, settings: Settings, manifest: RunManifest) -> int:
-    """Ingest on every invocation; only a valid matching artifact skips Claude."""
-    try:
-        # Calling the SDK tool's handler keeps ordering deterministic and costs
-        # nothing: the same in-process function is also exposed on its MCP server.
-        ingestion = await ingest.handler({"source_images_dir": str(source_images_dir)})
-        assets = json.loads(ingestion["content"][0]["text"])["assets"]
-    except Exception as exc:
-        return _halt("ingest", "AssetManifest", str(exc))
-
+async def run_bounded_agent_stage(
+    *,
+    stage_id: str,
+    failed_contract_name: str,
+    contract_cls: type,
+    persisted_file: Path,
+    validate_contract: Callable[[object], None],
+    max_attempts: int,
+    settings: Settings,
+    manifest: RunManifest,
+    base_partial_paths: list[str],
+    attempt_file_prefix: str,
+    call_agent: Callable[[str | None, object, float], Awaitable[ResultMessage]],
+) -> int:
+    """Shared bounded-retry/resume/halt control flow (Story 1.2's
+    `run_screenshot_stage` shape), reused by every stage in this shape:
+    skip on a validated persisted contract, else retry up to `max_attempts`
+    with feedback, self-correcting each attempt, halting via the shared
+    failure-report path on ceiling exhaustion or budget exhaustion.
+    `validate_contract` raises `ValueError` for both the resume-staleness
+    check and the post-attempt quality/source-id check -- the same method
+    serves both, matching each contract's own `validate_sources`.
+    """
     feedback = None
     previous_output = None
     try:
-        persisted = AnalyzedAssetsContract.model_validate_json(ANALYZED_ASSETS_FILE.read_text(encoding="utf-8"))
-        persisted.validate_sources(assets)
+        persisted = contract_cls.model_validate_json(persisted_file.read_text(encoding="utf-8"))
+        validate_contract(persisted)
     except FileNotFoundError:
         pass
     except (ValueError, OSError) as exc:
-        feedback = f"Persisted analyzed-assets contract is invalid for this run: {exc}"
+        feedback = f"Persisted {failed_contract_name} is invalid for this run: {exc}"
         print(feedback, file=sys.stderr)
     else:
-        print(f"asset_analyst skipped: validated {ANALYZED_ASSETS_FILE}")
+        print(f"{stage_id} skipped: validated {persisted_file}")
         return 0
 
-    count = manifest.iteration_counts.get("asset_analyst", 0)
-    partial_paths = [str(ASSETS_FILE)]
-    if ANALYZED_ASSETS_FILE.exists():
-        partial_paths.append(str(ANALYZED_ASSETS_FILE))
-    partial_paths.extend(str(p) for p in sorted(RUN_STATE_DIR.glob("asset_analyst_attempt_*.json")))
+    count = manifest.iteration_counts.get(stage_id, 0)
+    partial_paths = list(base_partial_paths)
+    if persisted_file.exists():
+        partial_paths.append(str(persisted_file))
+    partial_paths.extend(str(p) for p in sorted(RUN_STATE_DIR.glob(f"{attempt_file_prefix}_*.json")))
 
     def halt(reason: str) -> int:
         return _halt(
-            "asset_analyst", "AnalyzedAssetsContract", reason,
+            stage_id, failed_contract_name, reason,
             attempt_count=count if type(count) is int else 0,
             partial_artifact_paths=partial_paths,
         )
 
     if type(count) is not int or count < 0:
-        return halt("Invalid persisted asset_analyst iteration count")
+        return halt(f"Invalid persisted {stage_id} iteration count")
 
-    while count < MAX_ASSET_ANALYST_ATTEMPTS:
+    while count < max_attempts:
         budget_failure = _check_budget(settings, manifest.budget_spent_usd)
         if budget_failure:
             return halt(budget_failure.reason or "Budget exhausted")
 
         count += 1
-        manifest.iteration_counts["asset_analyst"] = count
+        manifest.iteration_counts[stage_id] = count
         save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
         try:
-            result = await analyze_assets(
-                assets,
-                max_budget_usd=settings.max_budget_usd - manifest.budget_spent_usd,
-                feedback=feedback,
-                previous_output=previous_output,
+            result = await call_agent(
+                feedback, previous_output, settings.max_budget_usd - manifest.budget_spent_usd
             )
         except Exception as exc:
             feedback = f"Claude attempt failed: {type(exc).__name__}: {exc}"
@@ -118,7 +137,7 @@ async def run_screenshot_stage(source_images_dir: Path, settings: Settings, mani
             manifest.session_id = result.session_id
             save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
             previous_output = result.structured_output
-            attempt_path = RUN_STATE_DIR / f"asset_analyst_attempt_{count}.json"
+            attempt_path = RUN_STATE_DIR / f"{attempt_file_prefix}_{count}.json"
             _atomic_write_json(attempt_path, {
                 "structured_output": previous_output, "result": result.result,
                 "subtype": result.subtype, "errors": result.errors,
@@ -130,18 +149,87 @@ async def run_screenshot_stage(source_images_dir: Path, settings: Settings, mani
             try:
                 if result.is_error:
                     raise ValueError(f"Claude failed ({result.subtype}): {result.errors or result.result}")
-                contract = AnalyzedAssetsContract.model_validate(previous_output)
-                contract.validate_sources(assets)
+                contract = contract_cls.model_validate(previous_output)
+                validate_contract(contract)
             except ValueError as exc:
                 feedback = str(exc)
             else:
-                _atomic_write_json(ANALYZED_ASSETS_FILE, contract.model_dump(mode="json"))
-                print(f"asset_analyst validated: {ANALYZED_ASSETS_FILE}")
+                _atomic_write_json(persisted_file, contract.model_dump(mode="json"))
+                print(f"{stage_id} validated: {persisted_file}")
                 return 0
 
-        print(f"asset_analyst attempt {count}/{MAX_ASSET_ANALYST_ATTEMPTS} failed: {feedback}", file=sys.stderr)
+        print(f"{stage_id} attempt {count}/{max_attempts} failed: {feedback}", file=sys.stderr)
 
-    return halt(f"Retry ceiling exhausted: {feedback or 'four attempts already recorded for this run'}")
+    return halt(f"Retry ceiling exhausted: {feedback or f'{max_attempts} attempts already recorded for this run'}")
+
+
+async def run_screenshot_stage(source_images_dir: Path, settings: Settings, manifest: RunManifest) -> int:
+    """Ingest on every invocation; only a valid matching artifact skips Claude."""
+    try:
+        # Calling the SDK tool's handler keeps ordering deterministic and costs
+        # nothing: the same in-process function is also exposed on its MCP server.
+        ingestion = await ingest.handler({"source_images_dir": str(source_images_dir)})
+        assets = json.loads(ingestion["content"][0]["text"])["assets"]
+    except Exception as exc:
+        return _halt("ingest", "AssetManifest", str(exc))
+
+    async def call_agent(feedback: str | None, previous_output: object, remaining_budget: float):
+        return await analyze_assets(
+            assets, max_budget_usd=remaining_budget, feedback=feedback, previous_output=previous_output,
+        )
+
+    def validate_contract(contract: AnalyzedAssetsContract) -> None:
+        contract.validate_sources(assets)
+
+    return await run_bounded_agent_stage(
+        stage_id="asset_analyst",
+        failed_contract_name="AnalyzedAssetsContract",
+        contract_cls=AnalyzedAssetsContract,
+        persisted_file=ANALYZED_ASSETS_FILE,
+        validate_contract=validate_contract,
+        max_attempts=MAX_ASSET_ANALYST_ATTEMPTS,
+        settings=settings,
+        manifest=manifest,
+        base_partial_paths=[str(ASSETS_FILE)],
+        attempt_file_prefix="asset_analyst_attempt",
+        call_agent=call_agent,
+    )
+
+
+async def run_narration_stage(settings: Settings, manifest: RunManifest) -> int:
+    """Write, self-review, and revise narration from the already-validated
+    `AnalyzedAssetsContract` -- gated on that contract existing, since
+    `story_agent` has no Read tool and never re-derives it itself.
+    """
+    try:
+        analyzed = AnalyzedAssetsContract.model_validate_json(ANALYZED_ASSETS_FILE.read_text(encoding="utf-8"))
+    except (FileNotFoundError, ValueError, OSError) as exc:
+        return _halt("story_agent", "AnalyzedAssetsContract", f"No validated analyzed-assets contract available: {exc}")
+
+    valid_asset_ids = {asset.asset_id for asset in analyzed.assets}
+    assets_bundle = [asset.model_dump(mode="json") for asset in analyzed.assets]
+
+    async def call_agent(feedback: str | None, previous_output: object, remaining_budget: float):
+        return await write_story(
+            assets_bundle, max_budget_usd=remaining_budget, feedback=feedback, previous_output=previous_output,
+        )
+
+    def validate_contract(contract: FinalStoryPlanContract) -> None:
+        contract.validate_sources(valid_asset_ids)
+
+    return await run_bounded_agent_stage(
+        stage_id="story_agent",
+        failed_contract_name="FinalStoryPlanContract",
+        contract_cls=FinalStoryPlanContract,
+        persisted_file=FINAL_STORY_PLAN_FILE,
+        validate_contract=validate_contract,
+        max_attempts=MAX_STORY_AGENT_ATTEMPTS,
+        settings=settings,
+        manifest=manifest,
+        base_partial_paths=[str(ANALYZED_ASSETS_FILE)],
+        attempt_file_prefix="story_agent_attempt",
+        call_agent=call_agent,
+    )
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -180,7 +268,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         )
 
     print(f"Preflight passed for source images dir: {args.source_images_dir}.")
-    return asyncio.run(run_screenshot_stage(args.source_images_dir, settings, manifest))
+    screenshot_result = asyncio.run(run_screenshot_stage(args.source_images_dir, settings, manifest))
+    if screenshot_result != 0:
+        return screenshot_result
+    return asyncio.run(run_narration_stage(settings, manifest))
 
 
 if __name__ == "__main__":
