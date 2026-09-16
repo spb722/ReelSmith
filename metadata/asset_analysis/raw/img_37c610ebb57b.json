@@ -1,0 +1,287 @@
+{
+  "content_type": "illustrated_story_card",
+  "source_text": {
+    "heading": "The Backwards Law",
+    "body_text": "You burn so much energy trying to feel good that the effort itself becomes the problem. What would change if you stopped trying to fix your discomfort today and just let yourself feel it?",
+    "prominent_quote": "Chase good feelings and they run from you; accept the bad, and it loosens its grip.",
+    "other_story_text": [],
+    "ui_text": [
+      "9:48",
+      "The Backwards Law",
+      "42",
+      "A",
+      "X",
+      "Continue"
+    ],
+    "verbatim_blocks": [
+      {
+        "reading_order": 1,
+        "block_type": "UI",
+        "text": "9:48",
+        "region": {
+          "x_min": 40,
+          "y_min": 40,
+          "x_max": 120,
+          "y_max": 65
+        }
+      },
+      {
+        "reading_order": 2,
+        "block_type": "UI",
+        "text": "42",
+        "region": {
+          "x_min": 870,
+          "y_min": 40,
+          "x_max": 900,
+          "y_max": 65
+        }
+      },
+      {
+        "reading_order": 3,
+        "block_type": "UI",
+        "text": "The Backwards Law",
+        "region": {
+          "x_min": 50,
+          "y_min": 70,
+          "x_max": 400,
+          "y_max": 100
+        }
+      },
+      {
+        "reading_order": 4,
+        "block_type": "UI",
+        "text": "A",
+        "region": {
+          "x_min": 720,
+          "y_min": 70,
+          "x_max": 800,
+          "y_max": 100
+        }
+      },
+      {
+        "reading_order": 5,
+        "block_type": "UI",
+        "text": "X",
+        "region": {
+          "x_min": 840,
+          "y_min": 70,
+          "x_max": 920,
+          "y_max": 100
+        }
+      },
+      {
+        "reading_order": 6,
+        "block_type": "STORY_LABEL",
+        "text": "The Backwards Law",
+        "region": {
+          "x_min": 300,
+          "y_min": 280,
+          "x_max": 600,
+          "y_max": 330
+        }
+      },
+      {
+        "reading_order": 7,
+        "block_type": "BODY",
+        "text": "You burn so much energy trying to feel good that the effort itself becomes the problem.",
+        "region": {
+          "x_min": 130,
+          "y_min": 350,
+          "x_max": 870,
+          "y_max": 430
+        }
+      },
+      {
+        "reading_order": 8,
+        "block_type": "QUOTE",
+        "text": "Chase good feelings and they run from you; accept the bad, and it loosens its grip.",
+        "region": {
+          "x_min": 130,
+          "y_min": 460,
+          "x_max": 870,
+          "y_max": 540
+        }
+      },
+      {
+        "reading_order": 9,
+        "block_type": "BODY",
+        "text": "What would change if you stopped trying to fix your discomfort today and just let yourself feel it?",
+        "region": {
+          "x_min": 130,
+          "y_min": 570,
+          "x_max": 870,
+          "y_max": 660
+        }
+      },
+      {
+        "reading_order": 10,
+        "block_type": "UI",
+        "text": "Continue",
+        "region": {
+          "x_min": 350,
+          "y_min": 890,
+          "x_max": 650,
+          "y_max": 940
+        }
+      }
+    ],
+    "transcription_confidence": 0.98
+  },
+  "visual": {
+    "description": "A digital card displaying text about 'The Backwards Law' with a stylized icon, set against a light purple background.",
+    "main_elements": [
+      "Rounded rectangular card",
+      "Text content",
+      "Stylized square icon with arrows",
+      "Application UI elements"
+    ],
+    "visual_subjects": [
+      {
+        "subject_type": "SYMBOL",
+        "description": "Stylized square icon with arrows forming a loop or maze, representing a cyclical or 'backwards' concept.",
+        "region": {
+          "x_min": 240,
+          "y_min": 275,
+          "x_max": 300,
+          "y_max": 335
+        }
+      }
+    ],
+    "real_people_visible": false,
+    "illustrated_or_cartoon_figures_visible": false,
+    "figure_descriptions": [],
+    "environment": "Digital interface, abstract background",
+    "important_actions": [],
+    "composition_notes": "The primary content is presented within a large, centrally located rounded rectangle. UI elements are positioned at the top and bottom of the screen, clearly separated from the main story content. The text within the card is well-structured with a heading, body paragraphs, and a prominent quote."
+  },
+  "semantic_summary": {
+    "core_idea": "The content explains 'The Backwards Law,' a concept suggesting that actively pursuing positive feelings or avoiding negative ones can be counterproductive, and that accepting negative experiences can lead to their resolution.",
+    "concepts": [
+      "The Backwards Law",
+      "Self-acceptance",
+      "Emotional regulation",
+      "Paradox",
+      "Discomfort",
+      "Feelings",
+      "Psychological principles"
+    ],
+    "emotional_tone": [
+      "Reflective",
+      "Philosophical",
+      "Insightful",
+      "Calm",
+      "Challenging"
+    ],
+    "requires_external_context": false,
+    "context_needed": []
+  },
+  "named_entities": [
+    {
+      "name": "The Backwards Law",
+      "entity_type": "concept",
+      "evidence": "Visible text 'The Backwards Law' as a heading and label."
+    }
+  ],
+  "possible_story_roles": [
+    "EXPLANATION",
+    "CONTEXT",
+    "REFLECTION"
+  ],
+  "production": {
+    "contains_app_ui": true,
+    "story_art_region_present": true,
+    "story_art_region": {
+      "x_min": 240,
+      "y_min": 275,
+      "x_max": 300,
+      "y_max": 335
+    },
+    "story_text_region": {
+      "x_min": 100,
+      "y_min": 230,
+      "x_max": 900,
+      "y_max": 790
+    },
+    "ui_regions": [
+      {
+        "description": "Top status bar (time, signal, battery)",
+        "region": {
+          "x_min": 0,
+          "y_min": 0,
+          "x_max": 1000,
+          "y_max": 70
+        }
+      },
+      {
+        "description": "Top navigation bar (heading, text settings, close button)",
+        "region": {
+          "x_min": 0,
+          "y_min": 70,
+          "x_max": 1000,
+          "y_max": 110
+        }
+      },
+      {
+        "description": "Progress indicators",
+        "region": {
+          "x_min": 50,
+          "y_min": 130,
+          "x_max": 950,
+          "y_max": 150
+        }
+      },
+      {
+        "description": "Share icon",
+        "region": {
+          "x_min": 120,
+          "y_min": 760,
+          "x_max": 180,
+          "y_max": 790
+        }
+      },
+      {
+        "description": "Bookmark icon",
+        "region": {
+          "x_min": 800,
+          "y_min": 760,
+          "x_max": 860,
+          "y_max": 790
+        }
+      },
+      {
+        "description": "Continue button",
+        "region": {
+          "x_min": 50,
+          "y_min": 880,
+          "x_max": 950,
+          "y_max": 950
+        }
+      },
+      {
+        "description": "Play icon next to continue button",
+        "region": {
+          "x_min": 820,
+          "y_min": 890,
+          "x_max": 920,
+          "y_max": 940
+        }
+      }
+    ],
+    "story_art_description": "A stylized purple square icon with arrows forming a loop or maze, representing a cyclical or 'backwards' concept.",
+    "vertical_video_suitability": "high",
+    "recommended_crop_strategy": "CROP_TO_TEXT_AND_ART",
+    "safe_to_crop_ui_without_losing_story": true,
+    "suggested_motion": [
+      "Subtle zoom into the main content card",
+      "Gentle pulse or glow effect on the stylized icon",
+      "Highlighting the prominent quote text"
+    ],
+    "visual_cleanup_needed": [
+      "Top status bar (time, signal, battery)",
+      "Top navigation bar (heading, text settings, close button)",
+      "Progress indicators",
+      "Bottom navigation elements (share icon, bookmark icon, continue button, play icon)"
+    ]
+  },
+  "uncertainties": []
+}

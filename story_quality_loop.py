@@ -19,7 +19,7 @@ from google.genai import types
 
 PROJECT_ID = "gen-lang-client-0240752803"
 LOCATION = "global"
-MODEL = "gemini-2.5-flash"
+MODEL = "gemini-3.1-pro-preview"
 
 INITIAL_STORY_PLAN_FILE = Path("metadata/story_plan.json")
 ANALYZED_ASSETS_FILE = Path("metadata/analyzed_assets.json")
@@ -29,12 +29,10 @@ FINAL_PLAN_FILE = Path("metadata/final_story_plan.json")
 FINAL_TEXT_FILE = Path("metadata/final_story_plan.txt")
 STATUS_FILE = Path("metadata/story_quality_loop_status.txt")
 
-# Maximum number of REVIEW cycles.
-# Each failed review may trigger one revision before the next cycle.
 MAX_ITERATIONS = 4
-
-# API-level retries for transient failures.
 MAX_API_RETRIES = 3
+MAX_REVIEW_VALIDATION_RETRIES = 3
+MAX_REVISION_VALIDATION_RETRIES = 3
 RETRY_BASE_SECONDS = 2
 
 TARGET_MIN_SECONDS = 40
@@ -42,7 +40,12 @@ TARGET_MAX_SECONDS = 50
 TARGET_MIN_WORDS = 90
 TARGET_MAX_WORDS = 115
 
-PIPELINE_SCHEMA_VERSION = "1.0"
+# Approval gates. These are enforced in Python, not just in the prompt.
+MIN_APPROVAL_SCORE = 8
+MIN_SOURCE_FIDELITY_SCORE = 9
+MIN_INTERNAL_CONSISTENCY_SCORE = 9
+
+PIPELINE_SCHEMA_VERSION = "2.0"
 
 
 # ============================================================
@@ -50,19 +53,50 @@ PIPELINE_SCHEMA_VERSION = "1.0"
 # ============================================================
 
 REVIEWER_SYSTEM_INSTRUCTION = """
-You are the independent final editorial QA reviewer for an
+You are an independent final editorial QA reviewer for an
 automated short-form wisdom video pipeline.
 
 You receive:
 - the current story plan
 - structured analyses of the original source images
 - deterministic validation checks produced by Python
-- the history of previous review/revision cycles, when available
+- prior review/revision history when available
 
 Your job is to decide whether the CURRENT plan is genuinely ready
 for voice generation.
 
-IMPORTANT RULES
+SCORING SCALE
+
+All scores MUST use a 1-10 scale:
+1 = very poor
+5 = mediocre / needs noticeable work
+8 = strong and production-ready
+9 = excellent
+10 = exceptional
+
+APPROVAL STANDARD
+
+You may return APPROVE only when:
+- ready_for_voice_generation = true
+- issues is empty
+- must_fix_before_voice is empty
+- every score is at least 8
+- source_fidelity is at least 9
+- internal_consistency is at least 9
+- confidence is between 0.0 and 1.0
+
+If any of those conditions are not true, return REVISE.
+
+IMPORTANT ISSUE-ID CONTRACT
+
+- Every item in issues must have a short issue_id such as I01, I02, I03.
+- must_fix_before_voice MUST contain only those issue_id strings exactly.
+- Never place prose, recommendations, or descriptions inside
+  must_fix_before_voice.
+- suggestion.related_issue_ids must also contain only issue_id values
+  that exist in issues.
+
+REVIEW PRINCIPLES
 
 1. SOURCE FIDELITY
    Every factual claim, quotation, person, event, and concept must
@@ -71,52 +105,49 @@ IMPORTANT RULES
 2. NO OUTSIDE KNOWLEDGE
    Do not fill source gaps from general knowledge.
 
-3. REVIEW THE CURRENT RESULT
-   Do not approve merely because a previous revision claims that
-   an issue was fixed.
+3. SOURCE UNCERTAINTY MATTERS
+   Read the source "uncertainties" fields carefully.
+   If the narration uses a person/entity whose exact identity is
+   explicitly uncertain in the source analysis, check whether that
+   reference is clear and source-safe. Flag ambiguous bare references.
 
-4. STORY QUALITY
+4. REVIEW THE CURRENT RESULT
+   Do not approve because a previous revision claims an issue was fixed.
+
+5. STORY QUALITY
    Judge this as spoken short-form storytelling, not as an essay.
 
-5. HOOK
+6. HOOK
    The opening should create curiosity or tension quickly.
 
-6. SPOKEN NATURALNESS
+7. SPOKEN NATURALNESS
    Flag stiff, summary-like, over-compressed, or awkward phrasing.
 
-7. NARRATIVE ARC
-   Prefer a clear progression:
+8. NARRATIVE ARC
+   Prefer:
    hook -> concrete story/tension -> reversal/reveal ->
    explanation -> reflection.
 
-8. CLARITY
-   Flag names or references that may confuse a viewer.
+9. CLARITY
+   Flag unexplained names, vague references, or sudden perspective
+   shifts that may confuse a viewer.
 
-9. PACING
-   The narration, scene durations, and voice pace should make sense
-   together. Python arithmetic is the ground truth for numeric checks.
+10. PACING
+    The narration, scene durations, and voice pace should make sense
+    together. Python arithmetic is authoritative for numeric checks.
 
-10. SCENE STRUCTURE
-    Flag scenes that carry too many distinct conceptual or visual
-    beats.
+11. SCENE STRUCTURE
+    Flag scenes carrying too many conceptual or visual beats.
 
-11. VISUAL SUPPORT
-    Every scene should be supportable by the cited source assets.
+12. VISUAL SUPPORT
+    Every scene should be supportable by cited source assets.
 
-12. PRESERVE WHAT WORKS
+13. PRESERVE WHAT WORKS
     Do not recommend changes merely for novelty.
 
-13. APPROVE only if there are no meaningful fixes required before
-    voice generation.
+14. If REVISE, return at least one actionable suggestion.
 
-14. If APPROVE:
-    ready_for_voice_generation must be true.
-
-15. If REVISE:
-    ready_for_voice_generation must be false, and return actionable
-    suggestions for the Revision Agent.
-
-16. Do not rewrite the full story yourself.
+15. Do not rewrite the full story yourself.
 
 Return only JSON matching the requested schema.
 """.strip()
@@ -136,12 +167,12 @@ You receive:
 - structured source analyses
 
 Your job is to make the smallest useful changes needed to resolve
-the review while preserving the story's strongest elements.
+the review while preserving the strongest material.
 
-IMPORTANT RULES
+RULES
 
 1. SOURCE FIDELITY IS NON-NEGOTIABLE.
-   Do not add facts unsupported by the source analyses.
+   Do not add facts unsupported by supplied source analyses.
 
 2. NO OUTSIDE KNOWLEDGE.
 
@@ -149,35 +180,38 @@ IMPORTANT RULES
    Do not blindly copy reviewer wording.
 
 4. PRESERVE STRONG MATERIAL.
-   Keep strong hooks, source-supported quotations, clear story beats,
-   and reflective endings unless changing them is necessary.
+   Keep strong hooks, supported quotations, clear story beats, and
+   reflective endings unless changing them is necessary.
 
 5. SPOKEN STORYTELLING.
-   The narration must sound natural aloud.
+   Narration must sound natural aloud.
 
-6. DO NOT PAD THE SCRIPT JUST TO HIT A NUMBER.
-   If narration is already within the allowed word range, prefer
-   structural or metadata fixes over filler.
+6. DO NOT PAD JUST TO HIT A NUMBER.
+   If narration is already in range, prefer structural or metadata
+   fixes over filler.
 
 7. SCENE GRANULARITY.
    You may split an overloaded scene into smaller beats.
 
 8. NARRATION AND SCENES MUST MATCH.
-   Concatenating scene narration in order must reconstruct the full
+   Concatenating scene narration in order must reconstruct the
    narration_script.
 
 9. TARGET:
-   roughly 40-50 seconds and 90-115 spoken words.
+   40-50 seconds and 90-115 spoken words.
 
 10. VOICE:
     mature, calm, confident, reflective, slightly intense.
 
 11. EVERY SCENE MUST CITE VALID SOURCE ASSET IDS.
 
-12. Resolve every issue in must_fix_before_voice.
+12. Resolve every issue ID in must_fix_before_voice.
+    must_fix_before_voice contains issue IDs such as I01, never prose.
+    For every such ID, return a review_resolution entry with the exact
+    same issue_id.
 
 13. Do not claim exact calculated word counts or WPM in prose.
-    Python will calculate those deterministically after your response.
+    Python computes those after your response.
 
 14. Return a COMPLETE revised story plan.
 
@@ -186,7 +220,7 @@ Return only JSON matching the requested schema.
 
 
 # ============================================================
-# SHARED SCHEMAS
+# SCHEMAS
 # ============================================================
 
 REVIEW_SCHEMA = {
@@ -196,12 +230,8 @@ REVIEW_SCHEMA = {
             "type": "string",
             "enum": ["APPROVE", "REVISE"],
         },
-        "confidence": {
-            "type": "number",
-        },
-        "review_summary": {
-            "type": "string",
-        },
+        "confidence": {"type": "number"},
+        "review_summary": {"type": "string"},
         "scores": {
             "type": "object",
             "properties": {
@@ -326,9 +356,7 @@ REVIEW_SCHEMA = {
             },
             "required": ["status", "notes"],
         },
-        "ready_for_voice_generation": {
-            "type": "boolean",
-        },
+        "ready_for_voice_generation": {"type": "boolean"},
     },
     "required": [
         "verdict",
@@ -421,9 +449,7 @@ PLAN_SCHEMA = {
                             "ENDING",
                         ],
                     },
-                    "estimated_duration_seconds": {
-                        "type": "number",
-                    },
+                    "estimated_duration_seconds": {"type": "number"},
                     "narration": {"type": "string"},
                     "source_asset_ids": {
                         "type": "array",
@@ -523,7 +549,7 @@ PLAN_SCHEMA = {
 
 
 # ============================================================
-# BASIC HELPERS
+# HELPERS
 # ============================================================
 
 def now_utc() -> str:
@@ -574,32 +600,21 @@ def normalize_text(text: str) -> str:
         .replace("’", "'")
     )
 
-    return re.sub(
-        r"\s+",
-        " ",
-        text,
-    ).strip()
+    return re.sub(r"\s+", " ", text).strip()
 
 
 def write_status(text: str) -> None:
-    STATUS_FILE.write_text(
-        text,
-        encoding="utf-8",
-    )
+    STATUS_FILE.write_text(text, encoding="utf-8")
 
 
 # ============================================================
 # SOURCE BUNDLE
 # ============================================================
 
-def prepare_source_bundle(
-    analyzed_assets: dict,
-) -> list[dict]:
-
+def prepare_source_bundle(analyzed_assets: dict) -> list[dict]:
     result = []
 
     for asset in analyzed_assets.get("assets", []):
-
         analysis = asset.get("analysis", {})
         source_text = analysis.get("source_text", {})
         semantic = analysis.get("semantic_summary", {})
@@ -609,7 +624,6 @@ def prepare_source_bundle(
         result.append(
             {
                 "asset_id": asset.get("asset_id", ""),
-
                 "source_text": {
                     "heading": source_text.get("heading", ""),
                     "body_text": source_text.get("body_text", ""),
@@ -622,7 +636,6 @@ def prepare_source_bundle(
                         [],
                     ),
                 },
-
                 "semantic_summary": {
                     "core_idea": semantic.get("core_idea", ""),
                     "concepts": semantic.get("concepts", []),
@@ -631,12 +644,7 @@ def prepare_source_bundle(
                         [],
                     ),
                 },
-
-                "named_entities": analysis.get(
-                    "named_entities",
-                    [],
-                ),
-
+                "named_entities": analysis.get("named_entities", []),
                 "visual": {
                     "description": visual.get("description", ""),
                     "important_actions": visual.get(
@@ -644,18 +652,13 @@ def prepare_source_bundle(
                         [],
                     ),
                 },
-
                 "production": {
                     "story_art_description": production.get(
                         "story_art_description",
                         "",
                     ),
                 },
-
-                "uncertainties": analysis.get(
-                    "uncertainties",
-                    [],
-                ),
+                "uncertainties": analysis.get("uncertainties", []),
             }
         )
 
@@ -667,18 +670,13 @@ def prepare_source_bundle(
 # ============================================================
 
 def normalize_plan_metrics(plan: dict) -> dict:
-    """
-    Arithmetic belongs in Python, not in the LLM.
-    """
-
     plan = deepcopy(plan)
 
     narration = plan.get("narration_script", "").strip()
+    scenes = plan.get("scenes", [])
 
     if not narration:
         raise RuntimeError("Plan has empty narration_script.")
-
-    scenes = plan.get("scenes", [])
 
     if not scenes:
         raise RuntimeError("Plan has no scenes.")
@@ -708,7 +706,6 @@ def normalize_plan_metrics(plan: dict) -> dict:
         1,
     )
 
-    # Normalize the plan to the reality of the current script.
     plan["target_word_count"] = word_count
     plan["calculated_word_count"] = word_count
     plan["target_duration_seconds"] = total_duration
@@ -716,15 +713,12 @@ def normalize_plan_metrics(plan: dict) -> dict:
     plan["calculated_effective_wpm"] = effective_wpm
 
     plan.setdefault("voice_direction", {})
-    plan["voice_direction"]["pace_wpm"] = int(
-        round(effective_wpm)
-    )
+    plan["voice_direction"]["pace_wpm"] = int(round(effective_wpm))
 
-    # Remove stale numerical claims from summaries.
+    # Remove stale numeric claims.
     cleaned_summary = []
 
     for item in plan.get("change_summary", []):
-
         if re.search(
             r"\b\d{2,3}\s+words?\b",
             item,
@@ -747,7 +741,7 @@ def normalize_plan_metrics(plan: dict) -> dict:
 
 
 # ============================================================
-# DETERMINISTIC QA CHECKS
+# DETERMINISTIC CHECKS
 # ============================================================
 
 def deterministic_checks(
@@ -755,28 +749,13 @@ def deterministic_checks(
     valid_asset_ids: set[str],
 ) -> dict:
 
-    checks = []
-
     narration = plan.get("narration_script", "")
     word_count = count_words(narration)
-
     scenes = plan.get("scenes", [])
 
-    scene_narration = " ".join(
+    joined = " ".join(
         scene.get("narration", "").strip()
         for scene in scenes
-    )
-
-    checks.append(
-        {
-            "check": "scene_narration_matches_script",
-            "status": (
-                "PASS"
-                if normalize_text(scene_narration)
-                == normalize_text(narration)
-                else "FAIL"
-            ),
-        }
     )
 
     total_duration = round(
@@ -797,7 +776,23 @@ def deterministic_checks(
         1,
     ) if total_duration > 0 else 0.0
 
-    checks.append(
+    unknown_ids = []
+
+    for scene in scenes:
+        for asset_id in scene.get("source_asset_ids", []):
+            if asset_id not in valid_asset_ids:
+                unknown_ids.append(asset_id)
+
+    checks = [
+        {
+            "check": "scene_narration_matches_script",
+            "status": (
+                "PASS"
+                if normalize_text(joined)
+                == normalize_text(narration)
+                else "FAIL"
+            ),
+        },
         {
             "check": "word_count_range",
             "status": (
@@ -811,10 +806,7 @@ def deterministic_checks(
                 f"{word_count} words; expected "
                 f"{TARGET_MIN_WORDS}-{TARGET_MAX_WORDS}"
             ),
-        }
-    )
-
-    checks.append(
+        },
         {
             "check": "duration_range",
             "status": (
@@ -828,28 +820,12 @@ def deterministic_checks(
                 f"{total_duration:.1f}s; expected "
                 f"{TARGET_MIN_SECONDS}-{TARGET_MAX_SECONDS}s"
             ),
-        }
-    )
-
-    checks.append(
+        },
         {
             "check": "effective_wpm",
             "status": "PASS",
             "details": f"{effective_wpm:.1f}",
-        }
-    )
-
-    unknown_ids = []
-
-    for scene in scenes:
-        for asset_id in scene.get(
-            "source_asset_ids",
-            [],
-        ):
-            if asset_id not in valid_asset_ids:
-                unknown_ids.append(asset_id)
-
-    checks.append(
+        },
         {
             "check": "valid_source_asset_ids",
             "status": (
@@ -862,8 +838,8 @@ def deterministic_checks(
                 if not unknown_ids
                 else str(sorted(set(unknown_ids)))
             ),
-        }
-    )
+        },
+    ]
 
     return {
         "word_count": word_count,
@@ -874,7 +850,7 @@ def deterministic_checks(
 
 
 # ============================================================
-# LLM CALL WRAPPER
+# API WRAPPER
 # ============================================================
 
 def call_json_model(
@@ -888,30 +864,16 @@ def call_json_model(
 
     last_error = None
 
-    for attempt in range(
-        1,
-        MAX_API_RETRIES + 1,
-    ):
-
+    for attempt in range(1, MAX_API_RETRIES + 1):
         try:
             response = client.models.generate_content(
                 model=MODEL,
-
-                contents=types.Part.from_text(
-                    text=prompt
-                ),
-
+                contents=types.Part.from_text(text=prompt),
                 config=types.GenerateContentConfig(
-                    system_instruction=
-                        system_instruction,
-
+                    system_instruction=system_instruction,
                     temperature=temperature,
-
-                    response_mime_type=
-                        "application/json",
-
+                    response_mime_type="application/json",
                     response_schema=schema,
-
                     max_output_tokens=8192,
                 ),
             )
@@ -934,55 +896,179 @@ def call_json_model(
 
     raise RuntimeError(
         "Gemini call failed after "
-        f"{MAX_API_RETRIES} attempts: "
-        f"{last_error}"
+        f"{MAX_API_RETRIES} attempts: {last_error}"
     )
 
 
 # ============================================================
-# REVIEW
+# REVIEW VALIDATION
 # ============================================================
 
-def validate_review(review: dict) -> None:
-
+def review_validation_error(review: dict) -> str | None:
     verdict = review.get("verdict")
-    ready = review.get(
-        "ready_for_voice_generation"
-    )
+    ready = review.get("ready_for_voice_generation")
+    confidence = review.get("confidence")
 
-    if verdict == "APPROVE" and ready is not True:
-        raise RuntimeError(
-            "APPROVE requires "
-            "ready_for_voice_generation=true."
+    if not isinstance(confidence, (int, float)):
+        return "confidence must be numeric."
+
+    if not 0.0 <= float(confidence) <= 1.0:
+        return (
+            f"confidence must be between 0 and 1; "
+            f"received {confidence}."
         )
 
-    if verdict == "REVISE" and ready is not False:
-        raise RuntimeError(
-            "REVISE requires "
-            "ready_for_voice_generation=false."
-        )
+    scores = review.get("scores", {})
 
-    if verdict == "REVISE" and not review.get(
-        "suggestions"
-    ):
-        raise RuntimeError(
-            "REVISE requires at least one suggestion."
-        )
-
-    for name, value in review.get(
-        "scores",
-        {}
-    ).items():
-
+    for name, value in scores.items():
         if not isinstance(value, int):
-            raise RuntimeError(
-                f"Score {name} is not an integer."
-            )
+            return f"Score {name} must be an integer."
 
         if not 1 <= value <= 10:
-            raise RuntimeError(
-                f"Score {name} must be 1-10."
+            return (
+                f"Score {name} must be between 1 and 10; "
+                f"received {value}."
             )
+
+    if verdict == "APPROVE":
+        if ready is not True:
+            return (
+                "APPROVE requires "
+                "ready_for_voice_generation=true."
+            )
+
+        if review.get("issues"):
+            return "APPROVE requires issues to be empty."
+
+        if review.get("must_fix_before_voice"):
+            return (
+                "APPROVE requires "
+                "must_fix_before_voice to be empty."
+            )
+
+        below_threshold = {
+            name: value
+            for name, value in scores.items()
+            if value < MIN_APPROVAL_SCORE
+        }
+
+        if below_threshold:
+            return (
+                "APPROVE requires every score >= "
+                f"{MIN_APPROVAL_SCORE}. "
+                f"Below threshold: {below_threshold}"
+            )
+
+        if scores.get(
+            "source_fidelity",
+            0
+        ) < MIN_SOURCE_FIDELITY_SCORE:
+            return (
+                "APPROVE requires source_fidelity >= "
+                f"{MIN_SOURCE_FIDELITY_SCORE}."
+            )
+
+        if scores.get(
+            "internal_consistency",
+            0
+        ) < MIN_INTERNAL_CONSISTENCY_SCORE:
+            return (
+                "APPROVE requires internal_consistency >= "
+                f"{MIN_INTERNAL_CONSISTENCY_SCORE}."
+            )
+
+    elif verdict == "REVISE":
+        if ready is not False:
+            return (
+                "REVISE requires "
+                "ready_for_voice_generation=false."
+            )
+
+        issues = review.get("issues", [])
+
+        if not issues:
+            return (
+                "REVISE requires at least one issue."
+            )
+
+        issue_ids = [
+            item.get("issue_id")
+            for item in issues
+        ]
+
+        if any(
+            not isinstance(issue_id, str)
+            or not issue_id.strip()
+            for issue_id in issue_ids
+        ):
+            return (
+                "Every review issue must have a non-empty issue_id."
+            )
+
+        if len(issue_ids) != len(set(issue_ids)):
+            return (
+                "Review issue_id values must be unique."
+            )
+
+        known_issue_ids = set(issue_ids)
+        must_fix = review.get("must_fix_before_voice", [])
+
+        invalid_must_fix = [
+            item
+            for item in must_fix
+            if item not in known_issue_ids
+        ]
+
+        if invalid_must_fix:
+            return (
+                "must_fix_before_voice must contain only exact issue_id "
+                "values from issues, never prose. Invalid entries: "
+                f"{invalid_must_fix}. Valid issue IDs are: "
+                f"{sorted(known_issue_ids)}"
+            )
+
+        major_or_blocker_ids = {
+            item.get("issue_id")
+            for item in issues
+            if item.get("severity") in {"MAJOR", "BLOCKER"}
+        }
+
+        missing_required = sorted(
+            major_or_blocker_ids - set(must_fix)
+        )
+
+        if missing_required:
+            return (
+                "Every MAJOR or BLOCKER issue must appear in "
+                "must_fix_before_voice. Missing: "
+                f"{missing_required}"
+            )
+
+        suggestions = review.get("suggestions", [])
+
+        if not suggestions:
+            return (
+                "REVISE requires at least one suggestion."
+            )
+
+        bad_related_ids = []
+
+        for suggestion in suggestions:
+            for related_id in suggestion.get("related_issue_ids", []):
+                if related_id not in known_issue_ids:
+                    bad_related_ids.append(related_id)
+
+        if bad_related_ids:
+            return (
+                "suggestion.related_issue_ids must contain only exact "
+                "issue_id values from issues. Invalid entries: "
+                f"{sorted(set(bad_related_ids))}"
+            )
+
+    else:
+        return f"Unexpected verdict: {verdict}"
+
+    return None
 
 
 def review_plan(
@@ -994,15 +1080,33 @@ def review_plan(
     iteration: int,
 ) -> dict:
 
-    prompt = f"""
+    correction = ""
+
+    for validation_attempt in range(
+        1,
+        MAX_REVIEW_VALIDATION_RETRIES + 1,
+    ):
+        correction_block = ""
+
+        if correction:
+            correction_block = f"""
+Your previous review response violated the approval contract:
+
+{correction}
+
+Re-evaluate the CURRENT plan and return a logically consistent
+review. Do not simply change the numbers to force approval.
+""".strip()
+
+        prompt = f"""
 Review iteration {iteration} of the story-quality loop.
 
 Determine whether the CURRENT plan is ready for voice generation.
 
-Python has already normalized the current numeric metadata.
-Treat the deterministic checks as authoritative for arithmetic.
+Python has normalized numeric metadata.
+Treat deterministic arithmetic as authoritative.
 
-Do not rewrite the full story.
+{correction_block}
 
 ============================================================
 CURRENT PLAN
@@ -1044,26 +1148,51 @@ SOURCE GROUND TRUTH
     ensure_ascii=False,
 )}
 
+Pay special attention to source uncertainties and ambiguous
+named references in the narration.
+
 Return only the requested review JSON.
 """.strip()
 
-    review = call_json_model(
-        client,
-        system_instruction=
-            REVIEWER_SYSTEM_INSTRUCTION,
-        prompt=prompt,
-        schema=REVIEW_SCHEMA,
-        temperature=0.15,
+        review = call_json_model(
+            client,
+            system_instruction=REVIEWER_SYSTEM_INSTRUCTION,
+            prompt=prompt,
+            schema=REVIEW_SCHEMA,
+            temperature=0.15,
+        )
+
+        error = review_validation_error(review)
+
+        failed_checks = [
+            item.get("check")
+            for item in checks.get("checks", [])
+            if item.get("status") == "FAIL"
+        ]
+
+        if (
+            error is None
+            and review.get("verdict") == "APPROVE"
+            and failed_checks
+        ):
+            error = (
+                "APPROVE is not allowed while deterministic checks "
+                f"are failing: {failed_checks}"
+            )
+
+        if error is None:
+            review["iteration"] = iteration
+            review["reviewed_at_utc"] = now_utc()
+            review["model"] = MODEL
+            review["deterministic_checks"] = checks
+            return review
+
+        correction = error
+
+    raise RuntimeError(
+        "Reviewer repeatedly violated the approval contract. "
+        f"Last validation error: {correction}"
     )
-
-    validate_review(review)
-
-    review["iteration"] = iteration
-    review["reviewed_at_utc"] = now_utc()
-    review["model"] = MODEL
-    review["deterministic_checks"] = checks
-
-    return review
 
 
 # ============================================================
@@ -1076,10 +1205,7 @@ def validate_revision(
     valid_asset_ids: set[str],
 ) -> None:
 
-    narration = plan.get(
-        "narration_script",
-        "",
-    ).strip()
+    narration = plan.get("narration_script", "").strip()
 
     if not narration:
         raise RuntimeError(
@@ -1106,16 +1232,13 @@ def validate_revision(
             "Revision returned no scenes."
         )
 
-    expected_sequences = list(
-        range(1, len(scenes) + 1)
-    )
-
-    actual_sequences = [
+    expected = list(range(1, len(scenes) + 1))
+    actual = [
         int(scene.get("sequence", -1))
         for scene in scenes
     ]
 
-    if actual_sequences != expected_sequences:
+    if actual != expected:
         raise RuntimeError(
             "Scene sequence numbering is invalid."
         )
@@ -1125,12 +1248,10 @@ def validate_revision(
         for scene in scenes
     )
 
-    if normalize_text(joined) != normalize_text(
-        narration
-    ):
+    if normalize_text(joined) != normalize_text(narration):
         raise RuntimeError(
             "Scene narration does not reconstruct "
-            "the narration_script."
+            "narration_script."
         )
 
     total_duration = sum(
@@ -1149,16 +1270,11 @@ def validate_revision(
         <= TARGET_MAX_SECONDS
     ):
         raise RuntimeError(
-            f"Revision duration is "
-            f"{total_duration:.1f}s."
+            f"Revision duration is {total_duration:.1f}s."
         )
 
     for scene in scenes:
-
-        asset_ids = scene.get(
-            "source_asset_ids",
-            [],
-        )
+        asset_ids = scene.get("source_asset_ids", [])
 
         if not asset_ids:
             raise RuntimeError(
@@ -1174,8 +1290,7 @@ def validate_revision(
 
         if unknown_ids:
             raise RuntimeError(
-                f"Unknown source asset IDs: "
-                f"{unknown_ids}"
+                f"Unknown source asset IDs: {unknown_ids}"
             )
 
     required_ids = set(
@@ -1215,20 +1330,43 @@ def revise_plan(
     iteration: int,
 ) -> dict:
 
-    prompt = f"""
+    correction = ""
+    last_error = ""
+
+    for validation_attempt in range(
+        1,
+        MAX_REVISION_VALIDATION_RETRIES + 1,
+    ):
+
+        correction_block = ""
+
+        if correction:
+            correction_block = f"""
+Your previous revision failed structural validation:
+
+{correction}
+
+Correct that exact problem. Do not ignore it, and do not remove
+required review-resolution entries merely to make validation pass.
+""".strip()
+
+        prompt = f"""
 This is revision cycle {iteration}.
 
 Revise the CURRENT plan using the latest review.
 
 Make the smallest useful changes required.
 
-If the current narration is already within the allowed word range,
-do not add filler merely to change the word count.
+If narration is already within the allowed word range, do not add
+filler merely to change the word count.
 
 If scene density is the issue, prefer restructuring scenes rather
 than unnecessarily changing strong narration.
 
-Resolve every ID in must_fix_before_voice.
+must_fix_before_voice contains ISSUE IDs only. For each listed ID,
+include a review_resolution object using that exact same issue_id.
+
+{correction_block}
 
 ============================================================
 CURRENT PLAN
@@ -1263,34 +1401,44 @@ SOURCE GROUND TRUTH
 Return only the complete revised plan.
 """.strip()
 
-    revised = call_json_model(
-        client,
-        system_instruction=
-            REVISION_SYSTEM_INSTRUCTION,
-        prompt=prompt,
-        schema=PLAN_SCHEMA,
-        temperature=0.25,
+        try:
+            revised = call_json_model(
+                client,
+                system_instruction=REVISION_SYSTEM_INSTRUCTION,
+                prompt=prompt,
+                schema=PLAN_SCHEMA,
+                temperature=0.25,
+            )
+
+            validate_revision(
+                revised,
+                review,
+                valid_asset_ids,
+            )
+
+            revised = normalize_plan_metrics(
+                revised
+            )
+
+            revised["revision_iteration"] = iteration
+            revised["revised_at_utc"] = now_utc()
+            revised["model"] = MODEL
+
+            return revised
+
+        except RuntimeError as exc:
+            correction = str(exc)
+            last_error = str(exc)
+
+    raise RuntimeError(
+        "Revision Agent repeatedly returned an invalid plan after "
+        f"{MAX_REVISION_VALIDATION_RETRIES} validation attempts. "
+        f"Last issue: {last_error}"
     )
-
-    validate_revision(
-        revised,
-        review,
-        valid_asset_ids,
-    )
-
-    revised = normalize_plan_metrics(
-        revised
-    )
-
-    revised["revision_iteration"] = iteration
-    revised["revised_at_utc"] = now_utc()
-    revised["model"] = MODEL
-
-    return revised
 
 
 # ============================================================
-# HUMAN-READABLE FINAL OUTPUT
+# FINAL TEXT
 # ============================================================
 
 def write_final_text(
@@ -1299,104 +1447,67 @@ def write_final_text(
     iterations_used: int,
 ) -> None:
 
-    lines = []
-
-    lines.append(
-        f"STORY: {plan['story_title']}"
-    )
-
-    lines.append(
-        f"VERDICT: {review['verdict']}"
-    )
-
-    lines.append(
-        f"QUALITY LOOP ITERATIONS: "
-        f"{iterations_used}"
-    )
-
-    lines.append(
-        f"WORDS: "
-        f"{plan['calculated_word_count']}"
-    )
-
-    lines.append(
-        f"PLANNED DURATION: "
-        f"{plan['calculated_scene_duration_seconds']:.1f}s"
-    )
-
-    lines.append(
-        f"EFFECTIVE WPM: "
-        f"{plan['calculated_effective_wpm']:.1f}"
-    )
-
-    lines.append("")
-    lines.append(
-        "=" * 72
-    )
-    lines.append("")
-    lines.append(
-        "FINAL NARRATION"
-    )
-    lines.append("")
-    lines.append(
-        plan[
-            "narration_script"
-        ]
-    )
-
-    lines.append("")
-    lines.append(
-        "=" * 72
-    )
-    lines.append("")
-    lines.append(
-        "SCENES"
-    )
-    lines.append("")
+    lines = [
+        f"STORY: {plan['story_title']}",
+        f"VERDICT: {review['verdict']}",
+        f"QUALITY LOOP ITERATIONS: {iterations_used}",
+        f"WORDS: {plan['calculated_word_count']}",
+        (
+            "PLANNED DURATION: "
+            f"{plan['calculated_scene_duration_seconds']:.1f}s"
+        ),
+        (
+            "EFFECTIVE WPM: "
+            f"{plan['calculated_effective_wpm']:.1f}"
+        ),
+        "",
+        "=" * 72,
+        "",
+        "FINAL NARRATION",
+        "",
+        plan["narration_script"],
+        "",
+        "=" * 72,
+        "",
+        "SCENES",
+        "",
+    ]
 
     for scene in plan["scenes"]:
-
-        lines.append(
-            f"{scene['sequence']:02d}. "
-            f"{scene['role']} "
-            f"({scene['estimated_duration_seconds']:.1f}s)"
+        lines.extend(
+            [
+                (
+                    f"{scene['sequence']:02d}. "
+                    f"{scene['role']} "
+                    f"({scene['estimated_duration_seconds']:.1f}s)"
+                ),
+                f"    Narration: {scene['narration']}",
+                (
+                    "    Assets: "
+                    f"{', '.join(scene['source_asset_ids'])}"
+                ),
+                f"    Visual intent: {scene['visual_intent']}",
+            ]
         )
 
-        lines.append(
-            f"    Narration: "
-            f"{scene['narration']}"
-        )
-
-        lines.append(
-            f"    Assets: "
-            f"{', '.join(scene['source_asset_ids'])}"
-        )
-
-        lines.append(
-            f"    Visual intent: "
-            f"{scene['visual_intent']}"
-        )
-
-        if scene[
-            "impact_text"
-        ].strip():
-
+        if scene["impact_text"].strip():
             lines.append(
-                f"    Impact text: "
-                f"{scene['impact_text']}"
+                f"    Impact text: {scene['impact_text']}"
             )
 
         lines.append("")
 
-    lines.append(
-        "FINAL REVIEW SUMMARY"
-    )
-
-    lines.append(
-        review[
-            "review_summary"
+    lines.extend(
+        [
+            "FINAL REVIEW SUMMARY",
+            review["review_summary"],
+            "",
+            "FINAL REVIEW SCORES",
         ]
     )
+
+    for key, value in review["scores"].items():
+        lines.append(f"- {key}: {value}/10")
 
     FINAL_TEXT_FILE.write_text(
         "\n".join(lines),
@@ -1405,7 +1516,7 @@ def write_final_text(
 
 
 # ============================================================
-# MAIN QUALITY LOOP
+# MAIN LOOP
 # ============================================================
 
 def main() -> None:
@@ -1439,8 +1550,6 @@ def main() -> None:
         INITIAL_STORY_PLAN_FILE
     )
 
-    # Add fields expected by the loop if the first Story Director
-    # output did not contain them.
     current_plan.setdefault(
         "review_resolution",
         [],
@@ -1472,8 +1581,6 @@ def main() -> None:
         f"Max iterations: {MAX_ITERATIONS}\n"
     )
 
-    final_review = None
-
     for iteration in range(
         1,
         MAX_ITERATIONS + 1,
@@ -1485,10 +1592,6 @@ def main() -> None:
             f"{iteration}/{MAX_ITERATIONS} ==="
         )
 
-        # -----------------------------------------------
-        # Save current candidate
-        # -----------------------------------------------
-
         candidate_file = (
             OUTPUT_DIR
             / f"iteration_{iteration:02d}_plan.json"
@@ -1499,18 +1602,10 @@ def main() -> None:
             current_plan,
         )
 
-        # -----------------------------------------------
-        # Deterministic QA
-        # -----------------------------------------------
-
         checks = deterministic_checks(
             current_plan,
             valid_asset_ids,
         )
-
-        # -----------------------------------------------
-        # Gemini reviewer
-        # -----------------------------------------------
 
         review = review_plan(
             client=client,
@@ -1536,13 +1631,12 @@ def main() -> None:
         )
 
         print(
-            f"Ready for voice: "
-            f"{review['ready_for_voice_generation']}"
+            f"Confidence: {review['confidence']}"
         )
 
-        # -----------------------------------------------
-        # APPROVED -> FINAL OUTPUT
-        # -----------------------------------------------
+        print(
+            f"Scores: {review['scores']}"
+        )
 
         if (
             review["verdict"] == "APPROVE"
@@ -1551,15 +1645,11 @@ def main() -> None:
             ] is True
         ):
 
-            final_review = review
-
             final_plan = deepcopy(
                 current_plan
             )
 
-            final_plan[
-                "quality_loop"
-            ] = {
+            final_plan["quality_loop"] = {
                 "status": "APPROVED",
                 "iterations_used": iteration,
                 "max_iterations": MAX_ITERATIONS,
@@ -1577,9 +1667,9 @@ def main() -> None:
             )
 
             write_final_text(
-                plan=final_plan,
-                review=review,
-                iterations_used=iteration,
+                final_plan,
+                review,
+                iteration,
             )
 
             save_json(
@@ -1616,32 +1706,22 @@ def main() -> None:
             )
 
             print(
-                f"Final plan: "
-                f"{FINAL_PLAN_FILE}"
+                f"Final plan: {FINAL_PLAN_FILE}"
             )
 
             print(
-                f"Readable: "
-                f"{FINAL_TEXT_FILE}"
+                f"Readable: {FINAL_TEXT_FILE}"
             )
 
             return
 
-        # -----------------------------------------------
-        # MAX ITERATIONS REACHED
-        # -----------------------------------------------
-
         if iteration == MAX_ITERATIONS:
-
-            final_review = review
 
             best_effort = deepcopy(
                 current_plan
             )
 
-            best_effort[
-                "quality_loop"
-            ] = {
+            best_effort["quality_loop"] = {
                 "status": "NOT_APPROVED",
                 "iterations_used": iteration,
                 "max_iterations": MAX_ITERATIONS,
@@ -1655,29 +1735,6 @@ def main() -> None:
                 best_effort,
             )
 
-            save_json(
-                OUTPUT_DIR / "history.json",
-                {
-                    "status": "NOT_APPROVED",
-                    "iterations_used": iteration,
-                    "history": history
-                    + [
-                        {
-                            "iteration": iteration,
-                            "verdict": review[
-                                "verdict"
-                            ],
-                            "review_file": str(
-                                review_file
-                            ),
-                            "plan_file": str(
-                                candidate_file
-                            ),
-                        }
-                    ],
-                },
-            )
-
             write_status(
                 "NOT_APPROVED\n"
                 f"Finished: {now_utc()}\n"
@@ -1687,42 +1744,27 @@ def main() -> None:
 
             print()
             print(
-                "Maximum quality-loop iterations "
-                "were reached without approval."
-            )
-
-            print(
-                "Best-effort plan saved to:"
-            )
-
-            print(
-                OUTPUT_DIR
-                / "best_effort_story_plan.json"
+                "Maximum iterations reached "
+                "without approval."
             )
 
             return
 
-        # -----------------------------------------------
-        # REVISE
-        # -----------------------------------------------
-
         history.append(
             {
                 "iteration": iteration,
-                "verdict": review[
-                    "verdict"
-                ],
+                "verdict": review["verdict"],
                 "review_summary": review[
                     "review_summary"
                 ],
-                "must_fix_before_voice":
-                    review[
-                        "must_fix_before_voice"
-                    ],
+                "must_fix_before_voice": review[
+                    "must_fix_before_voice"
+                ],
+                "scores": review["scores"],
             }
         )
 
-        revised = revise_plan(
+        current_plan = revise_plan(
             client=client,
             plan=current_plan,
             review=review,
@@ -1731,17 +1773,11 @@ def main() -> None:
             iteration=iteration,
         )
 
-        revision_file = (
-            OUTPUT_DIR
-            / f"iteration_{iteration:02d}_revision.json"
-        )
-
         save_json(
-            revision_file,
-            revised,
+            OUTPUT_DIR
+            / f"iteration_{iteration:02d}_revision.json",
+            current_plan,
         )
-
-        current_plan = revised
 
     raise RuntimeError(
         "Quality loop ended unexpectedly."

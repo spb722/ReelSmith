@@ -1,0 +1,841 @@
+{
+  "status": "SUCCESS",
+  "source_audio": "audio/narration.wav",
+  "source_story_plan": "metadata/final_story_plan.json",
+  "speech_to_text": {
+    "api": "Google Cloud Speech-to-Text V2",
+    "model": "chirp_3",
+    "region": "us",
+    "language_code": "en-US"
+  },
+  "locked_narration": "After a lifetime of struggle and eventual success, Charles Bukowski left two words on his tombstone: 'Don't try.' He faced 30 years of rejection. His breakthrough at 50 seemed like an underdog tale. But success came from accepting who he was, not from wanting it more. This is 'The Backwards Law,' from Alan Watts. The harder you chase good feelings, the more they elude you. Straining for success makes you feel like a failure. Sometimes, the boldest moves only happen when we stop obsessing over the outcome. Accept discomfort, and it loses its power. What if you just let yourself feel it?",
+  "recognized_transcript": "After a lifetime of struggle and eventual success, Charles Bukowski left two words on his tombstone: \"Don't try.\" He faced 30 years of rejection. His breakthrough at 50 seemed like an underdog tale, but success came from accepting who he was, not from wanting it more. This is the backwards law from Alan Watts. The harder you chase good feelings, the more they elude you. Straining for success makes you feel like a failure. Sometimes, the boldest moves only happen when we stop obsessing over the outcome. Accept discomfort, and it loses its power. What if you just let yourself feel it?",
+  "alignment_stats": {
+    "canonical_word_count": 102,
+    "recognized_word_count": 102,
+    "exact_matches": 102,
+    "substitutions": 0,
+    "canonical_words_missing": 0,
+    "extra_recognized_words": 0,
+    "exact_match_ratio": 1.0,
+    "edit_distance": 0
+  },
+  "words": [
+    {
+      "canonical_word": "After",
+      "recognized_word": "After",
+      "start_seconds": 0.24,
+      "end_seconds": 0.68,
+      "alignment": "exact",
+      "index": 1
+    },
+    {
+      "canonical_word": "a",
+      "recognized_word": "a",
+      "start_seconds": 0.68,
+      "end_seconds": 0.76,
+      "alignment": "exact",
+      "index": 2
+    },
+    {
+      "canonical_word": "lifetime",
+      "recognized_word": "lifetime",
+      "start_seconds": 0.76,
+      "end_seconds": 1.56,
+      "alignment": "exact",
+      "index": 3
+    },
+    {
+      "canonical_word": "of",
+      "recognized_word": "of",
+      "start_seconds": 1.56,
+      "end_seconds": 1.68,
+      "alignment": "exact",
+      "index": 4
+    },
+    {
+      "canonical_word": "struggle",
+      "recognized_word": "struggle",
+      "start_seconds": 1.68,
+      "end_seconds": 2.44,
+      "alignment": "exact",
+      "index": 5
+    },
+    {
+      "canonical_word": "and",
+      "recognized_word": "and",
+      "start_seconds": 2.64,
+      "end_seconds": 3.0,
+      "alignment": "exact",
+      "index": 6
+    },
+    {
+      "canonical_word": "eventual",
+      "recognized_word": "eventual",
+      "start_seconds": 3.0,
+      "end_seconds": 3.56,
+      "alignment": "exact",
+      "index": 7
+    },
+    {
+      "canonical_word": "success",
+      "recognized_word": "success,",
+      "start_seconds": 3.56,
+      "end_seconds": 4.28,
+      "alignment": "exact",
+      "index": 8
+    },
+    {
+      "canonical_word": "Charles",
+      "recognized_word": "Charles",
+      "start_seconds": 4.84,
+      "end_seconds": 5.36,
+      "alignment": "exact",
+      "index": 9
+    },
+    {
+      "canonical_word": "Bukowski",
+      "recognized_word": "Bukowski",
+      "start_seconds": 5.36,
+      "end_seconds": 6.24,
+      "alignment": "exact",
+      "index": 10
+    },
+    {
+      "canonical_word": "left",
+      "recognized_word": "left",
+      "start_seconds": 6.28,
+      "end_seconds": 6.76,
+      "alignment": "exact",
+      "index": 11
+    },
+    {
+      "canonical_word": "two",
+      "recognized_word": "two",
+      "start_seconds": 6.76,
+      "end_seconds": 7.24,
+      "alignment": "exact",
+      "index": 12
+    },
+    {
+      "canonical_word": "words",
+      "recognized_word": "words",
+      "start_seconds": 7.24,
+      "end_seconds": 7.76,
+      "alignment": "exact",
+      "index": 13
+    },
+    {
+      "canonical_word": "on",
+      "recognized_word": "on",
+      "start_seconds": 7.76,
+      "end_seconds": 7.92,
+      "alignment": "exact",
+      "index": 14
+    },
+    {
+      "canonical_word": "his",
+      "recognized_word": "his",
+      "start_seconds": 7.92,
+      "end_seconds": 8.08,
+      "alignment": "exact",
+      "index": 15
+    },
+    {
+      "canonical_word": "tombstone",
+      "recognized_word": "tombstone:",
+      "start_seconds": 8.08,
+      "end_seconds": 8.8,
+      "alignment": "exact",
+      "index": 16
+    },
+    {
+      "canonical_word": "Don't",
+      "recognized_word": "\"Don't",
+      "start_seconds": 9.96,
+      "end_seconds": 10.6,
+      "alignment": "exact",
+      "index": 17
+    },
+    {
+      "canonical_word": "try",
+      "recognized_word": "try.\"",
+      "start_seconds": 10.72,
+      "end_seconds": 11.4,
+      "alignment": "exact",
+      "index": 18
+    },
+    {
+      "canonical_word": "He",
+      "recognized_word": "He",
+      "start_seconds": 12.28,
+      "end_seconds": 12.48,
+      "alignment": "exact",
+      "index": 19
+    },
+    {
+      "canonical_word": "faced",
+      "recognized_word": "faced",
+      "start_seconds": 12.48,
+      "end_seconds": 12.96,
+      "alignment": "exact",
+      "index": 20
+    },
+    {
+      "canonical_word": "30",
+      "recognized_word": "30",
+      "start_seconds": 12.96,
+      "end_seconds": 13.44,
+      "alignment": "exact",
+      "index": 21
+    },
+    {
+      "canonical_word": "years",
+      "recognized_word": "years",
+      "start_seconds": 13.44,
+      "end_seconds": 13.84,
+      "alignment": "exact",
+      "index": 22
+    },
+    {
+      "canonical_word": "of",
+      "recognized_word": "of",
+      "start_seconds": 13.84,
+      "end_seconds": 13.96,
+      "alignment": "exact",
+      "index": 23
+    },
+    {
+      "canonical_word": "rejection",
+      "recognized_word": "rejection.",
+      "start_seconds": 13.96,
+      "end_seconds": 14.6,
+      "alignment": "exact",
+      "index": 24
+    },
+    {
+      "canonical_word": "His",
+      "recognized_word": "His",
+      "start_seconds": 15.16,
+      "end_seconds": 15.36,
+      "alignment": "exact",
+      "index": 25
+    },
+    {
+      "canonical_word": "breakthrough",
+      "recognized_word": "breakthrough",
+      "start_seconds": 15.36,
+      "end_seconds": 15.88,
+      "alignment": "exact",
+      "index": 26
+    },
+    {
+      "canonical_word": "at",
+      "recognized_word": "at",
+      "start_seconds": 15.88,
+      "end_seconds": 16.0,
+      "alignment": "exact",
+      "index": 27
+    },
+    {
+      "canonical_word": "50",
+      "recognized_word": "50",
+      "start_seconds": 16.0,
+      "end_seconds": 16.48,
+      "alignment": "exact",
+      "index": 28
+    },
+    {
+      "canonical_word": "seemed",
+      "recognized_word": "seemed",
+      "start_seconds": 16.48,
+      "end_seconds": 16.84,
+      "alignment": "exact",
+      "index": 29
+    },
+    {
+      "canonical_word": "like",
+      "recognized_word": "like",
+      "start_seconds": 16.84,
+      "end_seconds": 17.0,
+      "alignment": "exact",
+      "index": 30
+    },
+    {
+      "canonical_word": "an",
+      "recognized_word": "an",
+      "start_seconds": 17.0,
+      "end_seconds": 17.12,
+      "alignment": "exact",
+      "index": 31
+    },
+    {
+      "canonical_word": "underdog",
+      "recognized_word": "underdog",
+      "start_seconds": 17.12,
+      "end_seconds": 17.68,
+      "alignment": "exact",
+      "index": 32
+    },
+    {
+      "canonical_word": "tale",
+      "recognized_word": "tale,",
+      "start_seconds": 17.68,
+      "end_seconds": 18.08,
+      "alignment": "exact",
+      "index": 33
+    },
+    {
+      "canonical_word": "But",
+      "recognized_word": "but",
+      "start_seconds": 18.84,
+      "end_seconds": 19.04,
+      "alignment": "exact",
+      "index": 34
+    },
+    {
+      "canonical_word": "success",
+      "recognized_word": "success",
+      "start_seconds": 19.04,
+      "end_seconds": 19.68,
+      "alignment": "exact",
+      "index": 35
+    },
+    {
+      "canonical_word": "came",
+      "recognized_word": "came",
+      "start_seconds": 19.68,
+      "end_seconds": 20.0,
+      "alignment": "exact",
+      "index": 36
+    },
+    {
+      "canonical_word": "from",
+      "recognized_word": "from",
+      "start_seconds": 20.0,
+      "end_seconds": 20.2,
+      "alignment": "exact",
+      "index": 37
+    },
+    {
+      "canonical_word": "accepting",
+      "recognized_word": "accepting",
+      "start_seconds": 20.2,
+      "end_seconds": 20.92,
+      "alignment": "exact",
+      "index": 38
+    },
+    {
+      "canonical_word": "who",
+      "recognized_word": "who",
+      "start_seconds": 20.92,
+      "end_seconds": 21.16,
+      "alignment": "exact",
+      "index": 39
+    },
+    {
+      "canonical_word": "he",
+      "recognized_word": "he",
+      "start_seconds": 21.16,
+      "end_seconds": 21.4,
+      "alignment": "exact",
+      "index": 40
+    },
+    {
+      "canonical_word": "was",
+      "recognized_word": "was,",
+      "start_seconds": 21.4,
+      "end_seconds": 21.92,
+      "alignment": "exact",
+      "index": 41
+    },
+    {
+      "canonical_word": "not",
+      "recognized_word": "not",
+      "start_seconds": 22.52,
+      "end_seconds": 22.8,
+      "alignment": "exact",
+      "index": 42
+    },
+    {
+      "canonical_word": "from",
+      "recognized_word": "from",
+      "start_seconds": 22.8,
+      "end_seconds": 23.08,
+      "alignment": "exact",
+      "index": 43
+    },
+    {
+      "canonical_word": "wanting",
+      "recognized_word": "wanting",
+      "start_seconds": 23.08,
+      "end_seconds": 23.48,
+      "alignment": "exact",
+      "index": 44
+    },
+    {
+      "canonical_word": "it",
+      "recognized_word": "it",
+      "start_seconds": 23.48,
+      "end_seconds": 23.64,
+      "alignment": "exact",
+      "index": 45
+    },
+    {
+      "canonical_word": "more",
+      "recognized_word": "more.",
+      "start_seconds": 23.64,
+      "end_seconds": 24.04,
+      "alignment": "exact",
+      "index": 46
+    },
+    {
+      "canonical_word": "This",
+      "recognized_word": "This",
+      "start_seconds": 24.96,
+      "end_seconds": 25.48,
+      "alignment": "exact",
+      "index": 47
+    },
+    {
+      "canonical_word": "is",
+      "recognized_word": "is",
+      "start_seconds": 25.48,
+      "end_seconds": 25.68,
+      "alignment": "exact",
+      "index": 48
+    },
+    {
+      "canonical_word": "The",
+      "recognized_word": "the",
+      "start_seconds": 25.68,
+      "end_seconds": 25.8,
+      "alignment": "exact",
+      "index": 49
+    },
+    {
+      "canonical_word": "Backwards",
+      "recognized_word": "backwards",
+      "start_seconds": 25.8,
+      "end_seconds": 26.56,
+      "alignment": "exact",
+      "index": 50
+    },
+    {
+      "canonical_word": "Law",
+      "recognized_word": "law",
+      "start_seconds": 26.56,
+      "end_seconds": 26.92,
+      "alignment": "exact",
+      "index": 51
+    },
+    {
+      "canonical_word": "from",
+      "recognized_word": "from",
+      "start_seconds": 27.16,
+      "end_seconds": 27.4,
+      "alignment": "exact",
+      "index": 52
+    },
+    {
+      "canonical_word": "Alan",
+      "recognized_word": "Alan",
+      "start_seconds": 27.4,
+      "end_seconds": 27.72,
+      "alignment": "exact",
+      "index": 53
+    },
+    {
+      "canonical_word": "Watts",
+      "recognized_word": "Watts.",
+      "start_seconds": 27.72,
+      "end_seconds": 28.24,
+      "alignment": "exact",
+      "index": 54
+    },
+    {
+      "canonical_word": "The",
+      "recognized_word": "The",
+      "start_seconds": 29.12,
+      "end_seconds": 29.32,
+      "alignment": "exact",
+      "index": 55
+    },
+    {
+      "canonical_word": "harder",
+      "recognized_word": "harder",
+      "start_seconds": 29.32,
+      "end_seconds": 29.8,
+      "alignment": "exact",
+      "index": 56
+    },
+    {
+      "canonical_word": "you",
+      "recognized_word": "you",
+      "start_seconds": 29.8,
+      "end_seconds": 29.96,
+      "alignment": "exact",
+      "index": 57
+    },
+    {
+      "canonical_word": "chase",
+      "recognized_word": "chase",
+      "start_seconds": 29.96,
+      "end_seconds": 30.36,
+      "alignment": "exact",
+      "index": 58
+    },
+    {
+      "canonical_word": "good",
+      "recognized_word": "good",
+      "start_seconds": 30.36,
+      "end_seconds": 30.6,
+      "alignment": "exact",
+      "index": 59
+    },
+    {
+      "canonical_word": "feelings",
+      "recognized_word": "feelings,",
+      "start_seconds": 30.6,
+      "end_seconds": 31.2,
+      "alignment": "exact",
+      "index": 60
+    },
+    {
+      "canonical_word": "the",
+      "recognized_word": "the",
+      "start_seconds": 31.84,
+      "end_seconds": 31.96,
+      "alignment": "exact",
+      "index": 61
+    },
+    {
+      "canonical_word": "more",
+      "recognized_word": "more",
+      "start_seconds": 31.96,
+      "end_seconds": 32.36,
+      "alignment": "exact",
+      "index": 62
+    },
+    {
+      "canonical_word": "they",
+      "recognized_word": "they",
+      "start_seconds": 32.36,
+      "end_seconds": 32.52,
+      "alignment": "exact",
+      "index": 63
+    },
+    {
+      "canonical_word": "elude",
+      "recognized_word": "elude",
+      "start_seconds": 32.52,
+      "end_seconds": 33.04,
+      "alignment": "exact",
+      "index": 64
+    },
+    {
+      "canonical_word": "you",
+      "recognized_word": "you.",
+      "start_seconds": 33.04,
+      "end_seconds": 33.36,
+      "alignment": "exact",
+      "index": 65
+    },
+    {
+      "canonical_word": "Straining",
+      "recognized_word": "Straining",
+      "start_seconds": 34.12,
+      "end_seconds": 34.76,
+      "alignment": "exact",
+      "index": 66
+    },
+    {
+      "canonical_word": "for",
+      "recognized_word": "for",
+      "start_seconds": 34.76,
+      "end_seconds": 34.92,
+      "alignment": "exact",
+      "index": 67
+    },
+    {
+      "canonical_word": "success",
+      "recognized_word": "success",
+      "start_seconds": 34.92,
+      "end_seconds": 35.64,
+      "alignment": "exact",
+      "index": 68
+    },
+    {
+      "canonical_word": "makes",
+      "recognized_word": "makes",
+      "start_seconds": 36.16,
+      "end_seconds": 36.44,
+      "alignment": "exact",
+      "index": 69
+    },
+    {
+      "canonical_word": "you",
+      "recognized_word": "you",
+      "start_seconds": 36.44,
+      "end_seconds": 36.56,
+      "alignment": "exact",
+      "index": 70
+    },
+    {
+      "canonical_word": "feel",
+      "recognized_word": "feel",
+      "start_seconds": 36.56,
+      "end_seconds": 36.84,
+      "alignment": "exact",
+      "index": 71
+    },
+    {
+      "canonical_word": "like",
+      "recognized_word": "like",
+      "start_seconds": 36.84,
+      "end_seconds": 37.0,
+      "alignment": "exact",
+      "index": 72
+    },
+    {
+      "canonical_word": "a",
+      "recognized_word": "a",
+      "start_seconds": 37.0,
+      "end_seconds": 37.04,
+      "alignment": "exact",
+      "index": 73
+    },
+    {
+      "canonical_word": "failure",
+      "recognized_word": "failure.",
+      "start_seconds": 37.04,
+      "end_seconds": 37.8,
+      "alignment": "exact",
+      "index": 74
+    },
+    {
+      "canonical_word": "Sometimes",
+      "recognized_word": "Sometimes,",
+      "start_seconds": 38.76,
+      "end_seconds": 39.6,
+      "alignment": "exact",
+      "index": 75
+    },
+    {
+      "canonical_word": "the",
+      "recognized_word": "the",
+      "start_seconds": 39.96,
+      "end_seconds": 40.08,
+      "alignment": "exact",
+      "index": 76
+    },
+    {
+      "canonical_word": "boldest",
+      "recognized_word": "boldest",
+      "start_seconds": 40.08,
+      "end_seconds": 40.72,
+      "alignment": "exact",
+      "index": 77
+    },
+    {
+      "canonical_word": "moves",
+      "recognized_word": "moves",
+      "start_seconds": 40.72,
+      "end_seconds": 41.2,
+      "alignment": "exact",
+      "index": 78
+    },
+    {
+      "canonical_word": "only",
+      "recognized_word": "only",
+      "start_seconds": 41.2,
+      "end_seconds": 41.6,
+      "alignment": "exact",
+      "index": 79
+    },
+    {
+      "canonical_word": "happen",
+      "recognized_word": "happen",
+      "start_seconds": 41.6,
+      "end_seconds": 42.04,
+      "alignment": "exact",
+      "index": 80
+    },
+    {
+      "canonical_word": "when",
+      "recognized_word": "when",
+      "start_seconds": 42.04,
+      "end_seconds": 42.2,
+      "alignment": "exact",
+      "index": 81
+    },
+    {
+      "canonical_word": "we",
+      "recognized_word": "we",
+      "start_seconds": 42.2,
+      "end_seconds": 42.32,
+      "alignment": "exact",
+      "index": 82
+    },
+    {
+      "canonical_word": "stop",
+      "recognized_word": "stop",
+      "start_seconds": 42.32,
+      "end_seconds": 42.8,
+      "alignment": "exact",
+      "index": 83
+    },
+    {
+      "canonical_word": "obsessing",
+      "recognized_word": "obsessing",
+      "start_seconds": 42.84,
+      "end_seconds": 43.6,
+      "alignment": "exact",
+      "index": 84
+    },
+    {
+      "canonical_word": "over",
+      "recognized_word": "over",
+      "start_seconds": 43.6,
+      "end_seconds": 43.8,
+      "alignment": "exact",
+      "index": 85
+    },
+    {
+      "canonical_word": "the",
+      "recognized_word": "the",
+      "start_seconds": 43.8,
+      "end_seconds": 43.96,
+      "alignment": "exact",
+      "index": 86
+    },
+    {
+      "canonical_word": "outcome",
+      "recognized_word": "outcome.",
+      "start_seconds": 43.96,
+      "end_seconds": 44.48,
+      "alignment": "exact",
+      "index": 87
+    },
+    {
+      "canonical_word": "Accept",
+      "recognized_word": "Accept",
+      "start_seconds": 45.44,
+      "end_seconds": 46.08,
+      "alignment": "exact",
+      "index": 88
+    },
+    {
+      "canonical_word": "discomfort",
+      "recognized_word": "discomfort,",
+      "start_seconds": 46.08,
+      "end_seconds": 46.96,
+      "alignment": "exact",
+      "index": 89
+    },
+    {
+      "canonical_word": "and",
+      "recognized_word": "and",
+      "start_seconds": 47.4,
+      "end_seconds": 47.52,
+      "alignment": "exact",
+      "index": 90
+    },
+    {
+      "canonical_word": "it",
+      "recognized_word": "it",
+      "start_seconds": 47.52,
+      "end_seconds": 47.72,
+      "alignment": "exact",
+      "index": 91
+    },
+    {
+      "canonical_word": "loses",
+      "recognized_word": "loses",
+      "start_seconds": 47.72,
+      "end_seconds": 48.24,
+      "alignment": "exact",
+      "index": 92
+    },
+    {
+      "canonical_word": "its",
+      "recognized_word": "its",
+      "start_seconds": 48.24,
+      "end_seconds": 48.44,
+      "alignment": "exact",
+      "index": 93
+    },
+    {
+      "canonical_word": "power",
+      "recognized_word": "power.",
+      "start_seconds": 48.44,
+      "end_seconds": 49.04,
+      "alignment": "exact",
+      "index": 94
+    },
+    {
+      "canonical_word": "What",
+      "recognized_word": "What",
+      "start_seconds": 50.12,
+      "end_seconds": 50.32,
+      "alignment": "exact",
+      "index": 95
+    },
+    {
+      "canonical_word": "if",
+      "recognized_word": "if",
+      "start_seconds": 50.32,
+      "end_seconds": 50.48,
+      "alignment": "exact",
+      "index": 96
+    },
+    {
+      "canonical_word": "you",
+      "recognized_word": "you",
+      "start_seconds": 50.48,
+      "end_seconds": 50.6,
+      "alignment": "exact",
+      "index": 97
+    },
+    {
+      "canonical_word": "just",
+      "recognized_word": "just",
+      "start_seconds": 50.6,
+      "end_seconds": 50.92,
+      "alignment": "exact",
+      "index": 98
+    },
+    {
+      "canonical_word": "let",
+      "recognized_word": "let",
+      "start_seconds": 50.92,
+      "end_seconds": 51.12,
+      "alignment": "exact",
+      "index": 99
+    },
+    {
+      "canonical_word": "yourself",
+      "recognized_word": "yourself",
+      "start_seconds": 51.12,
+      "end_seconds": 51.64,
+      "alignment": "exact",
+      "index": 100
+    },
+    {
+      "canonical_word": "feel",
+      "recognized_word": "feel",
+      "start_seconds": 51.64,
+      "end_seconds": 51.96,
+      "alignment": "exact",
+      "index": 101
+    },
+    {
+      "canonical_word": "it",
+      "recognized_word": "it?",
+      "start_seconds": 51.96,
+      "end_seconds": 52.28,
+      "alignment": "exact",
+      "index": 102
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+cue_001  0.20-2.59  [NORMAL]
+After a lifetime of struggle
+
+cue_002  2.60-4.53  [NORMAL]
+and eventual success,
+
+cue_003  4.80-7.19  [NORMAL]
+Charles Bukowski left two
+
+cue_004  7.20-9.05  [NORMAL]
+words on his tombstone:
+
+cue_005  9.92-11.65  [IMPACT]
+'Don't try.'
+
+cue_006  12.24-14.85  [NORMAL]
+He faced 30 years of rejection.
+
+cue_007  15.12-16.43  [NORMAL]
+His breakthrough at 50
+
+cue_008  16.44-18.33  [NORMAL]
+seemed like an underdog tale.
+
+cue_009  18.80-19.95  [NORMAL]
+But success came
+
+cue_010  19.96-22.17  [EMPHASIS]
+from accepting who he was,
+
+cue_011  22.48-24.29  [NORMAL]
+not from wanting it more.
+
+cue_012  24.92-27.11  [EMPHASIS]
+This is 'The Backwards Law,'
+
+cue_013  27.12-28.49  [NORMAL]
+from Alan Watts.
+
+cue_014  29.08-31.45  [NORMAL]
+The harder you chase good feelings,
+
+cue_015  31.80-33.61  [NORMAL]
+the more they elude you.
+
+cue_016  34.08-35.89  [NORMAL]
+Straining for success
+
+cue_017  36.12-38.05  [NORMAL]
+makes you feel like a failure.
+
+cue_018  38.72-41.15  [NORMAL]
+Sometimes, the boldest moves
+
+cue_019  41.16-42.79  [NORMAL]
+only happen when we stop
+
+cue_020  42.80-44.73  [NORMAL]
+obsessing over the outcome.
+
+cue_021  45.40-47.21  [EMPHASIS]
+Accept discomfort,
+
+cue_022  47.36-49.29  [NORMAL]
+and it loses its power.
+
+cue_023  50.08-50.87  [REFLECTION]
+What if you just
+
+cue_024  50.88-52.44  [REFLECTION]
+let yourself feel it?

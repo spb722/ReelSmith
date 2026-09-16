@@ -1,0 +1,6 @@
+SUCCESS
+Finished: 2026-09-14T09:29:41.411038+00:00
+Verdict: REVISE
+Ready for voice: False
+Issues: 1
+Output: metadata/revised_story_review.json

@@ -1,0 +1,4 @@
+SUCCESS
+Cues: 24
+Long cue warnings: 0
+Output: metadata/subtitle_cues.json

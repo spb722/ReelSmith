@@ -1,0 +1,8 @@
+SUCCESS
+Finished: 2026-09-14T08:42:54.568231+00:00
+Model: gemini-2.5-flash
+Words: 98
+Estimated duration: 46.0s
+Scenes: 3
+Output: metadata/story_plan.json
+Readable output: metadata/story_plan.txt

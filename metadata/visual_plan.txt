@@ -1,0 +1,130 @@
+VISUAL PLAN
+
+OVERALL APPROACH
+A grounded, reflective visual journey that leverages the existing textured illustrations. The edit will rely on slow, deliberate camera movements (Ken Burns style) to match the philosophical, mature tone of the narration, allowing the viewer time to absorb the concepts.
+
+VISUAL TONE
+Reflective, Melancholic, Philosophical, Calm, Introspective
+
+EDITING STYLE
+Slow-paced and deliberate. Cuts should be soft and motivated by shifts in the narrative from concrete story to abstract philosophy. The rhythm should feel like a deep breath.
+
+STYLE GUIDE
+- Format: 9:16 Vertical
+- Camera motion: Slow pushes, subtle pans, and gentle drifts. No sudden movements or snap zooms. Motion should feel like a steady, guiding hand.
+- Transitions: Soft crossfades (15-24 frames) to maintain a dreamlike, reflective flow. Hard cuts should only be used if a stark contrast is needed.
+- Text treatment: Elegant serif or clean, thin sans-serif for impact text. Impact text should fade in smoothly and sit comfortably within the negative space of the compositions.
+- Background/texture: Preserve the halftone dot patterns and visible textures of the original art. Do not over-sharpen or denoise.
+- Color/contrast: Enhance the warm oranges and purples to create a cohesive color grade across the different illustrations. Keep the shadows lifted to maintain a soft, vintage feel.
+
+SHOT PLAN
+
+01. 0.00-12.00s [HOOK] [CROP_AND_RECOMPOSE]
+    Cues: cue_001, cue_002, cue_003, cue_004, cue_005
+    Assets: img_fe38b500f8d1
+    Goal: Establish the hook and the central paradox of Bukowski's success.
+    Composition: Start with a medium-wide crop of the grassy field, with the tombstone centered in the lower third.
+    Motion: A very slow, steady push-in on the tombstone, coming to a rest just as the final phrase is spoken.
+    Overlay: Don't try. (Fades in exactly at 9.92s, centered over the tombstone)
+    Subtitle emphasis: Highlight 'Don't try.' in cue_005.
+    In: Fade from black.
+    Out: Soft crossfade.
+    Support: Directly uses the tombstone illustration to support the epitaph hook.
+
+02. 12.00-18.50s [SETUP] [CROP_AND_RECOMPOSE]
+    Cues: cue_006, cue_007, cue_008
+    Assets: img_badc7b4efc85
+    Goal: Illustrate the gritty reality of Bukowski's 30-year struggle.
+    Composition: Tight crop on the messy desk, focusing on the typewriter, ashtray, and crumpled papers.
+    Motion: Slow, horizontal pan from left to right across the desk, emphasizing the clutter and passage of time.
+    Overlay: 
+    Subtitle emphasis: Keep subtitles neutral to let the visual clutter speak.
+    In: Soft crossfade from the tombstone.
+    Out: Soft crossfade.
+    Support: Uses the writer's desk illustration to depict the years of rejection and struggle.
+
+03. 18.50-24.50s [PIVOT] [CROP_AND_RECOMPOSE]
+    Cues: cue_009, cue_010, cue_011
+    Assets: img_fe38b500f8d1
+    Goal: Visually represent the shift from struggle to self-acceptance and peace.
+    Composition: Crop entirely into the warm, light orange and yellow sky and the tops of the golden grass from the tombstone image. Exclude the tombstone itself.
+    Motion: Slow, upward drift into the warm sky, creating a feeling of lightness and release.
+    Overlay: Accept Who You Are (Fades in softly at 20.0s)
+    Subtitle emphasis: Highlight 'accepting who he was' in cue_010.
+    In: Soft crossfade from the dark desk to the bright, warm sky.
+    Out: Soft crossfade.
+    Support: Repurposes the peaceful sky from the tombstone asset to symbolize the 'honest baseline' of acceptance.
+
+04. 24.50-33.80s [EXPLANATION] [CROP_AND_RECOMPOSE]
+    Cues: cue_012, cue_013, cue_014, cue_015
+    Assets: img_37c610ebb57b
+    Goal: Introduce the core philosophical concept clearly.
+    Composition: Center the stylized maze/loop icon on the purple background.
+    Motion: Very slow, subtle scale-up of the icon to draw focus to the cyclical nature of the concept.
+    Overlay: The Backwards Law (Fades in at 24.96s)
+    Subtitle emphasis: Highlight 'The Backwards Law' in cue_012.
+    In: Soft crossfade.
+    Out: Soft crossfade.
+    Support: Uses the dedicated title card asset for the concept.
+
+05. 33.80-38.40s [STORY] [CROP_AND_RECOMPOSE]
+    Cues: cue_016, cue_017
+    Assets: img_ef0dc599dff0
+    Goal: Illustrate the internal pain of straining for success and feeling like a failure.
+    Composition: Tight crop on the mirror, focusing specifically on the sad reflection of the figure's face.
+    Motion: Slow push-in directly toward the sad reflection in the mirror, increasing the sense of introspection and discomfort.
+    Overlay: 
+    Subtitle emphasis: Highlight 'feel like a failure' in cue_017.
+    In: Soft crossfade.
+    Out: Soft crossfade.
+    Support: Uses the mirror reflection asset to show the negative emotional result of chasing feelings.
+
+06. 38.40-45.00s [PRINCIPLE] [CROP_AND_RECOMPOSE]
+    Cues: cue_018, cue_019, cue_020
+    Assets: img_6f6dabaab3eb
+    Goal: Visually represent the act of letting go of outcomes and making bold moves.
+    Composition: Start with the stick figure on the cliff, then frame downwards to follow the trajectory of the falling briefcase.
+    Motion: Slow pan downwards, tracking the implied motion of the briefcase falling into the ocean below.
+    Overlay: 
+    Subtitle emphasis: Highlight 'stop obsessing' in cue_020.
+    In: Soft crossfade.
+    Out: Continuous motion into the next shot (or soft crossfade to a different crop).
+    Support: Uses the cliff/briefcase illustration to symbolize letting go of attachments.
+
+07. 45.00-49.60s [PRINCIPLE] [CROP_AND_RECOMPOSE]
+    Cues: cue_021, cue_022
+    Assets: img_6f6dabaab3eb
+    Goal: Show the liberation that comes from accepting discomfort.
+    Composition: Crop into the upper right quadrant of the image: the open ocean, the warm horizon, and the birds flying free.
+    Motion: Slow pan to the right, following the birds toward the open horizon.
+    Overlay: 
+    Subtitle emphasis: Highlight 'Accept discomfort' in cue_021.
+    In: Soft crossfade from the falling briefcase.
+    Out: Soft crossfade.
+    Support: Repurposes the open horizon of the cliff asset to symbolize freedom and loss of power over the individual.
+
+08. 49.60-52.44s [REFLECTION] [CROP_AND_RECOMPOSE]
+    Cues: cue_023, cue_024
+    Assets: img_fe38b500f8d1
+    Goal: Leave the viewer with an open, spacious, and calm visual to ponder the final question.
+    Composition: Extreme crop into just the warm, textured sky of the tombstone image. No ground, no objects. Just pure color and texture.
+    Motion: An almost imperceptible, very slow drift upwards into the empty sky.
+    Overlay: 
+    Subtitle emphasis: Use a slightly softer, more elegant font weight for these final reflection cues.
+    In: Long, soft crossfade (24 frames).
+    Out: Fade to black.
+    Support: Uses the sky texture to create a blank canvas for the viewer's own reflection, bookending the visual tone of the piece.
+
+ASSET UTILIZATION
+- img_dcfce1645810 [UNUSED] shots []: Unused due to tonal mismatch (cartoon style).
+- img_badc7b4efc85 [PRIMARY] shots [2]: Used to establish the gritty reality of Bukowski's struggle.
+- img_fe38b500f8d1 [PRIMARY] shots [1, 3, 8]: Used as the primary thematic anchor. The full image is used for the hook, and the peaceful sky is extracted for the pivot and the final reflection.
+- img_6f6dabaab3eb [PRIMARY] shots [6, 7]: Used to illustrate the concept of letting go of outcomes and the resulting freedom.
+- img_ef0dc599dff0 [PRIMARY] shots [5]: Used to visually represent the internal discomfort of straining for success.
+- img_37c610ebb57b [SECONDARY] shots [4]: Used as a clean title card to introduce the core philosophical concept.
+
+EDITOR NOTES
+- Pacing is critical here. The audio duration is slightly longer than originally planned (52.44s vs 46.0s), which gives us beautiful room to let the visuals breathe. Do not rush the camera movements.
+- The transition between Shot 2 (the dark desk) and Shot 3 (the bright sky) is the emotional pivot of the video. Make sure the crossfade feels intentional and timed perfectly with the word 'success' at 19.04s.
+- For Shot 8, ensure the crop of the sky is completely devoid of the tombstone or grass. It needs to feel like an infinite, warm space.
+- Keep the text overlays minimal. The impact text 'Don't try.' in Shot 1 must hit exactly on the audio cue for maximum effect.

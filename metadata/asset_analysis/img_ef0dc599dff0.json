@@ -1,0 +1,395 @@
+{
+  "asset_id": "img_ef0dc599dff0",
+  "source_path": "source_images/IMG_8806.PNG",
+  "original_filename": "IMG_8806.PNG",
+  "model": "gemini-2.5-flash",
+  "schema_version": "2.0",
+  "analyzed_at_utc": "2026-09-14T04:57:32.296896+00:00",
+  "analysis": {
+    "content_type": "illustrated_story_card",
+    "source_text": {
+      "heading": "The Backwards Law",
+      "body_text": "Lifting the concept from philosopher Alan Watts, Manson calls this the Backwards Law. The harder you chase a good feeling, the more you remind yourself you don't have it. Straining for success makes you feel like a failure. The moment you stop fighting the burn and accept the discomfort, it loses its power over you.",
+      "prominent_quote": "",
+      "other_story_text": [],
+      "ui_text": [
+        "9:47",
+        "42%",
+        "x_A",
+        "X",
+        "Drag or tap the card to see it",
+        "<",
+        ">"
+      ],
+      "verbatim_blocks": [
+        {
+          "reading_order": 1,
+          "block_type": "UI",
+          "text": "9:47",
+          "region": {
+            "x_min": 40,
+            "y_min": 30,
+            "x_max": 120,
+            "y_max": 50
+          }
+        },
+        {
+          "reading_order": 2,
+          "block_type": "UI",
+          "text": "42%",
+          "region": {
+            "x_min": 850,
+            "y_min": 30,
+            "x_max": 900,
+            "y_max": 50
+          }
+        },
+        {
+          "reading_order": 3,
+          "block_type": "HEADING",
+          "text": "The Backwards Law",
+          "region": {
+            "x_min": 50,
+            "y_min": 80,
+            "x_max": 400,
+            "y_max": 110
+          }
+        },
+        {
+          "reading_order": 4,
+          "block_type": "UI",
+          "text": "x_A",
+          "region": {
+            "x_min": 730,
+            "y_min": 70,
+            "x_max": 820,
+            "y_max": 120
+          }
+        },
+        {
+          "reading_order": 5,
+          "block_type": "UI",
+          "text": "X",
+          "region": {
+            "x_min": 850,
+            "y_min": 70,
+            "x_max": 940,
+            "y_max": 120
+          }
+        },
+        {
+          "reading_order": 6,
+          "block_type": "BODY",
+          "text": "Lifting the concept from philosopher Alan Watts, Manson calls this the Backwards Law.",
+          "region": {
+            "x_min": 50,
+            "y_min": 160,
+            "x_max": 950,
+            "y_max": 220
+          }
+        },
+        {
+          "reading_order": 7,
+          "block_type": "BODY",
+          "text": "The harder you chase a good feeling, the more you remind yourself you don't have it. Straining for success makes you feel like a failure.",
+          "region": {
+            "x_min": 50,
+            "y_min": 240,
+            "x_max": 950,
+            "y_max": 340
+          }
+        },
+        {
+          "reading_order": 8,
+          "block_type": "BODY",
+          "text": "The moment you stop fighting the burn and accept the discomfort, it loses its power over you.",
+          "region": {
+            "x_min": 50,
+            "y_min": 360,
+            "x_max": 950,
+            "y_max": 430
+          }
+        },
+        {
+          "reading_order": 9,
+          "block_type": "UI",
+          "text": "Drag or tap the card to see it",
+          "region": {
+            "x_min": 300,
+            "y_min": 860,
+            "x_max": 700,
+            "y_max": 880
+          }
+        },
+        {
+          "reading_order": 10,
+          "block_type": "UI",
+          "text": "<",
+          "region": {
+            "x_min": 80,
+            "y_min": 890,
+            "x_max": 150,
+            "y_max": 960
+          }
+        },
+        {
+          "reading_order": 11,
+          "block_type": "UI",
+          "text": ">",
+          "region": {
+            "x_min": 180,
+            "y_min": 890,
+            "x_max": 250,
+            "y_max": 960
+          }
+        }
+      ],
+      "transcription_confidence": 0.98
+    },
+    "visual": {
+      "description": "An illustration of a stick-figure-like person in a bathroom, seen from behind, looking into a mirror. The reflection in the mirror shows the person with a sad or neutral expression. An hourglass and a steaming mug are on the sink counter.",
+      "main_elements": [
+        "illustrated person",
+        "mirror",
+        "bathroom sink",
+        "hourglass",
+        "steaming mug",
+        "lamp"
+      ],
+      "visual_subjects": [
+        {
+          "subject_type": "ILLUSTRATED_PERSON",
+          "description": "Illustrated person seen from behind, wearing a blue shirt and black pants, looking into a mirror.",
+          "region": {
+            "x_min": 200,
+            "y_min": 500,
+            "x_max": 500,
+            "y_max": 740
+          }
+        },
+        {
+          "subject_type": "ILLUSTRATED_PERSON",
+          "description": "Reflection of the illustrated person in the mirror, showing a sad or neutral expression, wearing a blue shirt.",
+          "region": {
+            "x_min": 550,
+            "y_min": 520,
+            "x_max": 750,
+            "y_max": 680
+          }
+        },
+        {
+          "subject_type": "OBJECT",
+          "description": "Rectangular mirror with a black frame.",
+          "region": {
+            "x_min": 500,
+            "y_min": 490,
+            "x_max": 800,
+            "y_max": 700
+          }
+        },
+        {
+          "subject_type": "OBJECT",
+          "description": "Bathroom sink and vanity, appearing white and cracked, with a faucet.",
+          "region": {
+            "x_min": 350,
+            "y_min": 650,
+            "x_max": 850,
+            "y_max": 750
+          }
+        },
+        {
+          "subject_type": "OBJECT",
+          "description": "Hourglass on a small shelf above the sink in the mirror's reflection.",
+          "region": {
+            "x_min": 600,
+            "y_min": 520,
+            "x_max": 700,
+            "y_max": 580
+          }
+        },
+        {
+          "subject_type": "OBJECT",
+          "description": "Steaming mug on the sink counter.",
+          "region": {
+            "x_min": 750,
+            "y_min": 620,
+            "x_max": 820,
+            "y_max": 680
+          }
+        },
+        {
+          "subject_type": "OBJECT",
+          "description": "Table lamp on the left side, casting warm light.",
+          "region": {
+            "x_min": 50,
+            "y_min": 480,
+            "x_max": 250,
+            "y_max": 650
+          }
+        }
+      ],
+      "real_people_visible": false,
+      "illustrated_or_cartoon_figures_visible": true,
+      "figure_descriptions": [
+        "A simple, stick-figure-like person with a round head, wearing a blue long-sleeved shirt and black pants. The reflection shows the person's face with a sad or neutral expression."
+      ],
+      "environment": "Bathroom, with tiled walls and a sink.",
+      "important_actions": [
+        "Looking into a mirror",
+        "Self-reflection"
+      ],
+      "composition_notes": "The central figure is positioned with their back to the viewer, facing a mirror that reflects their face. The scene is lit by a lamp on the left, creating a warm glow on one side and shadows on the other, emphasizing the contrast between the person's outward appearance and inner reflection."
+    },
+    "semantic_summary": {
+      "core_idea": "The image and text explain 'The Backwards Law,' a concept suggesting that actively pursuing positive feelings or success can lead to dissatisfaction, while accepting discomfort can lead to liberation. The visual metaphor shows a person confronting their inner state through self-reflection in a mirror.",
+      "concepts": [
+        "The Backwards Law",
+        "self-acceptance",
+        "discomfort",
+        "chasing happiness",
+        "failure",
+        "self-reflection",
+        "philosophy"
+      ],
+      "emotional_tone": [
+        "reflective",
+        "philosophical",
+        "introspective",
+        "slightly melancholic",
+        "insightful"
+      ],
+      "requires_external_context": true,
+      "context_needed": [
+        "Further explanation of Alan Watts' philosophy",
+        "Identification of 'Manson' and his connection to 'The Backwards Law'"
+      ]
+    },
+    "named_entities": [
+      {
+        "name": "Alan Watts",
+        "entity_type": "person",
+        "evidence": "text"
+      },
+      {
+        "name": "Manson",
+        "entity_type": "person",
+        "evidence": "text"
+      },
+      {
+        "name": "The Backwards Law",
+        "entity_type": "concept",
+        "evidence": "text"
+      }
+    ],
+    "possible_story_roles": [
+      "SETUP",
+      "EXPLANATION",
+      "REFLECTION",
+      "CONTEXT"
+    ],
+    "production": {
+      "contains_app_ui": true,
+      "story_art_region_present": true,
+      "story_art_region": {
+        "x_min": 50,
+        "y_min": 470,
+        "x_max": 950,
+        "y_max": 750
+      },
+      "story_text_region": {
+        "x_min": 50,
+        "y_min": 80,
+        "x_max": 950,
+        "y_max": 430
+      },
+      "ui_regions": [
+        {
+          "description": "Time display",
+          "region": {
+            "x_min": 40,
+            "y_min": 30,
+            "x_max": 120,
+            "y_max": 50
+          }
+        },
+        {
+          "description": "Battery and signal indicators",
+          "region": {
+            "x_min": 800,
+            "y_min": 20,
+            "x_max": 950,
+            "y_max": 60
+          }
+        },
+        {
+          "description": "Text settings button",
+          "region": {
+            "x_min": 730,
+            "y_min": 70,
+            "x_max": 820,
+            "y_max": 120
+          }
+        },
+        {
+          "description": "Close button",
+          "region": {
+            "x_min": 850,
+            "y_min": 70,
+            "x_max": 940,
+            "y_max": 120
+          }
+        },
+        {
+          "description": "Navigation instruction text",
+          "region": {
+            "x_min": 300,
+            "y_min": 860,
+            "x_max": 700,
+            "y_max": 880
+          }
+        },
+        {
+          "description": "Previous card navigation button",
+          "region": {
+            "x_min": 80,
+            "y_min": 890,
+            "x_max": 150,
+            "y_max": 960
+          }
+        },
+        {
+          "description": "Next card navigation button",
+          "region": {
+            "x_min": 180,
+            "y_min": 890,
+            "x_max": 250,
+            "y_max": 960
+          }
+        },
+        {
+          "description": "Preview of the next card in the sequence",
+          "region": {
+            "x_min": 100,
+            "y_min": 900,
+            "x_max": 900,
+            "y_max": 980
+          }
+        }
+      ],
+      "story_art_description": "An illustrated person looking into a mirror, seeing a sad reflection of themselves in a bathroom setting.",
+      "vertical_video_suitability": "high",
+      "recommended_crop_strategy": "CROP_TO_TEXT_AND_ART",
+      "safe_to_crop_ui_without_losing_story": true,
+      "suggested_motion": [
+        "Subtle zoom into the mirror or the reflection's face",
+        "Subtle pan across the text blocks"
+      ],
+      "visual_cleanup_needed": [
+        "Top status bar (time, signal, battery)",
+        "Top right UI buttons (text settings, close)",
+        "Bottom navigation elements (arrows, 'Drag or tap the card to see it', next card preview)"
+      ]
+    },
+    "uncertainties": []
+  }
+}

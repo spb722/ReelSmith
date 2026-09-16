@@ -1,0 +1,21 @@
+{
+  "generated_at_utc": "2026-09-14T17:02:05.588630+00:00",
+  "project_id": "gen-lang-client-0240752803",
+  "location": "global",
+  "model": "gemini-3.1-flash-image",
+  "results": [
+    {
+      "shot_sequence": 8,
+      "asset_id": "img_fe38b500f8d1",
+      "source_image_path": "source_images/IMG_8804.PNG",
+      "output_image_path": "generated/remotion_stills/shot_08_still.png",
+      "reel_start_seconds": 49.6,
+      "reel_end_seconds": 52.44,
+      "subtitle_cue_ids": [
+        "cue_023",
+        "cue_024"
+      ],
+      "completed_at_utc": "2026-09-14T17:02:18.507335+00:00"
+    }
+  ]
+}

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import os
 import sys
 import time
 import traceback
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -16,69 +16,43 @@ from google.genai import types
 
 
 # ============================================================
-# CONFIGURATION
+# CONFIG
 # ============================================================
 
-PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT", "gen-lang-client-0240752803")
+PROJECT_ID = os.getenv(
+    "GOOGLE_CLOUD_PROJECT",
+    "gen-lang-client-0240752803",
+)
 
-# Veo 3.1 is documented as available in us-central1.
-# If your account or SDK setup prefers "global", override with:
-#   export GOOGLE_CLOUD_LOCATION=global
-LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
+LOCATION = os.getenv(
+    "GOOGLE_CLOUD_LOCATION",
+    "global",
+)
 
 MODEL = "veo-3.1-fast-generate-001"
 
 VISUAL_PLAN_FILE = Path("metadata/visual_plan.json")
 ANALYZED_ASSETS_FILE = Path("metadata/analyzed_assets.json")
+SUBTITLE_CUES_FILE = Path("metadata/subtitle_cues.json")
+SEED_RESULTS_FILE = Path("metadata/veo_seed_results.json")
 
 MANIFEST_FILE = Path("metadata/veo_generation_manifest.json")
 RESULTS_FILE = Path("metadata/veo_generation_results.json")
 STATUS_FILE = Path("metadata/veo_generation_status.txt")
+LAST_OPERATION_FILE = Path("metadata/veo_last_operation.json")
+LOCAL_VIDEO_DIR = Path("generated/veo")
 
-DEFAULT_OUTPUT_GCS_URI = os.getenv(
-    "VEO_OUTPUT_GCS_URI",
-    "",
-)
+OUTPUT_GCS_URI = os.getenv("VEO_OUTPUT_GCS_URI", "").strip()
 
 ASPECT_RATIO = "9:16"
 RESOLUTION = os.getenv("VEO_RESOLUTION", "720p")
 DURATION_SECONDS = 8
 NUMBER_OF_VIDEOS = int(os.getenv("VEO_NUMBER_OF_VIDEOS", "1"))
-
 GENERATE_AUDIO = False
 ENHANCE_PROMPT = True
-
 POLL_SECONDS = 15
-PIPELINE_SCHEMA_VERSION = "1.0"
 
-
-# ============================================================
-# SHOT SELECTION
-# ============================================================
-
-# After reviewing visual_plan.json, these are the strongest Veo moments:
-# - Shot 2: Bukowski / rejection phase
-# - Shot 5: self-acceptance / mirror beat
-# - Shot 6: letting go / briefcase release
-#
-# This is a slight refinement from the broader discussion:
-# Shot 6 is visually more kinetic than Shot 3 and makes better use of Veo.
 TARGET_SHOTS = [2, 5, 6]
-
-
-@dataclass
-class ClipSpec:
-    clip_id: str
-    shot_sequence: int
-    asset_id: str
-    local_image_path: str
-    reel_start_seconds: float
-    reel_end_seconds: float
-    subtitle_cue_ids: list[str]
-    prompt: str
-    negative_prompt: str
-    shot_goal: str
-    source_support: str
 
 
 # ============================================================
@@ -96,10 +70,10 @@ def load_json(path: Path) -> dict:
 
 def save_json(path: Path, data: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    with tmp.open("w", encoding="utf-8") as f:
+    temp = path.with_suffix(path.suffix + ".tmp")
+    with temp.open("w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
-    tmp.replace(path)
+    temp.replace(path)
 
 
 def write_status(text: str) -> None:
@@ -107,209 +81,223 @@ def write_status(text: str) -> None:
     STATUS_FILE.write_text(text, encoding="utf-8")
 
 
-def find_asset_map(analyzed_assets: dict) -> dict[str, dict]:
-    return {
-        asset["asset_id"]: asset
-        for asset in analyzed_assets.get("assets", [])
-    }
-
-
-def find_shot_map(visual_plan: dict) -> dict[int, dict]:
-    return {
-        int(shot["sequence"]): shot
-        for shot in visual_plan.get("shots", [])
-    }
-
-
-def resolve_local_image_path(asset: dict) -> Path:
-    source_path = asset.get("source_path")
-    if not source_path:
-        raise RuntimeError(
-            f"Asset {asset.get('asset_id')} is missing source_path."
-        )
-
-    path = Path(source_path)
-    if path.exists():
-        return path
-
-    # Fallback to cwd / source_path
-    candidate = Path.cwd() / source_path
-    if candidate.exists():
-        return candidate
-
-    raise FileNotFoundError(
-        "Could not resolve local source image for "
-        f"{asset.get('asset_id')}: {source_path}"
-    )
-
-
-def join_cue_texts(shot: dict, cue_lookup: dict[str, str] | None = None) -> str:
-    cue_ids = shot.get("primary_subtitle_cue_ids", [])
-    if not cue_ids or not cue_lookup:
-        return ""
-    texts = [cue_lookup[cue_id] for cue_id in cue_ids if cue_id in cue_lookup]
-    return " ".join(texts).strip()
-
-
-def safe_get(operation: Any, path: list[str], default: Any = None) -> Any:
-    current = operation
+def get_value(obj: Any, path: list[str], default: Any = None) -> Any:
+    current = obj
     for key in path:
         if current is None:
             return default
-
         if isinstance(current, dict):
             current = current.get(key)
-            continue
-
-        current = getattr(current, key, None)
-
+        else:
+            current = getattr(current, key, None)
     return current if current is not None else default
 
 
-def extract_generated_video_uris(operation: Any) -> list[str]:
-    candidates = []
+def operation_to_jsonable(operation: Any) -> dict:
+    """
+    Best-effort serialization of the completed long-running operation.
+    This is saved before we decide whether generation succeeded.
+    """
+    if hasattr(operation, "model_dump"):
+        try:
+            return operation.model_dump(
+                mode="json",
+                exclude_none=False,
+            )
+        except Exception:
+            pass
 
-    for path in [
-        ["result", "generated_videos"],
-        ["response", "generated_videos"],
-    ]:
-        videos = safe_get(operation, path, default=[])
-        if not videos:
+    if hasattr(operation, "to_json_dict"):
+        try:
+            return operation.to_json_dict()
+        except Exception:
+            pass
+
+    return {
+        "repr": repr(operation),
+    }
+
+
+def generated_videos_from_operation(operation: Any) -> list[Any]:
+    for root in ["response", "result"]:
+        generated_videos = get_value(
+            operation,
+            [root, "generated_videos"],
+            default=[],
+        )
+        if generated_videos:
+            return list(generated_videos)
+
+    return []
+
+
+def extract_video_outputs(
+    operation: Any,
+    clip_id: str,
+) -> tuple[list[str], list[str]]:
+    """
+    Return:
+      (GCS URIs, local MP4 paths)
+
+    With output_gcs_uri configured, Veo normally returns a URI.
+    The SDK can also return inline video bytes, so we support both.
+    """
+    uris: list[str] = []
+    local_paths: list[str] = []
+
+    generated_videos = generated_videos_from_operation(
+        operation
+    )
+
+    for index, generated in enumerate(
+        generated_videos,
+        start=1,
+    ):
+        video = get_value(
+            generated,
+            ["video"],
+        )
+
+        if video is None:
             continue
 
-        for item in videos:
-            uri = safe_get(item, ["video", "uri"], default=None)
-            if uri:
-                candidates.append(uri)
-
-    # Deduplicate while preserving order.
-    seen = set()
-    ordered = []
-    for uri in candidates:
-        if uri not in seen:
-            seen.add(uri)
-            ordered.append(uri)
-
-    return ordered
-
-
-def start_generation(
-    client: genai.Client,
-    prompt: str,
-    config: types.GenerateVideosConfig,
-) -> Any:
-    """
-    Be resilient to minor SDK signature differences.
-    """
-
-    try:
-        return client.models.generate_videos(
-            model=MODEL,
-            prompt=prompt,
-            config=config,
+        uri = get_value(
+            video,
+            ["uri"],
         )
-    except TypeError:
-        return client.models.generate_videos(
-            model=MODEL,
-            source=types.GenerateVideosSource(
-                prompt=prompt,
-            ),
-            config=config,
+
+        if uri and uri not in uris:
+            uris.append(uri)
+
+        video_bytes = get_value(
+            video,
+            ["video_bytes"],
         )
+
+        if video_bytes:
+            LOCAL_VIDEO_DIR.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+
+            local_path = (
+                LOCAL_VIDEO_DIR
+                / f"{clip_id}_{index:02d}.mp4"
+            )
+
+            if isinstance(
+                video_bytes,
+                str,
+            ):
+                payload = base64.b64decode(
+                    video_bytes
+                )
+            else:
+                payload = bytes(
+                    video_bytes
+                )
+
+            local_path.write_bytes(
+                payload
+            )
+
+            local_paths.append(
+                str(local_path)
+            )
+
+    return uris, local_paths
+
+
+def resolve_existing_path(path_str: str) -> Path:
+    path = Path(path_str)
+    if path.exists():
+        return path
+
+    candidate = Path.cwd() / path_str
+    if candidate.exists():
+        return candidate
+
+    raise FileNotFoundError(f"Missing file: {path_str}")
+
+
+def join_cue_texts(cue_ids: list[str], cue_lookup: dict[str, str]) -> str:
+    return " ".join(cue_lookup.get(cue_id, "") for cue_id in cue_ids).strip()
 
 
 # ============================================================
-# PROMPT WRITING
+# PROMPTS
 # ============================================================
 
-def build_clip_spec(
-    shot: dict,
-    asset: dict,
-    cue_lookup: dict[str, str],
-) -> ClipSpec:
-    asset_id = asset["asset_id"]
-    local_path = resolve_local_image_path(asset)
-
-    shot_sequence = int(shot["sequence"])
-    subtitle_text = join_cue_texts(shot, cue_lookup)
-
+def build_prompt_for_shot(shot_sequence: int, subtitle_text: str) -> tuple[str, str, str]:
+    """
+    Returns:
+      clip_id, prompt, negative_prompt
+    """
     if shot_sequence == 2:
-        prompt = (
-            "Create an 8-second vertical editorial illustration-to-video clip "
-            "that stays faithful to the provided reference image. "
-            "Scene: a dim, humble writer's room at night with a wooden desk, "
-            "vintage typewriter, ashtray with a thin curl of smoke, stained coffee mug, "
-            "crumpled papers, and an unmade bed in the background. "
-            "Emotion: long struggle, rejection, persistence without glamour. "
-            "Motion: slow cinematic push-in toward the desk, faint cigarette smoke drift, "
-            "very subtle paper movement, tiny warm desk-lamp flicker, almost no camera shake. "
-            "Keep the illustrated, textured, slightly grainy editorial storybook look "
-            "from the source image. Do not turn it into photoreal live action. "
-            "Do not add subtitles or extra text. "
-            f"Narration beat: {subtitle_text}"
+        return (
+            "veo_clip_01_shot_02_bukowski_rejection",
+            (
+                "Animate the provided illustration as the exact starting frame. "
+                "Preserve the illustrated editorial storybook style, textures, warm desk lighting, "
+                "typewriter, ashtray with smoke, coffee mug, crumpled papers, chair, wooden table, "
+                "and the unmade bed in the background. "
+                "Emotion: long struggle, rejection, and persistence without glamour. "
+                "Motion must remain restrained: a slow cinematic push-in toward the desk and typewriter, "
+                "faint cigarette smoke drift, tiny light flicker, and barely perceptible movement in the room. "
+                "Do not add text, subtitles, logos, or extra people. "
+                "Do not make it photorealistic. "
+                f"Narration context: {subtitle_text}"
+            ),
+            (
+                "photorealistic live action, modern office, extra people, extra text, subtitles, logo, "
+                "watermark, camera shake, fast motion, surreal distortions"
+            ),
         )
-        negative_prompt = (
-            "photorealistic live action, modern office, extra characters, "
-            "visible subtitle text, logo, watermark, distorted anatomy, "
-            "camera shake, fast motion, surreal mutations"
-        )
-        clip_id = "veo_clip_01_shot_02_bukowski_rejection"
 
-    elif shot_sequence == 5:
-        prompt = (
-            "Create an 8-second vertical editorial illustration-to-video clip "
-            "that stays faithful to the provided reference image. "
-            "Scene: a simplified human figure seen from behind at a bathroom sink, "
-            "looking into a mirror where the reflected face appears subdued and introspective. "
-            "An hourglass and a steaming mug sit on the sink counter. "
-            "Emotion: self-acceptance, stillness, honesty, quiet emotional release. "
-            "Motion: slow push-in, tiny breathing or shoulder movement, faint steam drift from the mug, "
-            "subtle movement in the reflected expression, slight hourglass sand motion. "
-            "Maintain the original illustrated texture and mature editorial tone. "
-            "Do not make it photorealistic. Do not add subtitles or extra text. "
-            f"Narration beat: {subtitle_text}"
+    if shot_sequence == 5:
+        return (
+            "veo_clip_02_shot_05_failure_mirror",
+            (
+                "Animate the provided illustration as the exact starting frame. "
+                "Preserve the bathroom setting, mirror, tiled wall, sink, simplified figure from behind, "
+                "hourglass, mug, and subdued editorial illustration style. "
+                "Emotion: strain, self-judgment, discomfort, and the feeling of chasing success while still "
+                "feeling inadequate. "
+                "Motion should be subtle: slow push toward the mirror, slight body stillness with tiny breathing, "
+                "faint steam from the mug, minimal sand motion in the hourglass, and restrained life in the reflection. "
+                "Do not make it supernatural or horror-like. "
+                "Do not add text, subtitles, logos, or extra people. "
+                "Do not make it photorealistic. "
+                f"Narration context: {subtitle_text}"
+            ),
+            (
+                "photorealistic live action, horror mirror, supernatural reflection, extra people, extra text, "
+                "subtitles, logo, watermark, fast motion, surreal body changes"
+            ),
         )
-        negative_prompt = (
-            "photorealistic live action, horror mirror, exaggerated facial distortion, "
-            "extra people, visible subtitle text, logo, watermark, fast motion, surreal body changes"
-        )
-        clip_id = "veo_clip_02_shot_05_accepting_self"
 
-    elif shot_sequence == 6:
-        prompt = (
-            "Create an 8-second vertical editorial illustration-to-video clip "
-            "that stays faithful to the provided reference image. "
-            "Scene: a simple figure on a grassy cliff at sunset lets a black briefcase "
-            "fall into the ocean below. Warm orange-pink sky, distant birds, a feeling of release. "
-            "Emotion: letting go, freedom from obsession, bold calm action. "
-            "Motion: slow lateral camera drift, natural briefcase drop, slight grass and cloud motion, "
-            "subtle ocean shimmer, restrained cinematic pacing. "
-            "Maintain the original illustrated storybook/editorial style and texture. "
-            "Do not make it photorealistic. Do not add subtitles or extra text. "
-            f"Narration beat: {subtitle_text}"
+    if shot_sequence == 6:
+        return (
+            "veo_clip_03_shot_06_letting_go",
+            (
+                "Animate the provided illustration as the exact starting frame. "
+                "Preserve the simple figure on the grassy cliff, the black briefcase, ocean, warm sunset sky, "
+                "and distant birds in the same illustrated editorial storybook style. "
+                "Emotion: letting go of the outcome, release, and quiet freedom. "
+                "Motion: restrained lateral camera drift, natural briefcase drop, subtle grass motion, gentle cloud drift, "
+                "small bird movement, and soft ocean shimmer. "
+                "The pacing should feel calm and cinematic, not dramatic. "
+                "Do not add text, subtitles, logos, or extra people. "
+                "Do not make it photorealistic. "
+                f"Narration context: {subtitle_text}"
+            ),
+            (
+                "photorealistic live action, extreme action, explosion, extra people, extra text, subtitles, "
+                "logo, watermark, camera shake, surreal distortions"
+            ),
         )
-        negative_prompt = (
-            "photorealistic live action, extreme action scene, dramatic explosions, "
-            "extra people, visible subtitle text, logo, watermark, camera shake, surreal distortions"
-        )
-        clip_id = "veo_clip_03_shot_06_letting_go"
 
-    else:
-        raise RuntimeError(f"Unsupported shot selection: {shot_sequence}")
-
-    return ClipSpec(
-        clip_id=clip_id,
-        shot_sequence=shot_sequence,
-        asset_id=asset_id,
-        local_image_path=str(local_path),
-        reel_start_seconds=float(shot["start_seconds"]),
-        reel_end_seconds=float(shot["end_seconds"]),
-        subtitle_cue_ids=list(shot["primary_subtitle_cue_ids"]),
-        prompt=prompt,
-        negative_prompt=negative_prompt,
-        shot_goal=shot["shot_goal"],
-        source_support=shot["source_support"],
-    )
+    raise RuntimeError(f"Unsupported shot sequence: {shot_sequence}")
 
 
 # ============================================================
@@ -317,63 +305,98 @@ def build_clip_spec(
 # ============================================================
 
 def build_manifest() -> dict:
-    if not VISUAL_PLAN_FILE.exists():
-        raise FileNotFoundError(f"Missing file: {VISUAL_PLAN_FILE}")
-
-    if not ANALYZED_ASSETS_FILE.exists():
-        raise FileNotFoundError(f"Missing file: {ANALYZED_ASSETS_FILE}")
+    for required in [
+        VISUAL_PLAN_FILE,
+        ANALYZED_ASSETS_FILE,
+        SUBTITLE_CUES_FILE,
+    ]:
+        if not required.exists():
+            raise FileNotFoundError(f"Missing required file: {required}")
 
     visual_plan = load_json(VISUAL_PLAN_FILE)
     analyzed_assets = load_json(ANALYZED_ASSETS_FILE)
+    subtitle_cues = load_json(SUBTITLE_CUES_FILE)
 
-    asset_map = find_asset_map(analyzed_assets)
-    shot_map = find_shot_map(visual_plan)
+    seed_lookup: dict[int, dict] = {}
+    if SEED_RESULTS_FILE.exists():
+        seed_results = load_json(SEED_RESULTS_FILE)
+        for item in seed_results.get("results", []):
+            seed_lookup[int(item["shot_sequence"])] = item
 
-    cue_lookup: dict[str, str] = {}
-    # Allow missing subtitle cue text gracefully if not present.
-    # visual_plan.json already contains cue ids; the script only uses
-    # cue text to enrich prompts.
-    subtitle_cues_path = Path("metadata/subtitle_cues.json")
-    if subtitle_cues_path.exists():
-        subtitle_cues = load_json(subtitle_cues_path)
-        for cue in subtitle_cues.get("cues", []):
-            cue_lookup[cue["cue_id"]] = cue["text"]
+    shot_lookup = {int(shot["sequence"]): shot for shot in visual_plan.get("shots", [])}
+    asset_lookup = {asset["asset_id"]: asset for asset in analyzed_assets.get("assets", [])}
+    cue_lookup = {cue["cue_id"]: cue["text"] for cue in subtitle_cues.get("cues", [])}
 
-    clips: list[ClipSpec] = []
+    manifest_clips = []
 
     for shot_sequence in TARGET_SHOTS:
-        if shot_sequence not in shot_map:
+        shot = shot_lookup.get(shot_sequence)
+        if not shot:
             raise RuntimeError(f"Shot {shot_sequence} not found in visual_plan.json")
 
-        shot = shot_map[shot_sequence]
-        source_asset_ids = shot.get("source_asset_ids", [])
+        asset_ids = shot.get("source_asset_ids", [])
+        if not asset_ids:
+            raise RuntimeError(f"Shot {shot_sequence} has no source asset ids")
 
-        if not source_asset_ids:
-            raise RuntimeError(f"Shot {shot_sequence} has no source assets.")
+        asset_id = asset_ids[0]
+        if asset_id not in asset_lookup:
+            raise RuntimeError(f"Missing asset for shot {shot_sequence}: {asset_id}")
 
-        primary_asset_id = source_asset_ids[0]
-
-        if primary_asset_id not in asset_map:
-            raise RuntimeError(
-                f"Asset {primary_asset_id} from shot {shot_sequence} "
-                "not found in analyzed_assets.json"
-            )
-
-        asset = asset_map[primary_asset_id]
-        clips.append(
-            build_clip_spec(
-                shot=shot,
-                asset=asset,
-                cue_lookup=cue_lookup,
-            )
+        subtitle_text = join_cue_texts(shot["primary_subtitle_cue_ids"], cue_lookup)
+        clip_id, prompt, negative_prompt = build_prompt_for_shot(
+            shot_sequence,
+            subtitle_text,
         )
 
-    manifest = {
-        "pipeline_schema_version": PIPELINE_SCHEMA_VERSION,
+        # Prefer the deterministic AI-cleaned seed file on disk.
+        #
+        # Important: veo_seed_results.json may contain only the most recently
+        # generated shot if seed generation was run one shot at a time.
+        # Therefore the existence of the actual seed image is authoritative.
+        deterministic_seed_path = (
+            Path("generated/veo_seeds")
+            / f"shot_{shot_sequence:02d}_seed.png"
+        )
+
+        if deterministic_seed_path.exists():
+            image_path = str(deterministic_seed_path)
+            image_source = "AI_RECOMPOSED_SEED"
+        elif shot_sequence in seed_lookup:
+            image_path = seed_lookup[shot_sequence]["output_image_path"]
+            image_source = "AI_RECOMPOSED_SEED"
+        else:
+            image_path = asset_lookup[asset_id]["source_path"]
+            image_source = "ORIGINAL_SOURCE_IMAGE"
+
+        resolved = resolve_existing_path(image_path)
+
+        manifest_clips.append(
+            {
+                "clip_id": clip_id,
+                "shot_sequence": shot_sequence,
+                "asset_id": asset_id,
+                "input_image_path": str(resolved),
+                "input_image_source": image_source,
+                "reel_start_seconds": float(shot["start_seconds"]),
+                "reel_end_seconds": float(shot["end_seconds"]),
+                "target_used_duration_seconds": round(
+                    float(shot["end_seconds"]) - float(shot["start_seconds"]),
+                    3,
+                ),
+                "subtitle_cue_ids": list(shot["primary_subtitle_cue_ids"]),
+                "prompt": prompt,
+                "negative_prompt": negative_prompt,
+                "shot_goal": shot["shot_goal"],
+                "source_support": shot["source_support"],
+            }
+        )
+
+    return {
         "generated_at_utc": now_utc(),
         "project_id": PROJECT_ID,
         "location": LOCATION,
         "model": MODEL,
+        "generation_mode": "IMAGE_TO_VIDEO",
         "settings": {
             "aspect_ratio": ASPECT_RATIO,
             "resolution": RESOLUTION,
@@ -381,61 +404,26 @@ def build_manifest() -> dict:
             "number_of_videos": NUMBER_OF_VIDEOS,
             "generate_audio": GENERATE_AUDIO,
             "enhance_prompt": ENHANCE_PROMPT,
-            "output_gcs_uri": DEFAULT_OUTPUT_GCS_URI,
+            "output_gcs_uri": OUTPUT_GCS_URI,
         },
-        "notes": [
-            "Selected Veo moments are limited to the strongest motion-worthy beats.",
-            "Each clip is generated as an 8-second 9:16 source clip and will be trimmed in the final edit.",
-            "The rest of the reel should remain in the Remotion pipeline using still-art motion and typography.",
-        ],
-        "clips": [
-            {
-                "clip_id": clip.clip_id,
-                "shot_sequence": clip.shot_sequence,
-                "asset_id": clip.asset_id,
-                "local_image_path": clip.local_image_path,
-                "reel_start_seconds": clip.reel_start_seconds,
-                "reel_end_seconds": clip.reel_end_seconds,
-                "target_used_duration_seconds": round(
-                    clip.reel_end_seconds - clip.reel_start_seconds,
-                    3,
-                ),
-                "subtitle_cue_ids": clip.subtitle_cue_ids,
-                "shot_goal": clip.shot_goal,
-                "source_support": clip.source_support,
-                "prompt": clip.prompt,
-                "negative_prompt": clip.negative_prompt,
-            }
-            for clip in clips
-        ],
+        "clips": manifest_clips,
     }
-
-    return manifest
 
 
 # ============================================================
 # GENERATION
 # ============================================================
 
-def generate_clip(
-    client: genai.Client,
-    clip: dict,
-    output_gcs_uri: str,
-) -> dict:
-    image = types.Image.from_file(location=clip["local_image_path"])
+def generate_one_clip(client: genai.Client, clip: dict) -> dict:
+    image_path = resolve_existing_path(clip["input_image_path"])
+    image = types.Image.from_file(location=str(image_path))
 
     config = types.GenerateVideosConfig(
         number_of_videos=NUMBER_OF_VIDEOS,
         duration_seconds=DURATION_SECONDS,
         aspect_ratio=ASPECT_RATIO,
         resolution=RESOLUTION,
-        output_gcs_uri=output_gcs_uri,
-        reference_images=[
-            types.VideoGenerationReferenceImage(
-                image=image,
-                reference_type="asset",
-            )
-        ],
+        output_gcs_uri=OUTPUT_GCS_URI,
         generate_audio=GENERATE_AUDIO,
         enhance_prompt=ENHANCE_PROMPT,
         negative_prompt=clip["negative_prompt"],
@@ -443,93 +431,91 @@ def generate_clip(
         seed=1000 + int(clip["shot_sequence"]),
     )
 
-    operation = start_generation(
-        client=client,
+    operation = client.models.generate_videos(
+        model=MODEL,
         prompt=clip["prompt"],
+        image=image,
         config=config,
     )
 
-    operation_name = safe_get(operation, ["name"], default=None)
+    operation_name = get_value(operation, ["name"])
 
-    while not safe_get(operation, ["done"], default=False):
+    while not get_value(operation, ["done"], default=False):
+        print(f"Waiting for {clip['clip_id']}...")
         time.sleep(POLL_SECONDS)
         operation = client.operations.get(operation)
 
-    uris = extract_generated_video_uris(operation)
+    # Save the completed operation before interpreting it.
+    operation_debug = operation_to_jsonable(
+        operation
+    )
+    save_json(
+        LAST_OPERATION_FILE,
+        operation_debug,
+    )
 
-    result = {
+    generated_video_uris, local_video_paths = (
+        extract_video_outputs(
+            operation,
+            clip["clip_id"],
+        )
+    )
+
+    filtered_count = get_value(
+        operation,
+        [
+            "response",
+            "rai_media_filtered_count",
+        ],
+        default=0,
+    )
+
+    filtered_reasons = get_value(
+        operation,
+        [
+            "response",
+            "rai_media_filtered_reasons",
+        ],
+        default=[],
+    )
+
+    operation_error = get_value(
+        operation,
+        ["error"],
+        default=None,
+    )
+
+    if (
+        not generated_video_uris
+        and not local_video_paths
+    ):
+        raise RuntimeError(
+            "Veo completed but returned no usable video.\n"
+            f"Clip: {clip['clip_id']}\n"
+            f"Operation: {operation_name}\n"
+            f"RAI filtered count: {filtered_count}\n"
+            f"RAI filtered reasons: {filtered_reasons}\n"
+            f"Operation error: {operation_error}\n"
+            f"Raw completed operation saved to: "
+            f"{LAST_OPERATION_FILE}"
+        )
+
+    return {
         "clip_id": clip["clip_id"],
         "shot_sequence": clip["shot_sequence"],
+        "asset_id": clip["asset_id"],
+        "input_image_path": clip["input_image_path"],
+        "input_image_source": clip["input_image_source"],
         "operation_name": operation_name,
-        "done": bool(safe_get(operation, ["done"], default=False)),
-        "generated_video_uris": uris,
+        "generated_video_uris": generated_video_uris,
+        "local_video_paths": local_video_paths,
+        "rai_media_filtered_count": filtered_count,
+        "rai_media_filtered_reasons": filtered_reasons,
         "reel_start_seconds": clip["reel_start_seconds"],
         "reel_end_seconds": clip["reel_end_seconds"],
         "target_used_duration_seconds": clip["target_used_duration_seconds"],
+        "completed_at_utc": now_utc(),
     }
-
-    if not uris:
-        raise RuntimeError(
-            f"No generated video URIs returned for {clip['clip_id']}."
-        )
-
-    return result
-
-
-def run_generation(manifest: dict) -> dict:
-    output_gcs_uri = manifest["settings"].get("output_gcs_uri", "").strip()
-
-    if not output_gcs_uri:
-        raise RuntimeError(
-            "Missing output GCS URI.\n"
-            "Set environment variable VEO_OUTPUT_GCS_URI, for example:\n"
-            "export VEO_OUTPUT_GCS_URI=gs://your-bucket/book_reels/veo/"
-        )
-
-    client = genai.Client(
-        vertexai=True,
-        project=PROJECT_ID,
-        location=LOCATION,
-        http_options=types.HttpOptions(api_version="v1"),
-    )
-
-    results = {
-        "pipeline_schema_version": PIPELINE_SCHEMA_VERSION,
-        "generated_at_utc": now_utc(),
-        "project_id": PROJECT_ID,
-        "location": LOCATION,
-        "model": MODEL,
-        "output_gcs_uri": output_gcs_uri,
-        "clips": [],
-    }
-
-    total = len(manifest["clips"])
-
-    for index, clip in enumerate(manifest["clips"], start=1):
-        write_status(
-            "RUNNING\n"
-            f"Started: {now_utc()}\n"
-            f"Model: {MODEL}\n"
-            f"Location: {LOCATION}\n"
-            f"Clip {index}/{total}: {clip['clip_id']}\n"
-        )
-
-        clip_result = generate_clip(
-            client=client,
-            clip=clip,
-            output_gcs_uri=output_gcs_uri,
-        )
-
-        results["clips"].append(clip_result)
-        save_json(RESULTS_FILE, results)
-
-    write_status(
-        "SUCCESS\n"
-        f"Finished: {now_utc()}\n"
-        f"Output: {RESULTS_FILE}\n"
-    )
-
-    return results
 
 
 # ============================================================
@@ -538,19 +524,25 @@ def run_generation(manifest: dict) -> dict:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description=(
-            "Build a Veo clip manifest and optionally generate the selected clips."
-        )
+        description="Generate Veo image-to-video clips from cleaned seed images."
     )
-
     parser.add_argument(
         "--plan-only",
         action="store_true",
         help="Only write metadata/veo_generation_manifest.json and exit.",
     )
-
+    parser.add_argument(
+        "--shot",
+        type=int,
+        choices=TARGET_SHOTS,
+        help="Generate only one selected shot.",
+    )
     return parser.parse_args()
 
+
+# ============================================================
+# MAIN
+# ============================================================
 
 def main() -> None:
     args = parse_args()
@@ -561,40 +553,92 @@ def main() -> None:
     if args.plan_only:
         write_status(
             "SUCCESS\n"
-            f"Manifest only.\n"
+            "Manifest only.\n"
             f"Output: {MANIFEST_FILE}\n"
         )
-
         print()
         print("Veo generation manifest created.")
         print(f"Manifest: {MANIFEST_FILE}")
         print()
         return
 
-    results = run_generation(manifest)
+    if not OUTPUT_GCS_URI:
+        raise RuntimeError(
+            "VEO_OUTPUT_GCS_URI is not set.\n"
+            "Example:\n"
+            "export VEO_OUTPUT_GCS_URI=gs://sachin-kayaking-video-test/book_reels/veo/"
+        )
+
+    clips = manifest["clips"]
+    if args.shot is not None:
+        clips = [clip for clip in clips if int(clip["shot_sequence"]) == args.shot]
+
+    if not clips:
+        raise RuntimeError("No clips selected.")
+
+    write_status(
+        "RUNNING\n"
+        f"Started: {now_utc()}\n"
+        f"Model: {MODEL}\n"
+        f"Clips: {len(clips)}\n"
+    )
+
+    client = genai.Client(
+        vertexai=True,
+        project=PROJECT_ID,
+        location=LOCATION,
+        http_options=types.HttpOptions(api_version="v1"),
+    )
+
+    results = {
+        "generated_at_utc": now_utc(),
+        "project_id": PROJECT_ID,
+        "location": LOCATION,
+        "model": MODEL,
+        "generation_mode": "IMAGE_TO_VIDEO",
+        "output_gcs_uri": OUTPUT_GCS_URI,
+        "clips": [],
+    }
+
+    total = len(clips)
+
+    for index, clip in enumerate(clips, start=1):
+        print()
+        print(f"Generating {index}/{total}: {clip['clip_id']}")
+        write_status(
+            "RUNNING\n"
+            f"Model: {MODEL}\n"
+            f"Clip {index}/{total}\n"
+            f"Clip ID: {clip['clip_id']}\n"
+        )
+
+        result = generate_one_clip(client, clip)
+        results["clips"].append(result)
+        save_json(RESULTS_FILE, results)
+
+    write_status(
+        "SUCCESS\n"
+        f"Finished: {now_utc()}\n"
+        f"Results: {RESULTS_FILE}\n"
+    )
 
     print()
     print("Veo generation completed.")
     print(f"Manifest: {MANIFEST_FILE}")
     print(f"Results: {RESULTS_FILE}")
-    print("Generated clips:")
     for clip in results["clips"]:
-        print(f"- {clip['clip_id']}: {clip['generated_video_uris']}")
+        for uri in clip["generated_video_uris"]:
+            print(f"- {uri}")
     print()
 
 
 if __name__ == "__main__":
     try:
         main()
-
     except Exception:
         error = traceback.format_exc()
-
         STATUS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        STATUS_FILE.write_text(
-            "FAILED\n\n" + error,
-            encoding="utf-8",
-        )
+        STATUS_FILE.write_text("FAILED\n\n" + error, encoding="utf-8")
 
         print()
         print("Veo generation failed.")

@@ -1,24 +1,16 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 import sys
-import time
 import traceback
-from datetime import datetime, timezone
 from pathlib import Path
-
-from google import genai
-from google.genai import types
 
 
 # ============================================================
 # CONFIGURATION
 # ============================================================
-
-PROJECT_ID = "gen-lang-client-0240752803"
-LOCATION = "global"
-MODEL = "gemini-3.1-pro-preview"
 
 WORD_TIMING_FILE = Path("metadata/word_timing.json")
 STORY_PLAN_FILE = Path("metadata/final_story_plan.json")
@@ -26,132 +18,44 @@ STORY_PLAN_FILE = Path("metadata/final_story_plan.json")
 OUTPUT_JSON = Path("metadata/subtitle_cues.json")
 OUTPUT_SRT = Path("metadata/subtitles.srt")
 OUTPUT_TEXT = Path("metadata/subtitle_cues.txt")
-RAW_RESPONSE_FILE = Path("metadata/subtitle_director_raw_response.txt")
 STATUS_FILE = Path("metadata/subtitle_generation_status.txt")
 
-MAX_ATTEMPTS = 3
-RETRY_BASE_SECONDS = 2
+MIN_ALIGNMENT_RATIO = 0.98
 
 MIN_WORDS_PER_CUE = 2
 MAX_WORDS_PER_CUE = 6
 
-# This is a soft editorial target, not a hard audio-duration limit.
-TARGET_MAX_CUE_SECONDS = 2.6
+IDEAL_WORDS_PER_CUE = 4
+IDEAL_DURATION_SECONDS = 1.65
 
-MIN_ALIGNMENT_RATIO = 0.98
+# The approved narration is intentionally slow and reflective.
+SOFT_MAX_DURATION_SECONDS = 3.0
+
+MEDIUM_PAUSE_SECONDS = 0.32
+STRONG_PAUSE_SECONDS = 0.55
 
 
 # ============================================================
-# SYSTEM INSTRUCTION
+# PHRASE GUIDANCE
 # ============================================================
 
-SYSTEM_INSTRUCTION = """
-You are the Caption Director for a premium vertical short-form video.
+# Internal breaks inside these phrases are strongly discouraged.
+PROTECTED_PHRASES = [
+    "Don't try",
+    "accepting who he was",
+    "The Backwards Law",
+    "good feelings",
+    "obsessing over the outcome",
+    "Accept discomfort",
+    "loses its power",
+    "let yourself feel it",
+]
 
-You receive the final locked narration as an ordered list of words
-with exact audio timestamps.
+IMPACT_PHRASE = "Don't try"
 
-Your ONLY creative job is to group those numbered words into
-natural, readable subtitle phrases.
-
-The Python controller will construct the final subtitle text and
-timestamps. You must not rewrite any words.
-
-RULES
-
-1. COVER EVERY WORD EXACTLY ONCE.
-   Word indices must start at 1 and end at the final word.
-
-2. CUES MUST BE CONTIGUOUS.
-   No gaps, overlaps, reordering, duplication, or omitted indices.
-
-3. DO NOT REWRITE THE NARRATION.
-   Return only start_word_index and end_word_index for each cue,
-   plus a short rationale/style classification.
-
-4. Prefer 2-6 spoken words per cue.
-
-5. Prefer semantic phrases over mechanical equal-sized chunks.
-
-6. Avoid awkward splits such as:
-   "He faced 30" / "years of rejection"
-   when a more natural grouping is possible.
-
-7. Respect punctuation, sentence boundaries, and audible pauses.
-
-8. A cue should normally feel comfortable on screen for roughly
-   0.7-2.6 seconds, but meaning is more important than forcing
-   identical durations.
-
-9. "Don't try." must be its own cue.
-
-10. Do not combine words across a strong sentence boundary.
-
-11. Keep important philosophical phrases intact where practical:
-    - The Backwards Law
-    - good feelings
-    - accepting who he was
-    - stop obsessing over the outcome
-    - Accept discomfort
-    - loses its power
-
-12. The final reflective question should feel deliberate and readable.
-
-13. style_hint must be one of:
-    NORMAL
-    EMPHASIS
-    IMPACT
-    REFLECTION
-
-Use IMPACT sparingly for the central paradox or a major reveal.
-Use REFLECTION for the final inward-looking question.
-Use EMPHASIS for a particularly important phrase.
-Everything else is NORMAL.
-
-Return only JSON matching the requested schema.
-""".strip()
-
-
-RESPONSE_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "cues": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "start_word_index": {
-                        "type": "integer",
-                    },
-                    "end_word_index": {
-                        "type": "integer",
-                    },
-                    "style_hint": {
-                        "type": "string",
-                        "enum": [
-                            "NORMAL",
-                            "EMPHASIS",
-                            "IMPACT",
-                            "REFLECTION",
-                        ],
-                    },
-                    "reason": {
-                        "type": "string",
-                    },
-                },
-                "required": [
-                    "start_word_index",
-                    "end_word_index",
-                    "style_hint",
-                    "reason",
-                ],
-            },
-        }
-    },
-    "required": [
-        "cues",
-    ],
-}
+REFLECTION_PHRASE = (
+    "What if you just let yourself feel it"
+)
 
 
 # ============================================================
@@ -164,16 +68,7 @@ WORD_RE = re.compile(
 )
 
 
-def now_utc() -> str:
-    return datetime.now(
-        timezone.utc
-    ).isoformat()
-
-
-def load_json(
-    path: Path,
-) -> dict:
-
+def load_json(path: Path) -> dict:
     with path.open(
         "r",
         encoding="utf-8",
@@ -185,7 +80,6 @@ def save_json(
     path: Path,
     data: dict,
 ) -> None:
-
     path.parent.mkdir(
         parents=True,
         exist_ok=True,
@@ -206,20 +100,16 @@ def save_json(
             ensure_ascii=False,
         )
 
-    temporary.replace(
-        path
-    )
+    temporary.replace(path)
 
 
-def normalize_word(
-    text: str,
-) -> str:
-
+def normalize_word(text: str) -> str:
     return re.sub(
         r"[^\w]+",
         "",
         text
         .replace("’", "'")
+        .replace("‘", "'")
         .lower(),
         flags=re.UNICODE,
     )
@@ -228,11 +118,9 @@ def normalize_word(
 def format_srt_time(
     seconds: float,
 ) -> str:
-
     milliseconds = int(
         round(
-            seconds
-            * 1000
+            seconds * 1000
         )
     )
 
@@ -241,18 +129,14 @@ def format_srt_time(
         // 3_600_000
     )
 
-    milliseconds %= (
-        3_600_000
-    )
+    milliseconds %= 3_600_000
 
     minutes = (
         milliseconds
         // 60_000
     )
 
-    milliseconds %= (
-        60_000
-    )
+    milliseconds %= 60_000
 
     secs = (
         milliseconds
@@ -273,14 +157,13 @@ def format_srt_time(
 
 
 # ============================================================
-# SOURCE-TEXT MAPPING
+# WORD SPANS
 # ============================================================
 
-def build_narration_word_spans(
+def build_word_spans(
     narration: str,
     timed_words: list[dict],
 ) -> list[dict]:
-
     matches = list(
         WORD_RE.finditer(
             narration
@@ -293,8 +176,10 @@ def build_narration_word_spans(
         raise RuntimeError(
             "Narration token count does not "
             "match word_timing.json.\n"
-            f"Narration tokens: {len(matches)}\n"
-            f"Timed words: {len(timed_words)}"
+            f"Narration tokens: "
+            f"{len(matches)}\n"
+            f"Timed words: "
+            f"{len(timed_words)}"
         )
 
     spans = []
@@ -309,7 +194,6 @@ def build_narration_word_spans(
         ),
         start=1,
     ):
-
         narration_word = (
             match.group()
         )
@@ -324,9 +208,8 @@ def build_narration_word_spans(
             timed_word
         ):
             raise RuntimeError(
-                "Locked narration and timed "
-                "word sequence diverged at "
-                f"word {index}: "
+                "Narration and timing diverged "
+                f"at word {index}: "
                 f"{narration_word!r} vs "
                 f"{timed_word!r}"
             )
@@ -353,13 +236,195 @@ def build_narration_word_spans(
     return spans
 
 
-def display_text_for_range(
+def interstitial_after_word(
+    narration: str,
+    spans: list[dict],
+    word_index: int,
+) -> str:
+    current = spans[
+        word_index - 1
+    ]
+
+    if word_index < len(
+        spans
+    ):
+        next_start = spans[
+            word_index
+        ][
+            "char_start"
+        ]
+    else:
+        next_start = len(
+            narration
+        )
+
+    return narration[
+        current[
+            "char_end"
+        ]:
+        next_start
+    ]
+
+
+def pause_after_word(
+    spans: list[dict],
+    word_index: int,
+) -> float:
+    if word_index >= len(
+        spans
+    ):
+        return 0.0
+
+    current = spans[
+        word_index - 1
+    ]
+
+    next_word = spans[
+        word_index
+    ]
+
+    return max(
+        0.0,
+        next_word[
+            "start_seconds"
+        ]
+        - current[
+            "end_seconds"
+        ],
+    )
+
+
+# ============================================================
+# QUOTE/PUNCTUATION OWNERSHIP
+# ============================================================
+
+def split_interstitial(
+    raw: str,
+) -> tuple[str, str]:
+    """
+    Split punctuation between adjacent spoken words into:
+
+        suffix_for_previous_word,
+        prefix_for_next_word
+
+    Important cases:
+
+        ": '"   -> (":", "'")   opening quotation
+        ".'"    -> (".'", "")   closing quotation
+        ",'"    -> (",'", "")   closing quotation
+        " '"    -> ("", "'")    opening quotation
+        ". "    -> (".", "")
+        ", "    -> (",", "")
+
+    This prevents a closing quote from leaking onto the next cue.
+    """
+
+    compact = "".join(
+        character
+        for character in raw
+        if not character.isspace()
+    )
+
+    if not compact:
+        return (
+            "",
+            "",
+        )
+
+    quote_chars = {
+        "'",
+        '"',
+        "“",
+        "”",
+        "‘",
+        "’",
+    }
+
+    quote_positions = [
+        index
+        for index, character
+        in enumerate(
+            compact
+        )
+        if character
+        in quote_chars
+    ]
+
+    if not quote_positions:
+        return (
+            compact,
+            "",
+        )
+
+    # We only expect one quote boundary in this narration, but
+    # process the rightmost quote defensively.
+    quote_index = (
+        quote_positions[-1]
+    )
+
+    before_quote = compact[
+        :quote_index
+    ]
+
+    quote = compact[
+        quote_index
+    ]
+
+    after_quote = compact[
+        quote_index + 1:
+    ]
+
+    # If anything follows the quote, treat the quote as part of
+    # the previous phrase.
+    if after_quote:
+        return (
+            compact,
+            "",
+        )
+
+    # Quote after . , ! ? ; is a closing quote.
+    if (
+        before_quote
+        and before_quote[-1]
+        in ".,!?;"
+    ):
+        return (
+            compact,
+            "",
+        )
+
+    # Quote after ":" introduces the next quoted phrase.
+    if (
+        before_quote
+        and before_quote[-1]
+        == ":"
+    ):
+        return (
+            before_quote,
+            quote,
+        )
+
+    # Bare quote between words is treated as opening.
+    if not before_quote:
+        return (
+            "",
+            quote,
+        )
+
+    # Conservative fallback: punctuation belongs to previous
+    # phrase, quote opens the next phrase.
+    return (
+        before_quote,
+        quote,
+    )
+
+
+def text_for_range(
     narration: str,
     spans: list[dict],
     start_index: int,
     end_index: int,
 ) -> str:
-
     start = spans[
         start_index - 1
     ]
@@ -368,470 +433,765 @@ def display_text_for_range(
         end_index - 1
     ]
 
-    raw = narration[
-        start["char_start"]:
-        end["char_end"]
-    ]
+    prefix = ""
 
-    # Include punctuation immediately following the final word,
-    # stopping before the next spoken word.
-    if end_index < len(
-        spans
-    ):
+    if start_index > 1:
+        before = interstitial_after_word(
+            narration,
+            spans,
+            start_index - 1,
+        )
 
-        trailing = narration[
-            end["char_end"]:
-            spans[
-                end_index
-            ][
-                "char_start"
-            ]
-        ]
+        _previous_suffix, prefix = (
+            split_interstitial(
+                before
+            )
+        )
 
-    else:
-        trailing = narration[
-            end["char_end"]:
-        ]
-
-    punctuation = "".join(
-        character
-        for character in trailing
-        if character
-        in ".,!?;:'\"”’"
+    after = interstitial_after_word(
+        narration,
+        spans,
+        end_index,
     )
 
-    # If this cue starts inside a quotation, preserve only the
-    # opening quote, not punctuation belonging to the prior phrase.
-    if start_index > 1:
+    suffix, _next_prefix = (
+        split_interstitial(
+            after
+        )
+    )
 
-        between = narration[
-            spans[
-                start_index - 2
-            ][
-                "char_end"
-            ]:
-            start[
-                "char_start"
-            ]
+    core = narration[
+        start[
+            "char_start"
+        ]:
+        end[
+            "char_end"
         ]
+    ]
 
-        quote_candidates = [
-            character
-            for character
-            in between
-            if character
-            in "'\"“‘"
-        ]
-
-        if quote_candidates:
-            raw = (
-                quote_candidates[-1]
-                + raw
-            )
-
-    # Avoid carrying a colon or comma into a cue merely because
-    # the next word begins after it. Keep punctuation only when
-    # this range actually ends at that punctuation.
-    if punctuation:
-
-        terminal = punctuation
-
-        # A cue ending just before an opening quote may see both
-        # a colon and quote. Keep the colon but not the opening quote.
-        if (
-            terminal.endswith(
-                ("'", '"', "“", "‘")
-            )
-            and not terminal.startswith(
-                (".", "!", "?")
-            )
-        ):
-            terminal = terminal[:-1]
-
-        raw += terminal
+    text = (
+        prefix
+        + core
+        + suffix
+    )
 
     return re.sub(
         r"\s+",
         " ",
-        raw,
+        text,
     ).strip()
 
 
 # ============================================================
-# MODEL PROMPT
+# PHRASE RANGES
 # ============================================================
 
-def build_prompt(
+def find_phrase_range(
+    spans: list[dict],
+    phrase: str,
+) -> tuple[int, int] | None:
+    phrase_words = [
+        normalize_word(
+            item
+        )
+        for item
+        in WORD_RE.findall(
+            phrase
+        )
+    ]
+
+    words = [
+        normalize_word(
+            item[
+                "word"
+            ]
+        )
+        for item
+        in spans
+    ]
+
+    if not phrase_words:
+        return None
+
+    size = len(
+        phrase_words
+    )
+
+    for start in range(
+        0,
+        len(
+            words
+        )
+        - size
+        + 1,
+    ):
+        if (
+            words[
+                start:
+                start + size
+            ]
+            == phrase_words
+        ):
+            return (
+                start + 1,
+                start + size,
+            )
+
+    return None
+
+
+# ============================================================
+# MANDATORY BOUNDARIES
+# ============================================================
+
+def sentence_boundary_indices(
     narration: str,
     spans: list[dict],
-    voice_direction: dict,
-    correction: str = "",
-) -> str:
+) -> set[int]:
+    boundaries: set[int] = set()
 
-    word_lines = []
-
-    for item in spans:
-
-        word_lines.append(
-            f"{item['index']:03d} | "
-            f"{item['start_seconds']:.2f}-"
-            f"{item['end_seconds']:.2f} | "
-            f"{item['word']}"
+    for index in range(
+        1,
+        len(
+            spans
+        )
+        + 1,
+    ):
+        raw = interstitial_after_word(
+            narration,
+            spans,
+            index,
         )
 
-    correction_block = ""
+        previous_suffix, _ = (
+            split_interstitial(
+                raw
+            )
+        )
 
-    if correction:
+        if re.search(
+            r"[.!?][\"'”’]?$",
+            previous_suffix,
+        ):
+            boundaries.add(
+                index
+            )
 
-        correction_block = f"""
-Your previous grouping failed deterministic validation:
+    boundaries.add(
+        len(
+            spans
+        )
+    )
 
-{correction}
+    return boundaries
 
-Correct the grouping while preserving every word exactly once.
-""".strip()
 
-    emphasis = voice_direction.get(
+def build_mandatory_boundaries(
+    narration: str,
+    spans: list[dict],
+) -> set[int]:
+    mandatory = sentence_boundary_indices(
+        narration,
+        spans,
+    )
+
+    impact = find_phrase_range(
+        spans,
+        IMPACT_PHRASE,
+    )
+
+    if impact is not None:
+        start, end = impact
+
+        if start > 1:
+            mandatory.add(
+                start - 1
+            )
+
+        mandatory.add(
+            end
+        )
+
+    return mandatory
+
+
+# ============================================================
+# PROTECTED BOUNDARIES
+# ============================================================
+
+def protected_internal_boundaries(
+    spans: list[dict],
+) -> set[int]:
+    protected: set[int] = set()
+
+    for phrase in PROTECTED_PHRASES:
+        found = find_phrase_range(
+            spans,
+            phrase,
+        )
+
+        if found is None:
+            continue
+
+        start, end = found
+
+        for boundary in range(
+            start,
+            end,
+        ):
+            protected.add(
+                boundary
+            )
+
+    return protected
+
+
+# ============================================================
+# SEGMENT COST
+# ============================================================
+
+def boundary_reward(
+    narration: str,
+    spans: list[dict],
+    end_index: int,
+) -> float:
+    reward = 0.0
+
+    raw = interstitial_after_word(
+        narration,
+        spans,
+        end_index,
+    )
+
+    previous_suffix, _ = (
+        split_interstitial(
+            raw
+        )
+    )
+
+    pause = pause_after_word(
+        spans,
+        end_index,
+    )
+
+    if re.search(
+        r"[.!?][\"'”’]?$",
+        previous_suffix,
+    ):
+        reward += 6.0
+
+    elif ":" in previous_suffix:
+        reward += 3.0
+
+    elif "," in previous_suffix:
+        reward += 2.0
+
+    if (
+        pause
+        >= STRONG_PAUSE_SECONDS
+    ):
+        reward += 3.0
+
+    elif (
+        pause
+        >= MEDIUM_PAUSE_SECONDS
+    ):
+        reward += 1.5
+
+    return reward
+
+
+def semantic_boundary_penalty(
+    spans: list[dict],
+    end_index: int,
+) -> float:
+    """
+    Small deterministic penalties for endings that usually feel
+    unfinished in captions.
+    """
+
+    word = normalize_word(
+        spans[
+            end_index - 1
+        ][
+            "word"
+        ]
+    )
+
+    dangling_words = {
+        "a",
+        "an",
+        "the",
+        "and",
+        "or",
+        "but",
+        "from",
+        "of",
+        "to",
+        "when",
+        "we",
+        "you",
+        "his",
+        "her",
+        "their",
+    }
+
+    if word in dangling_words:
+        return 2.5
+
+    return 0.0
+
+
+def segment_cost(
+    narration: str,
+    spans: list[dict],
+    start_index: int,
+    end_index: int,
+    protected_boundaries: set[int],
+) -> float:
+    word_count = (
+        end_index
+        - start_index
+        + 1
+    )
+
+    start_time = spans[
+        start_index - 1
+    ][
+        "start_seconds"
+    ]
+
+    end_time = spans[
+        end_index - 1
+    ][
+        "end_seconds"
+    ]
+
+    duration = max(
+        0.01,
+        end_time
+        - start_time,
+    )
+
+    word_penalty = (
+        abs(
+            word_count
+            - IDEAL_WORDS_PER_CUE
+        )
+        * 0.8
+    )
+
+    duration_penalty = (
+        abs(
+            duration
+            - IDEAL_DURATION_SECONDS
+        )
+        * 0.9
+    )
+
+    if (
+        duration
+        > SOFT_MAX_DURATION_SECONDS
+    ):
+        duration_penalty += (
+            duration
+            - SOFT_MAX_DURATION_SECONDS
+        ) * 3.0
+
+    protected_penalty = (
+        50.0
+        if end_index
+        in protected_boundaries
+        else 0.0
+    )
+
+    return (
+        word_penalty
+        + duration_penalty
+        + protected_penalty
+        + semantic_boundary_penalty(
+            spans,
+            end_index,
+        )
+        - boundary_reward(
+            narration,
+            spans,
+            end_index,
+        )
+    )
+
+
+# ============================================================
+# BLOCK SEGMENTATION
+# ============================================================
+
+def segment_block(
+    narration: str,
+    spans: list[dict],
+    block_start: int,
+    block_end: int,
+    protected_boundaries: set[int],
+) -> list[tuple[int, int]]:
+    length = (
+        block_end
+        - block_start
+        + 1
+    )
+
+    if (
+        MIN_WORDS_PER_CUE
+        <= length
+        <= MAX_WORDS_PER_CUE
+    ):
+        return [
+            (
+                block_start,
+                block_end,
+            )
+        ]
+
+    dp: dict[
+        int,
+        tuple[
+            float,
+            int | None,
+        ],
+    ] = {
+        block_start - 1: (
+            0.0,
+            None,
+        )
+    }
+
+    for end_index in range(
+        block_start,
+        block_end + 1,
+    ):
+        best = None
+
+        for size in range(
+            MIN_WORDS_PER_CUE,
+            MAX_WORDS_PER_CUE + 1,
+        ):
+            start_index = (
+                end_index
+                - size
+                + 1
+            )
+
+            previous = (
+                start_index
+                - 1
+            )
+
+            if (
+                start_index
+                < block_start
+            ):
+                continue
+
+            if previous not in dp:
+                continue
+
+            cost = (
+                dp[
+                    previous
+                ][0]
+                + segment_cost(
+                    narration,
+                    spans,
+                    start_index,
+                    end_index,
+                    protected_boundaries,
+                )
+            )
+
+            if (
+                best is None
+                or cost
+                < best[0]
+            ):
+                best = (
+                    cost,
+                    previous,
+                )
+
+        if best is not None:
+            dp[
+                end_index
+            ] = best
+
+    if block_end not in dp:
+        raise RuntimeError(
+            "Unable to segment subtitle "
+            f"block {block_start}-"
+            f"{block_end}."
+        )
+
+    reversed_ranges = []
+
+    current = block_end
+
+    while (
+        current
+        >= block_start
+    ):
+        _, previous = dp[
+            current
+        ]
+
+        if previous is None:
+            raise RuntimeError(
+                "Subtitle segmentation "
+                "backtracking failed."
+            )
+
+        start_index = (
+            previous
+            + 1
+        )
+
+        reversed_ranges.append(
+            (
+                start_index,
+                current,
+            )
+        )
+
+        current = previous
+
+    return list(
+        reversed(
+            reversed_ranges
+        )
+    )
+
+
+# ============================================================
+# FULL SEGMENTATION
+# ============================================================
+
+def build_ranges(
+    narration: str,
+    spans: list[dict],
+) -> list[tuple[int, int]]:
+    mandatory = sorted(
+        build_mandatory_boundaries(
+            narration,
+            spans,
+        )
+    )
+
+    protected = (
+        protected_internal_boundaries(
+            spans
+        )
+    )
+
+    ranges: list[
+        tuple[int, int]
+    ] = []
+
+    block_start = 1
+
+    for block_end in mandatory:
+        if (
+            block_end
+            < block_start
+        ):
+            continue
+
+        ranges.extend(
+            segment_block(
+                narration,
+                spans,
+                block_start,
+                block_end,
+                protected,
+            )
+        )
+
+        block_start = (
+            block_end
+            + 1
+        )
+
+    if (
+        block_start
+        <= len(
+            spans
+        )
+    ):
+        ranges.extend(
+            segment_block(
+                narration,
+                spans,
+                block_start,
+                len(
+                    spans
+                ),
+                protected,
+            )
+        )
+
+    expected = 1
+
+    for start, end in ranges:
+        if start != expected:
+            raise RuntimeError(
+                "Subtitle coverage is not "
+                "contiguous. "
+                f"Expected {expected}, "
+                f"got {start}."
+            )
+
+        expected = (
+            end
+            + 1
+        )
+
+    if expected != (
+        len(
+            spans
+        )
+        + 1
+    ):
+        raise RuntimeError(
+            "Subtitle coverage does not "
+            "reach final narration word."
+        )
+
+    impact = find_phrase_range(
+        spans,
+        IMPACT_PHRASE,
+    )
+
+    if (
+        impact is not None
+        and impact
+        not in ranges
+    ):
+        raise RuntimeError(
+            "\"Don't try.\" was not "
+            "isolated as its own cue."
+        )
+
+    return ranges
+
+
+# ============================================================
+# STYLE ASSIGNMENT
+# ============================================================
+
+def determine_style(
+    cue_range: tuple[int, int],
+    spans: list[dict],
+    story_plan: dict,
+) -> str:
+    impact = find_phrase_range(
+        spans,
+        IMPACT_PHRASE,
+    )
+
+    if (
+        impact is not None
+        and cue_range
+        == impact
+    ):
+        return "IMPACT"
+
+    reflection = find_phrase_range(
+        spans,
+        REFLECTION_PHRASE,
+    )
+
+    if (
+        reflection is not None
+        and cue_range[0]
+        >= reflection[0]
+    ):
+        return "REFLECTION"
+
+    emphasis_ranges = []
+
+    for phrase in story_plan.get(
+        "voice_direction",
+        {},
+    ).get(
         "emphasis_phrases",
         [],
-    )
-
-    pauses = voice_direction.get(
-        "pause_after_phrases",
-        [],
-    )
-
-    return f"""
-Create subtitle phrase groupings for this locked narration.
-
-The narration wording itself is immutable.
-
-{correction_block}
-
-============================================================
-LOCKED NARRATION
-============================================================
-
-{narration}
-
-============================================================
-VOICE EMPHASIS
-============================================================
-
-{json.dumps(
-    emphasis,
-    indent=2,
-    ensure_ascii=False,
-)}
-
-============================================================
-PLANNED PAUSES
-============================================================
-
-{json.dumps(
-    pauses,
-    indent=2,
-    ensure_ascii=False,
-)}
-
-============================================================
-NUMBERED WORD TIMINGS
-============================================================
-
-{chr(10).join(word_lines)}
-
-Return only cue index ranges.
-""".strip()
-
-
-# ============================================================
-# VALIDATION
-# ============================================================
-
-def validate_groups(
-    result: dict,
-    word_count: int,
-) -> tuple[
-    bool,
-    str,
-]:
-
-    cues = result.get(
-        "cues",
-        [],
-    )
-
-    if not cues:
-        return (
-            False,
-            "No subtitle cues returned.",
-        )
-
-    expected_start = 1
-
-    for cue_number, cue in enumerate(
-        cues,
-        start=1,
     ):
-
-        start = int(
-            cue[
-                "start_word_index"
-            ]
+        found = find_phrase_range(
+            spans,
+            phrase,
         )
 
-        end = int(
-            cue[
-                "end_word_index"
-            ]
+        if found is not None:
+            emphasis_ranges.append(
+                found
+            )
+
+    cue_start, cue_end = (
+        cue_range
+    )
+
+    for start, end in emphasis_ranges:
+        overlap = max(
+            0,
+            min(
+                cue_end,
+                end,
+            )
+            - max(
+                cue_start,
+                start,
+            )
+            + 1,
         )
 
-        if start != expected_start:
-
-            return (
-                False,
-                "Cue coverage is not contiguous. "
-                f"Cue {cue_number} starts at "
-                f"{start}, expected "
-                f"{expected_start}.",
-            )
-
-        if end < start:
-
-            return (
-                False,
-                f"Cue {cue_number} has "
-                f"end < start.",
-            )
-
-        size = (
+        phrase_size = (
             end
             - start
             + 1
         )
 
-        if size > MAX_WORDS_PER_CUE:
-
-            return (
-                False,
-                f"Cue {cue_number} contains "
-                f"{size} words; maximum is "
-                f"{MAX_WORDS_PER_CUE}.",
-            )
-
-        if (
-            size < MIN_WORDS_PER_CUE
-            and word_count > 1
+        if overlap >= max(
+            2,
+            math.ceil(
+                phrase_size
+                * 0.6
+            ),
         ):
+            return "EMPHASIS"
 
-            return (
-                False,
-                f"Cue {cue_number} contains "
-                f"only {size} word. Prefer at "
-                f"least {MIN_WORDS_PER_CUE}.",
-            )
-
-        expected_start = (
-            end
-            + 1
-        )
-
-    if expected_start != (
-        word_count
-        + 1
-    ):
-
-        return (
-            False,
-            "Cue coverage does not reach "
-            f"the final word {word_count}.",
-        )
-
-    # The central paradox must be its own two-word cue.
-    dont_try_ok = any(
-        int(
-            cue[
-                "start_word_index"
-            ]
-        ) == 17
-        and int(
-            cue[
-                "end_word_index"
-            ]
-        ) == 18
-        for cue
-        in cues
-    )
-
-    if not dont_try_ok:
-
-        return (
-            False,
-            "\"Don't try.\" must be its own "
-            "cue covering words 17-18.",
-        )
-
-    return (
-        True,
-        "",
-    )
-
-
-# ============================================================
-# GEMINI CAPTION DIRECTOR
-# ============================================================
-
-def generate_groups(
-    client: genai.Client,
-    narration: str,
-    spans: list[dict],
-    voice_direction: dict,
-) -> dict:
-
-    correction = ""
-    last_error = ""
-
-    for attempt in range(
-        1,
-        MAX_ATTEMPTS + 1,
-    ):
-
-        try:
-
-            response = (
-                client.models.generate_content(
-                    model=MODEL,
-
-                    contents=
-                        types.Part.from_text(
-                            text=build_prompt(
-                                narration,
-                                spans,
-                                voice_direction,
-                                correction,
-                            )
-                        ),
-
-                    config=
-                        types.GenerateContentConfig(
-                            system_instruction=
-                                SYSTEM_INSTRUCTION,
-
-                            temperature=
-                                0.2,
-
-                            response_mime_type=
-                                "application/json",
-
-                            response_schema=
-                                RESPONSE_SCHEMA,
-
-                            max_output_tokens=
-                                4096,
-                        ),
-                )
-            )
-
-            if not response.text:
-
-                raise RuntimeError(
-                    "Caption Director returned "
-                    "an empty response."
-                )
-
-            RAW_RESPONSE_FILE.write_text(
-                response.text,
-                encoding="utf-8",
-            )
-
-            result = json.loads(
-                response.text
-            )
-
-            valid, error = validate_groups(
-                result,
-                len(
-                    spans
-                ),
-            )
-
-            if valid:
-                return result
-
-            correction = error
-            last_error = error
-
-        except Exception as exc:
-
-            correction = str(
-                exc
-            )
-
-            last_error = str(
-                exc
-            )
-
-        if attempt < MAX_ATTEMPTS:
-
-            time.sleep(
-                RETRY_BASE_SECONDS
-                * (
-                    2
-                    ** (
-                        attempt
-                        - 1
-                    )
-                )
-            )
-
-    raise RuntimeError(
-        "Caption grouping failed after "
-        f"{MAX_ATTEMPTS} attempts. "
-        f"Last error: {last_error}"
-    )
+    return "NORMAL"
 
 
 # ============================================================
 # FINAL CUES
 # ============================================================
 
-def build_final_cues(
-    groups: dict,
+def build_cues(
     narration: str,
     spans: list[dict],
+    ranges: list[tuple[int, int]],
+    story_plan: dict,
 ) -> list[dict]:
+    cues = []
 
-    cues = groups[
-        "cues"
-    ]
-
-    final = []
-
-    for cue_index, cue in enumerate(
-        cues,
+    for cue_number, (
+        start_index,
+        end_index,
+    ) in enumerate(
+        ranges,
         start=1,
     ):
-
-        start_word_index = int(
-            cue[
-                "start_word_index"
-            ]
-        )
-
-        end_word_index = int(
-            cue[
-                "end_word_index"
-            ]
-        )
-
         first_word = spans[
-            start_word_index
-            - 1
+            start_index - 1
         ]
 
         last_word = spans[
-            end_word_index
-            - 1
+            end_index - 1
         ]
 
         start_seconds = max(
@@ -842,17 +1202,15 @@ def build_final_cues(
             - 0.04,
         )
 
-        if cue_index < len(
-            cues
-        ):
-
-            next_start_index = int(
-                cues[
-                    cue_index
-                ][
-                    "start_word_index"
-                ]
+        if (
+            cue_number
+            < len(
+                ranges
             )
+        ):
+            next_start_index = ranges[
+                cue_number
+            ][0]
 
             next_word_start = spans[
                 next_start_index
@@ -865,14 +1223,13 @@ def build_final_cues(
                 last_word[
                     "end_seconds"
                 ]
-                + 0.28,
+                + 0.25,
 
                 next_word_start
-                - 0.06,
+                - 0.05,
             )
 
         else:
-
             end_seconds = (
                 last_word[
                     "end_seconds"
@@ -880,37 +1237,55 @@ def build_final_cues(
                 + 0.16
             )
 
-        if end_seconds <= start_seconds:
-
+        if (
+            end_seconds
+            <= start_seconds
+        ):
             end_seconds = (
                 last_word[
                     "end_seconds"
                 ]
             )
 
-        cue_words = []
+        text = text_for_range(
+            narration,
+            spans,
+            start_index,
+            end_index,
+        )
 
-        for word in spans[
-            start_word_index
-            - 1:
-            end_word_index
+        cue_range = (
+            start_index,
+            end_index,
+        )
+
+        style = determine_style(
+            cue_range,
+            spans,
+            story_plan,
+        )
+
+        nested_words = []
+
+        for item in spans[
+            start_index - 1:
+            end_index
         ]:
-
-            cue_words.append(
+            nested_words.append(
                 {
                     "index":
-                        word[
+                        item[
                             "index"
                         ],
 
                     "word":
-                        word[
+                        item[
                             "word"
                         ],
 
                     "start_seconds":
                         round(
-                            word[
+                            item[
                                 "start_seconds"
                             ],
                             3,
@@ -918,7 +1293,7 @@ def build_final_cues(
 
                     "end_seconds":
                         round(
-                            word[
+                            item[
                                 "end_seconds"
                             ],
                             3,
@@ -926,22 +1301,16 @@ def build_final_cues(
                 }
             )
 
-        text = display_text_for_range(
-            narration,
-            spans,
-            start_word_index,
-            end_word_index,
-        )
-
         duration = (
             end_seconds
             - start_seconds
         )
 
-        final.append(
+        cues.append(
             {
                 "cue_id":
-                    f"cue_{cue_index:03d}",
+                    f"cue_"
+                    f"{cue_number:03d}",
 
                 "start_seconds":
                     round(
@@ -962,58 +1331,108 @@ def build_final_cues(
                     ),
 
                 "start_word_index":
-                    start_word_index,
+                    start_index,
 
                 "end_word_index":
-                    end_word_index,
+                    end_index,
 
                 "word_count":
-                    end_word_index
-                    - start_word_index
+                    end_index
+                    - start_index
                     + 1,
 
                 "text":
                     text,
 
                 "style_hint":
-                    cue[
-                        "style_hint"
-                    ],
-
-                "reason":
-                    cue[
-                        "reason"
-                    ],
-
-                "words":
-                    cue_words,
+                    style,
 
                 "duration_warning":
                     (
                         duration
-                        > TARGET_MAX_CUE_SECONDS
+                        > SOFT_MAX_DURATION_SECONDS
                     ),
+
+                "words":
+                    nested_words,
             }
         )
 
-    return final
+    return cues
 
 
 # ============================================================
-# SRT + READABLE OUTPUT
+# TEXT QA
+# ============================================================
+
+def validate_rendered_text(
+    cues: list[dict],
+) -> None:
+    for cue in cues:
+        text = cue[
+            "text"
+        ]
+
+        if text.startswith(
+            ("' ", '" ')
+        ):
+            raise RuntimeError(
+                "Subtitle text contains a "
+                "stray leading quote: "
+                f"{cue['cue_id']} "
+                f"{text!r}"
+            )
+
+    impact = next(
+        (
+            cue
+            for cue in cues
+            if cue[
+                "style_hint"
+            ]
+            == "IMPACT"
+        ),
+        None,
+    )
+
+    if impact is None:
+        raise RuntimeError(
+            "No IMPACT subtitle cue "
+            "was generated."
+        )
+
+    if normalize_word(
+        " ".join(
+            word[
+                "word"
+            ]
+            for word
+            in impact[
+                "words"
+            ]
+        )
+    ) != normalize_word(
+        "Don't try"
+    ):
+        raise RuntimeError(
+            "The IMPACT cue does not "
+            "contain exactly 'Don't try'."
+        )
+
+
+# ============================================================
+# WRITERS
 # ============================================================
 
 def write_srt(
     cues: list[dict],
 ) -> None:
-
     lines = []
 
     for number, cue in enumerate(
         cues,
         start=1,
     ):
-
         lines.append(
             str(
                 number
@@ -1047,13 +1466,11 @@ def write_srt(
 def write_readable(
     cues: list[dict],
 ) -> None:
-
     lines = []
 
     for cue in cues:
-
         warning = (
-            "  ⚠ LONG"
+            "  [LONG]"
             if cue[
                 "duration_warning"
             ]
@@ -1091,17 +1508,14 @@ def write_readable(
 # ============================================================
 
 def main() -> None:
-
-    for path in [
+    for required in [
         WORD_TIMING_FILE,
         STORY_PLAN_FILE,
     ]:
-
-        if not path.exists():
-
+        if not required.exists():
             raise FileNotFoundError(
                 f"Missing required file: "
-                f"{path}"
+                f"{required}"
             )
 
     word_timing = load_json(
@@ -1126,82 +1540,62 @@ def main() -> None:
         alignment_ratio
         < MIN_ALIGNMENT_RATIO
     ):
-
         raise RuntimeError(
-            "word_timing.json alignment is "
-            "not accurate enough for automatic "
-            "caption generation.\n"
+            "word_timing.json alignment "
+            "is not accurate enough.\n"
             f"Exact match ratio: "
             f"{alignment_ratio:.3f}"
         )
 
     narration = word_timing[
         "locked_narration"
-    ]
-
-    timed_words = word_timing[
-        "words"
-    ]
+    ].strip()
 
     story_narration = story_plan[
         "narration_script"
     ].strip()
 
-    if (
-        re.sub(
-            r"\s+",
-            " ",
-            narration,
-        ).strip()
-        != re.sub(
-            r"\s+",
-            " ",
-            story_narration,
-        ).strip()
+    if re.sub(
+        r"\s+",
+        " ",
+        narration,
+    ) != re.sub(
+        r"\s+",
+        " ",
+        story_narration,
     ):
-
         raise RuntimeError(
             "word_timing.json and "
-            "final_story_plan.json do not "
-            "contain the same locked narration."
+            "final_story_plan.json "
+            "contain different narration."
         )
 
-    spans = build_narration_word_spans(
+    spans = build_word_spans(
         narration,
-        timed_words,
+        word_timing[
+            "words"
+        ],
     )
 
     STATUS_FILE.write_text(
-        "RUNNING\n"
-        f"Started: {now_utc()}\n"
-        f"Model: {MODEL}\n",
+        "RUNNING\n",
         encoding="utf-8",
     )
 
-    client = genai.Client(
-        vertexai=True,
-        project=PROJECT_ID,
-        location=LOCATION,
-        http_options=
-            types.HttpOptions(
-                api_version="v1"
-            ),
-    )
-
-    groups = generate_groups(
-        client,
+    ranges = build_ranges(
         narration,
         spans,
-        story_plan.get(
-            "voice_direction",
-            {},
-        ),
     )
 
-    cues = build_final_cues(
-        groups,
+    cues = build_cues(
         narration,
         spans,
+        ranges,
+        story_plan,
+    )
+
+    validate_rendered_text(
+        cues
     )
 
     long_cues = [
@@ -1219,9 +1613,6 @@ def main() -> None:
         "status":
             "SUCCESS",
 
-        "generated_at_utc":
-            now_utc(),
-
         "source_word_timing":
             str(
                 WORD_TIMING_FILE
@@ -1232,8 +1623,14 @@ def main() -> None:
                 STORY_PLAN_FILE
             ),
 
-        "caption_director_model":
-            MODEL,
+        "strategy":
+            (
+                "Deterministic dynamic-programming "
+                "subtitle segmentation using exact "
+                "word timestamps, punctuation, pauses, "
+                "protected phrases, semantic ending "
+                "penalties, and cue-length constraints."
+            ),
 
         "alignment_ratio":
             alignment_ratio,
@@ -1244,21 +1641,20 @@ def main() -> None:
             ),
 
         "settings": {
-            "preferred_words_per_cue":
-                (
-                    f"{MIN_WORDS_PER_CUE}-"
-                    f"{MAX_WORDS_PER_CUE}"
-                ),
+            "min_words_per_cue":
+                MIN_WORDS_PER_CUE,
 
-            "target_max_cue_seconds":
-                TARGET_MAX_CUE_SECONDS,
+            "max_words_per_cue":
+                MAX_WORDS_PER_CUE,
 
-            "render_strategy":
-                (
-                    "Use cue text as the subtitle phrase. "
-                    "Use nested word timings later for "
-                    "per-word emphasis/highlighting."
-                ),
+            "ideal_words_per_cue":
+                IDEAL_WORDS_PER_CUE,
+
+            "ideal_duration_seconds":
+                IDEAL_DURATION_SECONDS,
+
+            "soft_max_duration_seconds":
+                SOFT_MAX_DURATION_SECONDS,
         },
 
         "long_cue_warnings":
@@ -1283,11 +1679,11 @@ def main() -> None:
 
     STATUS_FILE.write_text(
         "SUCCESS\n"
-        f"Finished: {now_utc()}\n"
         f"Cues: {len(cues)}\n"
         f"Long cue warnings: "
         f"{len(long_cues)}\n"
-        f"Output: {OUTPUT_JSON}\n",
+        f"Output: "
+        f"{OUTPUT_JSON}\n",
         encoding="utf-8",
     )
 
@@ -1297,23 +1693,26 @@ def main() -> None:
     )
 
     print(
-        f"Cues: {len(cues)}"
+        f"Cues: "
+        f"{len(cues)}"
     )
 
     print(
-        f"JSON: {OUTPUT_JSON}"
+        f"JSON: "
+        f"{OUTPUT_JSON}"
     )
 
     print(
-        f"SRT: {OUTPUT_SRT}"
+        f"SRT: "
+        f"{OUTPUT_SRT}"
     )
 
     print(
-        f"Readable: {OUTPUT_TEXT}"
+        f"Readable: "
+        f"{OUTPUT_TEXT}"
     )
 
     if long_cues:
-
         print(
             "Long cue warnings: "
             + ", ".join(
@@ -1325,18 +1724,16 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-
     try:
         main()
 
     except Exception:
-
-        error = traceback.format_exc()
-
         STATUS_FILE.parent.mkdir(
             parents=True,
             exist_ok=True,
         )
+
+        error = traceback.format_exc()
 
         STATUS_FILE.write_text(
             "FAILED\n\n"
@@ -1350,7 +1747,8 @@ if __name__ == "__main__":
         )
 
         print(
-            f"See: {STATUS_FILE}"
+            f"See: "
+            f"{STATUS_FILE}"
         )
 
         print()

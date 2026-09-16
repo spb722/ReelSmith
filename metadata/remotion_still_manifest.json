@@ -1,0 +1,85 @@
+{
+  "generated_at_utc": "2026-09-14T17:02:05.570123+00:00",
+  "project_id": "gen-lang-client-0240752803",
+  "location": "global",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "9:16",
+  "shots": [
+    {
+      "shot_sequence": 1,
+      "asset_id": "img_fe38b500f8d1",
+      "source_image_path": "source_images/IMG_8804.PNG",
+      "output_image_path": "generated/remotion_stills/shot_01_still.png",
+      "reel_start_seconds": 0.0,
+      "reel_end_seconds": 12.0,
+      "subtitle_cue_ids": [
+        "cue_001",
+        "cue_002",
+        "cue_003",
+        "cue_004",
+        "cue_005"
+      ],
+      "shot_goal": "Establish the hook and the central paradox of Bukowski's success.",
+      "prompt": "Use the provided mobile screenshot only as visual reference for the embedded illustration. Create a clean standalone vertical 9:16 editorial illustration for a cinematic short-form reel. Remove all app UI, status bars, buttons, progress indicators, card chrome, captions, and surrounding interface. Do not include any visible text, letters, numbers, logos, or watermarks. Preserve the mature illustrated storybook/editorial aesthetic, muted warm palette, texture, and symbolic simplicity. Do not make the image photorealistic. Do not add extra characters unless explicitly requested. Leave enough clean visual space for later subtitles and typography in Remotion. Create the opening hook image around the tombstone scene. Show EXACTLY ONE tombstone only. Do not duplicate the tombstone. Do not show a second grave marker, reflection, foreground duplicate, background duplicate, or repeating stone shape anywhere in the frame. A single weathered stone grave marker stands in a warm field beneath a broad atmospheric sky. The composition should feel quiet, weighty, and slightly mysterious. Do not put any writing on the tombstone; Remotion will add the words later. Place the single tombstone in the lower-middle portion of the frame, with generous open sky above it for a slow cinematic push-in. Keep the foreground simple and uncluttered so the image reads clearly as one focal subject. Narration context: After a lifetime of struggle and eventual success, Charles Bukowski left two words on his tombstone: 'Don't try.'"
+    },
+    {
+      "shot_sequence": 3,
+      "asset_id": "img_fe38b500f8d1",
+      "source_image_path": "source_images/IMG_8804.PNG",
+      "output_image_path": "generated/remotion_stills/shot_03_still.png",
+      "reel_start_seconds": 18.5,
+      "reel_end_seconds": 24.5,
+      "subtitle_cue_ids": [
+        "cue_009",
+        "cue_010",
+        "cue_011"
+      ],
+      "shot_goal": "Visually represent the shift from struggle to self-acceptance and peace.",
+      "prompt": "Use the provided mobile screenshot only as visual reference for the embedded illustration. Create a clean standalone vertical 9:16 editorial illustration for a cinematic short-form reel. Remove all app UI, status bars, buttons, progress indicators, card chrome, captions, and surrounding interface. Do not include any visible text, letters, numbers, logos, or watermarks. Preserve the mature illustrated storybook/editorial aesthetic, muted warm palette, texture, and symbolic simplicity. Do not make the image photorealistic. Do not add extra characters unless explicitly requested. Leave enough clean visual space for later subtitles and typography in Remotion. Use the same tombstone-world visual language, but make this shot feel softer and more accepting than the opening. Show warm grass, open sky, subdued late-afternoon light, and the tombstone as a quieter secondary anchor. The composition should communicate acceptance rather than death or drama. Leave room for subtle Remotion drift and a restrained overlay. Narration context: But success came from accepting who he was, not from wanting it more."
+    },
+    {
+      "shot_sequence": 4,
+      "asset_id": "img_37c610ebb57b",
+      "source_image_path": "source_images/IMG_8807.PNG",
+      "output_image_path": "generated/remotion_stills/shot_04_still.png",
+      "reel_start_seconds": 24.5,
+      "reel_end_seconds": 33.8,
+      "subtitle_cue_ids": [
+        "cue_012",
+        "cue_013",
+        "cue_014",
+        "cue_015"
+      ],
+      "shot_goal": "Introduce the core philosophical concept clearly.",
+      "prompt": "Use the provided mobile screenshot only as visual reference for the embedded illustration. Create a clean standalone vertical 9:16 editorial illustration for a cinematic short-form reel. Remove all app UI, status bars, buttons, progress indicators, card chrome, captions, and surrounding interface. Do not include any visible text, letters, numbers, logos, or watermarks. Preserve the mature illustrated storybook/editorial aesthetic, muted warm palette, texture, and symbolic simplicity. Do not make the image photorealistic. Do not add extra characters unless explicitly requested. Leave enough clean visual space for later subtitles and typography in Remotion. Create a symbolic visual explanation of the Backwards Law rather than recreating a text card. Use a restrained conceptual composition suggesting that chasing something makes it recede: for example, a simple figure reaching toward a warm glowing point that appears farther away, while a calmer open space behind or around the figure suggests release. Keep it elegant, minimal, philosophical, and visually readable in vertical format. Do not include any words; Remotion will add 'The Backwards Law' as typography. Narration context: This is 'The Backwards Law,' from Alan Watts. The harder you chase good feelings, the more they elude you."
+    },
+    {
+      "shot_sequence": 7,
+      "asset_id": "img_6f6dabaab3eb",
+      "source_image_path": "source_images/IMG_8805.PNG",
+      "output_image_path": "generated/remotion_stills/shot_07_still.png",
+      "reel_start_seconds": 45.0,
+      "reel_end_seconds": 49.6,
+      "subtitle_cue_ids": [
+        "cue_021",
+        "cue_022"
+      ],
+      "shot_goal": "Show the liberation that comes from accepting discomfort.",
+      "prompt": "Use the provided mobile screenshot only as visual reference for the embedded illustration. Create a clean standalone vertical 9:16 editorial illustration for a cinematic short-form reel. Remove all app UI, status bars, buttons, progress indicators, card chrome, captions, and surrounding interface. Do not include any visible text, letters, numbers, logos, or watermarks. Preserve the mature illustrated storybook/editorial aesthetic, muted warm palette, texture, and symbolic simplicity. Do not make the image photorealistic. Do not add extra characters unless explicitly requested. Leave enough clean visual space for later subtitles and typography in Remotion. Continue the cliff and ocean visual world from the previous letting-go shot, but remove the briefcase as the focal action and shift attention to the open horizon. Show expansive ocean, warm sky, small distant birds, subtle cliff edge or grass in the foreground, and a calm feeling of release after action. Keep the composition open and spacious for a gentle Remotion drift. Narration context: Accept discomfort, and it loses its power."
+    },
+    {
+      "shot_sequence": 8,
+      "asset_id": "img_fe38b500f8d1",
+      "source_image_path": "source_images/IMG_8804.PNG",
+      "output_image_path": "generated/remotion_stills/shot_08_still.png",
+      "reel_start_seconds": 49.6,
+      "reel_end_seconds": 52.44,
+      "subtitle_cue_ids": [
+        "cue_023",
+        "cue_024"
+      ],
+      "shot_goal": "Leave the viewer with an open, spacious, and calm visual to ponder the final question.",
+      "prompt": "Use the provided mobile screenshot only as visual reference for the embedded illustration. Create a clean standalone vertical 9:16 editorial illustration for a cinematic short-form reel. Remove all app UI, status bars, buttons, progress indicators, card chrome, captions, and surrounding interface. Do not include any visible text, letters, numbers, logos, or watermarks. Preserve the mature illustrated storybook/editorial aesthetic, muted warm palette, texture, and symbolic simplicity. Do not make the image photorealistic. Do not add extra characters unless explicitly requested. Leave enough clean visual space for later subtitles and typography in Remotion. Create the final reflective image using the tombstone landscape as a visual callback, but frame mostly the open sky and warm field with the tombstone small and understated. The mood should be contemplative, unresolved, and spacious rather than somber. Leave generous negative space for the final reflection question and a very slow drift. Do not include any writing on the tombstone. Narration context: What if you just let yourself feel it?"
+    }
+  ]
+}

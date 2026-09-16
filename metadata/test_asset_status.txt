@@ -1,0 +1,5 @@
+SUCCESS
+Finished: 2026-09-14T04:46:24.055481+00:00
+Model: gemini-2.5-flash
+Asset ID: img_dcfce1645810
+Output: metadata/test_asset_analysis.json

@@ -1,0 +1,368 @@
+{
+  "asset_id": "img_badc7b4efc85",
+  "source_path": "source_images/IMG_8803.PNG",
+  "original_filename": "IMG_8803.PNG",
+  "model": "gemini-2.5-flash",
+  "schema_version": "2.0",
+  "analyzed_at_utc": "2026-09-14T04:56:35.717244+00:00",
+  "analysis": {
+    "content_type": "illustrated_story_card",
+    "source_text": {
+      "heading": "The Backwards Law",
+      "body_text": "Manson opens his whole argument with the least likely role model imaginable: Charles Bukowski.A drunk and a gambler, Bukowski spent 30 years getting rejected by every publisher he wrote to, filing mail at a post office and drinking away the rest.Wnen he finally broke through at 50, it looked like the ultimate underdog story: the",
+      "prominent_quote": "",
+      "other_story_text": [],
+      "ui_text": [
+        "9:47",
+        "The Backwards Law",
+        "41%"
+      ],
+      "verbatim_blocks": [
+        {
+          "reading_order": 1,
+          "block_type": "UI",
+          "text": "9:47",
+          "region": {
+            "x_min": 58,
+            "y_min": 36,
+            "x_max": 120,
+            "y_max": 58
+          }
+        },
+        {
+          "reading_order": 2,
+          "block_type": "UI",
+          "text": "The Backwards Law",
+          "region": {
+            "x_min": 58,
+            "y_min": 80,
+            "x_max": 390,
+            "y_max": 102
+          }
+        },
+        {
+          "reading_order": 3,
+          "block_type": "UI",
+          "text": "41%",
+          "region": {
+            "x_min": 870,
+            "y_min": 36,
+            "x_max": 910,
+            "y_max": 58
+          }
+        },
+        {
+          "reading_order": 4,
+          "block_type": "HEADING",
+          "text": "The Backwards Law",
+          "region": {
+            "x_min": 58,
+            "y_min": 158,
+            "x_max": 640,
+            "y_max": 198
+          }
+        },
+        {
+          "reading_order": 5,
+          "block_type": "BODY",
+          "text": "Manson opens his whole argument with the least likely role model imaginable: Charles Bukowski.",
+          "region": {
+            "x_min": 58,
+            "y_min": 220,
+            "x_max": 910,
+            "y_max": 290
+          }
+        },
+        {
+          "reading_order": 6,
+          "block_type": "BODY",
+          "text": "A drunk and a gambler, Bukowski spent 30 years getting rejected by every publisher he wrote to, filing mail at a post office and drinking away the rest.",
+          "region": {
+            "x_min": 58,
+            "y_min": 320,
+            "x_max": 910,
+            "y_max": 410
+          }
+        },
+        {
+          "reading_order": 7,
+          "block_type": "BODY",
+          "text": "Wnen he finally broke through at 50, it looked like the ultimate underdog story: the",
+          "region": {
+            "x_min": 58,
+            "y_min": 920,
+            "x_max": 910,
+            "y_max": 980
+          }
+        }
+      ],
+      "transcription_confidence": 0.95
+    },
+    "visual": {
+      "description": "An illustration depicting a dimly lit room with a wooden desk, a vintage typewriter, an ashtray with a smoking cigarette, a coffee mug with coffee stains, and crumpled papers. A bed with blue bedding is visible in the background. The scene suggests a writer's humble and perhaps messy workspace.",
+      "main_elements": [
+        "Desk",
+        "Typewriter",
+        "Lamp",
+        "Bed",
+        "Coffee mug",
+        "Ashtray",
+        "Crumpled papers"
+      ],
+      "visual_subjects": [
+        {
+          "subject_type": "OBJECT",
+          "description": "Vintage typewriter with paper",
+          "region": {
+            "x_min": 300,
+            "y_min": 500,
+            "x_max": 600,
+            "y_max": 650
+          }
+        },
+        {
+          "subject_type": "OBJECT",
+          "description": "Desk lamp illuminating the desk",
+          "region": {
+            "x_min": 50,
+            "y_min": 450,
+            "x_max": 300,
+            "y_max": 600
+          }
+        },
+        {
+          "subject_type": "OBJECT",
+          "description": "Ashtray with a smoking cigarette",
+          "region": {
+            "x_min": 250,
+            "y_min": 550,
+            "x_max": 350,
+            "y_max": 600
+          }
+        },
+        {
+          "subject_type": "OBJECT",
+          "description": "Coffee mug with stains on the desk",
+          "region": {
+            "x_min": 600,
+            "y_min": 590,
+            "x_max": 700,
+            "y_max": 650
+          }
+        },
+        {
+          "subject_type": "OBJECT",
+          "description": "Crumpled papers on the desk",
+          "region": {
+            "x_min": 700,
+            "y_min": 580,
+            "x_max": 800,
+            "y_max": 630
+          }
+        },
+        {
+          "subject_type": "ENVIRONMENT",
+          "description": "Bed with blue bedding in the background",
+          "region": {
+            "x_min": 500,
+            "y_min": 450,
+            "x_max": 950,
+            "y_max": 650
+          }
+        },
+        {
+          "subject_type": "OBJECT",
+          "description": "Wooden desk",
+          "region": {
+            "x_min": 0,
+            "y_min": 550,
+            "x_max": 950,
+            "y_max": 700
+          }
+        }
+      ],
+      "real_people_visible": false,
+      "illustrated_or_cartoon_figures_visible": false,
+      "figure_descriptions": [],
+      "environment": "A small, dimly lit room, likely a bedroom or study, suggesting a humble living space.",
+      "important_actions": [
+        "Writing (implied)",
+        "Smoking (implied)",
+        "Drinking coffee (implied)"
+      ],
+      "composition_notes": "The illustration is centered horizontally, occupying the middle section of the screen. The light source from the lamp draws attention to the desk and typewriter, creating a focused workspace ambiance."
+    },
+    "semantic_summary": {
+      "core_idea": "The text introduces Charles Bukowski as an unlikely role model, highlighting his long struggle with rejection as a writer, his lifestyle as a \"drunk and a gambler,\" and his eventual breakthrough at age 50. The illustration visually supports the theme of a struggling writer's environment.",
+      "concepts": [
+        "Writing",
+        "Struggle",
+        "Rejection",
+        "Perseverance",
+        "Unconventional role models",
+        "Underdog story",
+        "Literary life"
+      ],
+      "emotional_tone": [
+        "Gritty",
+        "Realistic",
+        "Melancholic",
+        "Determined",
+        "Underdog"
+      ],
+      "requires_external_context": true,
+      "context_needed": [
+        "The full context of \"Manson's argument\" and \"The Backwards Law\"",
+        "More details about Charles Bukowski's life and work",
+        "The complete last sentence of the story text"
+      ]
+    },
+    "named_entities": [
+      {
+        "name": "Manson",
+        "entity_type": "person",
+        "evidence": "Manson opens his whole argument"
+      },
+      {
+        "name": "Charles Bukowski",
+        "entity_type": "person",
+        "evidence": "least likely role model imaginable: Charles Bukowski."
+      },
+      {
+        "name": "Bukowski",
+        "entity_type": "person",
+        "evidence": "Bukowski spent 30 years"
+      },
+      {
+        "name": "The Backwards Law",
+        "entity_type": "concept",
+        "evidence": "The Backwards Law"
+      }
+    ],
+    "possible_story_roles": [
+      "SETUP",
+      "CONTEXT",
+      "EXAMPLE",
+      "BUILDUP"
+    ],
+    "production": {
+      "contains_app_ui": true,
+      "story_art_region_present": true,
+      "story_art_region": {
+        "x_min": 0,
+        "y_min": 440,
+        "x_max": 1000,
+        "y_max": 700
+      },
+      "story_text_region": {
+        "x_min": 58,
+        "y_min": 158,
+        "x_max": 910,
+        "y_max": 980
+      },
+      "ui_regions": [
+        {
+          "description": "Time display",
+          "region": {
+            "x_min": 58,
+            "y_min": 36,
+            "x_max": 120,
+            "y_max": 58
+          }
+        },
+        {
+          "description": "App bar title",
+          "region": {
+            "x_min": 58,
+            "y_min": 80,
+            "x_max": 390,
+            "y_max": 102
+          }
+        },
+        {
+          "description": "Battery status",
+          "region": {
+            "x_min": 870,
+            "y_min": 36,
+            "x_max": 910,
+            "y_max": 58
+          }
+        },
+        {
+          "description": "Text settings icon",
+          "region": {
+            "x_min": 740,
+            "y_min": 70,
+            "x_max": 830,
+            "y_max": 110
+          }
+        },
+        {
+          "description": "Close button icon",
+          "region": {
+            "x_min": 850,
+            "y_min": 70,
+            "x_max": 940,
+            "y_max": 110
+          }
+        },
+        {
+          "description": "Progress indicator dots",
+          "region": {
+            "x_min": 650,
+            "y_min": 165,
+            "x_max": 940,
+            "y_max": 185
+          }
+        },
+        {
+          "description": "Left navigation button",
+          "region": {
+            "x_min": 80,
+            "y_min": 890,
+            "x_max": 160,
+            "y_max": 960
+          }
+        },
+        {
+          "description": "Right navigation button",
+          "region": {
+            "x_min": 180,
+            "y_min": 890,
+            "x_max": 260,
+            "y_max": 960
+          }
+        },
+        {
+          "description": "Play button",
+          "region": {
+            "x_min": 840,
+            "y_min": 890,
+            "x_max": 920,
+            "y_max": 960
+          }
+        }
+      ],
+      "story_art_description": "An illustration of a writer's desk with a typewriter, lamp, ashtray, coffee mug, and crumpled papers, set in a dimly lit room with a bed in the background.",
+      "vertical_video_suitability": "high",
+      "recommended_crop_strategy": "CROP_TO_TEXT_AND_ART",
+      "safe_to_crop_ui_without_losing_story": true,
+      "suggested_motion": [
+        "Subtle zoom into the typewriter and desk area",
+        "Gentle pan across the desk from left to right, highlighting the lamp, typewriter, and coffee mug",
+        "Flicker effect on the desk lamp light",
+        "Subtle smoke animation from the cigarette in the ashtray"
+      ],
+      "visual_cleanup_needed": [
+        "Remove top status bar (time, battery, wifi)",
+        "Remove top app bar (title, settings, close buttons)",
+        "Remove bottom navigation buttons (left, right, play)",
+        "Remove progress indicator dots below the main heading"
+      ]
+    },
+    "uncertainties": [
+      "The exact identity of 'Manson' is not specified in the text.",
+      "The last sentence of the body text is cut off, making the full meaning incomplete."
+    ]
+  }
+}

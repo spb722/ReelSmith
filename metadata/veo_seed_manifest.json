@@ -1,0 +1,65 @@
+{
+  "generated_at_utc": "2026-09-14T16:24:55.317536+00:00",
+  "project_id": "gen-lang-client-0240752803",
+  "location": "global",
+  "model": "gemini-3.1-flash-image",
+  "settings": {
+    "aspect_ratio": "9:16",
+    "output_resolution": "1K"
+  },
+  "shots": [
+    {
+      "seed_id": "seed_shot_02_bukowski_rejection",
+      "shot_sequence": 2,
+      "asset_id": "img_badc7b4efc85",
+      "local_image_path": "source_images/IMG_8803.PNG",
+      "output_image_path": "generated/veo_seeds/shot_02_seed.png",
+      "reel_start_seconds": 12.0,
+      "reel_end_seconds": 18.5,
+      "target_used_duration_seconds": 6.5,
+      "subtitle_cue_ids": [
+        "cue_006",
+        "cue_007",
+        "cue_008"
+      ],
+      "shot_goal": "Illustrate the gritty reality of Bukowski's 30-year struggle.",
+      "source_support": "Uses the writer's desk illustration to depict the years of rejection and struggle.",
+      "prompt": "Remove all mobile app UI, status bar elements, buttons, progress bars, card chrome, instruction text, and any surrounding app layout. Do not include any visible words or subtitles in the output. Preserve the underlying illustration's style, mood, palette, and key objects. Recompose the scene into a clean vertical 9:16 image suitable as a Veo image-to-video seed. Keep the result as a mature editorial illustration, not photorealistic. Do not add logos, watermarks, or extra characters. Use the source screenshot only as reference for the embedded illustration. Focus on the writer's room scene: wooden desk, vintage typewriter, ashtray with smoke, coffee mug, crumpled papers, desk lamp, and unmade bed in the background. Make the typewriter and desk the clear focal point in the 9:16 composition. Extend the room naturally where needed so the image feels like a complete standalone scene. Keep the lighting moody, warm, and intimate. Narration context: He faced 30 years of rejection. His breakthrough at 50 seemed like an underdog tale."
+    },
+    {
+      "seed_id": "seed_shot_05_failure_mirror",
+      "shot_sequence": 5,
+      "asset_id": "img_ef0dc599dff0",
+      "local_image_path": "source_images/IMG_8806.PNG",
+      "output_image_path": "generated/veo_seeds/shot_05_seed.png",
+      "reel_start_seconds": 33.8,
+      "reel_end_seconds": 38.4,
+      "target_used_duration_seconds": 4.6,
+      "subtitle_cue_ids": [
+        "cue_016",
+        "cue_017"
+      ],
+      "shot_goal": "Illustrate the internal pain of straining for success and feeling like a failure.",
+      "source_support": "Uses the mirror reflection asset to show the negative emotional result of chasing feelings.",
+      "prompt": "Remove all mobile app UI, status bar elements, buttons, progress bars, card chrome, instruction text, and any surrounding app layout. Do not include any visible words or subtitles in the output. Preserve the underlying illustration's style, mood, palette, and key objects. Recompose the scene into a clean vertical 9:16 image suitable as a Veo image-to-video seed. Keep the result as a mature editorial illustration, not photorealistic. Do not add logos, watermarks, or extra characters. Use the source screenshot only as reference for the embedded illustration. Focus on the bathroom sink and mirror scene: simplified figure from behind, mirror reflection, hourglass, steaming mug, tiled wall, and subdued introspective mood. Recompose so the mirror and reflection dominate the vertical frame while still keeping the sink, hourglass, and mug visible. The emotion should feel like strain, self-judgment, and discomfort. Do not make it supernatural or horror-like. Narration context: Straining for success makes you feel like a failure."
+    },
+    {
+      "seed_id": "seed_shot_06_letting_go",
+      "shot_sequence": 6,
+      "asset_id": "img_6f6dabaab3eb",
+      "local_image_path": "source_images/IMG_8805.PNG",
+      "output_image_path": "generated/veo_seeds/shot_06_seed.png",
+      "reel_start_seconds": 38.4,
+      "reel_end_seconds": 45.0,
+      "target_used_duration_seconds": 6.6,
+      "subtitle_cue_ids": [
+        "cue_018",
+        "cue_019",
+        "cue_020"
+      ],
+      "shot_goal": "Visually represent the act of letting go of outcomes and making bold moves.",
+      "source_support": "Uses the cliff/briefcase illustration to symbolize letting go of attachments.",
+      "prompt": "Remove all mobile app UI, status bar elements, buttons, progress bars, card chrome, instruction text, and any surrounding app layout. Do not include any visible words or subtitles in the output. Preserve the underlying illustration's style, mood, palette, and key objects. Recompose the scene into a clean vertical 9:16 image suitable as a Veo image-to-video seed. Keep the result as a mature editorial illustration, not photorealistic. Do not add logos, watermarks, or extra characters. Use the source screenshot only as reference for the embedded illustration. Focus on the cliffside release scene: simplified figure on grassy edge, black briefcase mid-drop, ocean below, warm sunset sky, and distant birds. Recompose into a strong vertical frame with enough sky and ocean space for later animation. The emotion should feel calm, freeing, and symbolic rather than dramatic. Narration context: Sometimes, the boldest moves only happen when we stop obsessing over the outcome."
+    }
+  ]
+}

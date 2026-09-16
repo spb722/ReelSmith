@@ -1,0 +1,102 @@
+{
+  "generated_at_utc": "2026-09-14T04:36:12.110838+00:00",
+  "asset_count": 6,
+  "assets": [
+    {
+      "asset_id": "img_dcfce1645810",
+      "source_path": "source_images/IMG_8802.PNG",
+      "original_filename": "IMG_8802.PNG",
+      "sha256": "dcfce164581076f95c1e0cfc7cd4d75035165ddd09a9a4e9043d497c5e6a6cc2",
+      "file_size_bytes": 554510,
+      "image": {
+        "format": "PNG",
+        "width": 1290,
+        "height": 2796,
+        "orientation": "portrait",
+        "mode": "RGB",
+        "aspect_ratio": 0.4614
+      },
+      "semantic_analysis": null
+    },
+    {
+      "asset_id": "img_badc7b4efc85",
+      "source_path": "source_images/IMG_8803.PNG",
+      "original_filename": "IMG_8803.PNG",
+      "sha256": "badc7b4efc85f8add3f8de7837f31d9eb913317d95b788ee2b8574f3c6ba3c77",
+      "file_size_bytes": 1644327,
+      "image": {
+        "format": "PNG",
+        "width": 1290,
+        "height": 2796,
+        "orientation": "portrait",
+        "mode": "RGB",
+        "aspect_ratio": 0.4614
+      },
+      "semantic_analysis": null
+    },
+    {
+      "asset_id": "img_fe38b500f8d1",
+      "source_path": "source_images/IMG_8804.PNG",
+      "original_filename": "IMG_8804.PNG",
+      "sha256": "fe38b500f8d106b58cf43dc7a0adf786bb3496d30d04594a8dfbeae810a82e43",
+      "file_size_bytes": 1572729,
+      "image": {
+        "format": "PNG",
+        "width": 1290,
+        "height": 2796,
+        "orientation": "portrait",
+        "mode": "RGB",
+        "aspect_ratio": 0.4614
+      },
+      "semantic_analysis": null
+    },
+    {
+      "asset_id": "img_6f6dabaab3eb",
+      "source_path": "source_images/IMG_8805.PNG",
+      "original_filename": "IMG_8805.PNG",
+      "sha256": "6f6dabaab3eb2a5f8a1de60b60e667bcbf659f9509b2206dae63c47ba785ac57",
+      "file_size_bytes": 1535354,
+      "image": {
+        "format": "PNG",
+        "width": 1290,
+        "height": 2796,
+        "orientation": "portrait",
+        "mode": "RGB",
+        "aspect_ratio": 0.4614
+      },
+      "semantic_analysis": null
+    },
+    {
+      "asset_id": "img_ef0dc599dff0",
+      "source_path": "source_images/IMG_8806.PNG",
+      "original_filename": "IMG_8806.PNG",
+      "sha256": "ef0dc599dff0fa8315f79015a835be03d8ca6f3cac973ccb132212980febb67a",
+      "file_size_bytes": 1500150,
+      "image": {
+        "format": "PNG",
+        "width": 1290,
+        "height": 2796,
+        "orientation": "portrait",
+        "mode": "RGB",
+        "aspect_ratio": 0.4614
+      },
+      "semantic_analysis": null
+    },
+    {
+      "asset_id": "img_37c610ebb57b",
+      "source_path": "source_images/IMG_8807.PNG",
+      "original_filename": "IMG_8807.PNG",
+      "sha256": "37c610ebb57b523425a3d2871479f1110b49800b25691da94861a73e797f1908",
+      "file_size_bytes": 523136,
+      "image": {
+        "format": "PNG",
+        "width": 1290,
+        "height": 2796,
+        "orientation": "portrait",
+        "mode": "RGB",
+        "aspect_ratio": 0.4614
+      },
+      "semantic_analysis": null
+    }
+  ]
+}

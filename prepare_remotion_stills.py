@@ -131,10 +131,13 @@ def build_prompt(
         return (
             common
             + "Create the opening hook image around the tombstone scene. "
-              "A weathered stone grave marker stands in a warm field beneath a broad atmospheric sky. "
+              "Show EXACTLY ONE tombstone only. Do not duplicate the tombstone. "
+              "Do not show a second grave marker, reflection, foreground duplicate, background duplicate, or repeating stone shape anywhere in the frame. "
+              "A single weathered stone grave marker stands in a warm field beneath a broad atmospheric sky. "
               "The composition should feel quiet, weighty, and slightly mysterious. "
               "Do not put any writing on the tombstone; Remotion will add the words later. "
-              "Frame the tombstone strongly in the lower-middle area with generous sky above for a slow cinematic push-in. "
+              "Place the single tombstone in the lower-middle portion of the frame, with generous open sky above it for a slow cinematic push-in. "
+              "Keep the foreground simple and uncluttered so the image reads clearly as one focal subject. "
               f"Narration context: {subtitle_context}"
         )
 
