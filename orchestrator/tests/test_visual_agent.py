@@ -160,12 +160,20 @@ def stamped(output: dict, asset_ids: list[str]) -> dict:
     """`output` as `visual_agent` would return it, plus the per-shot AD-7
     content fingerprint `validate_sources` stamps in before persisting --
     `visual_agent` itself never sees or sets this field (`SkipJsonSchema`).
+    Also fills in Story 2.1's additive `start_seconds`/`end_seconds`/
+    `primary_subtitle_cue_ids` fields with their `SkipJsonSchema` defaults --
+    `visual_agent` never sees or sets those either (AD-2: no independent
+    timing source exists pre-audio), so a freshly persisted contract always
+    carries the defaults, not real values.
     """
     story_plan = FinalStoryPlanContract.model_validate(final_story_plan_for(asset_ids))
     scenes_by_sequence = {scene.sequence: scene for scene in story_plan.scenes}
     expected = copy.deepcopy(output)
     for shot in expected["shots"]:
         shot["scene_content_fingerprint"] = _scene_content_fingerprint(scenes_by_sequence[shot["sequence"]])
+        shot["start_seconds"] = 0.0
+        shot["end_seconds"] = 0.0
+        shot["primary_subtitle_cue_ids"] = []
     return expected
 
 
@@ -318,14 +326,29 @@ def test_invalid_or_stale_persistence_cannot_skip(stage, monkeypatch, bad_file):
         bad["shots"][0]["source_asset_ids"] = [asset_ids[1]]
     if bad_file == "gemini_legacy":
         # A real `visual_director.py` (Gemini) manifest: schema-shaped, but
-        # no `produced_by` -- must never satisfy resume (AD-6).
+        # no `produced_by` -- must never satisfy resume (AD-6). It may still
+        # carry Story 2.1's real, already-backfilled per-shot timing (as
+        # `metadata/visual_plan.json` does) -- a forced regeneration must
+        # merge that timing back into the freshly persisted contract, never
+        # silently reset it to the SkipJsonSchema defaults.
         del bad["produced_by"]
+        for index, shot in enumerate(bad["shots"]):
+            shot["start_seconds"] = float(index * 10)
+            shot["end_seconds"] = float(index * 10 + 5)
+            shot["primary_subtitle_cue_ids"] = [f"cue_{index:03d}"]
     if bad_file == "sequence_mismatch":
         bad["shots"] = bad["shots"][:-1]  # 2 shots for 3 scenes -- narration changed
     run.VISUAL_PLAN_FILE.write_text("{" if bad_file == "malformed" else json.dumps(bad))
     calls = mock_query(monkeypatch, [sdk_result(output)])
     assert run.main([str(source)]) == 0
     assert len(calls) == 1
+
+    if bad_file == "gemini_legacy":
+        persisted = json.loads(run.VISUAL_PLAN_FILE.read_text())
+        for index, shot in enumerate(persisted["shots"]):
+            assert shot["start_seconds"] == float(index * 10)
+            assert shot["end_seconds"] == float(index * 10 + 5)
+            assert shot["primary_subtitle_cue_ids"] == [f"cue_{index:03d}"]
 
 
 def test_no_final_story_plan_contract_prevents_visual_agent(stage, monkeypatch):

@@ -71,6 +71,18 @@ class Shot(ContractModel):
     # time a fresh attempt validates, then compares against it on every
     # later resume check.
     scene_content_fingerprint: SkipJsonSchema[str] = ""
+    # Story 2.1: additive timeline-conversion fields the `timeline.json`
+    # converter needs (Design Notes). Like `scene_content_fingerprint`,
+    # `SkipJsonSchema` keeps these out of visual_agent's schema entirely --
+    # AD-2/visual_agent's own prompt is explicit that no independent shot
+    # timing or subtitle-cue linkage exists yet at that stage of the
+    # pipeline, so the agent must never see or invent them. Real values are
+    # populated later (this story: a one-time backfill of the existing
+    # reference reel's persisted plan from `remotion/src/timeline.ts`'s
+    # hand-authored timing; future reels: a later stage once cues exist).
+    start_seconds: SkipJsonSchema[float] = 0.0
+    end_seconds: SkipJsonSchema[float] = 0.0
+    primary_subtitle_cue_ids: SkipJsonSchema[list[str]] = Field(default_factory=list)
 
 
 class QualityReview(ContractModel):

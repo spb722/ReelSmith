@@ -104,6 +104,7 @@ async def run_bounded_agent_stage(
     base_partial_paths: list[str],
     attempt_file_prefix: str,
     call_agent: Callable[[str | None, object, float], Awaitable[ResultMessage]],
+    finalize_before_persist: Callable[[object], None] | None = None,
 ) -> int:
     """Shared bounded-retry/resume/halt control flow (Story 1.2's
     `run_screenshot_stage` shape), reused by every stage in this shape:
@@ -113,6 +114,10 @@ async def run_bounded_agent_stage(
     `validate_contract` raises `ValueError` for both the resume-staleness
     check and the post-attempt quality/source-id check -- the same method
     serves both, matching each contract's own `validate_sources`.
+    `finalize_before_persist`, when given, mutates a freshly validated
+    contract in place immediately before it is written to `persisted_file`
+    (e.g. `run_visual_stage`'s Story 2.1 shot-timing merge) -- never called
+    on the resume-skip path, since that path never rewrites the file.
     """
     feedback = None
     previous_output = None
@@ -184,6 +189,8 @@ async def run_bounded_agent_stage(
             except ValueError as exc:
                 feedback = str(exc)
             else:
+                if finalize_before_persist is not None:
+                    finalize_before_persist(contract)
                 _atomic_write_json(persisted_file, contract.model_dump(mode="json"))
                 print(f"{stage_id} validated: {persisted_file}")
                 return 0
@@ -262,6 +269,52 @@ async def run_narration_stage(settings: Settings, manifest: RunManifest) -> int:
     )
 
 
+def _load_previous_shot_timing(path: Path) -> dict[int, dict]:
+    """Best-effort: pull just the per-shot `start_seconds`/`end_seconds`/
+    `primary_subtitle_cue_ids` (Story 2.1) out of whatever JSON currently
+    sits at `path`, keyed by shot `sequence`, without requiring the rest of
+    the file to satisfy `VisualPlanContract` (it may predate fields this
+    contract now requires, e.g. `produced_by` -- Story 2.1 Implementation
+    Notes). Returns {} on any missing/unreadable/malformed file.
+    """
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, OSError, ValueError):
+        return {}
+    timing_by_sequence: dict[int, dict] = {}
+    for shot in data.get("shots", []):
+        sequence = shot.get("sequence")
+        if not isinstance(sequence, int) or "start_seconds" not in shot or "end_seconds" not in shot:
+            continue
+        timing_by_sequence[sequence] = {
+            "start_seconds": shot["start_seconds"],
+            "end_seconds": shot["end_seconds"],
+            "primary_subtitle_cue_ids": shot.get("primary_subtitle_cue_ids", []),
+        }
+    return timing_by_sequence
+
+
+def _merge_backfilled_shot_timing(contract: VisualPlanContract) -> None:
+    """Story 2.1: a freshly regenerated `VisualPlanContract` has every
+    shot's additive timing fields at their `SkipJsonSchema` defaults
+    (`0.0`/`0.0`/`[]`) -- `visual_agent` never sees or sets them (AD-2).
+    Without this, a fresh `visual_agent` run (e.g. because the currently
+    persisted file fails validation for an unrelated reason) would silently
+    overwrite this story's backfilled reference-reel timing with those
+    defaults. Merges in whatever real timing the previously persisted file
+    already had for each shot sequence; a shot with no prior entry is left
+    at its default.
+    """
+    timing_by_sequence = _load_previous_shot_timing(VISUAL_PLAN_FILE)
+    for shot in contract.shots:
+        timing = timing_by_sequence.get(shot.sequence)
+        if timing is None:
+            continue
+        shot.start_seconds = timing["start_seconds"]
+        shot.end_seconds = timing["end_seconds"]
+        shot.primary_subtitle_cue_ids = list(timing["primary_subtitle_cue_ids"])
+
+
 async def run_visual_stage(settings: Settings, manifest: RunManifest) -> int:
     """Assign each shot's generation_mode/visual_treatment/visual direction
     from the already-validated `FinalStoryPlanContract` + `AnalyzedAssetsContract`
@@ -305,6 +358,7 @@ async def run_visual_stage(settings: Settings, manifest: RunManifest) -> int:
         base_partial_paths=[str(FINAL_STORY_PLAN_FILE), str(ANALYZED_ASSETS_FILE)],
         attempt_file_prefix="visual_agent_attempt",
         call_agent=call_agent,
+        finalize_before_persist=_merge_backfilled_shot_timing,
     )
 
 

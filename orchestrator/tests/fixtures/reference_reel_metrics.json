@@ -1,0 +1,33 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30.0,
+  "frame_count": 1573,
+  "duration_seconds": 52.433333,
+  "cue_centre_phashes": {
+    "cue_001": "c24f58b38c58e7e8",
+    "cue_002": "d24f58b38c58e7e0",
+    "cue_003": "d34f58b30c58e3e8",
+    "cue_004": "f34f58b30858e3e8",
+    "cue_005": "d34e58b3085cf3e4",
+    "cue_006": "e4c13937e4c9c1e6",
+    "cue_007": "f1c206353dcae669",
+    "cue_008": "f0d0053b1b956f6a",
+    "cue_009": "899e3649bf124da9",
+    "cue_010": "89963e49bf1245ad",
+    "cue_011": "8996364daf124de9",
+    "cue_012": "8ac735924aed157a",
+    "cue_013": "82cf351b4aed1572",
+    "cue_014": "8ac525935aef155a",
+    "cue_015": "82cf25175aef0574",
+    "cue_016": "daf61d2b41910f96",
+    "cue_017": "daf61d2a49b01787",
+    "cue_018": "9cc3633ce27d013e",
+    "cue_019": "9cc3633cc87f033c",
+    "cue_020": "9cc3633cc47f013e",
+    "cue_021": "d58ee25c11eabc43",
+    "cue_022": "d09fe35c13cab443",
+    "cue_023": "92ed50b3cc20e7f8",
+    "cue_024": "b2cd50b3cc20e7f8"
+  }
+}
