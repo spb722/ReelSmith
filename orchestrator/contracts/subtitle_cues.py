@@ -9,12 +9,25 @@ re-deriving a quality gate (Story 1.5 Design Notes).
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from orchestrator.contracts.final_story_plan import FinalStoryPlanContract
 from orchestrator.contracts.text_normalization import normalize_text
+
+# Duplicated from orchestrator.tools.deterministic_tools.MIN_ALIGNMENT_RATIO
+# rather than imported: contracts stay free of the tools layer's heavier
+# dependencies (google-genai/google-auth). Must be kept equal to that
+# module's own DP-recheck threshold (AD-10) -- defense in depth, since the
+# tool already enforces this at generation time, but a persisted file's own
+# claimed ratio must also be checked on every resume-skip.
+MIN_ALIGNMENT_RATIO = 0.98
+
+# AD-11: a persisted contract without its own audio is not a valid skip
+# target (cues without their audio can't be assembled downstream).
+AUDIO_FILE = Path("audio/narration.wav")
 
 
 class ContractModel(BaseModel):
@@ -71,3 +84,10 @@ class SubtitleCuesContract(ContractModel):
                 "source_narration_script does not match the current "
                 "FinalStoryPlanContract's narration_script."
             )
+        if self.alignment_ratio < MIN_ALIGNMENT_RATIO:
+            raise ValueError(
+                f"alignment_ratio {self.alignment_ratio} is below the required minimum "
+                f"{MIN_ALIGNMENT_RATIO} (AD-10)."
+            )
+        if not AUDIO_FILE.exists():
+            raise ValueError(f"Referenced audio file {AUDIO_FILE} does not exist (AD-11).")

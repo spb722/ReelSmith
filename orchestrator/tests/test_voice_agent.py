@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -9,6 +10,7 @@ from orchestrator.contracts.subtitle_cues import SubtitleCuesContract
 from orchestrator.preflight import PreflightResult
 from orchestrator.state.run_manifest import RunManifest, load_run_manifest, save_run_manifest
 from orchestrator.tests.test_preflight import make_settings
+from orchestrator.tools.deterministic_tools import ImpactPhraseNotFoundError
 
 NARRATION_SCRIPT = " ".join(f"word{i}" for i in range(100))
 AUDIO_DURATION_SECONDS = 45.0
@@ -137,21 +139,40 @@ def dp_ok_payload(narration_script: str = NARRATION_SCRIPT, alignment_ratio: flo
     }))
 
 
+def create_audio_file(path: str = "audio/narration.wav") -> None:
+    audio_path = Path(path)
+    audio_path.parent.mkdir(parents=True, exist_ok=True)
+    audio_path.write_bytes(b"fake-audio-bytes")
+
+
+def write_fake_audio_file(args: dict, response: dict) -> None:
+    """The real `generate_narration_audio` tool writes `audio/narration.wav`
+    as a side effect; `SubtitleCuesContract.validate_sources`'s AD-11 check
+    requires that file to actually exist, so the TTS `FakeTool` below
+    reproduces that one side effect for a successful call.
+    """
+    payload = json.loads(response["content"][0]["text"])
+    create_audio_file(payload["audio_path"])
+
+
 class FakeTool:
     """Stand-in for an `@tool`-decorated `SdkMcpTool`: only `.handler` is
     ever called by `run_voice_pipeline`, mirroring how `run_screenshot_stage`
     calls `ingest.handler` directly (no Claude session anywhere, AD-1).
     """
 
-    def __init__(self, responses):
+    def __init__(self, responses, on_success=None):
         self._responses = list(responses)
         self.calls: list[dict] = []
+        self._on_success = on_success
 
     async def handler(self, args: dict) -> dict:
         self.calls.append(args)
         item = self._responses[len(self.calls) - 1]
         if isinstance(item, Exception):
             raise item
+        if self._on_success:
+            self._on_success(args, item)
         return item
 
 
@@ -190,7 +211,7 @@ def stage(tmp_path, monkeypatch):
 
 
 def mock_tools(monkeypatch, *, tts=None, stt=None, dp=None):
-    tts_tool = FakeTool(tts if tts is not None else [tts_ok_payload()])
+    tts_tool = FakeTool(tts if tts is not None else [tts_ok_payload()], on_success=write_fake_audio_file)
     stt_tool = FakeTool(stt if stt is not None else [stt_ok_payload()])
     dp_tool = FakeTool(dp if dp is not None else [dp_ok_payload()])
     monkeypatch.setattr(run, "generate_narration_audio", tts_tool)
@@ -218,6 +239,17 @@ def expected_cost(duration_seconds: float = AUDIO_DURATION_SECONDS, prompt_word_
     return round(tts_input + tts_output + stt, 6)
 
 
+def expected_tts_only_cost(
+    duration_seconds: float = AUDIO_DURATION_SECONDS, prompt_word_count: int = PROMPT_WORD_COUNT,
+) -> float:
+    from orchestrator.settings import (
+        GEMINI_TTS_AUDIO_TOKENS_PER_SECOND, GEMINI_TTS_INPUT_TOKEN_COST_USD, GEMINI_TTS_OUTPUT_TOKEN_COST_USD,
+    )
+    tts_input = prompt_word_count * GEMINI_TTS_INPUT_TOKEN_COST_USD
+    tts_output = duration_seconds * GEMINI_TTS_AUDIO_TOKENS_PER_SECOND * GEMINI_TTS_OUTPUT_TOKEN_COST_USD
+    return round(tts_input + tts_output, 6)
+
+
 def test_fresh_run_runs_tools_in_sequence_and_persists_validated_contract(stage, monkeypatch):
     source = stage
     tts_tool, stt_tool, dp_tool = mock_tools(monkeypatch)
@@ -238,9 +270,8 @@ def test_fresh_run_runs_tools_in_sequence_and_persists_validated_contract(stage,
     assert manifest.iteration_counts == {"voice_agent": 1}
 
 
-def test_valid_persisted_contract_skips_tools(stage, monkeypatch):
-    source = stage
-    persisted = {
+def persisted_subtitle_cues_payload() -> dict:
+    return {
         "produced_by": "voice_agent",
         "source_narration_script": NARRATION_SCRIPT,
         "alignment_ratio": 0.99,
@@ -253,7 +284,12 @@ def test_valid_persisted_contract_skips_tools(stage, monkeypatch):
             ],
         }],
     }
-    run.SUBTITLE_CUES_FILE.write_text(json.dumps(persisted), encoding="utf-8")
+
+
+def test_valid_persisted_contract_skips_tools(stage, monkeypatch):
+    source = stage
+    create_audio_file()
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(persisted_subtitle_cues_payload()), encoding="utf-8")
     before = run.SUBTITLE_CUES_FILE.read_bytes()
     tts_tool, stt_tool, dp_tool = mock_tools(monkeypatch, tts=[], stt=[], dp=[])
     for _ in range(2):
@@ -262,22 +298,21 @@ def test_valid_persisted_contract_skips_tools(stage, monkeypatch):
     assert run.SUBTITLE_CUES_FILE.read_bytes() == before
 
 
+def test_persisted_contract_with_missing_audio_cannot_skip(stage, monkeypatch):
+    """AD-11: a persisted contract whose referenced audio/narration.wav no
+    longer exists (deleted, or never written) must be treated as absent."""
+    source = stage
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(persisted_subtitle_cues_payload()), encoding="utf-8")
+    assert not Path("audio/narration.wav").exists()
+    tts_tool, stt_tool, dp_tool = mock_tools(monkeypatch)
+    assert run.main([str(source)]) == 0
+    assert len(tts_tool.calls) == len(stt_tool.calls) == len(dp_tool.calls) == 1
+
+
 @pytest.mark.parametrize("bad_file", ["malformed", "legacy_no_produced_by", "stale_narration"])
 def test_invalid_or_stale_persistence_cannot_skip(stage, monkeypatch, bad_file):
     source = stage
-    persisted = {
-        "produced_by": "voice_agent",
-        "source_narration_script": NARRATION_SCRIPT,
-        "alignment_ratio": 0.99,
-        "cues": [{
-            "cue_id": "cue_001", "start_seconds": 0.0, "end_seconds": 1.0, "word_count": 2,
-            "text": "word0 word1",
-            "words": [
-                {"index": 1, "word": "word0", "start_seconds": 0.0, "end_seconds": 0.3},
-                {"index": 2, "word": "word1", "start_seconds": 0.4, "end_seconds": 0.7},
-            ],
-        }],
-    }
+    persisted = persisted_subtitle_cues_payload()
     if bad_file == "legacy_no_produced_by":
         # A real build_subtitle_cues.py manual-run manifest: schema-shaped
         # in the legacy sense but missing produced_by -- must never satisfy
@@ -380,3 +415,77 @@ def test_budget_exhausted_at_stage_halts_before_tools(stage, monkeypatch):
     assert run.main([str(source)]) == 1
     assert tts_tool.calls == stt_tool.calls == dp_tool.calls == []
     assert failure_report()["attempt_count"] == 0
+
+
+def test_budget_checked_before_stt_call_halts_before_stt(stage, monkeypatch):
+    """AD-8: remaining budget is checked immediately before the STT call
+    too, not only once per attempt via the outer loop -- a budget that
+    covers TTS but not the subsequent STT call must halt before STT runs."""
+    source = stage
+    tts_cost = expected_tts_only_cost()
+    # Enough remaining budget to pass the pre-TTS check (>0), not enough to
+    # survive the pre-STT check once TTS's own real cost is added.
+    monkeypatch.setattr(run, "load_settings", lambda: make_settings(max_budget_usd=tts_cost / 2))
+    tts_tool, stt_tool, dp_tool = mock_tools(monkeypatch)
+    assert run.main([str(source)]) == 1
+    assert len(tts_tool.calls) == 1
+    assert stt_tool.calls == dp_tool.calls == []
+    manifest = load_run_manifest(run.RUN_STATE_DIR)
+    # TTS's own spend is still recorded even though the run then halts.
+    assert manifest.budget_spent_usd == pytest.approx(tts_cost)
+    report = failure_report()
+    assert report["stage_id"] == "voice_agent"
+    assert report["attempt_count"] == 1
+
+
+def test_tts_spend_recorded_in_manifest_before_second_attempts_stt_call(stage, monkeypatch):
+    """AD-9: given TTS succeeds and then STT fails, the manifest's
+    budget_spent_usd already reflects the TTS cost before the attempt is
+    marked failed -- verified by reading the persisted manifest from
+    *inside* the next attempt's own STT call, proving the write already
+    happened rather than merely happening eventually."""
+    source = stage
+    tts_tool = FakeTool([tts_ok_payload(), tts_ok_payload()], on_success=write_fake_audio_file)
+    observed = {}
+
+    class STTToolObservingManifest:
+        def __init__(self):
+            self.calls: list[dict] = []
+
+        async def handler(self, args: dict) -> dict:
+            self.calls.append(args)
+            if len(self.calls) == 1:
+                raise RuntimeError("STT exploded")
+            observed["budget_spent_usd"] = load_run_manifest(run.RUN_STATE_DIR).budget_spent_usd
+            return stt_ok_payload()
+
+    stt_tool = STTToolObservingManifest()
+    dp_tool = FakeTool([dp_ok_payload()])
+    monkeypatch.setattr(run, "generate_narration_audio", tts_tool)
+    monkeypatch.setattr(run, "extract_word_timing", stt_tool)
+    monkeypatch.setattr(run, "build_subtitle_cues", dp_tool)
+
+    assert run.main([str(source)]) == 0
+    assert len(tts_tool.calls) == 2
+    assert len(stt_tool.calls) == 2
+    # At the moment attempt 2's STT call ran, only attempt 1's TTS cost had
+    # been recorded (attempt 1 never reached STT's own cost).
+    assert observed["budget_spent_usd"] == pytest.approx(expected_tts_only_cost())
+
+
+def test_impact_text_not_found_halts_immediately_without_consuming_ceiling(stage, monkeypatch):
+    """AD-12: a non-recoverable phrase-not-found failure halts on the first
+    occurrence -- attempt_count must reflect only that one attempt, not the
+    full 3-attempt ceiling."""
+    source = stage
+    not_found = ImpactPhraseNotFoundError(
+        "impact_text 'xyz' does not appear anywhere in the narration."
+    )
+    tts_tool, stt_tool, dp_tool = mock_tools(monkeypatch, dp=[not_found])
+    assert run.main([str(source)]) == 1
+    assert len(tts_tool.calls) == len(stt_tool.calls) == len(dp_tool.calls) == 1
+    report = failure_report()
+    assert report["stage_id"] == "voice_agent"
+    assert report["attempt_count"] == 1
+    manifest = load_run_manifest(run.RUN_STATE_DIR)
+    assert manifest.iteration_counts["voice_agent"] == 1

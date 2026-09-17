@@ -8,6 +8,7 @@ or resume-pointer tracking (Design Notes).
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 from claude_agent_sdk import ResultMessage
@@ -175,9 +176,34 @@ def tool_content(payload: dict) -> dict:
     return {"content": [{"type": "text", "text": json.dumps(payload)}]}
 
 
+def create_audio_file() -> None:
+    audio_path = Path("audio/narration.wav")
+    audio_path.parent.mkdir(parents=True, exist_ok=True)
+    audio_path.write_bytes(b"fake-audio-bytes")
+
+
 class RefusingTool:
     async def handler(self, args: dict) -> dict:
         raise AssertionError("voice_agent's tools must not run: SubtitleCuesContract is already validly persisted")
+
+
+class RecordingTool:
+    """Records every call and returns a canned response; the TTS variant
+    also writes `audio/narration.wav` (the real tool's side effect), since
+    `SubtitleCuesContract.validate_sources`'s AD-11 check requires it to
+    exist after a real successful run.
+    """
+
+    def __init__(self, calls, response, *, writes_audio=False):
+        self._calls = calls
+        self._response = response
+        self._writes_audio = writes_audio
+
+    async def handler(self, args):
+        self._calls.append(args)
+        if self._writes_audio:
+            create_audio_file()
+        return self._response
 
 
 @pytest.fixture
@@ -222,17 +248,9 @@ def test_partial_chain_resumes_only_from_first_missing_stage(chain, monkeypatch)
 
     tts_calls, stt_calls, dp_calls = [], [], []
 
-    class RecordingTool:
-        def __init__(self, calls, response):
-            self._calls = calls
-            self._response = response
-
-        async def handler(self, args):
-            self._calls.append(args)
-            return self._response
-
     monkeypatch.setattr(run, "generate_narration_audio", RecordingTool(
         tts_calls, tool_content({"audio_path": "audio/narration.wav", "duration_seconds": 45.0, "prompt_word_count": 250}),
+        writes_audio=True,
     ))
     monkeypatch.setattr(run, "extract_word_timing", RecordingTool(
         stt_calls, tool_content({
@@ -273,6 +291,7 @@ def test_fully_valid_chain_makes_zero_new_calls_anywhere(chain, monkeypatch):
     """
     source, asset_id = chain
     run.VISUAL_PLAN_FILE.write_text(json.dumps(visual_plan_for(asset_id)), encoding="utf-8")
+    create_audio_file()
     run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
 
     before = {
@@ -296,3 +315,79 @@ def test_fully_valid_chain_makes_zero_new_calls_anywhere(chain, monkeypatch):
     manifest = load_run_manifest(run.RUN_STATE_DIR)
     assert manifest.budget_spent_usd == 0.0
     assert manifest.iteration_counts == {}
+
+
+def _mock_voice_tools(monkeypatch):
+    tts_calls, stt_calls, dp_calls = [], [], []
+    monkeypatch.setattr(run, "generate_narration_audio", RecordingTool(
+        tts_calls, tool_content({"audio_path": "audio/narration.wav", "duration_seconds": 45.0, "prompt_word_count": 250}),
+        writes_audio=True,
+    ))
+    monkeypatch.setattr(run, "extract_word_timing", RecordingTool(
+        stt_calls, tool_content({
+            "locked_narration": NARRATION_SCRIPT,
+            "recognized_transcript": NARRATION_SCRIPT,
+            "alignment_stats": {"exact_match_ratio": 0.99},
+            "words": [
+                {"index": i + 1, "canonical_word": w, "start_seconds": i * 0.4, "end_seconds": i * 0.4 + 0.3}
+                for i, w in enumerate(NARRATION_SCRIPT.split(" "))
+            ],
+        }),
+    ))
+    monkeypatch.setattr(run, "build_subtitle_cues", RecordingTool(
+        dp_calls, tool_content({
+            "alignment_ratio": 0.99, "cue_count": 1,
+            "cues": [{
+                "cue_id": "cue_001", "start_seconds": 0.0, "end_seconds": 40.0, "word_count": 100,
+                "text": NARRATION_SCRIPT,
+                "words": [
+                    {"index": i + 1, "word": w, "start_seconds": i * 0.4, "end_seconds": i * 0.4 + 0.3}
+                    for i, w in enumerate(NARRATION_SCRIPT.split(" "))
+                ],
+            }],
+        }),
+    ))
+    return tts_calls, stt_calls, dp_calls
+
+
+def test_stages_1_to_4_valid_only_voice_agent_missing_resumes_at_voice_agent_only(chain, monkeypatch):
+    """AC2: narration and visual planning are both already done; only
+    voice_agent's SubtitleCuesContract is missing. Re-invocation must
+    resume at voice_agent only -- stages 1-4 (asset_analyst, story_agent,
+    visual_agent) make zero calls.
+    """
+    source, asset_id = chain
+    run.VISUAL_PLAN_FILE.write_text(json.dumps(visual_plan_for(asset_id)), encoding="utf-8")
+    assert not run.SUBTITLE_CUES_FILE.exists()
+
+    monkeypatch.setattr(asset_analyst_module, "query", refuse_query("asset_analyst"))
+    monkeypatch.setattr(story_agent_module, "query", refuse_query("story_agent"))
+    monkeypatch.setattr(visual_agent_module, "query", refuse_query("visual_agent"))
+    tts_calls, stt_calls, dp_calls = _mock_voice_tools(monkeypatch)
+
+    assert run.main([str(source)]) == 0
+
+    assert len(tts_calls) == len(stt_calls) == len(dp_calls) == 1
+    assert run.SUBTITLE_CUES_FILE.exists()
+
+
+def test_persisted_subtitle_cues_with_deleted_audio_does_not_skip(chain, monkeypatch):
+    """AD-11: earlier stages (1-3) stay valid and untouched, but a
+    persisted SubtitleCuesContract whose audio/narration.wav has since been
+    deleted must not be treated as a valid skip target -- voice_agent runs
+    for real again.
+    """
+    source, asset_id = chain
+    run.VISUAL_PLAN_FILE.write_text(json.dumps(visual_plan_for(asset_id)), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+    assert not Path("audio/narration.wav").exists()
+
+    monkeypatch.setattr(asset_analyst_module, "query", refuse_query("asset_analyst"))
+    monkeypatch.setattr(story_agent_module, "query", refuse_query("story_agent"))
+    monkeypatch.setattr(visual_agent_module, "query", refuse_query("visual_agent"))
+    tts_calls, stt_calls, dp_calls = _mock_voice_tools(monkeypatch)
+
+    assert run.main([str(source)]) == 0
+
+    assert len(tts_calls) == len(stt_calls) == len(dp_calls) == 1
+    assert Path("audio/narration.wav").exists()

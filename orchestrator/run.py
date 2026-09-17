@@ -53,6 +53,7 @@ from orchestrator.state.run_manifest import (
 )
 from orchestrator.tools.deterministic_tools import (
     ASSETS_FILE,
+    ImpactPhraseNotFoundError,
     build_subtitle_cues,
     extract_word_timing,
     ingest,
@@ -307,55 +308,127 @@ async def run_visual_stage(settings: Settings, manifest: RunManifest) -> int:
     )
 
 
-async def run_voice_pipeline(story_plan: FinalStoryPlanContract, settings: Settings) -> ResultMessage:
+def _voice_pipeline_result(
+    *, subtype: str, is_error: bool, cost: float, message: str | None = None,
+    structured_output: object = None, start: float,
+) -> ResultMessage:
+    """Build this pipeline's synthetic `ResultMessage`, shared by the
+    success path and every failure path below so cost/session/timing
+    bookkeeping can't drift between them.
+    """
+    duration_ms = int((time.monotonic() - start) * 1000)
+    return ResultMessage(
+        subtype=subtype,
+        duration_ms=duration_ms,
+        duration_api_ms=duration_ms,
+        is_error=is_error,
+        num_turns=1,
+        session_id=f"voice_agent-{uuid.uuid4()}",
+        total_cost_usd=cost,
+        errors=[message] if message else None,
+        result=message,
+        structured_output=structured_output,
+    )
+
+
+async def run_voice_pipeline(
+    story_plan: FinalStoryPlanContract, settings: Settings, budget_spent_usd: float,
+) -> ResultMessage:
     """Run narration TTS -> word-timing STT -> subtitle-cue DP segmentation
     directly, with no Claude/Agent-SDK session anywhere (AD-1: mirrors
     `preflight`'s own no-judgment exception). Each tool's handler is called
     the same way `run_screenshot_stage` calls `ingest.handler` directly.
     Wraps the combined result in a synthetic `ResultMessage` so it reuses
     `run_bounded_agent_stage` unchanged.
+
+    AD-8: remaining budget is checked immediately before each paid call
+    (TTS, then STT), not only once per attempt via the outer loop. AD-9: a
+    failure after an earlier paid step already succeeded still returns that
+    step's real cost (via `total_cost_usd`) instead of letting the
+    exception propagate past `run_bounded_agent_stage`'s cost-accounting
+    code -- `subtype="error_max_budget_usd"` is the one hook
+    `run_bounded_agent_stage` already has for "halt this attempt
+    immediately, don't just retry", reused here for both an actual budget
+    shortfall (AD-8) and AD-12's non-recoverable phrase-not-found halt.
     """
     start = time.monotonic()
     narration_script = story_plan.narration_script
     voice_direction = story_plan.voice_direction.model_dump(mode="json")
 
-    tts_response = await generate_narration_audio.handler({
-        "narration_script": narration_script,
-        "voice_direction": voice_direction,
-        "project_id": settings.project_id,
-        "location": settings.location,
-    })
+    budget_failure = _check_budget(settings, budget_spent_usd)
+    if budget_failure:
+        return _voice_pipeline_result(
+            subtype="error_max_budget_usd", is_error=True, cost=0.0,
+            message=budget_failure.reason or "Budget exhausted before the TTS call", start=start,
+        )
+
+    try:
+        tts_response = await generate_narration_audio.handler({
+            "narration_script": narration_script,
+            "voice_direction": voice_direction,
+            "project_id": settings.project_id,
+            "location": settings.location,
+        })
+    except Exception as exc:
+        return _voice_pipeline_result(
+            subtype="error", is_error=True, cost=0.0,
+            message=f"TTS failed: {type(exc).__name__}: {exc}", start=start,
+        )
+
     tts_payload = json.loads(tts_response["content"][0]["text"])
     audio_duration_seconds = float(tts_payload["duration_seconds"])
-
-    stt_response = await extract_word_timing.handler({
-        "audio_path": tts_payload["audio_path"],
-        "narration_script": narration_script,
-        "project_id": settings.project_id,
-    })
-    stt_payload = json.loads(stt_response["content"][0]["text"])
-
-    dp_response = await build_subtitle_cues.handler({
-        "word_timing": stt_payload,
-        "narration_script": narration_script,
-        "voice_direction": voice_direction,
-        "scenes": [scene.model_dump(mode="json") for scene in story_plan.scenes],
-        "viewer_reflection": story_plan.story_arc.viewer_reflection,
-    })
-    dp_payload = json.loads(dp_response["content"][0]["text"])
-
-    # Real Gemini TTS + Google STT per-unit pricing (no total_cost_usd is
-    # available for these tools the way the Agent SDK provides it for
-    # Claude calls) -- settings.py's new cost-rate constants (Code Map).
-    # Input-token cost is based on the actual prompt text Gemini receives
-    # (build_tts_prompt's fixed instructional preamble plus the narration),
-    # not just the bare narration_script -- the preamble dwarfs it.
-    tts_input_cost = tts_payload["prompt_word_count"] * GEMINI_TTS_INPUT_TOKEN_COST_USD
-    tts_output_cost = (
-        audio_duration_seconds * GEMINI_TTS_AUDIO_TOKENS_PER_SECOND * GEMINI_TTS_OUTPUT_TOKEN_COST_USD
+    # Real Gemini TTS per-unit pricing -- settings.py's new cost-rate
+    # constants (Code Map). Input-token cost is based on the actual prompt
+    # text Gemini receives (build_tts_prompt's fixed instructional preamble
+    # plus the narration), not just the bare narration_script.
+    tts_cost = round(
+        tts_payload["prompt_word_count"] * GEMINI_TTS_INPUT_TOKEN_COST_USD
+        + audio_duration_seconds * GEMINI_TTS_AUDIO_TOKENS_PER_SECOND * GEMINI_TTS_OUTPUT_TOKEN_COST_USD,
+        6,
     )
-    stt_cost = audio_duration_seconds * STT_COST_PER_SECOND_USD
-    total_cost = round(tts_input_cost + tts_output_cost + stt_cost, 6)
+
+    budget_failure = _check_budget(settings, budget_spent_usd + tts_cost)
+    if budget_failure:
+        return _voice_pipeline_result(
+            subtype="error_max_budget_usd", is_error=True, cost=tts_cost,
+            message=budget_failure.reason or "Budget exhausted before the STT call", start=start,
+        )
+
+    stt_cost = 0.0
+    try:
+        stt_response = await extract_word_timing.handler({
+            "audio_path": tts_payload["audio_path"],
+            "narration_script": narration_script,
+            "project_id": settings.project_id,
+        })
+        stt_payload = json.loads(stt_response["content"][0]["text"])
+        stt_cost = round(audio_duration_seconds * STT_COST_PER_SECOND_USD, 6)
+
+        dp_response = await build_subtitle_cues.handler({
+            "word_timing": stt_payload,
+            "narration_script": narration_script,
+            "voice_direction": voice_direction,
+            "scenes": [scene.model_dump(mode="json") for scene in story_plan.scenes],
+            "viewer_reflection": story_plan.story_arc.viewer_reflection,
+        })
+        dp_payload = json.loads(dp_response["content"][0]["text"])
+    except ImpactPhraseNotFoundError as exc:
+        # AD-12: a text-authoring mismatch, not a transient/alignment
+        # failure -- no amount of audio regeneration can ever fix it.
+        # Forces an immediate halt (see subtype note above) instead of
+        # burning the retry ceiling on something deterministically doomed
+        # to fail identically every time.
+        return _voice_pipeline_result(
+            subtype="error_max_budget_usd", is_error=True, cost=tts_cost + stt_cost,
+            message=f"Non-recoverable (AD-12): {exc}", start=start,
+        )
+    except Exception as exc:
+        # AD-9: TTS (and, if it got this far, STT) spend already happened
+        # and must still be recorded even though this attempt failed.
+        return _voice_pipeline_result(
+            subtype="error", is_error=True, cost=tts_cost + stt_cost,
+            message=f"{type(exc).__name__}: {exc}", start=start,
+        )
 
     structured_output = {
         "produced_by": "voice_agent",
@@ -374,16 +447,9 @@ async def run_voice_pipeline(story_plan: FinalStoryPlanContract, settings: Setti
         ],
     }
 
-    duration_ms = int((time.monotonic() - start) * 1000)
-    return ResultMessage(
-        subtype="success",
-        duration_ms=duration_ms,
-        duration_api_ms=duration_ms,
-        is_error=False,
-        num_turns=1,
-        session_id=f"voice_agent-{uuid.uuid4()}",
-        total_cost_usd=total_cost,
-        structured_output=structured_output,
+    return _voice_pipeline_result(
+        subtype="success", is_error=False, cost=round(tts_cost + stt_cost, 6),
+        structured_output=structured_output, start=start,
     )
 
 
@@ -407,7 +473,7 @@ async def run_voice_stage(settings: Settings, manifest: RunManifest) -> int:
         return _halt("voice_agent", "VisualPlanContract", f"No validated visual plan available: {exc}")
 
     async def call_agent(feedback: str | None, previous_output: object, remaining_budget: float) -> ResultMessage:
-        return await run_voice_pipeline(story_plan, settings)
+        return await run_voice_pipeline(story_plan, settings, manifest.budget_spent_usd)
 
     def validate_contract(contract: SubtitleCuesContract) -> None:
         contract.validate_sources(story_plan)

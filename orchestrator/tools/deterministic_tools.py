@@ -342,6 +342,16 @@ async def extract_word_timing(args: dict) -> dict:
 # SUBTITLE CUE SEGMENTATION (ported from build_subtitle_cues.py)
 # ============================================================
 
+
+class ImpactPhraseNotFoundError(RuntimeError):
+    """A declared `impact_text` doesn't appear anywhere in the narration --
+    a text-authoring mismatch, not a transient/alignment-quality failure
+    (AD-12). No amount of audio regeneration can ever fix this, so it must
+    be distinguishable from the generic recoverable failures this tool
+    otherwise raises as plain `RuntimeError`.
+    """
+
+
 MIN_ALIGNMENT_RATIO = 0.98
 
 MIN_WORDS_PER_CUE = 2
@@ -786,6 +796,16 @@ async def build_subtitle_cues(args: dict) -> dict:
     protected_phrases = derive_protected_phrases(scenes)
 
     spans = build_word_spans(narration, word_timing["words"])
+
+    if impact_phrase is not None and find_phrase_range(spans, impact_phrase) is None:
+        # AD-12: a declared impact_text that doesn't appear anywhere in the
+        # narration is a text-authoring mismatch, not an alignment-quality
+        # issue -- distinct from the generic RuntimeErrors below so the
+        # caller can treat it as non-recoverable rather than retry it.
+        raise ImpactPhraseNotFoundError(
+            f"impact_text {impact_phrase!r} does not appear anywhere in the narration."
+        )
+
     ranges = build_ranges(narration, spans, impact_phrase, protected_phrases)
     cues = build_cues(narration, spans, ranges, voice_direction, impact_phrase, reflection_phrase)
     validate_rendered_text(cues, impact_phrase)

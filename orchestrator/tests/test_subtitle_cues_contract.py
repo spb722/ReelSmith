@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -9,6 +10,20 @@ from orchestrator.contracts.final_story_plan import FinalStoryPlanContract
 from orchestrator.contracts.subtitle_cues import SubtitleCuesContract
 
 ASSET_ID = "img_aaaaaaaaaaaa"
+
+
+@pytest.fixture(autouse=True)
+def _isolated_cwd_with_audio_file(tmp_path, monkeypatch):
+    """`validate_sources`'s AD-11 check looks at the real filesystem
+    (`audio/narration.wav`) -- run every test in this file from an isolated
+    tmp dir with that file present by default, so these tests never
+    accidentally depend on (or get broken by) the repo's own real
+    `audio/narration.wav` from a manual pipeline run.
+    """
+    monkeypatch.chdir(tmp_path)
+    audio_path = tmp_path / "audio" / "narration.wav"
+    audio_path.parent.mkdir(parents=True, exist_ok=True)
+    audio_path.write_bytes(b"fake-audio-bytes")
 
 
 def make_story_plan(narration_script: str) -> FinalStoryPlanContract:
@@ -148,4 +163,23 @@ def test_staleness_guard_normalizes_whitespace_and_quotes():
 def test_staleness_guard_is_exact_after_normalization():
     contract = SubtitleCuesContract.model_validate(valid_contract_data(narration_script=NARRATION_SCRIPT + " extra"))
     with pytest.raises(ValueError):
+        contract.validate_sources(make_story_plan(NARRATION_SCRIPT))
+
+
+def test_alignment_ratio_below_minimum_rejected():
+    """AD-10: defense in depth -- even a schema-valid, current-narration
+    persisted file must be rejected if its own claimed alignment_ratio is
+    below the tools' own 0.98 recheck threshold."""
+    data = valid_contract_data()
+    data["alignment_ratio"] = 0.90
+    contract = SubtitleCuesContract.model_validate(data)
+    with pytest.raises(ValueError, match="alignment_ratio"):
+        contract.validate_sources(make_story_plan(NARRATION_SCRIPT))
+
+
+def test_missing_audio_file_rejected():
+    """AD-11: cues without their audio are not a valid skip target."""
+    contract = SubtitleCuesContract.model_validate(valid_contract_data())
+    Path("audio/narration.wav").unlink()
+    with pytest.raises(ValueError, match="audio"):
         contract.validate_sources(make_story_plan(NARRATION_SCRIPT))

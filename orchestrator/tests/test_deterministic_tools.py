@@ -9,8 +9,8 @@ from PIL import Image
 
 import orchestrator.tools.deterministic_tools as deterministic_tools_module
 from orchestrator.tools.deterministic_tools import (
-    build_subtitle_cues, deterministic_server, discover_images, extract_word_timing, ingest, inspect_image,
-    sha256_file,
+    ImpactPhraseNotFoundError, build_subtitle_cues, deterministic_server, discover_images, extract_word_timing,
+    ingest, inspect_image, sha256_file,
 )
 
 
@@ -186,3 +186,23 @@ def test_build_subtitle_cues_skips_impact_requirement_when_no_scene_declares_one
     payload = json.loads(response["content"][0]["text"])
     assert payload["cue_count"] == 2
     assert all(cue["style_hint"] not in {"IMPACT", "REFLECTION"} for cue in payload["cues"])
+
+
+def test_build_subtitle_cues_raises_distinct_error_when_impact_text_not_in_narration():
+    """AD-12: a declared impact_text that doesn't appear anywhere in the
+    narration is a text-authoring mismatch, not an alignment-quality
+    failure -- it must raise a distinctly identifiable error so the caller
+    can treat it as non-recoverable rather than retry it."""
+    word_timing = {
+        "locked_narration": NARRATION,
+        "alignment_stats": {"exact_match_ratio": 0.99},
+        "words": timed_words(TOKENS),
+    }
+    with pytest.raises(ImpactPhraseNotFoundError):
+        asyncio.run(build_subtitle_cues.handler({
+            "word_timing": word_timing,
+            "narration_script": NARRATION,
+            "voice_direction": {},
+            "scenes": [{"impact_text": "this phrase is nowhere in the narration"}],
+            "viewer_reflection": "",
+        }))
