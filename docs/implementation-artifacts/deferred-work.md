@@ -41,3 +41,9 @@
 - source_spec: `docs/implementation-artifacts/spec-2-1-timeline-json-converter-regression-harness.md`
   summary: `test_regression_harness.py`'s `requires_ffmpeg` skipif checks only that `ffprobe`/`ffmpeg` are present on `PATH` (`shutil.which`), not that they actually run; a broken-but-present binary (as in this sandbox's base conda env, missing `libintl.8.dylib`) hard-fails the tests instead of skipping them.
   evidence: Pre-existing environment issue (the base conda env's ffmpeg/ffprobe are already broken, unrelated to this story); AGENTS.md already mandates the working `kayak-video` env for running tests.
+- source_spec: `docs/implementation-artifacts/spec-2-2-data-driven-renderer-transform-none-enforcement.md`
+  summary: A shot whose `toFrame(end_seconds) - toFrame(start_seconds)` rounds to 0 frames would hit an unrelated Remotion internal error in `BookReel.tsx` instead of a clear message.
+  evidence: Not reachable by any current data -- `timeline_converter.py`'s `build_timeline_data` already rejects `end_seconds <= start_seconds`; only a hypothetical future reel with a genuinely sub-frame-length shot could trigger it.
+- source_spec: `docs/implementation-artifacts/spec-2-2-data-driven-renderer-transform-none-enforcement.md`
+  summary: Neither `remotion/src/components/Subtitles.tsx` nor the new `BookReel.tsx` data-fetch checks `response.ok` before `.json()`; a 404 (e.g. missing JSON file) produces an opaque `SyntaxError` instead of a clear error message.
+  evidence: `Subtitles.tsx`'s identical gap predates this story; fixing only the new `BookReel.tsx` call site would be inconsistent with the established (if imperfect) fetch pattern this story was told to reuse.

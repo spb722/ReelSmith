@@ -161,10 +161,13 @@ def stamped(output: dict, asset_ids: list[str]) -> dict:
     content fingerprint `validate_sources` stamps in before persisting --
     `visual_agent` itself never sees or sets this field (`SkipJsonSchema`).
     Also fills in Story 2.1's additive `start_seconds`/`end_seconds`/
-    `primary_subtitle_cue_ids` fields with their `SkipJsonSchema` defaults --
-    `visual_agent` never sees or sets those either (AD-2: no independent
-    timing source exists pre-audio), so a freshly persisted contract always
-    carries the defaults, not real values.
+    `primary_subtitle_cue_ids` fields and Story 2.2's additive
+    `fade_in_frames`/`fade_out_frames`/`still_motion` fields with their
+    `SkipJsonSchema` defaults -- `visual_agent` never sees or sets any of
+    these (AD-2: no independent timing source exists pre-audio; Story 2.2's
+    renderer fields are a one-time backfill of the reference reel's own
+    persisted plan), so a freshly persisted contract always carries the
+    defaults, not real values.
     """
     story_plan = FinalStoryPlanContract.model_validate(final_story_plan_for(asset_ids))
     scenes_by_sequence = {scene.sequence: scene for scene in story_plan.scenes}
@@ -174,6 +177,9 @@ def stamped(output: dict, asset_ids: list[str]) -> dict:
         shot["start_seconds"] = 0.0
         shot["end_seconds"] = 0.0
         shot["primary_subtitle_cue_ids"] = []
+        shot["fade_in_frames"] = 0
+        shot["fade_out_frames"] = 0
+        shot["still_motion"] = None
     return expected
 
 

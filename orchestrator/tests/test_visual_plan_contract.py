@@ -6,7 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from orchestrator.contracts.final_story_plan import FinalStoryPlanContract
-from orchestrator.contracts.visual_plan import VisualPlanContract, _scene_content_fingerprint
+from orchestrator.contracts.visual_plan import StillMotion, VisualPlanContract, _scene_content_fingerprint
 
 ASSET_IDS = ["img_aaaaaaaaaaaa", "img_bbbbbbbbbbbb", "img_cccccccccccc"]
 
@@ -132,6 +132,62 @@ def test_veo_allowed_with_eligible_treatment(treatment):
     data["shots"][0]["generation_mode"] = "VEO"
     data["shots"][0]["visual_treatment"] = treatment
     VisualPlanContract.model_validate(data)
+
+
+def test_shot_renderer_fields_default_when_absent():
+    # Story 2.2: `fade_in_frames`/`fade_out_frames`/`still_motion` are
+    # `SkipJsonSchema` -- a shot that predates this story (no such keys at
+    # all, e.g. `visual_agent`'s own current output) must still validate.
+    data = base_contract()
+    for shot in data["shots"]:
+        assert "fade_in_frames" not in shot
+        assert "fade_out_frames" not in shot
+        assert "still_motion" not in shot
+    contract = VisualPlanContract.model_validate(data)
+    assert all(shot.fade_in_frames == 0 for shot in contract.shots)
+    assert all(shot.fade_out_frames == 0 for shot in contract.shots)
+    assert all(shot.still_motion is None for shot in contract.shots)
+
+
+def test_still_motion_accepts_a_well_formed_shot():
+    data = base_contract()
+    data["shots"][0]["still_motion"] = {"scale_from": 1.0, "scale_to": 1.07, "easing": "linear"}
+    contract = VisualPlanContract.model_validate(data)
+    assert contract.shots[0].still_motion == StillMotion(scale_from=1.0, scale_to=1.07, easing="linear")
+
+
+@pytest.mark.parametrize("missing_field", ["scale_from", "scale_to"])
+def test_still_motion_rejects_missing_required_field(missing_field):
+    data = base_contract()
+    still_motion = {"scale_from": 1.0, "scale_to": 1.07, "easing": "linear"}
+    del still_motion[missing_field]
+    data["shots"][0]["still_motion"] = still_motion
+    with pytest.raises(ValidationError):
+        VisualPlanContract.model_validate(data)
+
+
+def test_still_motion_rejects_invalid_easing_literal():
+    data = base_contract()
+    data["shots"][0]["still_motion"] = {"scale_from": 1.0, "scale_to": 1.07, "easing": "bounce"}
+    with pytest.raises(ValidationError):
+        VisualPlanContract.model_validate(data)
+
+
+def test_still_motion_forbidden_for_veo_shot_rejected():
+    data = base_contract()
+    data["shots"][0]["generation_mode"] = "VEO"
+    data["shots"][0]["visual_treatment"] = "AI_VIDEO_CANDIDATE"
+    data["shots"][0]["still_motion"] = {"scale_from": 1.0, "scale_to": 1.07}
+    with pytest.raises(ValidationError, match="still_motion"):
+        VisualPlanContract.model_validate(data)
+
+
+def test_veo_shot_without_still_motion_allowed():
+    data = base_contract()
+    data["shots"][0]["generation_mode"] = "VEO"
+    data["shots"][0]["visual_treatment"] = "AI_VIDEO_CANDIDATE"
+    contract = VisualPlanContract.model_validate(data)
+    assert contract.shots[0].still_motion is None
 
 
 @pytest.mark.parametrize("treatment", [

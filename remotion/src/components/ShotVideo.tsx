@@ -11,12 +11,13 @@ type ShotVideoProps = {
 // Uses `OffthreadVideo` instead of `Video`. `Video` renders via the
 // browser's native <video> element, which Remotion seeks and screenshots
 // frame-by-frame during render; that seek/paint path can transiently
-// mis-scale the decoded picture in Chromium, which is what produced the
-// zoom/breathing artifact on Shots 2, 5, and 6 (reproducible with both a
-// 24fps and a 30fps source, i.e. independent of the file itself).
-// `OffthreadVideo` extracts each frame directly instead of relying on the
-// browser's video decoder/paint pipeline, avoiding that class of artifact
-// entirely. Used for every video shot (2, 5, 6) in BookReel.tsx.
+// mis-scale the decoded picture in Chromium, which is what produced a
+// real production zoom/breathing artifact on this reel's video shots
+// (reproducible with both a 24fps and a 30fps source, i.e. independent of
+// the file itself). `OffthreadVideo` extracts each frame directly instead
+// of relying on the browser's video decoder/paint pipeline, avoiding that
+// class of artifact entirely. Used for every video-type shot in
+// `timeline.json`, whichever shots those are for a given reel.
 export const ShotVideo: React.FC<ShotVideoProps> = ({ src }) => {
   return (
     <OffthreadVideo

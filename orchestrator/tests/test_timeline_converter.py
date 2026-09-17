@@ -49,17 +49,39 @@ REFERENCE_SHOT_ASSETS = {
     8: "stills/shot_08.png",
 }
 
+# `remotion/src/BookReel.tsx`'s hand-authored `SHOT_TRANSITIONS`/`STILL_MOTION`
+# tables -- the ground truth Story 2.2's backfill into `metadata/visual_plan.json`
+# must match, keyed the same way `build_timeline_data` emits them.
+SHOT_TRANSITIONS = {
+    1: (0, 6), 2: (6, 6), 3: (6, 4), 4: (4, 0),
+    5: (0, 4), 6: (4, 6), 7: (6, 8), 8: (8, 0),
+}
+STILL_MOTION = {
+    1: {"scale_from": 1.0, "scale_to": 1.07, "easing": "linear"},
+    3: {"scale_from": 1.02, "scale_to": 1.07, "translate_y_from": 0, "translate_y_to": -2, "easing": "ease"},
+    4: {"scale_from": 1.0, "scale_to": 1.06, "translate_x_from": 0, "translate_x_to": 1.5, "easing": "ease"},
+    7: {"scale_from": 1.02, "scale_to": 1.04, "translate_x_from": 0, "translate_x_to": 1.2, "easing": "ease"},
+    8: {"scale_from": 1.0, "scale_to": 1.015, "easing": "easeOut"},
+}
+
 # `remotion/src/timeline.ts`'s hand-authored shot list -- the ground truth
 # AC1 requires the converter's output to match.
 TIMELINE_TS_SHOTS = [
-    {"sequence": 1, "type": "still", "start_seconds": 0.0, "end_seconds": 12.0},
-    {"sequence": 2, "type": "video", "start_seconds": 12.0, "end_seconds": 18.5},
-    {"sequence": 3, "type": "still", "start_seconds": 18.5, "end_seconds": 24.5},
-    {"sequence": 4, "type": "still", "start_seconds": 24.5, "end_seconds": 33.8},
-    {"sequence": 5, "type": "video", "start_seconds": 33.8, "end_seconds": 38.4},
-    {"sequence": 6, "type": "video", "start_seconds": 38.4, "end_seconds": 45.0},
-    {"sequence": 7, "type": "still", "start_seconds": 45.0, "end_seconds": 49.6},
-    {"sequence": 8, "type": "still", "start_seconds": 49.6, "end_seconds": 52.44},
+    {
+        "sequence": sequence, "type": shot_type, "start_seconds": start_seconds, "end_seconds": end_seconds,
+        "fade_in_frames": SHOT_TRANSITIONS[sequence][0], "fade_out_frames": SHOT_TRANSITIONS[sequence][1],
+        "still_motion": STILL_MOTION.get(sequence),
+    }
+    for sequence, shot_type, start_seconds, end_seconds in [
+        (1, "still", 0.0, 12.0),
+        (2, "video", 12.0, 18.5),
+        (3, "still", 18.5, 24.5),
+        (4, "still", 24.5, 33.8),
+        (5, "video", 33.8, 38.4),
+        (6, "video", 38.4, 45.0),
+        (7, "still", 45.0, 49.6),
+        (8, "still", 49.6, 52.44),
+    ]
 ]
 
 
@@ -112,6 +134,21 @@ def test_reference_shots_backfilled_with_real_timing(visual_plan):
         assert shot.primary_subtitle_cue_ids
 
 
+def test_reference_shots_backfilled_with_transition_and_motion(visual_plan):
+    # Story 2.2's own backfill task: fade_in_frames/fade_out_frames/
+    # still_motion must match BookReel.tsx's SHOT_TRANSITIONS/STILL_MOTION
+    # tables exactly -- present for stills, null for the VEO shots (2/5/6).
+    for shot, expected in zip(visual_plan.shots, TIMELINE_TS_SHOTS):
+        assert shot.fade_in_frames == expected["fade_in_frames"]
+        assert shot.fade_out_frames == expected["fade_out_frames"]
+        actual_still_motion = shot.still_motion.model_dump(exclude_none=True) if shot.still_motion else None
+        assert actual_still_motion == expected["still_motion"]
+        if expected["type"] == "video":
+            assert shot.still_motion is None
+        else:
+            assert shot.still_motion is not None
+
+
 def test_build_timeline_data_matches_timeline_ts(visual_plan, subtitle_cues):
     timeline = build_timeline_data(visual_plan, subtitle_cues, REFERENCE_SHOT_ASSETS)
     assert timeline["shots"] == [
@@ -122,9 +159,25 @@ def test_build_timeline_data_matches_timeline_ts(visual_plan, subtitle_cues):
             "start_seconds": expected["start_seconds"],
             "end_seconds": expected["end_seconds"],
             "primary_subtitle_cue_ids": shot.primary_subtitle_cue_ids,
+            "fade_in_frames": expected["fade_in_frames"],
+            "fade_out_frames": expected["fade_out_frames"],
+            "still_motion": expected["still_motion"],
         }
         for expected, shot in zip(TIMELINE_TS_SHOTS, visual_plan.shots)
     ]
+
+
+def test_fade_frames_and_still_motion_pass_through(visual_plan, subtitle_cues):
+    timeline = build_timeline_data(visual_plan, subtitle_cues, REFERENCE_SHOT_ASSETS)
+    by_sequence = {shot["sequence"]: shot for shot in timeline["shots"]}
+    for expected in TIMELINE_TS_SHOTS:
+        shot = by_sequence[expected["sequence"]]
+        assert shot["fade_in_frames"] == expected["fade_in_frames"]
+        assert shot["fade_out_frames"] == expected["fade_out_frames"]
+        if expected["type"] == "video":
+            assert shot["still_motion"] is None
+        else:
+            assert shot["still_motion"] == expected["still_motion"]
 
 
 def test_shot_type_derived_from_asset_extension(visual_plan, subtitle_cues):
@@ -200,8 +253,9 @@ def test_build_timeline_tool_handler_round_trips_to_json(visual_plan, subtitle_c
 
 def test_visual_plan_without_backfilled_fields_still_parses_with_defaults():
     """Additive-schema guard: a `VisualPlanContract` that predates Story 2.1
-    (no `start_seconds`/`end_seconds`/`primary_subtitle_cue_ids` at all,
-    e.g. `visual_agent`'s own current output) must still validate --
+    (no `start_seconds`/`end_seconds`/`primary_subtitle_cue_ids` at all) and
+    predates Story 2.2 (no `fade_in_frames`/`fade_out_frames`/`still_motion`
+    either -- e.g. `visual_agent`'s own current output) must still validate --
     `SkipJsonSchema` defaults, never a required field visual_agent can't see.
     """
     data = json.loads(VISUAL_PLAN_FILE.read_text(encoding="utf-8"))
@@ -219,7 +273,13 @@ def test_visual_plan_without_backfilled_fields_still_parses_with_defaults():
         del shot["start_seconds"]
         del shot["end_seconds"]
         del shot["primary_subtitle_cue_ids"]
+        del shot["fade_in_frames"]
+        del shot["fade_out_frames"]
+        del shot["still_motion"]
 
     contract = VisualPlanContract.model_validate(data)
     assert all(shot.start_seconds == 0.0 for shot in contract.shots)
     assert all(shot.primary_subtitle_cue_ids == [] for shot in contract.shots)
+    assert all(shot.fade_in_frames == 0 for shot in contract.shots)
+    assert all(shot.fade_out_frames == 0 for shot in contract.shots)
+    assert all(shot.still_motion is None for shot in contract.shots)

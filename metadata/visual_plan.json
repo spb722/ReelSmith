@@ -45,7 +45,14 @@
       "subtitle_emphasis_notes": "Highlight 'Don't try.' in cue_005.",
       "transition_in": "Fade from black.",
       "transition_out": "Soft crossfade.",
-      "source_support": "Directly uses the tombstone illustration to support the epitaph hook."
+      "source_support": "Directly uses the tombstone illustration to support the epitaph hook.",
+      "fade_in_frames": 0,
+      "fade_out_frames": 6,
+      "still_motion": {
+        "scale_from": 1.0,
+        "scale_to": 1.07,
+        "easing": "linear"
+      }
     },
     {
       "sequence": 2,
@@ -68,7 +75,10 @@
       "subtitle_emphasis_notes": "Keep subtitles neutral to let the visual clutter speak.",
       "transition_in": "Soft crossfade from the tombstone.",
       "transition_out": "Soft crossfade.",
-      "source_support": "Uses the writer's desk illustration to depict the years of rejection and struggle."
+      "source_support": "Uses the writer's desk illustration to depict the years of rejection and struggle.",
+      "fade_in_frames": 6,
+      "fade_out_frames": 6,
+      "still_motion": null
     },
     {
       "sequence": 3,
@@ -91,7 +101,16 @@
       "subtitle_emphasis_notes": "Highlight 'accepting who he was' in cue_010.",
       "transition_in": "Soft crossfade from the dark desk to the bright, warm sky.",
       "transition_out": "Soft crossfade.",
-      "source_support": "Repurposes the peaceful sky from the tombstone asset to symbolize the 'honest baseline' of acceptance."
+      "source_support": "Repurposes the peaceful sky from the tombstone asset to symbolize the 'honest baseline' of acceptance.",
+      "fade_in_frames": 6,
+      "fade_out_frames": 4,
+      "still_motion": {
+        "scale_from": 1.02,
+        "scale_to": 1.07,
+        "translate_y_from": 0,
+        "translate_y_to": -2,
+        "easing": "ease"
+      }
     },
     {
       "sequence": 4,
@@ -115,7 +134,16 @@
       "subtitle_emphasis_notes": "Highlight 'The Backwards Law' in cue_012.",
       "transition_in": "Soft crossfade.",
       "transition_out": "Soft crossfade.",
-      "source_support": "Uses the dedicated title card asset for the concept."
+      "source_support": "Uses the dedicated title card asset for the concept.",
+      "fade_in_frames": 4,
+      "fade_out_frames": 0,
+      "still_motion": {
+        "scale_from": 1.0,
+        "scale_to": 1.06,
+        "translate_x_from": 0,
+        "translate_x_to": 1.5,
+        "easing": "ease"
+      }
     },
     {
       "sequence": 5,
@@ -137,7 +165,10 @@
       "subtitle_emphasis_notes": "Highlight 'feel like a failure' in cue_017.",
       "transition_in": "Soft crossfade.",
       "transition_out": "Soft crossfade.",
-      "source_support": "Uses the mirror reflection asset to show the negative emotional result of chasing feelings."
+      "source_support": "Uses the mirror reflection asset to show the negative emotional result of chasing feelings.",
+      "fade_in_frames": 0,
+      "fade_out_frames": 4,
+      "still_motion": null
     },
     {
       "sequence": 6,
@@ -160,7 +191,10 @@
       "subtitle_emphasis_notes": "Highlight 'stop obsessing' in cue_020.",
       "transition_in": "Soft crossfade.",
       "transition_out": "Continuous motion into the next shot (or soft crossfade to a different crop).",
-      "source_support": "Uses the cliff/briefcase illustration to symbolize letting go of attachments."
+      "source_support": "Uses the cliff/briefcase illustration to symbolize letting go of attachments.",
+      "fade_in_frames": 4,
+      "fade_out_frames": 6,
+      "still_motion": null
     },
     {
       "sequence": 7,
@@ -182,7 +216,16 @@
       "subtitle_emphasis_notes": "Highlight 'Accept discomfort' in cue_021.",
       "transition_in": "Soft crossfade from the falling briefcase.",
       "transition_out": "Soft crossfade.",
-      "source_support": "Repurposes the open horizon of the cliff asset to symbolize freedom and loss of power over the individual."
+      "source_support": "Repurposes the open horizon of the cliff asset to symbolize freedom and loss of power over the individual.",
+      "fade_in_frames": 6,
+      "fade_out_frames": 8,
+      "still_motion": {
+        "scale_from": 1.02,
+        "scale_to": 1.04,
+        "translate_x_from": 0,
+        "translate_x_to": 1.2,
+        "easing": "ease"
+      }
     },
     {
       "sequence": 8,
@@ -204,7 +247,14 @@
       "subtitle_emphasis_notes": "Use a slightly softer, more elegant font weight for these final reflection cues.",
       "transition_in": "Long, soft crossfade (24 frames).",
       "transition_out": "Fade to black.",
-      "source_support": "Uses the sky texture to create a blank canvas for the viewer's own reflection, bookending the visual tone of the piece."
+      "source_support": "Uses the sky texture to create a blank canvas for the viewer's own reflection, bookending the visual tone of the piece.",
+      "fade_in_frames": 8,
+      "fade_out_frames": 0,
+      "still_motion": {
+        "scale_from": 1.0,
+        "scale_to": 1.015,
+        "easing": "easeOut"
+      }
     }
   ],
   "asset_utilization": [

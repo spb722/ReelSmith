@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic.json_schema import SkipJsonSchema
 
 from orchestrator.contracts.final_story_plan import FinalStoryPlanContract
 from orchestrator.contracts.text_normalization import normalize_text
@@ -48,6 +49,13 @@ class Cue(ContractModel):
     word_count: int
     text: str
     words: Annotated[list[Word], Field(min_length=1)]
+    # Story 2.2: additive rendering hint `remotion/src/components/Subtitles.tsx`
+    # already reads (selects a typography variant) -- not part of this
+    # contract's own provenance/staleness quality gate (module docstring),
+    # just carried through so the renderer never re-derives it.
+    # `SkipJsonSchema`, matching `visual_plan.py`'s Story 2.1/2.2 fields: the
+    # producing pipeline stage doesn't see or set this in its own schema.
+    style_hint: SkipJsonSchema[Literal["NORMAL", "IMPACT", "EMPHASIS", "REFLECTION"]] = "NORMAL"
 
 
 class SubtitleCuesContract(ContractModel):

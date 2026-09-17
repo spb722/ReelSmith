@@ -33,12 +33,20 @@ from orchestrator.tools.regression_harness import (
 )
 
 REFERENCE_VIDEO = Path("remotion/out/book_reel_v1.mp4")
+# Story 2.2's own data-driven renderer output -- not committed (same reason
+# as REFERENCE_VIDEO: a rendered .mp4 is gitignored), produced by `npx
+# remotion render BookReel out/book_reel_v2.mp4` from `remotion/`.
+NEW_RENDERER_VIDEO = Path("remotion/out/book_reel_v2.mp4")
 FIXTURE_FILE = Path("orchestrator/tests/fixtures/reference_reel_metrics.json")
 SUBTITLE_CUES_FILE = Path("metadata/subtitle_cues.json")
 
 requires_reference_video = pytest.mark.skipif(
     not REFERENCE_VIDEO.exists(),
     reason="remotion/out/book_reel_v1.mp4 is gitignored and not present in this checkout",
+)
+requires_new_renderer_video = pytest.mark.skipif(
+    not NEW_RENDERER_VIDEO.exists(),
+    reason="remotion/out/book_reel_v2.mp4 is gitignored and not present in this checkout",
 )
 requires_ffmpeg = pytest.mark.skipif(
     shutil.which("ffprobe") is None or shutil.which("ffmpeg") is None,
@@ -102,6 +110,23 @@ def test_harness_passes_against_the_reference_reel_itself():
     themselves before ever being trusted against a different render.
     """
     result = compare_to_fixture(REFERENCE_VIDEO, load_cues(), load_fixture())
+    failed = [check for check in result["checks"] if not check["passed"]]
+    assert result["passed"], f"Unexpected failing checks: {failed}"
+    assert len(result["checks"]) == 24 + 7  # 24 phash checks + 7 metadata/audio checks
+
+
+@requires_new_renderer_video
+@requires_ffmpeg
+def test_new_data_driven_renderer_output_passes_regression_against_reference_fixture():
+    """Story 2.2's own acceptance criterion (I/O & Edge-Case Matrix's happy
+    path / Acceptance Criteria): the new data-driven renderer's own output
+    (`timeline.ts`/`BookReel.tsx`/`Composition.tsx` rendering the
+    reconstructed `timeline.json`) must independently pass this same
+    regression harness against the same reference-reel fixture the old,
+    hand-authored renderer was measured against -- not merely proven by hand
+    once, but wired into `pytest` so a future regression here is caught.
+    """
+    result = compare_to_fixture(NEW_RENDERER_VIDEO, load_cues(), load_fixture())
     failed = [check for check in result["checks"] if not check["passed"]]
     assert result["passed"], f"Unexpected failing checks: {failed}"
     assert len(result["checks"]) == 24 + 7  # 24 phash checks + 7 metadata/audio checks

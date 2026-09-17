@@ -1,93 +1,47 @@
-import { staticFile } from "remotion";
-
+// Renderer-level composition constants. Not sourced from `timeline.json`:
+// every reel this pipeline produces is a 9:16, 30fps short (Epic 2 Context),
+// so these are fixed conventions of the renderer, not per-shot/per-reel data
+// (unlike shot timing/transitions/motion below, which is data-driven).
 export const FPS = 30;
 export const VIDEO_WIDTH = 1080;
 export const VIDEO_HEIGHT = 1920;
-export const DURATION_IN_FRAMES = 1573;
 
 export type ShotType = "still" | "video";
 
-export type Shot = {
-  id: number;
-  type: ShotType;
-  src: string;
-  startFrame: number;
-  endFrame: number;
+export type StillEasing = "linear" | "ease" | "easeOut";
+
+// Mirrors `AnimatedStill`'s `StillMotion` prop shape, but with the snake_case
+// keys `timeline.json` actually carries (Story 2.2's backfilled
+// `VisualPlanContract.Shot.still_motion`, Code Map) -- mapped to `StillMotion`
+// at the point of use in `BookReel.tsx`, not renamed here.
+export type TimelineStillMotion = {
+  scale_from: number;
+  scale_to: number;
+  translate_x_from?: number;
+  translate_x_to?: number;
+  translate_y_from?: number;
+  translate_y_to?: number;
+  easing?: StillEasing;
 };
 
-type ShotDefinition = {
-  id: number;
+// A single shot exactly as `orchestrator/tools/timeline_converter.py`'s
+// `build_timeline_data` emits it -- this type is derived from that real
+// output shape, not invented independently (Code Map).
+export type TimelineShot = {
+  sequence: number;
   type: ShotType;
   src: string;
-  startSeconds: number;
-  endSeconds: number;
+  start_seconds: number;
+  end_seconds: number;
+  primary_subtitle_cue_ids: string[];
+  fade_in_frames: number;
+  fade_out_frames: number;
+  // Null for VEO shots (Ken-Burns motion only ever applies to stills).
+  still_motion: TimelineStillMotion | null;
 };
 
-const toFrame = (seconds: number): number => Math.round(seconds * FPS);
+export type TimelineData = {
+  shots: TimelineShot[];
+};
 
-const shotDefinitions: ShotDefinition[] = [
-  {
-    id: 1,
-    type: "still",
-    src: staticFile("stills/shot_01.png"),
-    startSeconds: 0,
-    endSeconds: 12.0,
-  },
-  {
-    id: 2,
-    type: "video",
-    src: staticFile("video/shot_02.mp4"),
-    startSeconds: 12.0,
-    endSeconds: 18.5,
-  },
-  {
-    id: 3,
-    type: "still",
-    src: staticFile("stills/shot_03.png"),
-    startSeconds: 18.5,
-    endSeconds: 24.5,
-  },
-  {
-    id: 4,
-    type: "still",
-    src: staticFile("stills/shot_04.png"),
-    startSeconds: 24.5,
-    endSeconds: 33.8,
-  },
-  {
-    id: 5,
-    type: "video",
-    src: staticFile("video/shot_05.mp4"),
-    startSeconds: 33.8,
-    endSeconds: 38.4,
-  },
-  {
-    id: 6,
-    type: "video",
-    src: staticFile("video/shot_06.mp4"),
-    startSeconds: 38.4,
-    endSeconds: 45.0,
-  },
-  {
-    id: 7,
-    type: "still",
-    src: staticFile("stills/shot_07.png"),
-    startSeconds: 45.0,
-    endSeconds: 49.6,
-  },
-  {
-    id: 8,
-    type: "still",
-    src: staticFile("stills/shot_08.png"),
-    startSeconds: 49.6,
-    endSeconds: 52.44,
-  },
-];
-
-export const shots: Shot[] = shotDefinitions.map((shot) => ({
-  id: shot.id,
-  type: shot.type,
-  src: shot.src,
-  startFrame: toFrame(shot.startSeconds),
-  endFrame: toFrame(shot.endSeconds),
-}));
+export const toFrame = (seconds: number): number => Math.round(seconds * FPS);

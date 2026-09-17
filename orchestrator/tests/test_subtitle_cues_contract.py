@@ -108,6 +108,31 @@ def test_valid_contract_round_trips():
     contract.validate_sources(make_story_plan(NARRATION_SCRIPT))
 
 
+def test_style_hint_defaults_to_normal_when_absent():
+    # Story 2.2: `style_hint` is `SkipJsonSchema` -- a cue that predates this
+    # story (no `style_hint` key at all) must still validate, defaulting to
+    # "NORMAL" rather than failing as a missing required field.
+    data = valid_contract_data()
+    assert "style_hint" not in data["cues"][0]
+    contract = SubtitleCuesContract.model_validate(data)
+    assert contract.cues[0].style_hint == "NORMAL"
+
+
+@pytest.mark.parametrize("style_hint", ["NORMAL", "IMPACT", "EMPHASIS", "REFLECTION"])
+def test_style_hint_accepts_every_valid_literal(style_hint):
+    data = valid_contract_data()
+    data["cues"][0]["style_hint"] = style_hint
+    contract = SubtitleCuesContract.model_validate(data)
+    assert contract.cues[0].style_hint == style_hint
+
+
+def test_style_hint_rejects_invalid_literal():
+    data = valid_contract_data()
+    data["cues"][0]["style_hint"] = "SHOUTY"
+    with pytest.raises(ValidationError):
+        SubtitleCuesContract.model_validate(data)
+
+
 def test_missing_produced_by_rejected():
     data = valid_contract_data()
     del data["produced_by"]

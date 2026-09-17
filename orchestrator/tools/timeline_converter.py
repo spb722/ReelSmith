@@ -15,6 +15,11 @@ path (`type` is derived from that path's extension) -- never invented
 independently (Boundaries). `fps`/resolution are Remotion composition-level
 constants owned by Story 2.2's renderer, not shot data, so they are not
 emitted here.
+
+Story 2.2 additionally passes each shot's `fade_in_frames`/`fade_out_frames`/
+`still_motion` through unchanged (same additive `Shot` fields, Code Map) --
+the renderer, not this converter, decides what a null `still_motion` (VEO
+shots) means.
 """
 
 from __future__ import annotations
@@ -90,13 +95,32 @@ def build_timeline_data(
         previous_end = shot.end_seconds
 
         asset_path = shot_assets[shot.sequence]
+        shot_type = shot_type_for_asset(asset_path)
+        if shot_type == "still" and shot.still_motion is None:
+            # The still-shot half of the VEO/STILL `still_motion` asymmetry
+            # `VisualPlanContract.still_motion_forbidden_for_veo_shots` can't
+            # enforce at parse time (`still_motion` is deferred backfill
+            # data, like `start_seconds`/`end_seconds` above) -- checked here
+            # instead, once a still shot's real timeline data is expected.
+            raise ValueError(
+                f"Shot {shot.sequence} is a still shot but has no still_motion (Ken-Burns "
+                "data) -- has this VisualPlanContract been backfilled with real per-shot "
+                "motion (Story 2.2)?"
+            )
+
         shots_out.append({
             "sequence": shot.sequence,
-            "type": shot_type_for_asset(asset_path),
+            "type": shot_type,
             "src": asset_path,
             "start_seconds": shot.start_seconds,
             "end_seconds": shot.end_seconds,
             "primary_subtitle_cue_ids": list(shot.primary_subtitle_cue_ids),
+            # Story 2.2: additive per-shot renderer fields, traceable 1:1 to
+            # VisualPlanContract.Shot (Code Map) -- null still_motion for VEO
+            # shots passes through as-is, the renderer decides what that means.
+            "fade_in_frames": shot.fade_in_frames,
+            "fade_out_frames": shot.fade_out_frames,
+            "still_motion": shot.still_motion.model_dump(exclude_none=True) if shot.still_motion else None,
         })
 
     return {"shots": shots_out}

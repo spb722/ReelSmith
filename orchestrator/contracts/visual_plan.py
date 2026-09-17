@@ -49,6 +49,22 @@ def _scene_content_fingerprint(scene: Scene) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
+class StillMotion(ContractModel):
+    """Ken-Burns motion parameters for a still shot (Story 2.2) -- mirrors
+    `AnimatedStill`'s `StillMotion` prop shape (Code Map) field-for-field, so
+    a malformed/incomplete backfill fails here, at Python validation time,
+    rather than silently reaching the renderer as a `NaN` transform or a
+    render-time crash.
+    """
+    scale_from: float
+    scale_to: float
+    translate_x_from: float | None = None
+    translate_x_to: float | None = None
+    translate_y_from: float | None = None
+    translate_y_to: float | None = None
+    easing: Literal["linear", "ease", "easeOut"] | None = None
+
+
 class Shot(ContractModel):
     sequence: int
     generation_mode: Literal["STILL", "VEO"]
@@ -83,6 +99,16 @@ class Shot(ContractModel):
     start_seconds: SkipJsonSchema[float] = 0.0
     end_seconds: SkipJsonSchema[float] = 0.0
     primary_subtitle_cue_ids: SkipJsonSchema[list[str]] = Field(default_factory=list)
+    # Story 2.2: additive renderer fields the data-driven `timeline.json`
+    # converter/renderer needs (Design Notes) -- per-shot transition timing
+    # and Ken-Burns still motion. Same `SkipJsonSchema` rationale as the
+    # Story 2.1 fields above: visual_agent never sees or sets these; real
+    # values are a one-time backfill of the existing reference reel's plan
+    # from `remotion/src/BookReel.tsx`'s hand-authored tables.
+    # `still_motion` is null for VEO shots (Ken-Burns applies to stills only).
+    fade_in_frames: SkipJsonSchema[int] = 0
+    fade_out_frames: SkipJsonSchema[int] = 0
+    still_motion: SkipJsonSchema[StillMotion | None] = None
 
 
 class QualityReview(ContractModel):
@@ -140,6 +166,32 @@ class VisualPlanContract(ContractModel):
             raise ValueError(
                 "generation_mode VEO requires visual_treatment AI_VIDEO_CANDIDATE or MIXED; "
                 f"violated by shot sequence(s): {invalid}"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def still_motion_forbidden_for_veo_shots(self) -> "VisualPlanContract":
+        """Mirrors `generation_mode_matches_visual_treatment`'s pattern for
+        the other half of the VEO/STILL asymmetry (Never: Ken-Burns motion
+        applies to stills only). Only the VEO-forbids-motion direction is
+        enforced here -- unlike `still_motion` itself, `generation_mode` is
+        set by `visual_agent` from the start, so a VEO shot's `still_motion`
+        is checkable immediately. The reverse (a STILL shot must eventually
+        have a real `still_motion`) is deferred data, exactly like
+        `start_seconds`/`end_seconds` (Story 2.1) -- `visual_agent` never
+        sets `still_motion` either (`SkipJsonSchema`), so a freshly generated
+        STILL shot legitimately has none yet; that half is enforced once
+        real timeline data is expected, in
+        `timeline_converter.build_timeline_data`.
+        """
+        invalid = [
+            shot.sequence for shot in self.shots
+            if shot.generation_mode == "VEO" and shot.still_motion is not None
+        ]
+        if invalid:
+            raise ValueError(
+                "generation_mode VEO must not carry still_motion (Ken-Burns motion is "
+                f"stills-only); violated by shot sequence(s): {invalid}"
             )
         return self
 
