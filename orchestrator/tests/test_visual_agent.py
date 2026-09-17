@@ -3,13 +3,15 @@ from __future__ import annotations
 import copy
 import importlib
 import json
+from pathlib import Path
 
 import pytest
 from claude_agent_sdk import ResultMessage
 from pydantic import ValidationError
 
 import orchestrator.run as run
-from orchestrator.contracts.visual_plan import VisualPlanContract
+from orchestrator.contracts.final_story_plan import FinalStoryPlanContract
+from orchestrator.contracts.visual_plan import VisualPlanContract, _scene_content_fingerprint
 from orchestrator.preflight import PreflightResult
 from orchestrator.state.run_manifest import RunManifest, load_run_manifest, save_run_manifest
 from orchestrator.tests.test_preflight import make_settings
@@ -154,6 +156,19 @@ def visual_plan_for(asset_ids: list[str]) -> dict:
     }
 
 
+def stamped(output: dict, asset_ids: list[str]) -> dict:
+    """`output` as `visual_agent` would return it, plus the per-shot AD-7
+    content fingerprint `validate_sources` stamps in before persisting --
+    `visual_agent` itself never sees or sets this field (`SkipJsonSchema`).
+    """
+    story_plan = FinalStoryPlanContract.model_validate(final_story_plan_for(asset_ids))
+    scenes_by_sequence = {scene.sequence: scene for scene in story_plan.scenes}
+    expected = copy.deepcopy(output)
+    for shot in expected["shots"]:
+        shot["scene_content_fingerprint"] = _scene_content_fingerprint(scenes_by_sequence[shot["sequence"]])
+    return expected
+
+
 def sdk_result(output, *, cost=0.3, is_error=False, subtype="success"):
     return ResultMessage(
         subtype=subtype, duration_ms=1, duration_api_ms=1, is_error=is_error,
@@ -243,7 +258,7 @@ def test_fresh_run_writes_via_scoped_agent_and_persists(stage, monkeypatch):
     assert options.output_format["schema"] == VisualPlanContract.model_json_schema()
     assert options.max_budget_usd == 10
     assert options.max_buffer_size == 20 * 1024 * 1024
-    assert json.loads(run.VISUAL_PLAN_FILE.read_text()) == output
+    assert json.loads(run.VISUAL_PLAN_FILE.read_text()) == stamped(output, asset_ids)
     manifest = load_run_manifest(run.RUN_STATE_DIR)
     assert manifest.budget_spent_usd == 0.3
     assert manifest.iteration_counts == {"visual_agent": 1}
@@ -375,5 +390,19 @@ def test_contract_rejects_invalid_quality_plan(stage, mutation):
         data["quality_review"]["verdict"] = "REVISE"
     else:
         data["quality_review"]["scores"]["internal_consistency"] = 5
+    with pytest.raises(ValidationError):
+        VisualPlanContract.model_validate(data)
+
+
+def test_real_legacy_visual_plan_json_rejected_for_missing_produced_by():
+    # Loads the actual real, pre-existing metadata/visual_plan.json (a real
+    # visual_director.py/Gemini run, 8 shots) from disk -- not a synthetic
+    # legacy-shaped stand-in -- to prove the provenance gate closes this
+    # exact artifact, the one this story exists to reject (AD-6).
+    real_path = Path(__file__).resolve().parents[2] / "metadata" / "visual_plan.json"
+    if not real_path.exists():
+        pytest.skip(f"{real_path} not present in this checkout")
+    data = json.loads(real_path.read_text(encoding="utf-8"))
+    assert "produced_by" not in data
     with pytest.raises(ValidationError):
         VisualPlanContract.model_validate(data)

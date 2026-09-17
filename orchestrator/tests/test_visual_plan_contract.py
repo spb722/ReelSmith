@@ -6,7 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from orchestrator.contracts.final_story_plan import FinalStoryPlanContract
-from orchestrator.contracts.visual_plan import VisualPlanContract
+from orchestrator.contracts.visual_plan import VisualPlanContract, _scene_content_fingerprint
 
 ASSET_IDS = ["img_aaaaaaaaaaaa", "img_bbbbbbbbbbbb", "img_cccccccccccc"]
 
@@ -26,9 +26,9 @@ def _scene(sequence: int, words: list[str], asset_id: str, duration: float = 15.
     }
 
 
-def make_story_plan(asset_ids: list[str]) -> FinalStoryPlanContract:
-    """A minimal but fully valid `FinalStoryPlanContract`, one scene per
-    asset id, each scene citing only its own asset -- so validate_sources
+def _story_plan_dict(asset_ids: list[str]) -> dict:
+    """A minimal but fully valid `FinalStoryPlanContract` payload, one scene
+    per asset id, each scene citing only its own asset -- so validate_sources
     tests can tell "known somewhere in the plan" apart from "known to this
     shot's own scene".
     """
@@ -40,7 +40,7 @@ def make_story_plan(asset_ids: list[str]) -> FinalStoryPlanContract:
         chunk = all_words[index * words_per_scene:(index + 1) * words_per_scene]
         scenes.append(_scene(index + 1, chunk, asset_id))
     narration_script = " ".join(all_words)
-    data = {
+    return {
         "produced_by": "story_agent",
         "story_title": "The Backwards Law",
         "core_thesis": "Acceptance beats striving.",
@@ -69,7 +69,10 @@ def make_story_plan(asset_ids: list[str]) -> FinalStoryPlanContract:
             },
         },
     }
-    return FinalStoryPlanContract.model_validate(data)
+
+
+def make_story_plan(asset_ids: list[str]) -> FinalStoryPlanContract:
+    return FinalStoryPlanContract.model_validate(_story_plan_dict(asset_ids))
 
 
 def shot_for(
@@ -225,6 +228,44 @@ def test_validate_sources_rejects_asset_id_not_owned_by_that_shots_own_scene():
     contract = VisualPlanContract.model_validate(data)
     with pytest.raises(ValueError, match="not in its scene's own"):
         contract.validate_sources(story_plan)
+
+
+def test_validate_sources_stamps_content_fingerprint_on_a_fresh_contract():
+    # visual_agent never sees or sets this field (SkipJsonSchema); a freshly
+    # parsed contract always starts with the "" default.
+    story_plan = make_story_plan(ASSET_IDS)
+    contract = VisualPlanContract.model_validate(base_contract())
+    assert all(shot.scene_content_fingerprint == "" for shot in contract.shots)
+    contract.validate_sources(story_plan)
+    scenes_by_sequence = {scene.sequence: scene for scene in story_plan.scenes}
+    for shot in contract.shots:
+        assert shot.scene_content_fingerprint == _scene_content_fingerprint(scenes_by_sequence[shot.sequence])
+
+
+@pytest.mark.parametrize("field", ["narration", "visual_intent", "suggested_visual_treatment"])
+def test_validate_sources_rejects_scene_content_drift_under_unchanged_sequence_and_assets(field):
+    # AD-7: a regenerated FinalStoryPlanContract with the same scene count/
+    # asset ids but changed narration/visual_intent/suggested_visual_treatment
+    # must not silently satisfy resume.
+    story_plan = make_story_plan(ASSET_IDS)
+    contract = VisualPlanContract.model_validate(base_contract())
+    contract.validate_sources(story_plan)  # stamps fingerprints against the original content
+
+    changed = _story_plan_dict(ASSET_IDS)
+    if field == "narration":
+        # Prepend rather than replace, so total word count stays in the
+        # 90-115 range FinalStoryPlanContract itself still enforces.
+        changed["scenes"][0]["narration"] = "changed " + changed["scenes"][0]["narration"]
+        changed["narration_script"] = " ".join(scene["narration"] for scene in changed["scenes"])
+        changed["hook"] = changed["scenes"][0]["narration"]
+    elif field == "visual_intent":
+        changed["scenes"][0]["visual_intent"] = "An entirely different visual mood."
+    else:
+        changed["scenes"][0]["suggested_visual_treatment"] = "TEXT_LED"
+    changed_story_plan = FinalStoryPlanContract.model_validate(changed)
+
+    with pytest.raises(ValueError, match="changed since this visual plan"):
+        contract.validate_sources(changed_story_plan)
 
 
 @pytest.mark.parametrize("mutation", ["missing_field", "bad_verdict", "score_too_low"])

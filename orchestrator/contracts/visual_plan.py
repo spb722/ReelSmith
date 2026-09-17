@@ -13,11 +13,13 @@ this story.
 
 from __future__ import annotations
 
+import hashlib
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic.json_schema import SkipJsonSchema
 
-from orchestrator.contracts.final_story_plan import FinalStoryPlanContract
+from orchestrator.contracts.final_story_plan import FinalStoryPlanContract, Scene
 
 
 class ContractModel(BaseModel):
@@ -38,6 +40,15 @@ REQUIRED_SCORE_DIMENSIONS = (
 VEO_ELIGIBLE_TREATMENTS = frozenset({"AI_VIDEO_CANDIDATE", "MIXED"})
 
 
+def _scene_content_fingerprint(scene: Scene) -> str:
+    """AD-7: a deterministic snapshot of the scene content a shot is
+    planned against -- narration/visual_intent/suggested_visual_treatment
+    changing under an unchanged sequence/asset-id must not silently skip.
+    """
+    raw = "\x1f".join((scene.narration, scene.visual_intent, scene.suggested_visual_treatment))
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
 class Shot(ContractModel):
     sequence: int
     generation_mode: Literal["STILL", "VEO"]
@@ -53,6 +64,13 @@ class Shot(ContractModel):
     motion_plan: Annotated[str, Field(min_length=1)]
     text_overlay: str
     source_support: Annotated[str, Field(min_length=1)]
+    # AD-7 content-staleness snapshot. `SkipJsonSchema` keeps this out of the
+    # schema shown to `visual_agent` entirely, so a freshly generated shot
+    # always parses with the "" default (never a stray agent-supplied
+    # value) -- `validate_sources` stamps the real fingerprint the first
+    # time a fresh attempt validates, then compares against it on every
+    # later resume check.
+    scene_content_fingerprint: SkipJsonSchema[str] = ""
 
 
 class QualityReview(ContractModel):
@@ -114,10 +132,19 @@ class VisualPlanContract(ContractModel):
         return self
 
     def validate_sources(self, story_plan: FinalStoryPlanContract) -> None:
-        """Resume-staleness guard (AD-2): shot sequences must exactly match
-        the current `FinalStoryPlanContract`'s scene sequences -- one shot
-        per scene, not merely a subset -- and each shot's `source_asset_ids`
-        must be a subset of that same scene's own `source_asset_ids`.
+        """Resume-staleness guard: shot sequences must exactly match the
+        current `FinalStoryPlanContract`'s scene sequences (AD-2) -- one
+        shot per scene, not merely a subset -- each shot's `source_asset_ids`
+        must be a subset of that same scene's own `source_asset_ids`, and
+        (AD-7) each shot's scene content must not have drifted since this
+        plan was generated.
+
+        A shot with no fingerprint yet (`scene_content_fingerprint == ""`)
+        is a freshly generated attempt -- `visual_agent` never sees or sets
+        this field (`SkipJsonSchema`) -- so it is stamped here from the
+        current scene content rather than compared; a loaded, previously
+        persisted shot always already carries a real fingerprint, which is
+        compared, not overwritten.
         """
         expected_sequences = [scene.sequence for scene in story_plan.scenes]
         actual_sequences = [shot.sequence for shot in self.shots]
@@ -126,14 +153,21 @@ class VisualPlanContract(ContractModel):
                 "Shot sequences must exactly match the current FinalStoryPlanContract's "
                 f"scene sequences. Expected {expected_sequences}, got {actual_sequences}."
             )
-        scene_assets_by_sequence = {
-            scene.sequence: set(scene.source_asset_ids) for scene in story_plan.scenes
-        }
+        scenes_by_sequence = {scene.sequence: scene for scene in story_plan.scenes}
         for shot in self.shots:
-            allowed = scene_assets_by_sequence[shot.sequence]
-            unknown = set(shot.source_asset_ids) - allowed
+            scene = scenes_by_sequence[shot.sequence]
+            unknown = set(shot.source_asset_ids) - set(scene.source_asset_ids)
             if unknown:
                 raise ValueError(
                     f"Shot {shot.sequence} references asset ids not in its scene's own "
                     f"source_asset_ids: {sorted(unknown)}"
+                )
+            expected_fingerprint = _scene_content_fingerprint(scene)
+            if not shot.scene_content_fingerprint:
+                shot.scene_content_fingerprint = expected_fingerprint
+            elif shot.scene_content_fingerprint != expected_fingerprint:
+                raise ValueError(
+                    f"Shot {shot.sequence}'s scene narration/visual_intent/"
+                    "suggested_visual_treatment has changed since this visual plan was "
+                    "generated (AD-7); it must be regenerated."
                 )
