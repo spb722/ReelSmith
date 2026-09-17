@@ -181,8 +181,17 @@ def stage(tmp_path, monkeypatch):
     async def no_narration_stage(settings, manifest):
         return 0
 
+    async def no_voice_stage(settings, manifest):
+        # This file exercises visual_agent/run_visual_stage only; voice_agent
+        # (the stage that now runs after the visual stage succeeds) is
+        # exercised in its own test module.
+        no_voice_stage.calls.append((settings, manifest))
+        return 0
+
+    no_voice_stage.calls = []
     monkeypatch.setattr(run, "run_screenshot_stage", no_screenshot_stage)
     monkeypatch.setattr(run, "run_narration_stage", no_narration_stage)
+    monkeypatch.setattr(run, "run_voice_stage", no_voice_stage)
 
     analyzed = analyzed_assets_contract_for(ASSET_IDS)
     run.ANALYZED_ASSETS_FILE.parent.mkdir(parents=True, exist_ok=True)

@@ -14,6 +14,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from orchestrator.contracts.text_normalization import normalize_text
+
 
 class ContractModel(BaseModel):
     model_config = ConfigDict(strict=True, extra="ignore")
@@ -43,14 +45,6 @@ REQUIRED_SCORE_DIMENSIONS = (
 
 def _count_words(text: str) -> int:
     return len(re.findall(r"\b[\w’'-]+\b", text, flags=re.UNICODE))
-
-
-def _normalize_text(text: str) -> str:
-    text = (
-        text.replace("“", '"').replace("”", '"')
-        .replace("‘", "'").replace("’", "'")
-    )
-    return re.sub(r"\s+", " ", text).strip()
 
 
 class VoiceDirection(ContractModel):
@@ -173,7 +167,7 @@ class FinalStoryPlanContract(ContractModel):
     @model_validator(mode="after")
     def scene_narration_reconstructs_script(self) -> "FinalStoryPlanContract":
         joined = " ".join(scene.narration.strip() for scene in self.scenes)
-        if _normalize_text(joined) != _normalize_text(self.narration_script):
+        if normalize_text(joined) != normalize_text(self.narration_script):
             raise ValueError("Concatenated scene narration must reconstruct narration_script exactly.")
         return self
 

@@ -28,6 +28,17 @@ DEFAULT_VEO_MODEL = "veo-3.1-fast-generate-001"
 DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
 
 
+# Story 1.5: Gemini TTS / Google STT per-unit cost-rate constants. Unlike
+# Claude calls (which get total_cost_usd automatically from the Agent SDK),
+# no cost-rate constants exist anywhere in the repo for these tools yet.
+# Best-available public 2026 pricing -- sourced from public pricing pages,
+# not repo precedent; worth reconfirming if it drifts.
+GEMINI_TTS_OUTPUT_TOKEN_COST_USD = 20.0 / 1_000_000  # $20 / 1M output audio tokens
+GEMINI_TTS_INPUT_TOKEN_COST_USD = 1.0 / 1_000_000  # $1 / 1M input text tokens
+GEMINI_TTS_AUDIO_TOKENS_PER_SECOND = 25  # 25 audio tokens per second of output
+STT_COST_PER_SECOND_USD = 0.016 / 60  # $0.016 / minute, standard real-time
+
+
 @dataclass(frozen=True)
 class Settings:
     project_id: str

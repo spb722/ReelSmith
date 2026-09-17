@@ -5,8 +5,10 @@ Runs preflight, deterministic ingestion, and bounded screenshot understanding
 `AnalyzedAssetsContract` -- bounded narration writing/review/revision
 (`run_narration_stage`), then -- once that stage has a validated
 `FinalStoryPlanContract` -- bounded visual/shot-mode planning
-(`run_visual_stage`). Each stage's validated persisted contract is that
-stage's resume checkpoint.
+(`run_visual_stage`), then -- once that stage has a validated
+`VisualPlanContract` too -- bounded voice/word-timing/subtitle-cue
+generation (`run_voice_stage`). Each stage's validated persisted contract is
+that stage's resume checkpoint.
 """
 
 from __future__ import annotations
@@ -16,6 +18,8 @@ import asyncio
 import json
 import math
 import sys
+import time
+import uuid
 from pathlib import Path
 from typing import Awaitable, Callable, Optional, Sequence
 
@@ -26,9 +30,18 @@ from orchestrator.agents.story_agent import write_story
 from orchestrator.agents.visual_agent import plan_visuals
 from orchestrator.contracts.analyzed_assets import AnalyzedAssetsContract
 from orchestrator.contracts.final_story_plan import FinalStoryPlanContract
+from orchestrator.contracts.subtitle_cues import SubtitleCuesContract
 from orchestrator.contracts.visual_plan import VisualPlanContract
 from orchestrator.preflight import _check_budget, run_preflight
-from orchestrator.settings import Settings, SettingsError, load_settings
+from orchestrator.settings import (
+    GEMINI_TTS_AUDIO_TOKENS_PER_SECOND,
+    GEMINI_TTS_INPUT_TOKEN_COST_USD,
+    GEMINI_TTS_OUTPUT_TOKEN_COST_USD,
+    STT_COST_PER_SECOND_USD,
+    Settings,
+    SettingsError,
+    load_settings,
+)
 from orchestrator.state.run_manifest import (
     RUN_STATE_DIR,
     RunManifest,
@@ -38,14 +51,24 @@ from orchestrator.state.run_manifest import (
     save_run_manifest,
     write_failure_report,
 )
-from orchestrator.tools.deterministic_tools import ASSETS_FILE, ingest
+from orchestrator.tools.deterministic_tools import (
+    ASSETS_FILE,
+    build_subtitle_cues,
+    extract_word_timing,
+    ingest,
+)
+from orchestrator.tools.gemini_tools import generate_narration_audio
 
 ANALYZED_ASSETS_FILE = Path("metadata/analyzed_assets.json")
 FINAL_STORY_PLAN_FILE = Path("metadata/final_story_plan.json")
 VISUAL_PLAN_FILE = Path("metadata/visual_plan.json")
+SUBTITLE_CUES_FILE = Path("metadata/subtitle_cues.json")
 MAX_ASSET_ANALYST_ATTEMPTS = 4
 MAX_STORY_AGENT_ATTEMPTS = 4
 MAX_VISUAL_AGENT_ATTEMPTS = 4
+# AD-3: transient-failure-retry default (not the 4-ceiling generate-review-
+# revise pattern) -- no creative self-correction loop exists in this stage.
+MAX_VOICE_AGENT_ATTEMPTS = 3
 
 
 def _halt(
@@ -284,6 +307,126 @@ async def run_visual_stage(settings: Settings, manifest: RunManifest) -> int:
     )
 
 
+async def run_voice_pipeline(story_plan: FinalStoryPlanContract, settings: Settings) -> ResultMessage:
+    """Run narration TTS -> word-timing STT -> subtitle-cue DP segmentation
+    directly, with no Claude/Agent-SDK session anywhere (AD-1: mirrors
+    `preflight`'s own no-judgment exception). Each tool's handler is called
+    the same way `run_screenshot_stage` calls `ingest.handler` directly.
+    Wraps the combined result in a synthetic `ResultMessage` so it reuses
+    `run_bounded_agent_stage` unchanged.
+    """
+    start = time.monotonic()
+    narration_script = story_plan.narration_script
+    voice_direction = story_plan.voice_direction.model_dump(mode="json")
+
+    tts_response = await generate_narration_audio.handler({
+        "narration_script": narration_script,
+        "voice_direction": voice_direction,
+        "project_id": settings.project_id,
+        "location": settings.location,
+    })
+    tts_payload = json.loads(tts_response["content"][0]["text"])
+    audio_duration_seconds = float(tts_payload["duration_seconds"])
+
+    stt_response = await extract_word_timing.handler({
+        "audio_path": tts_payload["audio_path"],
+        "narration_script": narration_script,
+        "project_id": settings.project_id,
+    })
+    stt_payload = json.loads(stt_response["content"][0]["text"])
+
+    dp_response = await build_subtitle_cues.handler({
+        "word_timing": stt_payload,
+        "narration_script": narration_script,
+        "voice_direction": voice_direction,
+        "scenes": [scene.model_dump(mode="json") for scene in story_plan.scenes],
+        "viewer_reflection": story_plan.story_arc.viewer_reflection,
+    })
+    dp_payload = json.loads(dp_response["content"][0]["text"])
+
+    # Real Gemini TTS + Google STT per-unit pricing (no total_cost_usd is
+    # available for these tools the way the Agent SDK provides it for
+    # Claude calls) -- settings.py's new cost-rate constants (Code Map).
+    # Input-token cost is based on the actual prompt text Gemini receives
+    # (build_tts_prompt's fixed instructional preamble plus the narration),
+    # not just the bare narration_script -- the preamble dwarfs it.
+    tts_input_cost = tts_payload["prompt_word_count"] * GEMINI_TTS_INPUT_TOKEN_COST_USD
+    tts_output_cost = (
+        audio_duration_seconds * GEMINI_TTS_AUDIO_TOKENS_PER_SECOND * GEMINI_TTS_OUTPUT_TOKEN_COST_USD
+    )
+    stt_cost = audio_duration_seconds * STT_COST_PER_SECOND_USD
+    total_cost = round(tts_input_cost + tts_output_cost + stt_cost, 6)
+
+    structured_output = {
+        "produced_by": "voice_agent",
+        "source_narration_script": narration_script,
+        "alignment_ratio": dp_payload["alignment_ratio"],
+        "cues": [
+            {
+                "cue_id": cue["cue_id"],
+                "start_seconds": cue["start_seconds"],
+                "end_seconds": cue["end_seconds"],
+                "word_count": cue["word_count"],
+                "text": cue["text"],
+                "words": cue["words"],
+            }
+            for cue in dp_payload["cues"]
+        ],
+    }
+
+    duration_ms = int((time.monotonic() - start) * 1000)
+    return ResultMessage(
+        subtype="success",
+        duration_ms=duration_ms,
+        duration_api_ms=duration_ms,
+        is_error=False,
+        num_turns=1,
+        session_id=f"voice_agent-{uuid.uuid4()}",
+        total_cost_usd=total_cost,
+        structured_output=structured_output,
+    )
+
+
+async def run_voice_stage(settings: Settings, manifest: RunManifest) -> int:
+    """Generate narration audio, word timing, and subtitle cues from the
+    already-validated `FinalStoryPlanContract` -- gated on that contract and
+    `VisualPlanContract` both existing (AC1's stated precondition;
+    `VisualPlanContract` is only an existence gate here, never read for
+    content).
+    """
+    try:
+        story_plan = FinalStoryPlanContract.model_validate_json(
+            FINAL_STORY_PLAN_FILE.read_text(encoding="utf-8")
+        )
+    except (FileNotFoundError, ValueError, OSError) as exc:
+        return _halt("voice_agent", "FinalStoryPlanContract", f"No validated final story plan available: {exc}")
+
+    try:
+        VisualPlanContract.model_validate_json(VISUAL_PLAN_FILE.read_text(encoding="utf-8"))
+    except (FileNotFoundError, ValueError, OSError) as exc:
+        return _halt("voice_agent", "VisualPlanContract", f"No validated visual plan available: {exc}")
+
+    async def call_agent(feedback: str | None, previous_output: object, remaining_budget: float) -> ResultMessage:
+        return await run_voice_pipeline(story_plan, settings)
+
+    def validate_contract(contract: SubtitleCuesContract) -> None:
+        contract.validate_sources(story_plan)
+
+    return await run_bounded_agent_stage(
+        stage_id="voice_agent",
+        failed_contract_name="SubtitleCuesContract",
+        contract_cls=SubtitleCuesContract,
+        persisted_file=SUBTITLE_CUES_FILE,
+        validate_contract=validate_contract,
+        max_attempts=MAX_VOICE_AGENT_ATTEMPTS,
+        settings=settings,
+        manifest=manifest,
+        base_partial_paths=[str(FINAL_STORY_PLAN_FILE), str(VISUAL_PLAN_FILE)],
+        attempt_file_prefix="voice_agent_attempt",
+        call_agent=call_agent,
+    )
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m orchestrator.run",
@@ -326,7 +469,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     narration_result = asyncio.run(run_narration_stage(settings, manifest))
     if narration_result != 0:
         return narration_result
-    return asyncio.run(run_visual_stage(settings, manifest))
+    visual_result = asyncio.run(run_visual_stage(settings, manifest))
+    if visual_result != 0:
+        return visual_result
+    return asyncio.run(run_voice_stage(settings, manifest))
 
 
 if __name__ == "__main__":
