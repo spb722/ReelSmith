@@ -1,0 +1,139 @@
+"""Visual/shot-mode planning contract. Shots map 1:1 onto
+`FinalStoryPlanContract`'s scenes by sequence (AD-2 -- no independent timing
+source exists pre-audio; subtitle cues are Story 1.5's concern).
+
+Passing `model_validate()` *is* passing the quality bar (AD-3): the
+mechanical checks (shot-sequence continuity, `generation_mode`/
+`visual_treatment` consistency, non-empty `source_asset_ids`) and the
+numeric score thresholds are both enforced as validators here, mirroring
+`FinalStoryPlanContract`'s pattern. `visual_director.py` has no scored-
+reviewer precedent to port -- these five dimensions are freshly designed
+this story.
+"""
+
+from __future__ import annotations
+
+from typing import Annotated, Literal
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from orchestrator.contracts.final_story_plan import FinalStoryPlanContract
+
+
+class ContractModel(BaseModel):
+    model_config = ConfigDict(strict=True, extra="ignore")
+
+
+MIN_APPROVAL_SCORE = 8
+MIN_SOURCE_FIDELITY_SCORE = 9
+MIN_INTERNAL_CONSISTENCY_SCORE = 9
+
+REQUIRED_SCORE_DIMENSIONS = (
+    "source_fidelity", "generation_mode_appropriateness", "visual_coherence",
+    "narrative_alignment", "internal_consistency",
+)
+
+# AD-4: generation_mode may be VEO only for these visual_treatment values;
+# every other treatment must be STILL.
+VEO_ELIGIBLE_TREATMENTS = frozenset({"AI_VIDEO_CANDIDATE", "MIXED"})
+
+
+class Shot(ContractModel):
+    sequence: int
+    generation_mode: Literal["STILL", "VEO"]
+    # Reused verbatim from visual_director.py's RESPONSE_SCHEMA -- matches
+    # Scene.suggested_visual_treatment exactly (Code Map).
+    visual_treatment: Literal[
+        "USE_EXISTING_ART", "CROP_AND_RECOMPOSE", "SUBTLE_ANIMATION",
+        "TEXT_LED", "AI_VIDEO_CANDIDATE", "MIXED",
+    ]
+    source_asset_ids: Annotated[list[str], Field(min_length=1)]
+    shot_goal: Annotated[str, Field(min_length=1)]
+    frame_composition: Annotated[str, Field(min_length=1)]
+    motion_plan: Annotated[str, Field(min_length=1)]
+    text_overlay: str
+    source_support: Annotated[str, Field(min_length=1)]
+
+
+class QualityReview(ContractModel):
+    verdict: Literal["APPROVE"]
+    ready_for_generation: Literal[True]
+    confidence: Annotated[float, Field(ge=0, le=1)]
+    scores: dict[str, Annotated[int, Field(ge=1, le=10)]]
+
+    @model_validator(mode="after")
+    def score_thresholds(self) -> "QualityReview":
+        missing = [name for name in REQUIRED_SCORE_DIMENSIONS if name not in self.scores]
+        if missing:
+            raise ValueError(f"quality_review.scores is missing required dimensions: {missing}")
+        below = {
+            name: self.scores[name] for name in REQUIRED_SCORE_DIMENSIONS
+            if self.scores[name] < MIN_APPROVAL_SCORE
+        }
+        if below:
+            raise ValueError(
+                f"quality_review requires every score >= {MIN_APPROVAL_SCORE}. Below threshold: {below}"
+            )
+        if self.scores["source_fidelity"] < MIN_SOURCE_FIDELITY_SCORE:
+            raise ValueError(f"quality_review requires source_fidelity >= {MIN_SOURCE_FIDELITY_SCORE}.")
+        if self.scores["internal_consistency"] < MIN_INTERNAL_CONSISTENCY_SCORE:
+            raise ValueError(
+                f"quality_review requires internal_consistency >= {MIN_INTERNAL_CONSISTENCY_SCORE}."
+            )
+        return self
+
+
+class VisualPlanContract(ContractModel):
+    # Required, no default: a legacy `visual_director.py` (Gemini) manifest
+    # never has this field, so it fails validation here rather than silently
+    # satisfying resume forever (AD-6, mirrors FinalStoryPlanContract).
+    produced_by: Literal["visual_agent"]
+    overall_visual_style: Annotated[str, Field(min_length=1)]
+    shots: Annotated[list[Shot], Field(min_length=1)]
+    quality_review: QualityReview
+
+    @model_validator(mode="after")
+    def shot_sequence_is_continuous(self) -> "VisualPlanContract":
+        expected = list(range(1, len(self.shots) + 1))
+        actual = [shot.sequence for shot in self.shots]
+        if actual != expected:
+            raise ValueError("Shot sequence numbers must start at 1 and increase continuously.")
+        return self
+
+    @model_validator(mode="after")
+    def generation_mode_matches_visual_treatment(self) -> "VisualPlanContract":
+        invalid = [
+            shot.sequence for shot in self.shots
+            if shot.generation_mode == "VEO" and shot.visual_treatment not in VEO_ELIGIBLE_TREATMENTS
+        ]
+        if invalid:
+            raise ValueError(
+                "generation_mode VEO requires visual_treatment AI_VIDEO_CANDIDATE or MIXED; "
+                f"violated by shot sequence(s): {invalid}"
+            )
+        return self
+
+    def validate_sources(self, story_plan: FinalStoryPlanContract) -> None:
+        """Resume-staleness guard (AD-2): shot sequences must exactly match
+        the current `FinalStoryPlanContract`'s scene sequences -- one shot
+        per scene, not merely a subset -- and each shot's `source_asset_ids`
+        must be a subset of that same scene's own `source_asset_ids`.
+        """
+        expected_sequences = [scene.sequence for scene in story_plan.scenes]
+        actual_sequences = [shot.sequence for shot in self.shots]
+        if actual_sequences != expected_sequences:
+            raise ValueError(
+                "Shot sequences must exactly match the current FinalStoryPlanContract's "
+                f"scene sequences. Expected {expected_sequences}, got {actual_sequences}."
+            )
+        scene_assets_by_sequence = {
+            scene.sequence: set(scene.source_asset_ids) for scene in story_plan.scenes
+        }
+        for shot in self.shots:
+            allowed = scene_assets_by_sequence[shot.sequence]
+            unknown = set(shot.source_asset_ids) - allowed
+            if unknown:
+                raise ValueError(
+                    f"Shot {shot.sequence} references asset ids not in its scene's own "
+                    f"source_asset_ids: {sorted(unknown)}"
+                )

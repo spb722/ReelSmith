@@ -410,8 +410,12 @@ def test_run_main_returns_zero_when_preflight_passes(tmp_path, monkeypatch, caps
     async def successful_narration_stage(settings, manifest):
         return 0
 
+    async def successful_visual_stage(settings, manifest):
+        return 0
+
     monkeypatch.setattr(run_module, "run_screenshot_stage", successful_stage)
     monkeypatch.setattr(run_module, "run_narration_stage", successful_narration_stage)
+    monkeypatch.setattr(run_module, "run_visual_stage", successful_visual_stage)
 
     exit_code = run_module.main([str(tmp_path / "source_images")])
 

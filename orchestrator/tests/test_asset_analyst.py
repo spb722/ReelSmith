@@ -90,8 +90,16 @@ def stage(tmp_path, monkeypatch):
         no_narration_stage.calls.append((settings, manifest))
         return 0
 
+    async def no_visual_stage(settings, manifest):
+        # Same reasoning as no_narration_stage above, one stage further:
+        # visual_agent is exercised in its own test module.
+        no_visual_stage.calls.append((settings, manifest))
+        return 0
+
     no_narration_stage.calls = []
+    no_visual_stage.calls = []
     monkeypatch.setattr(run, "run_narration_stage", no_narration_stage)
+    monkeypatch.setattr(run, "run_visual_stage", no_visual_stage)
     source = tmp_path / "source_images"
     source.mkdir()
     for index in range(6):

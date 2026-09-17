@@ -3,7 +3,9 @@
 Runs preflight, deterministic ingestion, and bounded screenshot understanding
 (`run_screenshot_stage`), then -- once that stage has a validated
 `AnalyzedAssetsContract` -- bounded narration writing/review/revision
-(`run_narration_stage`). Each stage's validated persisted contract is that
+(`run_narration_stage`), then -- once that stage has a validated
+`FinalStoryPlanContract` -- bounded visual/shot-mode planning
+(`run_visual_stage`). Each stage's validated persisted contract is that
 stage's resume checkpoint.
 """
 
@@ -21,8 +23,10 @@ from claude_agent_sdk import ResultMessage
 
 from orchestrator.agents.asset_analyst import analyze_assets
 from orchestrator.agents.story_agent import write_story
+from orchestrator.agents.visual_agent import plan_visuals
 from orchestrator.contracts.analyzed_assets import AnalyzedAssetsContract
 from orchestrator.contracts.final_story_plan import FinalStoryPlanContract
+from orchestrator.contracts.visual_plan import VisualPlanContract
 from orchestrator.preflight import _check_budget, run_preflight
 from orchestrator.settings import Settings, SettingsError, load_settings
 from orchestrator.state.run_manifest import (
@@ -38,8 +42,10 @@ from orchestrator.tools.deterministic_tools import ASSETS_FILE, ingest
 
 ANALYZED_ASSETS_FILE = Path("metadata/analyzed_assets.json")
 FINAL_STORY_PLAN_FILE = Path("metadata/final_story_plan.json")
+VISUAL_PLAN_FILE = Path("metadata/visual_plan.json")
 MAX_ASSET_ANALYST_ATTEMPTS = 4
 MAX_STORY_AGENT_ATTEMPTS = 4
+MAX_VISUAL_AGENT_ATTEMPTS = 4
 
 
 def _halt(
@@ -232,6 +238,52 @@ async def run_narration_stage(settings: Settings, manifest: RunManifest) -> int:
     )
 
 
+async def run_visual_stage(settings: Settings, manifest: RunManifest) -> int:
+    """Assign each shot's generation_mode/visual_treatment/visual direction
+    from the already-validated `FinalStoryPlanContract` + `AnalyzedAssetsContract`
+    -- gated on that story contract existing, since `visual_agent` has no
+    Read tool and never re-derives it itself (AD-2: no independent timing
+    source exists pre-audio, so shots map 1:1 onto scenes by sequence).
+    """
+    try:
+        story_plan = FinalStoryPlanContract.model_validate_json(
+            FINAL_STORY_PLAN_FILE.read_text(encoding="utf-8")
+        )
+    except (FileNotFoundError, ValueError, OSError) as exc:
+        return _halt("visual_agent", "FinalStoryPlanContract", f"No validated final story plan available: {exc}")
+
+    try:
+        analyzed = AnalyzedAssetsContract.model_validate_json(ANALYZED_ASSETS_FILE.read_text(encoding="utf-8"))
+    except (FileNotFoundError, ValueError, OSError) as exc:
+        return _halt("visual_agent", "AnalyzedAssetsContract", f"No validated analyzed-assets contract available: {exc}")
+
+    story_plan_bundle = story_plan.model_dump(mode="json")
+    assets_bundle = [asset.model_dump(mode="json") for asset in analyzed.assets]
+
+    async def call_agent(feedback: str | None, previous_output: object, remaining_budget: float):
+        return await plan_visuals(
+            story_plan_bundle, assets_bundle, max_budget_usd=remaining_budget,
+            feedback=feedback, previous_output=previous_output,
+        )
+
+    def validate_contract(contract: VisualPlanContract) -> None:
+        contract.validate_sources(story_plan)
+
+    return await run_bounded_agent_stage(
+        stage_id="visual_agent",
+        failed_contract_name="VisualPlanContract",
+        contract_cls=VisualPlanContract,
+        persisted_file=VISUAL_PLAN_FILE,
+        validate_contract=validate_contract,
+        max_attempts=MAX_VISUAL_AGENT_ATTEMPTS,
+        settings=settings,
+        manifest=manifest,
+        base_partial_paths=[str(FINAL_STORY_PLAN_FILE), str(ANALYZED_ASSETS_FILE)],
+        attempt_file_prefix="visual_agent_attempt",
+        call_agent=call_agent,
+    )
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m orchestrator.run",
@@ -271,7 +323,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     screenshot_result = asyncio.run(run_screenshot_stage(args.source_images_dir, settings, manifest))
     if screenshot_result != 0:
         return screenshot_result
-    return asyncio.run(run_narration_stage(settings, manifest))
+    narration_result = asyncio.run(run_narration_stage(settings, manifest))
+    if narration_result != 0:
+        return narration_result
+    return asyncio.run(run_visual_stage(settings, manifest))
 
 
 if __name__ == "__main__":
