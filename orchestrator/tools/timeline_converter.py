@@ -97,15 +97,9 @@ def build_timeline_data(
         asset_path = shot_assets[shot.sequence]
         shot_type = shot_type_for_asset(asset_path)
         if shot_type == "still" and shot.still_motion is None:
-            # The still-shot half of the VEO/STILL `still_motion` asymmetry
-            # `VisualPlanContract.still_motion_forbidden_for_veo_shots` can't
-            # enforce at parse time (`still_motion` is deferred backfill
-            # data, like `start_seconds`/`end_seconds` above) -- checked here
-            # instead, once a still shot's real timeline data is expected.
             raise ValueError(
                 f"Shot {shot.sequence} is a still shot but has no still_motion (Ken-Burns "
-                "data) -- has this VisualPlanContract been backfilled with real per-shot "
-                "motion (Story 2.2)?"
+                "data)."
             )
 
         shots_out.append({

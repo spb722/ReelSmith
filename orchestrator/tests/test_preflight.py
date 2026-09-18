@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from orchestrator.preflight import parse_bucket_name, run_preflight
+from orchestrator.preflight import check_remotion_delivery_toolchain, parse_bucket_name, run_preflight
 from orchestrator.settings import Settings
 
 
@@ -430,17 +430,22 @@ def test_run_main_returns_zero_when_preflight_passes(tmp_path, monkeypatch, caps
         stage_order.append("stills")
         return 0
 
+    async def successful_delivery_stage(settings, manifest):
+        stage_order.append("delivery")
+        return 0
+
     monkeypatch.setattr(run_module, "run_screenshot_stage", successful_stage)
     monkeypatch.setattr(run_module, "run_narration_stage", successful_narration_stage)
     monkeypatch.setattr(run_module, "run_visual_stage", successful_visual_stage)
     monkeypatch.setattr(run_module, "run_voice_stage", successful_voice_stage)
     monkeypatch.setattr(run_module, "run_veo_stage", successful_veo_stage)
     monkeypatch.setattr(run_module, "run_stills_stage", successful_stills_stage)
+    monkeypatch.setattr(run_module, "run_delivery_stage", successful_delivery_stage)
 
     exit_code = run_module.main([str(tmp_path / "source_images")])
 
     assert exit_code == 0
-    assert stage_order == ["screenshot", "narration", "visual", "voice", "veo", "stills"]
+    assert stage_order == ["screenshot", "narration", "visual", "voice", "veo", "stills", "delivery"]
     assert not list(tmp_path.glob("failure_*.json"))
 
     async def failed_veo_stage(settings, manifest):
@@ -448,3 +453,35 @@ def test_run_main_returns_zero_when_preflight_passes(tmp_path, monkeypatch, caps
 
     monkeypatch.setattr(run_module, "run_veo_stage", failed_veo_stage)
     assert run_module.main([str(tmp_path / "source_images")]) == 1
+
+
+def test_check_remotion_delivery_toolchain_missing_npx(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("orchestrator.preflight.shutil.which", lambda _: None)
+    result = check_remotion_delivery_toolchain()
+    assert result is not None
+    assert result.passed is False
+    assert result.failed_check == "remotion"
+    assert "npx" in (result.reason or "")
+
+
+def test_check_remotion_delivery_toolchain_missing_package_json(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("orchestrator.preflight.shutil.which", lambda _: "/usr/bin/npx")
+    result = check_remotion_delivery_toolchain()
+    assert result is not None
+    assert result.failed_check == "remotion"
+    assert "package.json" in (result.reason or "").lower() or "Remotion project" in (result.reason or "")
+
+
+def test_check_remotion_delivery_toolchain_missing_node_modules(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    from orchestrator.preflight import REMOTION_DIR
+
+    REMOTION_DIR.mkdir(parents=True)
+    (REMOTION_DIR / "package.json").write_text("{}", encoding="utf-8")
+    monkeypatch.setattr("orchestrator.preflight.shutil.which", lambda _: "/usr/bin/npx")
+    result = check_remotion_delivery_toolchain()
+    assert result is not None
+    assert result.failed_check == "remotion"
+    assert "node_modules" in (result.reason or "")

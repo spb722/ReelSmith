@@ -99,16 +99,13 @@ class Shot(ContractModel):
     start_seconds: SkipJsonSchema[float] = 0.0
     end_seconds: SkipJsonSchema[float] = 0.0
     primary_subtitle_cue_ids: SkipJsonSchema[list[str]] = Field(default_factory=list)
-    # Story 2.2: additive renderer fields the data-driven `timeline.json`
-    # converter/renderer needs (Design Notes) -- per-shot transition timing
-    # and Ken-Burns still motion. Same `SkipJsonSchema` rationale as the
-    # Story 2.1 fields above: visual_agent never sees or sets these; real
-    # values are a one-time backfill of the existing reference reel's plan
-    # from `remotion/src/BookReel.tsx`'s hand-authored tables.
-    # `still_motion` is null for VEO shots (Ken-Burns applies to stills only).
-    fade_in_frames: SkipJsonSchema[int] = 0
-    fade_out_frames: SkipJsonSchema[int] = 0
-    still_motion: SkipJsonSchema[StillMotion | None] = None
+    # Story 2.2 / Epic 3.1: per-shot transition timing and Ken-Burns still
+    # motion for the data-driven renderer. `visual_agent` emits intentional
+    # values for every new reel (Decision B); legacy persisted plans may
+    # omit fades (default 0). `still_motion` is null for VEO shots only.
+    fade_in_frames: Annotated[int, Field(ge=0)] = 0
+    fade_out_frames: Annotated[int, Field(ge=0)] = 0
+    still_motion: StillMotion | None = None
 
 
 class QualityReview(ContractModel):
@@ -171,27 +168,27 @@ class VisualPlanContract(ContractModel):
 
     @model_validator(mode="after")
     def still_motion_forbidden_for_veo_shots(self) -> "VisualPlanContract":
-        """Mirrors `generation_mode_matches_visual_treatment`'s pattern for
-        the other half of the VEO/STILL asymmetry (Never: Ken-Burns motion
-        applies to stills only). Only the VEO-forbids-motion direction is
-        enforced here -- unlike `still_motion` itself, `generation_mode` is
-        set by `visual_agent` from the start, so a VEO shot's `still_motion`
-        is checkable immediately. The reverse (a STILL shot must eventually
-        have a real `still_motion`) is deferred data, exactly like
-        `start_seconds`/`end_seconds` (Story 2.1) -- `visual_agent` never
-        sets `still_motion` either (`SkipJsonSchema`), so a freshly generated
-        STILL shot legitimately has none yet; that half is enforced once
-        real timeline data is expected, in
-        `timeline_converter.build_timeline_data`.
+        """Ken-Burns motion applies to stills only: VEO shots must not carry
+        `still_motion`; STILL shots must carry a valid `StillMotion` once
+        `visual_agent` output is expected (Epic 3.1 / Decision B).
         """
-        invalid = [
+        veo_with_motion = [
             shot.sequence for shot in self.shots
             if shot.generation_mode == "VEO" and shot.still_motion is not None
         ]
-        if invalid:
+        if veo_with_motion:
             raise ValueError(
                 "generation_mode VEO must not carry still_motion (Ken-Burns motion is "
-                f"stills-only); violated by shot sequence(s): {invalid}"
+                f"stills-only); violated by shot sequence(s): {veo_with_motion}"
+            )
+        still_without_motion = [
+            shot.sequence for shot in self.shots
+            if shot.generation_mode == "STILL" and shot.still_motion is None
+        ]
+        if still_without_motion:
+            raise ValueError(
+                "generation_mode STILL requires still_motion (Ken-Burns data); "
+                f"missing for shot sequence(s): {still_without_motion}"
             )
         return self
 

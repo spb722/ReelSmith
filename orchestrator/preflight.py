@@ -9,12 +9,16 @@ failure-report writer every later agent's halt uses (AD-6/NFR5).
 from __future__ import annotations
 
 import math
+import shutil
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable, Optional
 
 import google.auth
 
 from orchestrator.settings import Settings, SettingsError, load_settings
+
+REMOTION_DIR = Path("remotion")
 
 CredentialsFactory = Callable[[], object]
 StorageClientFactory = Callable[[str], object]
@@ -130,6 +134,32 @@ def _check_budget(
             ),
         )
 
+    return None
+
+
+def check_remotion_delivery_toolchain() -> PreflightResult | None:
+    """Return a failed `PreflightResult` when Remotion cannot render, else None."""
+    if shutil.which("npx") is None:
+        return PreflightResult(
+            passed=False,
+            failed_check="remotion",
+            reason="npx is not available on PATH -- install Node.js/npm to render with Remotion",
+        )
+    if not (REMOTION_DIR / "package.json").is_file():
+        return PreflightResult(
+            passed=False,
+            failed_check="remotion",
+            reason=f"Remotion project not found at {REMOTION_DIR.resolve()}",
+        )
+    if not (REMOTION_DIR / "node_modules").is_dir():
+        return PreflightResult(
+            passed=False,
+            failed_check="remotion",
+            reason=(
+                f"Remotion dependencies are missing ({REMOTION_DIR / 'node_modules'}); "
+                "run npm install in remotion/"
+            ),
+        )
     return None
 
 

@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from orchestrator.contracts.production_assets import ProductionAssetEntry
 from orchestrator.contracts.stills import StillOutcomeContract, StillResultContract
 from orchestrator.contracts.veo import sha256_file, shot_fingerprint
-from orchestrator.contracts.visual_plan import Shot
+from orchestrator.contracts.visual_plan import Shot, StillMotion
 from orchestrator.state.production_assets import load_production_assets, upsert_production_asset
 
 
@@ -23,6 +23,7 @@ def still_shot(sequence: int = 1) -> Shot:
         motion_plan="Slow push-in.",
         text_overlay="",
         source_support="The cited screenshot contains this illustration.",
+        still_motion=StillMotion(scale_from=1.0, scale_to=1.06, easing="ease"),
     )
 
 
@@ -153,6 +154,7 @@ def test_keyed_upsert_preserves_veo_and_still_entries_together():
             motion_plan="Use restrained motion.",
             text_overlay="",
             source_support="Directly supported.",
+            still_motion=None,
         )
 
     veo = veo_shot(2)

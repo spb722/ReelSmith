@@ -79,7 +79,7 @@ def shot_for(
     sequence: int, asset_id: str, generation_mode: str = "STILL",
     visual_treatment: str = "USE_EXISTING_ART",
 ) -> dict:
-    return {
+    shot = {
         "sequence": sequence,
         "generation_mode": generation_mode,
         "visual_treatment": visual_treatment,
@@ -89,7 +89,14 @@ def shot_for(
         "motion_plan": "Slow push-in.",
         "text_overlay": "",
         "source_support": "Directly grounded in the cited asset.",
+        "fade_in_frames": 6,
+        "fade_out_frames": 4,
     }
+    if generation_mode == "STILL":
+        shot["still_motion"] = {"scale_from": 1.0, "scale_to": 1.06, "easing": "ease"}
+    else:
+        shot["still_motion"] = None
+    return shot
 
 
 def base_contract(asset_ids: list[str] = ASSET_IDS) -> dict:
@@ -131,22 +138,36 @@ def test_veo_allowed_with_eligible_treatment(treatment):
     data = base_contract()
     data["shots"][0]["generation_mode"] = "VEO"
     data["shots"][0]["visual_treatment"] = treatment
+    data["shots"][0]["still_motion"] = None
     VisualPlanContract.model_validate(data)
 
 
 def test_shot_renderer_fields_default_when_absent():
-    # Story 2.2: `fade_in_frames`/`fade_out_frames`/`still_motion` are
-    # `SkipJsonSchema` -- a shot that predates this story (no such keys at
-    # all, e.g. `visual_agent`'s own current output) must still validate.
+    # Legacy persisted plans may omit fade keys (default 0) but STILL shots
+    # still require `still_motion` once validated as a full contract.
     data = base_contract()
     for shot in data["shots"]:
-        assert "fade_in_frames" not in shot
-        assert "fade_out_frames" not in shot
-        assert "still_motion" not in shot
+        del shot["fade_in_frames"]
+        del shot["fade_out_frames"]
     contract = VisualPlanContract.model_validate(data)
     assert all(shot.fade_in_frames == 0 for shot in contract.shots)
     assert all(shot.fade_out_frames == 0 for shot in contract.shots)
-    assert all(shot.still_motion is None for shot in contract.shots)
+    assert all(shot.still_motion is not None for shot in contract.shots)
+
+
+def test_still_shot_without_still_motion_rejected():
+    data = base_contract()
+    data["shots"][0]["still_motion"] = None
+    with pytest.raises(ValidationError, match="still_motion"):
+        VisualPlanContract.model_validate(data)
+
+
+def test_agent_json_schema_includes_renderer_motion_fields():
+    schema = VisualPlanContract.model_json_schema()
+    shot_props = schema["$defs"]["Shot"]["properties"]
+    assert "fade_in_frames" in shot_props
+    assert "fade_out_frames" in shot_props
+    assert "still_motion" in shot_props
 
 
 def test_still_motion_accepts_a_well_formed_shot():
@@ -186,6 +207,7 @@ def test_veo_shot_without_still_motion_allowed():
     data = base_contract()
     data["shots"][0]["generation_mode"] = "VEO"
     data["shots"][0]["visual_treatment"] = "AI_VIDEO_CANDIDATE"
+    data["shots"][0]["still_motion"] = None
     contract = VisualPlanContract.model_validate(data)
     assert contract.shots[0].still_motion is None
 

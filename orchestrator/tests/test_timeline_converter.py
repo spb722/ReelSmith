@@ -38,6 +38,8 @@ FINAL_STORY_PLAN_FILE = Path("metadata/final_story_plan.json")
 # The reference reel's final asset paths, as hand-authored in
 # `remotion/src/timeline.ts` (Code Map ground truth) -- shots 2/5/6 are Veo
 # clips, every other shot is a still.
+REFERENCE_VEO_SHOT_SEQUENCES = frozenset({2, 5, 6})
+
 REFERENCE_SHOT_ASSETS = {
     1: "stills/shot_01.png",
     2: "video/shot_02.mp4",
@@ -94,7 +96,12 @@ def load_reference_visual_plan() -> VisualPlanContract:
     data["produced_by"] = "visual_agent"
     data["overall_visual_style"] = data["visual_concept"]["overall_approach"]
     for shot in data["shots"]:
-        shot["generation_mode"] = "STILL"
+        if shot["sequence"] in REFERENCE_VEO_SHOT_SEQUENCES:
+            shot["generation_mode"] = "VEO"
+            shot["visual_treatment"] = "AI_VIDEO_CANDIDATE"
+            shot["still_motion"] = None
+        else:
+            shot["generation_mode"] = "STILL"
     data["quality_review"] = {
         "verdict": "APPROVE", "ready_for_generation": True, "confidence": 1.0,
         "scores": {
@@ -275,11 +282,10 @@ def test_visual_plan_without_backfilled_fields_still_parses_with_defaults():
         del shot["primary_subtitle_cue_ids"]
         del shot["fade_in_frames"]
         del shot["fade_out_frames"]
-        del shot["still_motion"]
+        shot["still_motion"] = {"scale_from": 1.0, "scale_to": 1.07, "easing": "linear"}
 
     contract = VisualPlanContract.model_validate(data)
     assert all(shot.start_seconds == 0.0 for shot in contract.shots)
     assert all(shot.primary_subtitle_cue_ids == [] for shot in contract.shots)
     assert all(shot.fade_in_frames == 0 for shot in contract.shots)
     assert all(shot.fade_out_frames == 0 for shot in contract.shots)
-    assert all(shot.still_motion is None for shot in contract.shots)

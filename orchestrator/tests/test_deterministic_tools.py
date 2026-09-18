@@ -3,14 +3,25 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+from pathlib import Path
 
 import pytest
 from PIL import Image
 
 import orchestrator.tools.deterministic_tools as deterministic_tools_module
 from orchestrator.tools.deterministic_tools import (
-    ImpactPhraseNotFoundError, build_subtitle_cues, deterministic_server, discover_images, extract_word_timing,
-    ingest, inspect_image, sha256_file,
+    ImpactPhraseNotFoundError,
+    REMOTION_DIR,
+    REMOTION_PUBLIC_DIR,
+    build_subtitle_cues,
+    deterministic_server,
+    discover_images,
+    extract_word_timing,
+    ingest,
+    inspect_image,
+    render_remotion,
+    sha256_file,
+    sync_remotion_assets,
 )
 
 
@@ -206,3 +217,72 @@ def test_build_subtitle_cues_raises_distinct_error_when_impact_text_not_in_narra
             "scenes": [{"impact_text": "this phrase is nowhere in the narration"}],
             "viewer_reflection": "",
         }))
+
+
+def test_sync_remotion_assets_copies_public_layout(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    narration = tmp_path / "audio/narration.wav"
+    narration.parent.mkdir(parents=True)
+    narration.write_bytes(b"wav")
+    cues = tmp_path / "metadata/subtitle_cues.json"
+    cues.parent.mkdir(parents=True)
+    cues.write_text('{"cues": []}', encoding="utf-8")
+    timeline = tmp_path / "timeline.json"
+    timeline.write_text('{"shots": []}', encoding="utf-8")
+    still = tmp_path / "generated/stills/shot_01.png"
+    still.parent.mkdir(parents=True)
+    still.write_bytes(b"png")
+
+    response = asyncio.run(sync_remotion_assets.handler({
+        "narration_path": str(narration),
+        "subtitle_cues_path": str(cues),
+        "timeline_path": str(timeline),
+        "shot_asset_sources": {"1": str(still)},
+    }))
+    payload = json.loads(response["content"][0]["text"])
+    assert (REMOTION_PUBLIC_DIR / "audio/narration.wav").read_bytes() == b"wav"
+    assert (REMOTION_PUBLIC_DIR / "data/subtitle_cues.json").exists()
+    assert (REMOTION_PUBLIC_DIR / "data/timeline.json").exists()
+    assert (REMOTION_PUBLIC_DIR / "stills/shot_01.png").read_bytes() == b"png"
+    assert payload["shot_assets"]["1"] == "stills/shot_01.png"
+
+
+def test_render_remotion_success_uses_absolute_output(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    remotion = REMOTION_DIR
+    remotion.mkdir(parents=True)
+    (remotion / "package.json").write_text("{}", encoding="utf-8")
+    (remotion / "node_modules").mkdir()
+    out = tmp_path / "remotion/out/book_reel.mp4"
+
+    def fake_run(command, **kwargs):
+        assert kwargs["cwd"] == remotion
+        assert command[-1] == str(out.resolve())
+        Path(command[-1]).parent.mkdir(parents=True, exist_ok=True)
+        Path(command[-1]).write_bytes(b"mp4")
+        return type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    monkeypatch.setattr(deterministic_tools_module.subprocess, "run", fake_run)
+    monkeypatch.setattr(deterministic_tools_module.shutil, "which", lambda _: "/usr/bin/npx")
+
+    response = asyncio.run(render_remotion.handler({"output_path": str(out)}))
+    payload = json.loads(response["content"][0]["text"])
+    assert Path(payload["output_path"]) == out.resolve()
+    assert out.is_file()
+
+
+def test_render_remotion_failure_raises_runtime_error(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    remotion = REMOTION_DIR
+    remotion.mkdir(parents=True)
+    (remotion / "package.json").write_text("{}", encoding="utf-8")
+    (remotion / "node_modules").mkdir()
+
+    def fake_run(command, **kwargs):
+        return type("R", (), {"returncode": 1, "stdout": "", "stderr": "render failed"})()
+
+    monkeypatch.setattr(deterministic_tools_module.subprocess, "run", fake_run)
+    monkeypatch.setattr(deterministic_tools_module.shutil, "which", lambda _: "/usr/bin/npx")
+
+    with pytest.raises(RuntimeError, match="Remotion render failed"):
+        asyncio.run(render_remotion.handler({"output_path": str(out := tmp_path / "out.mp4")}))

@@ -249,6 +249,9 @@ def still_shot_dict(**overrides) -> dict:
         motion_plan="Slow push-in.",
         text_overlay="",
         source_support="Directly supported.",
+        fade_in_frames=6,
+        fade_out_frames=4,
+        still_motion={"scale_from": 1.0, "scale_to": 1.06, "easing": "ease"},
     )
     base.update(overrides)
     return Shot.model_validate(base).model_dump(mode="json")

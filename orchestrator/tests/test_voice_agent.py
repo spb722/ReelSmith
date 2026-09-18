@@ -73,6 +73,9 @@ def visual_plan_for() -> dict:
             "motion_plan": "Slow push-in.",
             "text_overlay": "",
             "source_support": "Directly grounded in the cited asset.",
+            "fade_in_frames": 6,
+            "fade_out_frames": 4,
+            "still_motion": {"scale_from": 1.0, "scale_to": 1.06, "easing": "ease"},
         }],
         "quality_review": {
             "verdict": "APPROVE", "ready_for_generation": True, "confidence": 0.9,
@@ -210,11 +213,15 @@ def stage(tmp_path, monkeypatch):
         # would need for the plan's STILL shot.
         return 0
 
+    async def no_delivery_stage(settings, manifest):
+        return 0
+
     monkeypatch.setattr(run, "run_screenshot_stage", no_screenshot_stage)
     monkeypatch.setattr(run, "run_narration_stage", no_narration_stage)
     monkeypatch.setattr(run, "run_visual_stage", no_visual_stage)
     monkeypatch.setattr(run, "run_veo_stage", no_veo_stage)
     monkeypatch.setattr(run, "run_stills_stage", no_stills_stage)
+    monkeypatch.setattr(run, "run_delivery_stage", no_delivery_stage)
 
     story_plan = final_story_plan_for(NARRATION_SCRIPT)
     run.FINAL_STORY_PLAN_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -285,6 +292,10 @@ def test_fresh_run_runs_tools_in_sequence_and_persists_validated_contract(stage,
     assert manifest.budget_spent_usd == pytest.approx(expected_cost())
     assert manifest.iteration_counts == {"voice_agent": 1}
 
+    visual_plan = json.loads(run.VISUAL_PLAN_FILE.read_text())
+    assert visual_plan["shots"][0]["end_seconds"] > 0.0
+    assert visual_plan["shots"][0]["primary_subtitle_cue_ids"]
+
 
 def persisted_subtitle_cues_payload() -> dict:
     return {
@@ -302,6 +313,16 @@ def persisted_subtitle_cues_payload() -> dict:
     }
 
 
+def persisted_subtitle_cues_full_payload() -> dict:
+    payload = json.loads(dp_ok_payload()["content"][0]["text"])
+    return {
+        "produced_by": "voice_agent",
+        "source_narration_script": NARRATION_SCRIPT,
+        "alignment_ratio": payload["alignment_ratio"],
+        "cues": payload["cues"],
+    }
+
+
 def test_valid_persisted_contract_skips_tools(stage, monkeypatch):
     source = stage
     create_audio_file()
@@ -312,6 +333,21 @@ def test_valid_persisted_contract_skips_tools(stage, monkeypatch):
         assert run.main([str(source)]) == 0
     assert tts_tool.calls == stt_tool.calls == dp_tool.calls == []
     assert run.SUBTITLE_CUES_FILE.read_bytes() == before
+
+
+def test_voice_skip_still_backfills_visual_plan_shot_timing(stage, monkeypatch):
+    source = stage
+    create_audio_file()
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(persisted_subtitle_cues_full_payload()), encoding="utf-8")
+    plan = json.loads(run.VISUAL_PLAN_FILE.read_text())
+    assert plan["shots"][0].get("start_seconds", 0.0) == 0.0
+    assert plan["shots"][0].get("end_seconds", 0.0) == 0.0
+    tts_tool, stt_tool, dp_tool = mock_tools(monkeypatch, tts=[], stt=[], dp=[])
+    assert run.main([str(source)]) == 0
+    assert tts_tool.calls == stt_tool.calls == dp_tool.calls == []
+    updated = json.loads(run.VISUAL_PLAN_FILE.read_text())
+    assert updated["shots"][0]["end_seconds"] > 0.0
+    assert updated["shots"][0]["primary_subtitle_cue_ids"]
 
 
 def test_persisted_contract_with_missing_audio_cannot_skip(stage, monkeypatch):

@@ -127,7 +127,7 @@ def shot_for(
     sequence: int, asset_id: str, generation_mode: str = "STILL",
     visual_treatment: str = "USE_EXISTING_ART",
 ) -> dict:
-    return {
+    shot = {
         "sequence": sequence,
         "generation_mode": generation_mode,
         "visual_treatment": visual_treatment,
@@ -137,7 +137,14 @@ def shot_for(
         "motion_plan": "Slow push-in.",
         "text_overlay": "",
         "source_support": "Directly grounded in the cited asset.",
+        "fade_in_frames": 6,
+        "fade_out_frames": 4,
     }
+    if generation_mode == "STILL":
+        shot["still_motion"] = {"scale_from": 1.0, "scale_to": 1.06, "easing": "ease"}
+    else:
+        shot["still_motion"] = None
+    return shot
 
 
 def visual_plan_for(asset_ids: list[str]) -> dict:
@@ -157,30 +164,13 @@ def visual_plan_for(asset_ids: list[str]) -> dict:
 
 
 def stamped(output: dict, asset_ids: list[str]) -> dict:
-    """`output` as `visual_agent` would return it, plus the per-shot AD-7
-    content fingerprint `validate_sources` stamps in before persisting --
-    `visual_agent` itself never sees or sets this field (`SkipJsonSchema`).
-    Also fills in Story 2.1's additive `start_seconds`/`end_seconds`/
-    `primary_subtitle_cue_ids` fields and Story 2.2's additive
-    `fade_in_frames`/`fade_out_frames`/`still_motion` fields with their
-    `SkipJsonSchema` defaults -- `visual_agent` never sees or sets any of
-    these (AD-2: no independent timing source exists pre-audio; Story 2.2's
-    renderer fields are a one-time backfill of the reference reel's own
-    persisted plan), so a freshly persisted contract always carries the
-    defaults, not real values.
+    """Persisted shape after `validate_sources` stamps AD-7 fingerprints and
+    pydantic serializes the validated contract (matches `model_dump` on disk).
     """
     story_plan = FinalStoryPlanContract.model_validate(final_story_plan_for(asset_ids))
-    scenes_by_sequence = {scene.sequence: scene for scene in story_plan.scenes}
-    expected = copy.deepcopy(output)
-    for shot in expected["shots"]:
-        shot["scene_content_fingerprint"] = _scene_content_fingerprint(scenes_by_sequence[shot["sequence"]])
-        shot["start_seconds"] = 0.0
-        shot["end_seconds"] = 0.0
-        shot["primary_subtitle_cue_ids"] = []
-        shot["fade_in_frames"] = 0
-        shot["fade_out_frames"] = 0
-        shot["still_motion"] = None
-    return expected
+    contract = VisualPlanContract.model_validate(output)
+    contract.validate_sources(story_plan)
+    return contract.model_dump(mode="json")
 
 
 def sdk_result(output, *, cost=0.3, is_error=False, subtype="success"):
@@ -223,12 +213,16 @@ def stage(tmp_path, monkeypatch):
     async def no_stills_stage(settings, manifest):
         return 0
 
+    async def no_delivery_stage(settings, manifest):
+        return 0
+
     no_voice_stage.calls = []
     monkeypatch.setattr(run, "run_screenshot_stage", no_screenshot_stage)
     monkeypatch.setattr(run, "run_narration_stage", no_narration_stage)
     monkeypatch.setattr(run, "run_voice_stage", no_voice_stage)
     monkeypatch.setattr(run, "run_veo_stage", no_veo_stage)
     monkeypatch.setattr(run, "run_stills_stage", no_stills_stage)
+    monkeypatch.setattr(run, "run_delivery_stage", no_delivery_stage)
 
     analyzed = analyzed_assets_contract_for(ASSET_IDS)
     run.ANALYZED_ASSETS_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -350,6 +344,11 @@ def test_invalid_or_stale_persistence_cannot_skip(stage, monkeypatch, bad_file):
             shot["start_seconds"] = float(index * 10)
             shot["end_seconds"] = float(index * 10 + 5)
             shot["primary_subtitle_cue_ids"] = [f"cue_{index:03d}"]
+            shot["fade_in_frames"] = 8
+            shot["fade_out_frames"] = 3
+            shot["still_motion"] = {
+                "scale_from": 1.0, "scale_to": 1.05, "easing": "linear",
+            }
     if bad_file == "sequence_mismatch":
         bad["shots"] = bad["shots"][:-1]  # 2 shots for 3 scenes -- narration changed
     run.VISUAL_PLAN_FILE.write_text("{" if bad_file == "malformed" else json.dumps(bad))
@@ -363,6 +362,9 @@ def test_invalid_or_stale_persistence_cannot_skip(stage, monkeypatch, bad_file):
             assert shot["start_seconds"] == float(index * 10)
             assert shot["end_seconds"] == float(index * 10 + 5)
             assert shot["primary_subtitle_cue_ids"] == [f"cue_{index:03d}"]
+            assert shot["fade_in_frames"] == 8
+            assert shot["fade_out_frames"] == 3
+            assert shot["still_motion"]["scale_to"] == 1.05
 
 
 def test_no_final_story_plan_contract_prevents_visual_agent(stage, monkeypatch):

@@ -41,7 +41,7 @@ from orchestrator.contracts.stills import StillOutcomeContract
 from orchestrator.contracts.subtitle_cues import SubtitleCuesContract
 from orchestrator.contracts.veo import VeoOutcomeContract, shot_fingerprint
 from orchestrator.contracts.visual_plan import VisualPlanContract
-from orchestrator.preflight import _check_budget, run_preflight
+from orchestrator.preflight import _check_budget, check_remotion_delivery_toolchain, run_preflight
 from orchestrator.settings import (
     GEMINI_TTS_AUDIO_TOKENS_PER_SECOND,
     GEMINI_TTS_INPUT_TOKEN_COST_USD,
@@ -67,12 +67,19 @@ from orchestrator.state.production_assets import (
 )
 from orchestrator.tools.deterministic_tools import (
     ASSETS_FILE,
+    DEFAULT_REMOTION_RENDER_OUTPUT,
     ImpactPhraseNotFoundError,
+    REMOTION_PUBLIC_DIR,
     build_subtitle_cues,
     extract_word_timing,
     ingest,
+    public_relative_path_for_production_asset,
+    render_remotion,
+    sync_remotion_assets,
+    tokenize,
 )
-from orchestrator.tools.gemini_tools import generate_narration_audio
+from orchestrator.tools.gemini_tools import NARRATION_WAV, generate_narration_audio
+from orchestrator.tools.timeline_converter import build_timeline_data
 
 ANALYZED_ASSETS_FILE = Path("metadata/analyzed_assets.json")
 FINAL_STORY_PLAN_FILE = Path("metadata/final_story_plan.json")
@@ -309,20 +316,19 @@ def _load_previous_shot_timing(path: Path) -> dict[int, dict]:
             "start_seconds": shot["start_seconds"],
             "end_seconds": shot["end_seconds"],
             "primary_subtitle_cue_ids": shot.get("primary_subtitle_cue_ids", []),
+            "fade_in_frames": shot.get("fade_in_frames", 0),
+            "fade_out_frames": shot.get("fade_out_frames", 0),
+            "still_motion": shot.get("still_motion"),
         }
     return timing_by_sequence
 
 
 def _merge_backfilled_shot_timing(contract: VisualPlanContract) -> None:
-    """Story 2.1: a freshly regenerated `VisualPlanContract` has every
-    shot's additive timing fields at their `SkipJsonSchema` defaults
-    (`0.0`/`0.0`/`[]`) -- `visual_agent` never sees or sets them (AD-2).
-    Without this, a fresh `visual_agent` run (e.g. because the currently
-    persisted file fails validation for an unrelated reason) would silently
-    overwrite this story's backfilled reference-reel timing with those
-    defaults. Merges in whatever real timing the previously persisted file
-    already had for each shot sequence; a shot with no prior entry is left
-    at its default.
+    """When `visual_agent` regenerates a plan, merge per-shot timing and
+    renderer fields (`fade_*`, `still_motion`) from the previously persisted
+    `metadata/visual_plan.json` by sequence. Agent-emitted fades/motion on the
+    fresh draft are overwritten only where the prior file had real values for
+    that sequence (Story 2.1 timing backfill + Decision B motion preservation).
     """
     timing_by_sequence = _load_previous_shot_timing(VISUAL_PLAN_FILE)
     for shot in contract.shots:
@@ -332,6 +338,76 @@ def _merge_backfilled_shot_timing(contract: VisualPlanContract) -> None:
         shot.start_seconds = timing["start_seconds"]
         shot.end_seconds = timing["end_seconds"]
         shot.primary_subtitle_cue_ids = list(timing["primary_subtitle_cue_ids"])
+        shot.fade_in_frames = timing["fade_in_frames"]
+        shot.fade_out_frames = timing["fade_out_frames"]
+        if timing["still_motion"] is not None:
+            from orchestrator.contracts.visual_plan import StillMotion
+            shot.still_motion = StillMotion.model_validate(timing["still_motion"])
+
+
+def _backfill_visual_plan_shot_timing_from_cues() -> None:
+    """After `voice_agent`, assign real per-shot timing/cue linkage from
+    subtitle cues (1:1 shots/scenes). Leaves shots that already carry timing.
+    """
+    visual_plan = VisualPlanContract.model_validate_json(VISUAL_PLAN_FILE.read_text(encoding="utf-8"))
+    if not any(shot.start_seconds == 0.0 and shot.end_seconds == 0.0 for shot in visual_plan.shots):
+        return
+
+    story_plan = FinalStoryPlanContract.model_validate_json(
+        FINAL_STORY_PLAN_FILE.read_text(encoding="utf-8")
+    )
+    subtitle_cues = SubtitleCuesContract.model_validate_json(
+        SUBTITLE_CUES_FILE.read_text(encoding="utf-8")
+    )
+    if len(story_plan.scenes) != len(visual_plan.shots):
+        raise ValueError(
+            "Cannot backfill shot timing: scene count does not match shot count."
+        )
+
+    cues = subtitle_cues.cues
+    cue_cursor = 0
+    for scene, shot in zip(story_plan.scenes, visual_plan.shots):
+        if shot.sequence != scene.sequence:
+            raise ValueError(
+                f"Shot/scene sequence mismatch at {shot.sequence} vs {scene.sequence}"
+            )
+        if not (shot.start_seconds == 0.0 and shot.end_seconds == 0.0):
+            continue
+
+        target_words = len(tokenize(scene.narration))
+        assigned: list = []
+        words_covered = 0
+        while cue_cursor < len(cues) and words_covered < target_words:
+            cue = cues[cue_cursor]
+            assigned.append(cue)
+            words_covered += cue.word_count
+            cue_cursor += 1
+        if not assigned:
+            raise ValueError(f"Shot {shot.sequence} has no subtitle cues to map")
+        shot.start_seconds = assigned[0].start_seconds
+        shot.end_seconds = assigned[-1].end_seconds
+        shot.primary_subtitle_cue_ids = [cue.cue_id for cue in assigned]
+
+    if cue_cursor != len(cues):
+        raise ValueError(
+            "Subtitle cue coverage does not match scene-aligned shots after backfill."
+        )
+
+    _atomic_write_json(VISUAL_PLAN_FILE, visual_plan.model_dump(mode="json"))
+
+
+def _voice_shot_timing_backfill_or_halt() -> int | None:
+    """Run cue→shot timing backfill; return a halt exit code on failure."""
+    try:
+        _backfill_visual_plan_shot_timing_from_cues()
+    except (ValueError, OSError) as exc:
+        return _halt(
+            "voice_agent",
+            "VisualPlanContract",
+            f"Shot timing backfill failed: {exc}",
+            partial_artifact_paths=[str(SUBTITLE_CUES_FILE), str(VISUAL_PLAN_FILE)],
+        )
+    return None
 
 
 async def run_visual_stage(settings: Settings, manifest: RunManifest) -> int:
@@ -526,6 +602,18 @@ async def run_voice_pipeline(
     )
 
 
+def _voice_stage_skip_is_valid(story_plan: FinalStoryPlanContract) -> bool:
+    """True when a persisted `SubtitleCuesContract` may skip `voice_agent`."""
+    try:
+        contract = SubtitleCuesContract.model_validate_json(
+            SUBTITLE_CUES_FILE.read_text(encoding="utf-8")
+        )
+        contract.validate_sources(story_plan)
+    except (FileNotFoundError, ValueError, OSError):
+        return False
+    return True
+
+
 async def run_voice_stage(settings: Settings, manifest: RunManifest) -> int:
     """Generate narration audio, word timing, and subtitle cues from the
     already-validated `FinalStoryPlanContract` -- gated on that contract and
@@ -545,13 +633,18 @@ async def run_voice_stage(settings: Settings, manifest: RunManifest) -> int:
     except (FileNotFoundError, ValueError, OSError) as exc:
         return _halt("voice_agent", "VisualPlanContract", f"No validated visual plan available: {exc}")
 
+    if _voice_stage_skip_is_valid(story_plan):
+        print(f"voice_agent skipped: validated {SUBTITLE_CUES_FILE}")
+        backfill_failure = _voice_shot_timing_backfill_or_halt()
+        return backfill_failure if backfill_failure is not None else 0
+
     async def call_agent(feedback: str | None, previous_output: object, remaining_budget: float) -> ResultMessage:
         return await run_voice_pipeline(story_plan, settings, manifest.budget_spent_usd)
 
     def validate_contract(contract: SubtitleCuesContract) -> None:
         contract.validate_sources(story_plan)
 
-    return await run_bounded_agent_stage(
+    result = await run_bounded_agent_stage(
         stage_id="voice_agent",
         failed_contract_name="SubtitleCuesContract",
         contract_cls=SubtitleCuesContract,
@@ -564,6 +657,10 @@ async def run_voice_stage(settings: Settings, manifest: RunManifest) -> int:
         attempt_file_prefix="voice_agent_attempt",
         call_agent=call_agent,
     )
+    if result != 0:
+        return result
+    backfill_failure = _voice_shot_timing_backfill_or_halt()
+    return backfill_failure if backfill_failure is not None else 0
 
 
 def _veo_settings_payload(settings: Settings) -> dict:
@@ -1116,6 +1213,96 @@ async def run_stills_stage(settings: Settings, manifest: RunManifest) -> int:
     return 0
 
 
+async def run_delivery_stage(settings: Settings, manifest: RunManifest) -> int:
+    """Sync validated production assets into Remotion and render the final MP4."""
+
+    remotion_failure = check_remotion_delivery_toolchain()
+    if remotion_failure is not None:
+        return _halt(
+            "delivery",
+            remotion_failure.failed_check or "remotion",
+            remotion_failure.reason or "Remotion delivery preflight failed",
+        )
+
+    try:
+        visual_plan = VisualPlanContract.model_validate_json(
+            VISUAL_PLAN_FILE.read_text(encoding="utf-8")
+        )
+        subtitle_cues = SubtitleCuesContract.model_validate_json(
+            SUBTITLE_CUES_FILE.read_text(encoding="utf-8")
+        )
+        production_assets = load_production_assets(PRODUCTION_ASSETS_FILE)
+    except (FileNotFoundError, ValueError, OSError) as exc:
+        return _halt("delivery", "DeliveryInputs", f"Validated delivery inputs required: {exc}")
+
+    missing_sequences = [
+        shot.sequence for shot in visual_plan.shots
+        if str(shot.sequence) not in production_assets.shots
+    ]
+    if missing_sequences:
+        return _halt(
+            "delivery",
+            "ProductionAssetsContract",
+            f"Incomplete production assets: missing shot(s) {missing_sequences}",
+            partial_artifact_paths=[str(PRODUCTION_ASSETS_FILE)],
+        )
+
+    shot_asset_sources: dict[str, str] = {}
+    shot_assets_public: dict[int, str] = {}
+    for shot in visual_plan.shots:
+        entry = production_assets.shots[str(shot.sequence)]
+        public_relative = public_relative_path_for_production_asset(
+            entry.local_path, entry.shot_sequence, entry.asset_type,
+        )
+        shot_asset_sources[str(shot.sequence)] = entry.local_path
+        shot_assets_public[shot.sequence] = public_relative
+
+    if not NARRATION_WAV.is_file():
+        return _halt(
+            "delivery",
+            "NarrationAudio",
+            f"Final narration audio not found at {NARRATION_WAV}",
+        )
+
+    try:
+        timeline = build_timeline_data(visual_plan, subtitle_cues, shot_assets_public)
+    except ValueError as exc:
+        return _halt("delivery", "TimelineConverter", str(exc))
+
+    timeline_path = REMOTION_PUBLIC_DIR / "data" / "timeline.json"
+    timeline_path.parent.mkdir(parents=True, exist_ok=True)
+    _atomic_write_json(timeline_path, timeline)
+
+    try:
+        await sync_remotion_assets.handler({
+            "narration_path": str(NARRATION_WAV),
+            "subtitle_cues_path": str(SUBTITLE_CUES_FILE),
+            "timeline_path": str(timeline_path),
+            "visual_plan_path": str(VISUAL_PLAN_FILE),
+            "shot_asset_sources": shot_asset_sources,
+        })
+    except Exception as exc:
+        return _halt("delivery", "sync_remotion_assets", f"{type(exc).__name__}: {exc}")
+
+    try:
+        render_response = await render_remotion.handler({
+            "output_path": str(DEFAULT_REMOTION_RENDER_OUTPUT),
+        })
+    except Exception as exc:
+        return _halt("delivery", "render_remotion", f"{type(exc).__name__}: {exc}")
+
+    try:
+        render_payload = json.loads(render_response["content"][0]["text"])
+    except (KeyError, IndexError, TypeError, json.JSONDecodeError) as exc:
+        return _halt(
+            "delivery",
+            "render_remotion",
+            f"Remotion render returned an unreadable tool response: {exc}",
+        )
+    print(f"delivery complete: {render_payload['output_path']}")
+    return 0
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m orchestrator.run",
@@ -1167,7 +1354,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     veo_result = asyncio.run(run_veo_stage(settings, manifest))
     if veo_result != 0:
         return veo_result
-    return asyncio.run(run_stills_stage(settings, manifest))
+    stills_result = asyncio.run(run_stills_stage(settings, manifest))
+    if stills_result != 0:
+        return stills_result
+    return asyncio.run(run_delivery_stage(settings, manifest))
 
 
 if __name__ == "__main__":

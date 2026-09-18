@@ -20,6 +20,8 @@ import hashlib
 import json
 import math
 import re
+import shutil
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -818,6 +820,140 @@ async def build_subtitle_cues(args: dict) -> dict:
     return {"content": [{"type": "text", "text": json.dumps(payload, ensure_ascii=False)}]}
 
 
+# ============================================================
+# REMOTION DELIVERY (Story 3.1)
+# ============================================================
+
+REMOTION_DIR = Path("remotion")
+REMOTION_PUBLIC_DIR = REMOTION_DIR / "public"
+DEFAULT_REMOTION_RENDER_OUTPUT = REMOTION_DIR / "out" / "book_reel.mp4"
+REMOTION_COMPOSITION_ID = "BookReel"
+REMOTION_RENDER_TIMEOUT_SECONDS = 3600
+
+
+def public_relative_path_for_production_asset(local_path: str, shot_sequence: int, asset_type: str) -> str:
+    """Map a production entry's repo-relative path to the Remotion public layout."""
+    suffix = Path(local_path).suffix.lower()
+    if asset_type == "video" or suffix in {".mp4", ".mov", ".webm"}:
+        return f"video/shot_{shot_sequence:02d}.mp4"
+    return f"stills/shot_{shot_sequence:02d}.png"
+
+
+def _copy_into_public(source: Path, public_relative: str) -> str:
+    destination = REMOTION_PUBLIC_DIR / public_relative
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, destination)
+    return public_relative
+
+
+@tool(
+    "sync_remotion_assets",
+    "Copy narration, per-shot media, subtitle cues, optional visual plan, and timeline into remotion/public/",
+    {
+        "narration_path": str,
+        "subtitle_cues_path": str,
+        "timeline_path": str,
+        "shot_asset_sources": dict,
+    },
+)
+async def sync_remotion_assets(args: dict) -> dict:
+    narration = Path(args["narration_path"])
+    subtitle_cues = Path(args["subtitle_cues_path"])
+    timeline = Path(args["timeline_path"])
+    visual_plan_path = args.get("visual_plan_path")
+
+    if not narration.is_file():
+        raise FileNotFoundError(f"Narration audio not found: {narration.resolve()}")
+    if not subtitle_cues.is_file():
+        raise FileNotFoundError(f"Subtitle cues not found: {subtitle_cues.resolve()}")
+    if not timeline.is_file():
+        raise FileNotFoundError(f"timeline.json not found: {timeline.resolve()}")
+
+    copied: dict[str, str] = {}
+    copied["audio/narration.wav"] = _copy_into_public(narration, "audio/narration.wav")
+    copied["data/subtitle_cues.json"] = _copy_into_public(subtitle_cues, "data/subtitle_cues.json")
+    copied["data/timeline.json"] = _copy_into_public(timeline, "data/timeline.json")
+
+    if visual_plan_path:
+        plan = Path(visual_plan_path)
+        if not plan.is_file():
+            raise FileNotFoundError(f"Visual plan not found: {plan.resolve()}")
+        copied["data/visual_plan.json"] = _copy_into_public(plan, "data/visual_plan.json")
+
+    shot_assets: dict[str, str] = {}
+    for sequence_key, source_path in args["shot_asset_sources"].items():
+        sequence = int(sequence_key)
+        source = Path(source_path)
+        if not source.is_file():
+            raise FileNotFoundError(f"Shot {sequence} asset not found: {source.resolve()}")
+        public_relative = public_relative_path_for_production_asset(
+            str(source), sequence, "video" if source.suffix.lower() in {".mp4", ".mov", ".webm"} else "still",
+        )
+        shot_assets[str(sequence)] = _copy_into_public(source, public_relative)
+
+    payload = {"copied": copied, "shot_assets": shot_assets}
+    return {"content": [{"type": "text", "text": json.dumps(payload, ensure_ascii=False)}]}
+
+
+def _remotion_toolchain_failure_reason() -> str | None:
+    if shutil.which("npx") is None:
+        return "npx is not available on PATH -- install Node.js/npm to render with Remotion"
+    package_json = REMOTION_DIR / "package.json"
+    if not package_json.is_file():
+        return f"Remotion project not found at {REMOTION_DIR.resolve()}"
+    if not (REMOTION_DIR / "node_modules").is_dir():
+        return (
+            f"Remotion dependencies are missing ({REMOTION_DIR / 'node_modules'}); "
+            "run npm install in remotion/"
+        )
+    return None
+
+
+@tool(
+    "render_remotion",
+    "Run npx remotion render for the BookReel composition",
+    {"output_path": str},
+)
+async def render_remotion(args: dict) -> dict:
+    failure = _remotion_toolchain_failure_reason()
+    if failure:
+        raise RuntimeError(failure)
+
+    output_path = Path(args["output_path"]).resolve()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    command = [
+        "npx", "remotion", "render", REMOTION_COMPOSITION_ID, str(output_path),
+    ]
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=REMOTION_DIR,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=REMOTION_RENDER_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(
+            f"Remotion render timed out after {REMOTION_RENDER_TIMEOUT_SECONDS}s"
+        ) from exc
+    except OSError as exc:
+        raise RuntimeError(f"Failed to start Remotion render: {exc}") from exc
+
+    if completed.returncode != 0:
+        stderr = (completed.stderr or "").strip()
+        stdout = (completed.stdout or "").strip()
+        detail = stderr or stdout or f"exit code {completed.returncode}"
+        raise RuntimeError(f"Remotion render failed: {detail}")
+
+    if not output_path.is_file() or output_path.stat().st_size == 0:
+        raise RuntimeError(f"Remotion render produced no output at {output_path}")
+
+    payload = {"output_path": str(output_path), "composition_id": REMOTION_COMPOSITION_ID}
+    return {"content": [{"type": "text", "text": json.dumps(payload, ensure_ascii=False)}]}
+
+
 deterministic_server = create_sdk_mcp_server(
-    name="deterministic", tools=[ingest, extract_word_timing, build_subtitle_cues],
+    name="deterministic",
+    tools=[ingest, extract_word_timing, build_subtitle_cues, sync_remotion_assets, render_remotion],
 )

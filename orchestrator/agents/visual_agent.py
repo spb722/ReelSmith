@@ -33,6 +33,18 @@ SHOTS ARE SCENES
 - Do not invent independent shot timing, subtitle cue ids, or start/end
   seconds -- none of that exists yet at this point in the pipeline.
 
+RENDERER MOTION AND FADES (every shot)
+- fade_in_frames and fade_out_frames are per-shot crossfade lengths in frames
+  at 30fps (non-negative integers). Choose values that fit the edit rhythm for
+  this shot and its neighbors -- vary them intentionally across shots; never
+  use a fixed ladder keyed only on shot number.
+- For generation_mode STILL only: set still_motion to Ken-Burns parameters
+  (scale_from, scale_to, optional translate_x/y from/to, optional easing one
+  of linear/ease/easeOut) that match motion_plan and frame_composition --
+  intentional per shot, grounded in the cited assets' suggested_motion when
+  present.
+- For generation_mode VEO: set still_motion to null (video carries motion).
+
 PLANNING EACH SHOT
 - source_asset_ids must be non-empty and a subset of that scene's own
   source_asset_ids -- never an asset the scene itself doesn't cite.

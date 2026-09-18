@@ -140,6 +140,9 @@ def visual_plan_for(asset_id: str) -> dict:
             "motion_plan": "Slow push-in.",
             "text_overlay": "",
             "source_support": "Directly grounded in the cited asset.",
+            "fade_in_frames": 6,
+            "fade_out_frames": 4,
+            "still_motion": {"scale_from": 1.0, "scale_to": 1.06, "easing": "ease"},
         }],
         "quality_review": {
             "verdict": "APPROVE", "ready_for_generation": True, "confidence": 0.9,
@@ -296,7 +299,11 @@ def test_partial_chain_resumes_only_from_first_missing_stage(chain, monkeypatch)
         # further down in this same file.
         return 0
 
+    async def no_delivery_stage(settings, manifest):
+        return 0
+
     monkeypatch.setattr(run, "run_stills_stage", no_stills_stage)
+    monkeypatch.setattr(run, "run_delivery_stage", no_delivery_stage)
 
     assert run.main([str(source)]) == 0
 
@@ -311,9 +318,17 @@ def test_fully_valid_chain_makes_zero_new_calls_anywhere(chain, monkeypatch):
     must not re-run any stage.
     """
     source, asset_id = chain
-    run.VISUAL_PLAN_FILE.write_text(json.dumps(visual_plan_for(asset_id)), encoding="utf-8")
+    # Fully complete = timing already backfilled too; otherwise voice skip
+    # would still rewrite visual_plan.json via shot-timing backfill.
+    cues = subtitle_cues_for()
+    plan = visual_plan_for(asset_id)
+    cue = cues["cues"][0]
+    plan["shots"][0]["start_seconds"] = cue["start_seconds"]
+    plan["shots"][0]["end_seconds"] = cue["end_seconds"]
+    plan["shots"][0]["primary_subtitle_cue_ids"] = [cue["cue_id"]]
+    run.VISUAL_PLAN_FILE.write_text(json.dumps(plan), encoding="utf-8")
     create_audio_file()
-    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(cues), encoding="utf-8")
 
     before = {
         path: path.read_bytes() for path in (
@@ -334,7 +349,11 @@ def test_fully_valid_chain_makes_zero_new_calls_anywhere(chain, monkeypatch):
         # further down in this same file.
         return 0
 
+    async def no_delivery_stage(settings, manifest):
+        return 0
+
     monkeypatch.setattr(run, "run_stills_stage", no_stills_stage)
+    monkeypatch.setattr(run, "run_delivery_stage", no_delivery_stage)
 
     assert run.main([str(source)]) == 0
     assert run.main([str(source)]) == 0  # idempotent across repeated invocations too
@@ -397,7 +416,11 @@ def test_stages_1_to_4_valid_only_voice_agent_missing_resumes_at_voice_agent_onl
     async def no_stills_stage(settings, manifest):
         return 0
 
+    async def no_delivery_stage(settings, manifest):
+        return 0
+
     monkeypatch.setattr(run, "run_stills_stage", no_stills_stage)
+    monkeypatch.setattr(run, "run_delivery_stage", no_delivery_stage)
 
     assert run.main([str(source)]) == 0
 
@@ -424,7 +447,11 @@ def test_persisted_subtitle_cues_with_deleted_audio_does_not_skip(chain, monkeyp
     async def no_stills_stage(settings, manifest):
         return 0
 
+    async def no_delivery_stage(settings, manifest):
+        return 0
+
     monkeypatch.setattr(run, "run_stills_stage", no_stills_stage)
+    monkeypatch.setattr(run, "run_delivery_stage", no_delivery_stage)
 
     assert run.main([str(source)]) == 0
 
@@ -446,6 +473,9 @@ def veo_visual_plan_for(asset_id: str, *, count: int = 1) -> VisualPlanContract:
             "motion_plan": "Use restrained motion.",
             "text_overlay": "",
             "source_support": "Directly grounded in the source.",
+            "fade_in_frames": 6,
+            "fade_out_frames": 6,
+            "still_motion": None,
         })
     return VisualPlanContract.model_validate(data)
 
@@ -574,6 +604,7 @@ def test_veo_stage_generates_only_veo_mode_and_never_changes_plan(chain, monkeyp
     plan_data = veo_visual_plan_for(asset_id, count=2).model_dump(mode="json")
     plan_data["shots"][1]["generation_mode"] = "STILL"
     plan_data["shots"][1]["visual_treatment"] = "USE_EXISTING_ART"
+    plan_data["shots"][1]["still_motion"] = {"scale_from": 1.0, "scale_to": 1.06, "easing": "ease"}
     visual_plan = VisualPlanContract.model_validate(plan_data)
     run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
     run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
@@ -767,6 +798,9 @@ def still_visual_plan_for(asset_id: str, *, count: int = 1) -> VisualPlanContrac
             "motion_plan": "Slow push-in.",
             "text_overlay": "",
             "source_support": "Directly grounded in the source.",
+            "fade_in_frames": 6,
+            "fade_out_frames": 4,
+            "still_motion": {"scale_from": 1.0, "scale_to": 1.06, "easing": "ease"},
         })
     return VisualPlanContract.model_validate(data)
 
@@ -867,6 +901,7 @@ def test_stills_stage_generates_only_still_mode_and_never_changes_plan(chain, mo
     plan_data = still_visual_plan_for(asset_id, count=2).model_dump(mode="json")
     plan_data["shots"][1]["generation_mode"] = "VEO"
     plan_data["shots"][1]["visual_treatment"] = "AI_VIDEO_CANDIDATE"
+    plan_data["shots"][1]["still_motion"] = None
     visual_plan = VisualPlanContract.model_validate(plan_data)
     run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
     run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
@@ -1111,6 +1146,9 @@ def test_veo_and_stills_stages_together_cover_every_shot_exactly_once(chain, mon
                 "motion_plan": "Use restrained motion.",
                 "text_overlay": "",
                 "source_support": "Directly grounded in the source.",
+                "fade_in_frames": 6,
+                "fade_out_frames": 6,
+                "still_motion": None,
             },
             {
                 "sequence": 2,
@@ -1122,6 +1160,9 @@ def test_veo_and_stills_stages_together_cover_every_shot_exactly_once(chain, mon
                 "motion_plan": "Slow push-in.",
                 "text_overlay": "",
                 "source_support": "Directly grounded in the source.",
+                "fade_in_frames": 6,
+                "fade_out_frames": 4,
+                "still_motion": {"scale_from": 1.0, "scale_to": 1.06, "easing": "ease"},
             },
         ],
         "quality_review": {

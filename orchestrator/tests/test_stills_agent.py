@@ -6,7 +6,7 @@ from claude_agent_sdk import ResultMessage
 
 import orchestrator.agents.stills_agent as stills_agent_module
 from orchestrator.contracts.veo import shot_fingerprint
-from orchestrator.contracts.visual_plan import Shot
+from orchestrator.contracts.visual_plan import Shot, StillMotion
 
 
 def shot_dict() -> dict:
@@ -20,6 +20,7 @@ def shot_dict() -> dict:
         motion_plan="Slow push-in.",
         text_overlay="",
         source_support="Directly supported.",
+        still_motion=StillMotion(scale_from=1.0, scale_to=1.06, easing="ease"),
     ).model_dump(mode="json")
 
 
