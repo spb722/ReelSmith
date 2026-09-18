@@ -196,9 +196,25 @@ def stage(tmp_path, monkeypatch):
     async def no_visual_stage(settings, manifest):
         return 0
 
+    async def no_veo_stage(settings, manifest):
+        # visual_plan_for() below has no VEO-mode shots, so the real
+        # run_veo_stage already trivially skips -- stubbed anyway so this
+        # file exercises voice_agent/run_voice_stage only, matching the
+        # other per-stage test modules' convention.
+        return 0
+
+    async def no_stills_stage(settings, manifest):
+        # Same reasoning: stills_agent (the stage that now runs after the
+        # voice stage succeeds) is exercised in its own test module, and
+        # this fixture never sets up the AnalyzedAssetsContract a real run
+        # would need for the plan's STILL shot.
+        return 0
+
     monkeypatch.setattr(run, "run_screenshot_stage", no_screenshot_stage)
     monkeypatch.setattr(run, "run_narration_stage", no_narration_stage)
     monkeypatch.setattr(run, "run_visual_stage", no_visual_stage)
+    monkeypatch.setattr(run, "run_veo_stage", no_veo_stage)
+    monkeypatch.setattr(run, "run_stills_stage", no_stills_stage)
 
     story_plan = final_story_plan_for(NARRATION_SCRIPT)
     run.FINAL_STORY_PLAN_FILE.parent.mkdir(parents=True, exist_ok=True)

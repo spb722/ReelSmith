@@ -426,16 +426,21 @@ def test_run_main_returns_zero_when_preflight_passes(tmp_path, monkeypatch, caps
         stage_order.append("veo")
         return 0
 
+    async def successful_stills_stage(settings, manifest):
+        stage_order.append("stills")
+        return 0
+
     monkeypatch.setattr(run_module, "run_screenshot_stage", successful_stage)
     monkeypatch.setattr(run_module, "run_narration_stage", successful_narration_stage)
     monkeypatch.setattr(run_module, "run_visual_stage", successful_visual_stage)
     monkeypatch.setattr(run_module, "run_voice_stage", successful_voice_stage)
     monkeypatch.setattr(run_module, "run_veo_stage", successful_veo_stage)
+    monkeypatch.setattr(run_module, "run_stills_stage", successful_stills_stage)
 
     exit_code = run_module.main([str(tmp_path / "source_images")])
 
     assert exit_code == 0
-    assert stage_order == ["screenshot", "narration", "visual", "voice", "veo"]
+    assert stage_order == ["screenshot", "narration", "visual", "voice", "veo", "stills"]
     assert not list(tmp_path.glob("failure_*.json"))
 
     async def failed_veo_stage(settings, manifest):

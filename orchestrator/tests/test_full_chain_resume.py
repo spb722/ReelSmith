@@ -21,6 +21,7 @@ import orchestrator.agents.visual_agent as visual_agent_module
 import orchestrator.run as run
 from orchestrator.preflight import PreflightResult
 from orchestrator.contracts.production_assets import ProductionAssetEntry
+from orchestrator.contracts.stills import StillFailureContract, StillOutcomeContract, StillResultContract
 from orchestrator.contracts.veo import (
     VeoFailureContract,
     VeoOutcomeContract,
@@ -289,6 +290,14 @@ def test_partial_chain_resumes_only_from_first_missing_stage(chain, monkeypatch)
         }),
     ))
 
+    async def no_stills_stage(settings, manifest):
+        # This test exercises stages 1.2-1.5 resume behavior only;
+        # stills_agent/run_stills_stage has its own dedicated test coverage
+        # further down in this same file.
+        return 0
+
+    monkeypatch.setattr(run, "run_stills_stage", no_stills_stage)
+
     assert run.main([str(source)]) == 0
 
     assert len(visual_calls) == 1
@@ -318,6 +327,14 @@ def test_fully_valid_chain_makes_zero_new_calls_anywhere(chain, monkeypatch):
     monkeypatch.setattr(run, "generate_narration_audio", RefusingTool())
     monkeypatch.setattr(run, "extract_word_timing", RefusingTool())
     monkeypatch.setattr(run, "build_subtitle_cues", RefusingTool())
+
+    async def no_stills_stage(settings, manifest):
+        # This test exercises stages 1.2-1.5 resume behavior only;
+        # stills_agent/run_stills_stage has its own dedicated test coverage
+        # further down in this same file.
+        return 0
+
+    monkeypatch.setattr(run, "run_stills_stage", no_stills_stage)
 
     assert run.main([str(source)]) == 0
     assert run.main([str(source)]) == 0  # idempotent across repeated invocations too
@@ -377,6 +394,11 @@ def test_stages_1_to_4_valid_only_voice_agent_missing_resumes_at_voice_agent_onl
     monkeypatch.setattr(visual_agent_module, "query", refuse_query("visual_agent"))
     tts_calls, stt_calls, dp_calls = _mock_voice_tools(monkeypatch)
 
+    async def no_stills_stage(settings, manifest):
+        return 0
+
+    monkeypatch.setattr(run, "run_stills_stage", no_stills_stage)
+
     assert run.main([str(source)]) == 0
 
     assert len(tts_calls) == len(stt_calls) == len(dp_calls) == 1
@@ -398,6 +420,11 @@ def test_persisted_subtitle_cues_with_deleted_audio_does_not_skip(chain, monkeyp
     monkeypatch.setattr(story_agent_module, "query", refuse_query("story_agent"))
     monkeypatch.setattr(visual_agent_module, "query", refuse_query("visual_agent"))
     tts_calls, stt_calls, dp_calls = _mock_voice_tools(monkeypatch)
+
+    async def no_stills_stage(settings, manifest):
+        return 0
+
+    monkeypatch.setattr(run, "run_stills_stage", no_stills_stage)
 
     assert run.main([str(source)]) == 0
 
@@ -718,3 +745,413 @@ def test_stale_production_manifest_halts_before_agent_call(chain, monkeypatch):
 
     monkeypatch.setattr(run, "generate_veo_asset", refuse_agent)
     assert asyncio.run(run.run_veo_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 1
+
+
+# ---------------------------------------------------------------------------
+# Story 2.4: run_stills_stage -- mirrors run_veo_stage's own test matrix
+# above, minus the seed stage (single-stage Gemini image-edit call).
+# ---------------------------------------------------------------------------
+
+
+def still_visual_plan_for(asset_id: str, *, count: int = 1) -> VisualPlanContract:
+    data = visual_plan_for(asset_id)
+    data["shots"] = []
+    for sequence in range(1, count + 1):
+        data["shots"].append({
+            "sequence": sequence,
+            "generation_mode": "STILL",
+            "visual_treatment": "USE_EXISTING_ART",
+            "source_asset_ids": [asset_id],
+            "shot_goal": f"Show beat {sequence}.",
+            "frame_composition": "Center the subject.",
+            "motion_plan": "Slow push-in.",
+            "text_overlay": "",
+            "source_support": "Directly grounded in the source.",
+        })
+    return VisualPlanContract.model_validate(data)
+
+
+def approved_still_outcome_for(shot) -> StillOutcomeContract:
+    image_path = Path("generated/stills") / f"shot_{shot.sequence:02d}.png"
+    image_path.parent.mkdir(parents=True, exist_ok=True)
+    image_path.write_bytes(f"still-{shot.sequence}".encode())
+    result = StillResultContract(
+        shot_sequence=shot.sequence,
+        shot_fingerprint=shot_fingerprint(shot),
+        source_asset_id=shot.source_asset_ids[0],
+        local_image_path=str(image_path),
+        image_sha256=sha256_file(image_path),
+        model="image-model",
+        approved=True,
+        qa_summary="Single clean subject, no UI/text.",
+        cost_usd=0.04,
+    )
+    return StillOutcomeContract(
+        produced_by="stills_agent",
+        status="SUCCESS",
+        shot_sequence=shot.sequence,
+        shot_fingerprint=shot_fingerprint(shot),
+        result=result,
+    )
+
+
+def failed_still_outcome_for(shot, *, retryable: bool, reason: str = "still failed") -> StillOutcomeContract:
+    failure = StillFailureContract(
+        produced_by="stills_agent",
+        shot_sequence=shot.sequence,
+        shot_fingerprint=shot_fingerprint(shot),
+        stage="still_qa",
+        code="STILL_QA_REJECTED",
+        reason=reason,
+        retryable=retryable,
+        attempt=1,
+        cost_usd=0.04,
+    )
+    return StillOutcomeContract(
+        produced_by="stills_agent",
+        status="FAILURE",
+        shot_sequence=shot.sequence,
+        shot_fingerprint=shot_fingerprint(shot),
+        failure=failure,
+    )
+
+
+def test_stills_resume_matching_approved_entry_makes_zero_agent_or_paid_calls(chain, monkeypatch):
+    source, asset_id = chain
+    visual_plan = still_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    create_audio_file()
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+    outcome = approved_still_outcome_for(visual_plan.shots[0])
+    entry = ProductionAssetEntry.from_still_result(outcome.result, [asset_id])
+    upsert_production_asset(entry, path=run.PRODUCTION_ASSETS_FILE)
+    before = run.PRODUCTION_ASSETS_FILE.read_bytes()
+
+    async def refuse_agent(**kwargs):
+        raise AssertionError("matching approved STILL entry must make zero agent or paid calls")
+
+    monkeypatch.setattr(run, "generate_still_asset", refuse_agent)
+    manifest = load_run_manifest(run.RUN_STATE_DIR)
+    assert asyncio.run(run.run_stills_stage(make_settings(), manifest)) == 0
+    assert run.PRODUCTION_ASSETS_FILE.read_bytes() == before
+    assert manifest.budget_spent_usd == 0.0
+
+
+def test_two_successful_still_shots_are_both_preserved_by_keyed_upsert(chain, monkeypatch):
+    source, asset_id = chain
+    visual_plan = still_visual_plan_for(asset_id, count=2)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+    original_plan = run.VISUAL_PLAN_FILE.read_bytes()
+    calls = []
+
+    async def successful_agent(**kwargs):
+        calls.append(kwargs["shot"]["sequence"])
+        shot = visual_plan.shots[kwargs["shot"]["sequence"] - 1]
+        outcome = approved_still_outcome_for(shot)
+        return sdk_result(outcome.model_dump(mode="json"), cost=0.1)
+
+    monkeypatch.setattr(run, "generate_still_asset", successful_agent)
+    manifest = load_run_manifest(run.RUN_STATE_DIR)
+    assert asyncio.run(run.run_stills_stage(make_settings(), manifest)) == 0
+
+    production = load_production_assets(run.PRODUCTION_ASSETS_FILE)
+    assert calls == [1, 2]
+    assert list(production.shots) == ["1", "2"]
+    assert run.VISUAL_PLAN_FILE.read_bytes() == original_plan
+    assert manifest.budget_spent_usd == pytest.approx(0.28)
+
+
+def test_stills_stage_generates_only_still_mode_and_never_changes_plan(chain, monkeypatch):
+    source, asset_id = chain
+    plan_data = still_visual_plan_for(asset_id, count=2).model_dump(mode="json")
+    plan_data["shots"][1]["generation_mode"] = "VEO"
+    plan_data["shots"][1]["visual_treatment"] = "AI_VIDEO_CANDIDATE"
+    visual_plan = VisualPlanContract.model_validate(plan_data)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+    original_plan = run.VISUAL_PLAN_FILE.read_bytes()
+    calls = []
+
+    async def successful_agent(**kwargs):
+        calls.append(kwargs["shot"]["sequence"])
+        outcome = approved_still_outcome_for(visual_plan.shots[0])
+        return sdk_result(outcome.model_dump(mode="json"), cost=0.1)
+
+    monkeypatch.setattr(run, "generate_still_asset", successful_agent)
+    assert asyncio.run(
+        run.run_stills_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))
+    ) == 0
+
+    production = load_production_assets(run.PRODUCTION_ASSETS_FILE)
+    assert calls == [1]
+    assert list(production.shots) == ["1"]
+    assert run.VISUAL_PLAN_FILE.read_bytes() == original_plan
+
+
+def test_stills_budget_gate_halts_before_any_agent_or_paid_call(chain, monkeypatch):
+    source, asset_id = chain
+    visual_plan = still_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+
+    async def refuse_agent(**kwargs):
+        raise AssertionError("budget gate must run before the agent or the paid tool")
+
+    monkeypatch.setattr(run, "generate_still_asset", refuse_agent)
+    manifest = load_run_manifest(run.RUN_STATE_DIR)
+    assert asyncio.run(run.run_stills_stage(make_settings(max_budget_usd=0.01), manifest)) == 1
+    assert not run.PRODUCTION_ASSETS_FILE.exists()
+
+
+def test_stills_agent_no_usable_cost_halts(chain, monkeypatch):
+    source, asset_id = chain
+    visual_plan = still_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+
+    async def agent(**kwargs):
+        outcome = approved_still_outcome_for(visual_plan.shots[0])
+        return sdk_result(outcome.model_dump(mode="json"), cost=None)
+
+    monkeypatch.setattr(run, "generate_still_asset", agent)
+    assert asyncio.run(run.run_stills_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 1
+    reports = sorted(run.RUN_STATE_DIR.glob("failure_stills_agent_*.json"))
+    assert reports
+    report = json.loads(reports[-1].read_text(encoding="utf-8"))
+    assert "no usable Claude cost" in report["reason"]
+    assert not run.PRODUCTION_ASSETS_FILE.exists()
+
+
+def test_stills_agent_outcome_mismatched_shot_halts(chain, monkeypatch):
+    source, asset_id = chain
+    visual_plan = still_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+
+    async def agent(**kwargs):
+        outcome = approved_still_outcome_for(visual_plan.shots[0]).model_dump(mode="json")
+        outcome["shot_fingerprint"] = "0" * 64
+        outcome["result"]["shot_fingerprint"] = "0" * 64
+        return sdk_result(outcome, cost=0.1)
+
+    monkeypatch.setattr(run, "generate_still_asset", agent)
+    assert asyncio.run(run.run_stills_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 1
+    reports = sorted(run.RUN_STATE_DIR.glob("failure_stills_agent_*.json"))
+    assert reports
+    report = json.loads(reports[-1].read_text(encoding="utf-8"))
+    assert "Invalid stills agent outcome" in report["reason"]
+
+
+def test_stills_agent_cost_above_ceiling_halts(chain, monkeypatch):
+    source, asset_id = chain
+    visual_plan = still_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+
+    async def agent(**kwargs):
+        outcome = approved_still_outcome_for(visual_plan.shots[0]).model_dump(mode="json")
+        outcome["result"]["cost_usd"] = 999.0
+        return sdk_result(outcome, cost=0.1)
+
+    monkeypatch.setattr(run, "generate_still_asset", agent)
+    assert asyncio.run(run.run_stills_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 1
+    reports = sorted(run.RUN_STATE_DIR.glob("failure_stills_agent_*.json"))
+    assert reports
+    report = json.loads(reports[-1].read_text(encoding="utf-8"))
+    assert "Invalid stills agent outcome" in report["reason"]
+
+
+def test_stills_agent_outcome_source_asset_not_cited_halts(chain, monkeypatch):
+    source, asset_id = chain
+    visual_plan = still_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+
+    async def agent(**kwargs):
+        outcome = approved_still_outcome_for(visual_plan.shots[0]).model_dump(mode="json")
+        outcome["result"]["source_asset_id"] = "img_bbbbbbbbbbbb"
+        return sdk_result(outcome, cost=0.1)
+
+    monkeypatch.setattr(run, "generate_still_asset", agent)
+    assert asyncio.run(run.run_stills_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 1
+    reports = sorted(run.RUN_STATE_DIR.glob("failure_stills_agent_*.json"))
+    assert reports
+    report = json.loads(reports[-1].read_text(encoding="utf-8"))
+    assert "Invalid stills agent outcome" in report["reason"]
+    assert "not cited by the requested shot" in report["reason"]
+
+
+def test_retryable_still_failure_retries_with_correction_then_upserts(chain, monkeypatch):
+    source, asset_id = chain
+    visual_plan = still_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+    calls = []
+
+    async def agent(**kwargs):
+        calls.append(kwargs)
+        if len(calls) == 1:
+            return sdk_result(
+                failed_still_outcome_for(visual_plan.shots[0], retryable=True, reason="duplicate subject").model_dump(mode="json"),
+                cost=0.1,
+            )
+        outcome = approved_still_outcome_for(visual_plan.shots[0])
+        return sdk_result(outcome.model_dump(mode="json"), cost=0.1)
+
+    monkeypatch.setattr(run, "generate_still_asset", agent)
+    assert asyncio.run(run.run_stills_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 0
+    assert len(calls) == 2
+    assert calls[1]["correction"] == "duplicate subject"
+    assert calls[1]["previous_outcome"]["status"] == "FAILURE"
+    assert list(load_production_assets(run.PRODUCTION_ASSETS_FILE).shots) == ["1"]
+
+
+def test_nonretryable_still_failure_halts_with_structured_report(chain, monkeypatch):
+    source, asset_id = chain
+    visual_plan = still_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+
+    async def agent(**kwargs):
+        return sdk_result(
+            failed_still_outcome_for(visual_plan.shots[0], retryable=False, reason="policy blocked").model_dump(mode="json"),
+            cost=0.1,
+        )
+
+    monkeypatch.setattr(run, "generate_still_asset", agent)
+    assert asyncio.run(run.run_stills_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 1
+    reports = sorted(run.RUN_STATE_DIR.glob("failure_stills_agent_*.json"))
+    assert reports
+    report = json.loads(reports[-1].read_text(encoding="utf-8"))
+    assert report["attempt_count"] == 1
+    assert "policy blocked" in report["reason"]
+
+
+def test_retryable_still_failure_stops_at_attempt_ceiling(chain, monkeypatch):
+    source, asset_id = chain
+    visual_plan = still_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+    monkeypatch.setattr(run, "MAX_STILLS_ATTEMPTS", 2)
+    calls = []
+
+    async def agent(**kwargs):
+        calls.append(kwargs["attempt"])
+        return sdk_result(
+            failed_still_outcome_for(visual_plan.shots[0], retryable=True, reason="still failing").model_dump(mode="json"),
+            cost=0.1,
+        )
+
+    monkeypatch.setattr(run, "generate_still_asset", agent)
+    assert asyncio.run(run.run_stills_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 1
+    assert calls == [1, 2]
+    reports = sorted(run.RUN_STATE_DIR.glob("failure_stills_agent_*.json"))
+    assert reports
+    assert json.loads(reports[-1].read_text(encoding="utf-8"))["attempt_count"] == 2
+
+
+def test_corrupt_production_manifest_halts_stills_without_reset_or_agent_call(chain, monkeypatch):
+    """A malformed persisted manifest is a hard resume failure, never a reset."""
+    source, asset_id = chain
+    visual_plan = still_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+    run.PRODUCTION_ASSETS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    original = b"{ this is not valid json"
+    run.PRODUCTION_ASSETS_FILE.write_bytes(original)
+
+    async def refuse_agent(**kwargs):
+        raise AssertionError("corrupt production manifest must halt before the agent")
+
+    monkeypatch.setattr(run, "generate_still_asset", refuse_agent)
+    assert asyncio.run(run.run_stills_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 1
+    assert run.PRODUCTION_ASSETS_FILE.read_bytes() == original
+
+
+def test_stale_production_manifest_halts_before_stills_agent_call(chain, monkeypatch):
+    """A keyed entry from an older visual plan cannot be reused silently."""
+    source, asset_id = chain
+    visual_plan = still_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    outcome = approved_still_outcome_for(visual_plan.shots[0])
+    upsert_production_asset(
+        ProductionAssetEntry.from_still_result(outcome.result, [asset_id]),
+        path=run.PRODUCTION_ASSETS_FILE,
+    )
+
+    stale_plan = visual_plan.model_dump(mode="json")
+    stale_plan["shots"][0]["shot_goal"] = "A changed shot must force a deliberate rerun."
+    run.VISUAL_PLAN_FILE.write_text(json.dumps(stale_plan), encoding="utf-8")
+
+    async def refuse_agent(**kwargs):
+        raise AssertionError("stale production manifest must halt before the agent")
+
+    monkeypatch.setattr(run, "generate_still_asset", refuse_agent)
+    assert asyncio.run(run.run_stills_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 1
+
+
+def test_veo_and_stills_stages_together_cover_every_shot_exactly_once(chain, monkeypatch):
+    """Epic-completion shape check (not a runtime gate this story enforces
+    alone): once both stages run over a plan with disjoint VEO/STILL shots,
+    ProductionAssetsContract has exactly one approved entry per shot.
+    """
+    source, asset_id = chain
+    plan_data = {
+        "produced_by": "visual_agent",
+        "overall_visual_style": "Reflective, calm illustration.",
+        "shots": [
+            {
+                "sequence": 1,
+                "generation_mode": "VEO",
+                "visual_treatment": "AI_VIDEO_CANDIDATE",
+                "source_asset_ids": [asset_id],
+                "shot_goal": "Show motion.",
+                "frame_composition": "Center the subject.",
+                "motion_plan": "Use restrained motion.",
+                "text_overlay": "",
+                "source_support": "Directly grounded in the source.",
+            },
+            {
+                "sequence": 2,
+                "generation_mode": "STILL",
+                "visual_treatment": "USE_EXISTING_ART",
+                "source_asset_ids": [asset_id],
+                "shot_goal": "Show a quiet beat.",
+                "frame_composition": "Center the subject.",
+                "motion_plan": "Slow push-in.",
+                "text_overlay": "",
+                "source_support": "Directly grounded in the source.",
+            },
+        ],
+        "quality_review": {
+            "verdict": "APPROVE", "ready_for_generation": True, "confidence": 0.9,
+            "scores": {
+                "source_fidelity": 9, "generation_mode_appropriateness": 9,
+                "visual_coherence": 9, "narrative_alignment": 9, "internal_consistency": 9,
+            },
+        },
+    }
+    visual_plan = VisualPlanContract.model_validate(plan_data)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+
+    async def veo_agent_call(**kwargs):
+        outcome = approved_outcome_for(visual_plan.shots[0])
+        return sdk_result(outcome.model_dump(mode="json"), cost=0.1)
+
+    async def stills_agent_call(**kwargs):
+        outcome = approved_still_outcome_for(visual_plan.shots[1])
+        return sdk_result(outcome.model_dump(mode="json"), cost=0.1)
+
+    monkeypatch.setattr(run, "generate_veo_asset", veo_agent_call)
+    monkeypatch.setattr(run, "generate_still_asset", stills_agent_call)
+
+    manifest = load_run_manifest(run.RUN_STATE_DIR)
+    assert asyncio.run(run.run_veo_stage(make_settings(), manifest)) == 0
+    assert asyncio.run(run.run_stills_stage(make_settings(), manifest)) == 0
+
+    production = load_production_assets(run.PRODUCTION_ASSETS_FILE)
+    assert set(production.shots) == {"1", "2"}
+    assert production.shots["1"].generation_mode == "VEO"
+    assert production.shots["2"].generation_mode == "STILL"

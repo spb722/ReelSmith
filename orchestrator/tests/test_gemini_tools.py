@@ -6,12 +6,15 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
+from orchestrator.contracts.stills import StillResultContract
 from orchestrator.contracts.veo import VeoSeedContract
 from orchestrator.contracts.visual_plan import Shot
 from orchestrator.tools.gemini_tools import (
     build_seed_spec,
+    build_still_spec,
     extract_generated_image,
     generate_seed_image,
+    generate_still_image,
 )
 
 
@@ -230,3 +233,123 @@ def test_generate_seed_image_writes_seed_and_returns_contract():
     assert seed.approved is False
     assert seed.cost_usd == 0.04
     seed.validate_seed_provenance()
+
+
+# -- build_still_spec -------------------------------------------------------
+
+
+def still_shot_dict(**overrides) -> dict:
+    base = dict(
+        sequence=1,
+        generation_mode="STILL",
+        visual_treatment="USE_EXISTING_ART",
+        source_asset_ids=["img_aaaaaaaaaaaa"],
+        shot_goal="Show the scene.",
+        frame_composition="Center the subject.",
+        motion_plan="Slow push-in.",
+        text_overlay="",
+        source_support="Directly supported.",
+    )
+    base.update(overrides)
+    return Shot.model_validate(base).model_dump(mode="json")
+
+
+def test_build_still_spec_rejects_non_still_mode():
+    source = Path("source_images/a.png")
+    _write_source_image(source)
+    shot = still_shot_dict(generation_mode="VEO", visual_treatment="AI_VIDEO_CANDIDATE")
+    with pytest.raises(ValueError, match="not assigned STILL mode"):
+        build_still_spec(shot, asset_for(source), "Narration context.")
+
+
+def test_build_still_spec_rejects_asset_not_cited_by_shot():
+    source = Path("source_images/a.png")
+    _write_source_image(source)
+    shot = still_shot_dict()
+    with pytest.raises(ValueError, match="not cited by the STILL shot"):
+        build_still_spec(shot, asset_for(source, asset_id="img_bbbbbbbbbbbb"), "Narration context.")
+
+
+def test_build_still_spec_rejects_missing_source_file():
+    source = Path("source_images/missing.png")
+    shot = still_shot_dict()
+    with pytest.raises(FileNotFoundError, match="does not exist"):
+        build_still_spec(shot, asset_for(source), "Narration context.")
+
+
+def test_build_still_spec_returns_expected_spec_for_valid_shot():
+    source = Path("source_images/a.png")
+    _write_source_image(source)
+    shot = still_shot_dict()
+    spec = build_still_spec(shot, asset_for(source), "Narration context.")
+
+    assert spec["shot_sequence"] == 1
+    assert spec["source_asset_id"] == "img_aaaaaaaaaaaa"
+    assert spec["source_image_path"] == str(source)
+    assert spec["output_image_path"] == "generated/stills/shot_01.png"
+    assert "Narration context." in spec["prompt"]
+    assert "duplicate" in spec["prompt"]
+
+
+def test_build_still_spec_never_branches_on_shot_number():
+    """The anti-pattern this story exists to avoid: the prompt must be built
+    from Shot fields, not a hardcoded per-shot-number ladder. Two different
+    shot numbers with identical Shot fields (besides sequence) must produce
+    prompts differing only in whatever those fields actually say.
+    """
+    source = Path("source_images/a.png")
+    _write_source_image(source)
+    shot_one = still_shot_dict(sequence=1, source_asset_ids=["img_aaaaaaaaaaaa"])
+    shot_seven = still_shot_dict(sequence=7, source_asset_ids=["img_aaaaaaaaaaaa"])
+    spec_one = build_still_spec(shot_one, asset_for(source), "Narration context.")
+    spec_seven = build_still_spec(shot_seven, asset_for(source), "Narration context.")
+    assert spec_one["prompt"] == spec_seven["prompt"]
+
+
+# -- generate_still_image ----------------------------------------------------
+
+
+def test_generate_still_image_raises_when_no_image_in_response():
+    source = Path("source_images/a.png")
+    _write_source_image(source)
+    shot = still_shot_dict()
+    spec = build_still_spec(shot, asset_for(source), "Narration context.")
+    response = FakeResponse([FakeCandidate(FakeContent([FakePart(text="I could not do this.")]))])
+    client = FakeGeminiClient(response=response)
+
+    with pytest.raises(RuntimeError, match="no image"):
+        generate_still_image(client, spec, model="image-model", cost_usd=0.04)
+
+
+def test_generate_still_image_propagates_client_exception():
+    source = Path("source_images/a.png")
+    _write_source_image(source)
+    shot = still_shot_dict()
+    spec = build_still_spec(shot, asset_for(source), "Narration context.")
+    client = RaisingGeminiClient(RuntimeError("Gemini unavailable"))
+
+    with pytest.raises(RuntimeError, match="Gemini unavailable"):
+        generate_still_image(client, spec, model="image-model", cost_usd=0.04)
+
+
+def test_generate_still_image_writes_still_and_returns_contract():
+    source = Path("source_images/a.png")
+    _write_source_image(source)
+    shot = still_shot_dict()
+    spec = build_still_spec(shot, asset_for(source), "Narration context.")
+    response = FakeResponse([
+        FakeCandidate(FakeContent([
+            FakePart(text="Recomposed cleanly."),
+            FakePart(inline_data=FakeInlineData(_png_bytes())),
+        ]))
+    ])
+    client = FakeGeminiClient(response=response)
+
+    result, model_text = generate_still_image(client, spec, model="image-model", cost_usd=0.04)
+
+    assert isinstance(result, StillResultContract)
+    assert model_text == "Recomposed cleanly."
+    assert Path(result.local_image_path).is_file()
+    assert result.local_image_path == "generated/stills/shot_01.png"
+    assert result.approved is False
+    assert result.cost_usd == 0.04

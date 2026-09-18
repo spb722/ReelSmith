@@ -1,8 +1,9 @@
 """Authoritative, partial production-asset manifest.
 
-Story 2.3 records approved Veo clips.  Story 2.4 will add still entries and
-perform the final completeness check, so this contract intentionally permits a
-validated subset of the visual plan.
+Story 2.3 records approved Veo clips; Story 2.4 adds still entries. By the
+end of both stages every visual-plan shot has an entry, but this contract
+itself still intentionally permits a validated subset -- completeness across
+the whole plan is not enforced as a runtime gate here.
 """
 
 from __future__ import annotations
@@ -12,6 +13,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from orchestrator.contracts.stills import StillResultContract
 from orchestrator.contracts.veo import VeoResultContract, sha256_file
 
 
@@ -68,8 +70,11 @@ class ProductionAssetEntry(ContractModel):
                 preview_path = Path(preview)
                 if not preview_path.is_file() or not preview_path.resolve().is_relative_to(Path("generated/veo/previews").resolve()):
                     raise ValueError("VEO preview paths must be existing files under generated/veo/previews/")
-        elif self.asset_type != "still":
-            raise ValueError("A STILL production entry must have asset_type='still'")
+        else:
+            if self.asset_type != "still":
+                raise ValueError("A STILL production entry must have asset_type='still'")
+            if not Path(self.local_path).resolve().is_relative_to(Path("generated/stills").resolve()):
+                raise ValueError("A STILL production asset must be under generated/stills/")
         return self
 
     @classmethod
@@ -93,6 +98,23 @@ class ProductionAssetEntry(ContractModel):
             preview_paths=list(result.preview_paths),
             qa_summary=result.qa_summary,
             cost_usd=result.cost_usd + result.seed.cost_usd,
+        )
+
+    @classmethod
+    def from_still_result(cls, result: StillResultContract, source_asset_ids: list[str]) -> "ProductionAssetEntry":
+        if not result.approved:
+            raise ValueError("Only an approved still result can become a production asset")
+        return cls(
+            shot_sequence=result.shot_sequence,
+            shot_fingerprint=result.shot_fingerprint,
+            generation_mode="STILL",
+            asset_type="still",
+            local_path=result.local_image_path,
+            asset_sha256=result.image_sha256,
+            source_asset_ids=list(source_asset_ids),
+            generation_model=result.model,
+            qa_summary=result.qa_summary,
+            cost_usd=result.cost_usd,
         )
 
 

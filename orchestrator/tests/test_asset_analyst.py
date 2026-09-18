@@ -105,6 +105,9 @@ def stage(tmp_path, monkeypatch):
     async def no_veo_stage(settings, manifest):
         return 0
 
+    async def no_stills_stage(settings, manifest):
+        return 0
+
     no_narration_stage.calls = []
     no_visual_stage.calls = []
     no_voice_stage.calls = []
@@ -112,6 +115,7 @@ def stage(tmp_path, monkeypatch):
     monkeypatch.setattr(run, "run_visual_stage", no_visual_stage)
     monkeypatch.setattr(run, "run_voice_stage", no_voice_stage)
     monkeypatch.setattr(run, "run_veo_stage", no_veo_stage)
+    monkeypatch.setattr(run, "run_stills_stage", no_stills_stage)
     source = tmp_path / "source_images"
     source.mkdir()
     for index in range(6):

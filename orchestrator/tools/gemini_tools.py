@@ -22,6 +22,7 @@ from google import genai
 from google.genai import types
 from PIL import Image
 
+from orchestrator.contracts.stills import STILLS_DIR, StillFailureContract, StillResultContract
 from orchestrator.contracts.veo import VeoFailureContract, VeoSeedContract, sha256_file, shot_fingerprint
 from orchestrator.contracts.visual_plan import Shot
 from orchestrator.tools.deterministic_tools import tokenize
@@ -266,6 +267,42 @@ def build_seed_spec(shot: dict, asset: dict, subtitle_text: str) -> dict:
     }
 
 
+def run_gemini_image_edit(
+    client: genai.Client,
+    *,
+    source_image_path: Path,
+    prompt: str,
+    model: str,
+) -> tuple[Image.Image, str]:
+    """Run one Gemini image-edit call and return the generated image plus any
+    explanatory model text. Shared by every one-shot Gemini image-edit tool
+    (Veo seed recomposition, still generation) so the raw call mechanics
+    never drift between them.
+    """
+
+    if not source_image_path.is_file():
+        raise FileNotFoundError(f"Source image does not exist: {source_image_path}")
+    source_image = Image.open(source_image_path).convert("RGB")
+    response = client.models.generate_content(
+        model=model,
+        contents=[source_image, prompt],
+        config=types.GenerateContentConfig(
+            response_modalities=[types.Modality.TEXT, types.Modality.IMAGE],
+        ),
+    )
+    generated_image, model_text = extract_generated_image(response)
+    if generated_image is None:
+        raise RuntimeError("Gemini image edit returned no image")
+    return generated_image, model_text
+
+
+def _save_generated_image(generated_image: Image.Image, output_path: Path) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = output_path.with_suffix(output_path.suffix + ".tmp")
+    generated_image.save(temporary_path, format="PNG", optimize=True)
+    temporary_path.replace(output_path)
+
+
 def generate_seed_image(
     client: genai.Client,
     spec: dict,
@@ -276,25 +313,12 @@ def generate_seed_image(
     """Run one Gemini image recomposition and materialize its seed."""
 
     source_path = Path(spec["source_image_path"])
-    if not source_path.is_file():
-        raise FileNotFoundError(f"Seed source image does not exist: {source_path}")
-    source_image = Image.open(source_path).convert("RGB")
-    response = client.models.generate_content(
-        model=model,
-        contents=[source_image, spec["prompt"]],
-        config=types.GenerateContentConfig(
-            response_modalities=[types.Modality.TEXT, types.Modality.IMAGE],
-        ),
+    generated_image, model_text = run_gemini_image_edit(
+        client, source_image_path=source_path, prompt=spec["prompt"], model=model,
     )
-    generated_image, model_text = extract_generated_image(response)
-    if generated_image is None:
-        raise RuntimeError("Gemini image recomposition returned no image")
 
     output_path = Path(spec["output_image_path"])
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    temporary_path = output_path.with_suffix(output_path.suffix + ".tmp")
-    generated_image.save(temporary_path, format="PNG", optimize=True)
-    temporary_path.replace(output_path)
+    _save_generated_image(generated_image, output_path)
 
     seed = VeoSeedContract(
         shot_sequence=spec["shot_sequence"],
@@ -311,6 +335,84 @@ def generate_seed_image(
         cost_usd=cost_usd,
     )
     return seed, model_text
+
+
+def build_still_spec(shot: dict, asset: dict, subtitle_text: str) -> dict:
+    """Build a dynamic still-generation request from the validated shot.
+
+    Unlike the legacy `prepare_remotion_stills.py` script this works for any
+    shot assigned STILL mode; it never contains a hard-coded per-shot-number
+    `if shot_sequence == N` prompt ladder.
+    """
+
+    validated_shot = Shot.model_validate(shot)
+    if validated_shot.generation_mode != "STILL":
+        raise ValueError(f"Shot {validated_shot.sequence} is not assigned STILL mode")
+    if asset.get("asset_id") not in validated_shot.source_asset_ids:
+        raise ValueError("Still source asset is not cited by the STILL shot")
+    source_path = Path(str(asset.get("source_path", "")))
+    if not source_path.is_file():
+        raise FileNotFoundError(f"Still source image does not exist: {source_path}")
+
+    analysis = asset.get("analysis", {})
+    visual = analysis.get("visual", {})
+    production = analysis.get("production", {})
+    prompt = (
+        "Use the provided mobile screenshot only as visual reference for the embedded illustration. "
+        "Create a clean standalone vertical 9:16 editorial illustration for a cinematic short-form reel. "
+        "Remove all app UI, status bars, buttons, progress indicators, card chrome, captions, and "
+        "surrounding interface. Do not include any visible text, letters, numbers, logos, or watermarks. "
+        "Preserve the source's editorial illustration style, palette, subjects, and emotional meaning; "
+        "do not drift to photorealism. Show exactly one instance of the focal subject -- do not duplicate "
+        "the same subject or scene twice in frame. Do not add extra characters unless explicitly requested. "
+        "Leave clean visual space for later Remotion subtitles and typography. "
+        f"Shot goal: {validated_shot.shot_goal}. "
+        f"Required composition: {validated_shot.frame_composition}. "
+        f"Planned motion context: {validated_shot.motion_plan}. "
+        f"Source support: {validated_shot.source_support}. "
+        f"Source visual description: {visual.get('description', '')}. "
+        f"Source art description: {production.get('story_art_description', '')}. "
+        f"Narration context: {subtitle_text.strip()}."
+    )
+    return {
+        "shot_sequence": validated_shot.sequence,
+        "shot_fingerprint": shot_fingerprint(validated_shot),
+        "source_asset_id": asset["asset_id"],
+        "source_image_path": str(source_path),
+        "output_image_path": str(STILLS_DIR / f"shot_{validated_shot.sequence:02d}.png"),
+        "prompt": prompt,
+    }
+
+
+def generate_still_image(
+    client: genai.Client,
+    spec: dict,
+    *,
+    model: str,
+    cost_usd: float,
+) -> tuple[StillResultContract, str]:
+    """Run one Gemini image edit and materialize the resulting still."""
+
+    source_path = Path(spec["source_image_path"])
+    generated_image, model_text = run_gemini_image_edit(
+        client, source_image_path=source_path, prompt=spec["prompt"], model=model,
+    )
+
+    output_path = Path(spec["output_image_path"])
+    _save_generated_image(generated_image, output_path)
+
+    result = StillResultContract(
+        shot_sequence=spec["shot_sequence"],
+        shot_fingerprint=spec["shot_fingerprint"],
+        source_asset_id=spec["source_asset_id"],
+        local_image_path=str(output_path),
+        image_sha256=sha256_file(output_path),
+        model=model,
+        approved=False,
+        qa_summary="",
+        cost_usd=cost_usd,
+    )
+    return result, model_text
 
 
 def _image_content(path: Path) -> dict:
@@ -385,7 +487,71 @@ async def generate_veo_seed(args: dict) -> dict:
     }
 
 
+@tool(
+    "generate_still",
+    "Generate one validated STILL shot's production image via Gemini and return it for visual QA",
+    {
+        "shot": dict,
+        "asset": dict,
+        "subtitle_text": str,
+        "project_id": str,
+        "location": str,
+        "image_model": str,
+        "cost_usd": float,
+    },
+)
+async def generate_still(args: dict) -> dict:
+    try:
+        spec = build_still_spec(args["shot"], args["asset"], args.get("subtitle_text", ""))
+        client = genai.Client(
+            vertexai=True,
+            project=args["project_id"],
+            location=args["location"],
+            http_options=types.HttpOptions(api_version="v1"),
+        )
+        result, model_text = generate_still_image(
+            client,
+            spec,
+            model=args["image_model"],
+            cost_usd=float(args["cost_usd"]),
+        )
+    except Exception as exc:
+        try:
+            fingerprint = shot_fingerprint(args["shot"])
+            sequence = int(args["shot"]["sequence"])
+        except Exception:
+            fingerprint = hashlib.sha256(
+                json.dumps(args.get("shot"), sort_keys=True, default=str).encode("utf-8")
+            ).hexdigest()
+            sequence = 1
+        failure = StillFailureContract(
+            produced_by="still_tool",
+            shot_sequence=sequence,
+            shot_fingerprint=fingerprint,
+            stage="still_generation",
+            code="STILL_GENERATION_FAILED",
+            reason=f"{type(exc).__name__}: {exc}",
+            retryable=True,
+            attempt=1,
+            cost_usd=0.0,
+        )
+        return {
+            "content": [
+                {"type": "text", "text": json.dumps({"failure": failure.model_dump(mode="json")}, ensure_ascii=False)}
+            ]
+        }
+
+    payload = result.model_dump(mode="json")
+    payload["model_text_response"] = model_text
+    return {
+        "content": [
+            {"type": "text", "text": json.dumps(payload, ensure_ascii=False)},
+            _image_content(Path(result.local_image_path)),
+        ]
+    }
+
+
 gemini_server = create_sdk_mcp_server(
     name="gemini",
-    tools=[generate_narration_audio, generate_veo_seed],
+    tools=[generate_narration_audio, generate_veo_seed, generate_still],
 )

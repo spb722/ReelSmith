@@ -55,6 +55,7 @@
   evidence: Not exercised by any current data (every shot in `metadata/visual_plan.json` cites exactly one source asset today); correct handling of multiple cited assets is a design question (Gemini image recomposition may only ever accept one source image), not a clear bug.
 - source_spec: `docs/implementation-artifacts/spec-2-3-autonomous-veo-generation-production-asset-manifest-structured-failure-inspection.md`
   summary: On retry-ceiling exhaustion, `run_veo_stage`'s halt report shows a generic "Veo retry ceiling exhausted" message rather than the last attempt's actual recorded failure reason.
+  resolution: Resolved by Story 2.4 (`spec-2-4-autonomous-stills-generation.md`), which fixed both `run_veo_stage` and the new `run_stills_stage`'s ceiling-exhausted halts to pull the last recorded failure's real `reason`/`partial_artifact_paths` instead of a generic message, while closing a related `partial_artifact_paths` consistency gap found in its own review.
   evidence: Consistent with the existing minimal common halt envelope (stage id, failed contract name, attempt count, timestamp, partial-artifact paths) established since Epic 1 -- diagnostic detail beyond that envelope is already documented as agent-specific/deferred, not a regression unique to this story.
 - source_spec: `docs/implementation-artifacts/spec-2-3-autonomous-veo-generation-production-asset-manifest-structured-failure-inspection.md`
   summary: `orchestrator/tools/gemini_tools.py::extract_generated_image` only scans the first inline image and stops, so a multi-candidate/multi-part Gemini response could truncate `model_text_response` or ignore a later/better image.
@@ -68,6 +69,27 @@
 - source_spec: `docs/implementation-artifacts/spec-2-3-autonomous-veo-generation-production-asset-manifest-structured-failure-inspection.md`
   summary: A `veo_agent` retry triggered only by a clip QA failure (seed already approved) still pays for a redundant `generate_veo_seed` call, since each attempt is a stateless fresh Claude session with no plumbing in `run.py` to reuse a prior seed object across attempts.
   evidence: The prompt was clarified to skip re-litigating an already-approved seed's QA on such a retry, but fully eliminating the paid regeneration needs cross-attempt seed-reuse plumbing in `run.py`, out of scope for a prompt-only fix.
+- source_spec: `docs/implementation-artifacts/spec-2-4-autonomous-stills-generation.md`
+  summary: A shot citing a subtitle cue id absent from `SubtitleCuesContract` would silently truncate the narration context passed to `stills_agent` rather than halting.
+  evidence: No current data triggers this (all `primary_subtitle_cue_ids` are consistent between contracts, per Story 2.1's converter-time check); would only matter if the two contracts ever became inconsistent outside the converter's own validation.
+- source_spec: `docs/implementation-artifacts/spec-2-4-autonomous-stills-generation.md`
+  summary: `run_stills_stage`'s (and `run_veo_stage`'s) `_atomic_write_json` call for the per-attempt state JSON isn't wrapped in a try/except; an OSError there would escape the stage instead of going through the halt/failure-report path.
+  evidence: Matches the existing, identically-unwrapped pattern already in `run_veo_stage` (Story 2.3) -- not unique to this story.
+- source_spec: `docs/implementation-artifacts/spec-2-4-autonomous-stills-generation.md`
+  summary: The deterministic still filename (`generated/stills/shot_NN.png`) is overwritten on every retry attempt, so a rejected attempt's actual image no longer exists in that form once the next attempt runs.
+  evidence: The attempt's own persisted state JSON still records the QA rejection reason, so diagnostic value is only partially lost, not entirely; determinism is needed for the resume/completeness check.
+- source_spec: `docs/implementation-artifacts/spec-2-4-autonomous-stills-generation.md`
+  summary: Nothing structurally limits `stills_agent` to one `generate_still` call per session beyond the prompt's "exactly once" instruction; a non-compliant agent calling it twice would under-report real spend against `StillOutcomeContract.cost_usd`.
+  evidence: Matches `veo_agent`'s identical reliance on prompt compliance for `generate_veo_seed`/`generate_veo_clip` (Story 2.3) -- not unique to this story.
+- source_spec: `docs/implementation-artifacts/spec-2-4-autonomous-stills-generation.md`
+  summary: `run_veo_stage` and `run_stills_stage` duplicate almost all of their scaffolding (visual-plan load, manifest staleness re-validation, pending-shot computation, exception/budget accounting) verbatim with no shared helper.
+  evidence: A real DRY concern, but factoring already-shipped, tested Story 2.3 code into a shared helper is a larger refactor than a surgical fix for this review round.
+- source_spec: `docs/implementation-artifacts/spec-2-4-autonomous-stills-generation.md`
+  summary: Veo seed recomposition and still generation share the same `image_call_cost_usd` budget estimate despite being different-effort Gemini calls that could plausibly have different real costs.
+  evidence: No pricing data available to validate or correct the assumption; both are the same underlying Gemini image-edit call type, so it may already be accurate.
+- source_spec: `docs/implementation-artifacts/spec-2-4-autonomous-stills-generation.md`
+  summary: No end-of-run check compares `ProductionAssetsContract`'s shot count to the visual plan's, so a real run could finish with silently uncovered shots outside of test coverage.
+  evidence: The module docstring already discloses this is intentionally not enforced as a runtime gate in this contract; likely Epic 3's integration concern (full end-to-end completeness) rather than this story's.
 
 - source_spec: `docs/implementation-artifacts/spec-2-3-autonomous-veo-generation-production-asset-manifest-structured-failure-inspection.md`
   summary: Persist an explicit paid-call reservation before awaiting the Veo agent so a process crash after an accepted request cannot repeat spend on resume.
