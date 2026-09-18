@@ -404,24 +404,42 @@ def test_run_main_returns_zero_when_preflight_passes(tmp_path, monkeypatch, caps
         lambda settings, budget_spent_usd: PreflightResult(passed=True),
     )
 
+    stage_order = []
+
     async def successful_stage(source_images_dir, settings, manifest):
+        stage_order.append("screenshot")
         return 0
 
     async def successful_narration_stage(settings, manifest):
+        stage_order.append("narration")
         return 0
 
     async def successful_visual_stage(settings, manifest):
+        stage_order.append("visual")
         return 0
 
     async def successful_voice_stage(settings, manifest):
+        stage_order.append("voice")
+        return 0
+
+    async def successful_veo_stage(settings, manifest):
+        stage_order.append("veo")
         return 0
 
     monkeypatch.setattr(run_module, "run_screenshot_stage", successful_stage)
     monkeypatch.setattr(run_module, "run_narration_stage", successful_narration_stage)
     monkeypatch.setattr(run_module, "run_visual_stage", successful_visual_stage)
     monkeypatch.setattr(run_module, "run_voice_stage", successful_voice_stage)
+    monkeypatch.setattr(run_module, "run_veo_stage", successful_veo_stage)
 
     exit_code = run_module.main([str(tmp_path / "source_images")])
 
     assert exit_code == 0
+    assert stage_order == ["screenshot", "narration", "visual", "voice", "veo"]
     assert not list(tmp_path.glob("failure_*.json"))
+
+    async def failed_veo_stage(settings, manifest):
+        return 1
+
+    monkeypatch.setattr(run_module, "run_veo_stage", failed_veo_stage)
+    assert run_module.main([str(tmp_path / "source_images")]) == 1

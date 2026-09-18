@@ -8,7 +8,9 @@ Runs preflight, deterministic ingestion, and bounded screenshot understanding
 (`run_visual_stage`), then -- once that stage has a validated
 `VisualPlanContract` too -- bounded voice/word-timing/subtitle-cue
 generation (`run_voice_stage`). Each stage's validated persisted contract is
-that stage's resume checkpoint.
+that stage's resume checkpoint. Approved VEO-mode shots then run through the
+bounded `veo_agent` stage and are recorded by the orchestrator in the partial
+production-asset manifest.
 """
 
 from __future__ import annotations
@@ -27,10 +29,13 @@ from claude_agent_sdk import ResultMessage
 
 from orchestrator.agents.asset_analyst import analyze_assets
 from orchestrator.agents.story_agent import write_story
+from orchestrator.agents.veo_agent import generate_veo_asset
 from orchestrator.agents.visual_agent import plan_visuals
 from orchestrator.contracts.analyzed_assets import AnalyzedAssetsContract
 from orchestrator.contracts.final_story_plan import FinalStoryPlanContract
+from orchestrator.contracts.production_assets import ProductionAssetEntry
 from orchestrator.contracts.subtitle_cues import SubtitleCuesContract
+from orchestrator.contracts.veo import VeoOutcomeContract, shot_fingerprint
 from orchestrator.contracts.visual_plan import VisualPlanContract
 from orchestrator.preflight import _check_budget, run_preflight
 from orchestrator.settings import (
@@ -50,6 +55,11 @@ from orchestrator.state.run_manifest import (
     load_run_manifest,
     save_run_manifest,
     write_failure_report,
+)
+from orchestrator.state.production_assets import (
+    PRODUCTION_ASSETS_FILE,
+    load_production_assets,
+    upsert_production_asset,
 )
 from orchestrator.tools.deterministic_tools import (
     ASSETS_FILE,
@@ -547,6 +557,281 @@ async def run_voice_stage(settings: Settings, manifest: RunManifest) -> int:
     )
 
 
+def _veo_settings_payload(settings: Settings) -> dict:
+    return {
+        "project_id": settings.project_id,
+        "location": settings.location,
+        "image_model": settings.image_model,
+        "veo_model": settings.veo_model,
+        "gcs_output_uri": settings.gcs_bucket_uri,
+        "resolution": settings.veo_resolution,
+        "duration_seconds": settings.veo_duration_seconds,
+        "poll_seconds": settings.veo_poll_seconds,
+        "max_poll_seconds": settings.veo_max_poll_seconds,
+        "image_call_cost_usd": settings.image_call_cost_usd,
+        "veo_call_cost_usd": settings.veo_call_cost_usd,
+    }
+
+
+async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
+    """Generate only VEO-mode shots and atomically record approved clips."""
+
+    try:
+        visual_plan = VisualPlanContract.model_validate_json(
+            VISUAL_PLAN_FILE.read_text(encoding="utf-8")
+        )
+    except (FileNotFoundError, ValueError, OSError) as exc:
+        return _halt("veo_agent", "VisualPlanContract", f"No validated visual plan available: {exc}")
+
+    veo_shots = [shot for shot in visual_plan.shots if shot.generation_mode == "VEO"]
+    if not veo_shots:
+        print("veo_agent skipped: visual plan contains no VEO-mode shots")
+        return 0
+
+    try:
+        production_assets = load_production_assets(PRODUCTION_ASSETS_FILE)
+    except (ValueError, OSError) as exc:
+        return _halt(
+            "veo_agent",
+            "ProductionAssetsContract",
+            f"Existing production asset manifest is invalid; refusing to reset it: {exc}",
+            partial_artifact_paths=[str(PRODUCTION_ASSETS_FILE)],
+        )
+
+    shots_by_sequence = {shot.sequence: shot for shot in visual_plan.shots}
+    for key, entry in production_assets.shots.items():
+        current_shot = shots_by_sequence.get(entry.shot_sequence)
+        if current_shot is None:
+            return _halt(
+                "veo_agent",
+                "ProductionAssetsContract",
+                f"Production asset {key} references a shot absent from the current visual plan",
+                partial_artifact_paths=[str(PRODUCTION_ASSETS_FILE)],
+            )
+        if entry.shot_fingerprint != shot_fingerprint(current_shot):
+            return _halt(
+                "veo_agent",
+                "ProductionAssetsContract",
+                f"Production asset for shot {entry.shot_sequence} is stale for the current visual plan",
+                partial_artifact_paths=[str(PRODUCTION_ASSETS_FILE), entry.local_path],
+            )
+        if entry.generation_mode != current_shot.generation_mode:
+            return _halt(
+                "veo_agent",
+                "ProductionAssetsContract",
+                f"Production asset mode for shot {entry.shot_sequence} no longer matches the visual plan",
+                partial_artifact_paths=[str(PRODUCTION_ASSETS_FILE), entry.local_path],
+            )
+
+    pending = [
+        shot for shot in veo_shots
+        if str(shot.sequence) not in production_assets.shots
+    ]
+    if not pending:
+        print(f"veo_agent skipped: all {len(veo_shots)} VEO shots have matching approved assets")
+        return 0
+
+    try:
+        analyzed = AnalyzedAssetsContract.model_validate_json(
+            ANALYZED_ASSETS_FILE.read_text(encoding="utf-8")
+        )
+        subtitle_cues = SubtitleCuesContract.model_validate_json(
+            SUBTITLE_CUES_FILE.read_text(encoding="utf-8")
+        )
+    except (FileNotFoundError, ValueError, OSError) as exc:
+        return _halt(
+            "veo_agent",
+            "VeoStageInputs",
+            f"Validated analyzed assets and subtitle cues are required: {exc}",
+        )
+
+    assets_by_id = {asset.asset_id: asset for asset in analyzed.assets}
+    cues_by_id = {cue.cue_id: cue.text for cue in subtitle_cues.cues}
+    settings_payload = _veo_settings_payload(settings)
+    reserved_external_cost = settings.image_call_cost_usd + settings.veo_call_cost_usd
+
+    for shot in pending:
+        asset = next((assets_by_id[asset_id] for asset_id in shot.source_asset_ids if asset_id in assets_by_id), None)
+        if asset is None:
+            return _halt(
+                "veo_agent",
+                "AnalyzedAssetsContract",
+                f"Shot {shot.sequence} has no analyzed source asset",
+            )
+        subtitle_text = " ".join(
+            cues_by_id[cue_id] for cue_id in shot.primary_subtitle_cue_ids if cue_id in cues_by_id
+        ).strip()
+        stage_id = f"veo_agent_shot_{shot.sequence}"
+        count = manifest.iteration_counts.get(stage_id, 0)
+        if type(count) is not int or count < 0:
+            return _halt("veo_agent", "RunManifest", f"Invalid iteration count for {stage_id}")
+        correction = ""
+        previous_outcome: object = None
+        attempt_paths: list[str] = [
+            str(path)
+            for path in sorted(RUN_STATE_DIR.glob(f"veo_agent_shot_{shot.sequence}_attempt_*.json"))
+        ]
+
+        while count < settings.max_veo_attempts:
+            remaining_budget = settings.max_budget_usd - manifest.budget_spent_usd
+            if remaining_budget <= reserved_external_cost:
+                return _halt(
+                    "veo_agent",
+                    "Budget",
+                    f"Insufficient budget for shot {shot.sequence}: ${remaining_budget:.6f} remains, "
+                    f"${reserved_external_cost:.6f} must be reserved before paid image/Veo calls",
+                    attempt_count=count,
+                    partial_artifact_paths=attempt_paths,
+                )
+            count += 1
+            manifest.iteration_counts[stage_id] = count
+            save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+            try:
+                agent_result = await generate_veo_asset(
+                    shot=shot.model_dump(mode="json"),
+                    asset=asset.model_dump(mode="json"),
+                    subtitle_text=subtitle_text,
+                    settings=settings_payload,
+                    attempt=count,
+                    max_budget_usd=remaining_budget - reserved_external_cost,
+                    correction=correction,
+                    previous_outcome=previous_outcome,
+                )
+            except Exception as exc:
+                # Tool execution may have reached a paid boundary before the
+                # SDK/agent surfaced an exception, and up to the full Claude
+                # budget ceiling given to this attempt (remaining_budget -
+                # reserved_external_cost) may also have been spent on tokens
+                # with no cost value ever returned. No real cost is available
+                # in this branch, so charge the whole per-attempt allotment
+                # (remaining_budget) as the conservative worst case rather
+                # than only the reserved external cost.
+                charged_cost = remaining_budget
+                manifest.budget_spent_usd += charged_cost
+                attempt_path = RUN_STATE_DIR / f"veo_agent_shot_{shot.sequence}_attempt_{count}.json"
+                _atomic_write_json(attempt_path, {
+                    "status": "EXCEPTION",
+                    "error": f"{type(exc).__name__}: {exc}",
+                    "charged_cost_usd": charged_cost,
+                })
+                attempt_paths.append(str(attempt_path))
+                save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+                return _halt(
+                    "veo_agent",
+                    "VeoOutcomeContract",
+                    "Veo agent ended without an accountable result after tools may have run: "
+                    f"{type(exc).__name__}: {exc}",
+                    attempt_count=count,
+                    partial_artifact_paths=attempt_paths,
+                )
+
+            claude_cost = agent_result.total_cost_usd
+            if claude_cost is None or not math.isfinite(claude_cost) or claude_cost < 0:
+                return _halt(
+                    "veo_agent", "Budget", "Veo agent returned no usable Claude cost",
+                    attempt_count=count, partial_artifact_paths=attempt_paths,
+                )
+            try:
+                if agent_result.is_error:
+                    raise ValueError(
+                        f"Claude failed ({agent_result.subtype}): {agent_result.errors or agent_result.result}"
+                    )
+                outcome = VeoOutcomeContract.model_validate(agent_result.structured_output)
+                expected_fingerprint = shot_fingerprint(shot)
+                if outcome.shot_sequence != shot.sequence or outcome.shot_fingerprint != expected_fingerprint:
+                    raise ValueError("Veo agent outcome does not match the requested source shot")
+                if outcome.status == "SUCCESS" and outcome.result.seed.source_asset_id not in shot.source_asset_ids:
+                    raise ValueError("Veo agent outcome seed source asset is not cited by the requested shot")
+                if outcome.cost_usd > reserved_external_cost + 1e-9:
+                    raise ValueError("Veo agent reported paid-call cost above the configured per-attempt ceiling")
+            except ValueError as exc:
+                # The agent cost is known, but a malformed response cannot safely
+                # prove which external paid calls occurred. Charge the reserved
+                # ceiling conservatively and halt instead of retrying blindly.
+                manifest.budget_spent_usd += claude_cost + reserved_external_cost
+                save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+                return _halt(
+                    "veo_agent",
+                    "VeoOutcomeContract",
+                    f"Invalid Veo agent outcome: {exc}",
+                    attempt_count=count,
+                    partial_artifact_paths=attempt_paths,
+                )
+
+            manifest.budget_spent_usd += claude_cost + outcome.cost_usd
+            manifest.session_id = agent_result.session_id
+            save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+            attempt_path = RUN_STATE_DIR / f"veo_agent_shot_{shot.sequence}_attempt_{count}.json"
+            _atomic_write_json(attempt_path, {
+                "structured_output": outcome.model_dump(mode="json"),
+                "result": agent_result.result,
+                "subtype": agent_result.subtype,
+                "errors": agent_result.errors,
+                "claude_cost_usd": claude_cost,
+                "paid_tool_cost_usd": outcome.cost_usd,
+            })
+            attempt_paths.append(str(attempt_path))
+            previous_outcome = outcome.model_dump(mode="json")
+
+            budget_failure = _check_budget(settings, manifest.budget_spent_usd)
+            if budget_failure:
+                return _halt(
+                    "veo_agent", "Budget", budget_failure.reason or "Budget exhausted",
+                    attempt_count=count, partial_artifact_paths=attempt_paths,
+                )
+
+            if outcome.status == "SUCCESS":
+                try:
+                    entry = ProductionAssetEntry.from_veo_result(
+                        outcome.result,
+                        source_asset_ids=shot.source_asset_ids,
+                    )
+                    upsert_production_asset(
+                        entry,
+                        path=PRODUCTION_ASSETS_FILE,
+                        writer="orchestrator",
+                    )
+                except Exception as exc:
+                    return _halt(
+                        "veo_agent",
+                        "ProductionAssetsContract",
+                        f"Approved Veo result could not be persisted: {type(exc).__name__}: {exc}",
+                        attempt_count=count,
+                        partial_artifact_paths=attempt_paths,
+                    )
+                print(f"veo_agent approved shot {shot.sequence}: {entry.local_path}")
+                break
+
+            failure = outcome.failure
+            correction = failure.reason
+            if not failure.retryable:
+                return _halt(
+                    "veo_agent",
+                    "VeoFailureContract",
+                    failure.reason,
+                    attempt_count=count,
+                    partial_artifact_paths=attempt_paths + failure.partial_artifact_paths,
+                )
+            print(
+                f"veo_agent shot {shot.sequence} attempt {count}/{settings.max_veo_attempts} "
+                f"failed: {failure.reason}",
+                file=sys.stderr,
+            )
+        else:
+            reason = "Veo retry ceiling exhausted"
+            if isinstance(previous_outcome, dict):
+                reason = previous_outcome.get("failure", {}).get("reason", reason)
+            return _halt(
+                "veo_agent",
+                "VeoFailureContract",
+                reason,
+                attempt_count=count,
+                partial_artifact_paths=attempt_paths,
+            )
+
+    return 0
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m orchestrator.run",
@@ -592,7 +877,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     visual_result = asyncio.run(run_visual_stage(settings, manifest))
     if visual_result != 0:
         return visual_result
-    return asyncio.run(run_voice_stage(settings, manifest))
+    voice_result = asyncio.run(run_voice_stage(settings, manifest))
+    if voice_result != 0:
+        return voice_result
+    return asyncio.run(run_veo_stage(settings, manifest))
 
 
 if __name__ == "__main__":

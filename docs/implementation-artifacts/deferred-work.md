@@ -47,3 +47,43 @@
 - source_spec: `docs/implementation-artifacts/spec-2-2-data-driven-renderer-transform-none-enforcement.md`
   summary: Neither `remotion/src/components/Subtitles.tsx` nor the new `BookReel.tsx` data-fetch checks `response.ok` before `.json()`; a 404 (e.g. missing JSON file) produces an opaque `SyntaxError` instead of a clear error message.
   evidence: `Subtitles.tsx`'s identical gap predates this story; fixing only the new `BookReel.tsx` call site would be inconsistent with the established (if imperfect) fetch pattern this story was told to reuse.
+- source_spec: `docs/implementation-artifacts/spec-2-3-autonomous-veo-generation-production-asset-manifest-structured-failure-inspection.md`
+  summary: `orchestrator/tools/veo_tools.py::generate_veo_clip`'s `Shot.model_validate(args["shot"])` isn't wrapped in a try/except; a malformed shot payload crashes the tool instead of returning a structured error.
+  evidence: Matches the existing repo-wide convention of no defensive args validation in any `@tool` handler (e.g. `ingest` in `deterministic_tools.py`, `build_timeline`'s args handling from Story 2.1) -- not unique to this story.
+- source_spec: `docs/implementation-artifacts/spec-2-3-autonomous-veo-generation-production-asset-manifest-structured-failure-inspection.md`
+  summary: `orchestrator/run.py::run_veo_stage` only forwards the first of a shot's possibly-multiple `Shot.source_asset_ids` to seed generation/QA; any additional cited assets are silently dropped.
+  evidence: Not exercised by any current data (every shot in `metadata/visual_plan.json` cites exactly one source asset today); correct handling of multiple cited assets is a design question (Gemini image recomposition may only ever accept one source image), not a clear bug.
+- source_spec: `docs/implementation-artifacts/spec-2-3-autonomous-veo-generation-production-asset-manifest-structured-failure-inspection.md`
+  summary: On retry-ceiling exhaustion, `run_veo_stage`'s halt report shows a generic "Veo retry ceiling exhausted" message rather than the last attempt's actual recorded failure reason.
+  evidence: Consistent with the existing minimal common halt envelope (stage id, failed contract name, attempt count, timestamp, partial-artifact paths) established since Epic 1 -- diagnostic detail beyond that envelope is already documented as agent-specific/deferred, not a regression unique to this story.
+- source_spec: `docs/implementation-artifacts/spec-2-3-autonomous-veo-generation-production-asset-manifest-structured-failure-inspection.md`
+  summary: `orchestrator/tools/gemini_tools.py::extract_generated_image` only scans the first inline image and stops, so a multi-candidate/multi-part Gemini response could truncate `model_text_response` or ignore a later/better image.
+  evidence: Uncertain real-world likelihood for this single-image-recomposition use case; no observed real response has more than one candidate/part.
+- source_spec: `docs/implementation-artifacts/spec-2-3-autonomous-veo-generation-production-asset-manifest-structured-failure-inspection.md`
+  summary: No test drives `run_veo_stage`'s cross-check validation of a mismatched/malformed `veo_agent` outcome (wrong shot, uncited seed asset, over-ceiling cost).
+  evidence: Verification-gap review's own suggested disposition: a defensive check against an already-scoped, tool-restricted agent's own structured output, lower priority than the exception-path and poll-timeout gaps already patched.
+- source_spec: `docs/implementation-artifacts/spec-2-3-autonomous-veo-generation-production-asset-manifest-structured-failure-inspection.md`
+  summary: `orchestrator/state/production_assets.py::upsert_production_asset` has no protection against two concurrent orchestrator invocations both upserting around the same time (last-write-wins, no snapshot/mtime check).
+  evidence: Already an explicitly-documented, accepted v1 architectural limitation (architecture spine: "v1 assumes sequential agent handoff... so AD-10's single-writer rule has no concurrent writers to serialize yet") -- not a defect introduced by this story.
+- source_spec: `docs/implementation-artifacts/spec-2-3-autonomous-veo-generation-production-asset-manifest-structured-failure-inspection.md`
+  summary: A `veo_agent` retry triggered only by a clip QA failure (seed already approved) still pays for a redundant `generate_veo_seed` call, since each attempt is a stateless fresh Claude session with no plumbing in `run.py` to reuse a prior seed object across attempts.
+  evidence: The prompt was clarified to skip re-litigating an already-approved seed's QA on such a retry, but fully eliminating the paid regeneration needs cross-attempt seed-reuse plumbing in `run.py`, out of scope for a prompt-only fix.
+
+- source_spec: `docs/implementation-artifacts/spec-2-3-autonomous-veo-generation-production-asset-manifest-structured-failure-inspection.md`
+  summary: Persist an explicit paid-call reservation before awaiting the Veo agent so a process crash after an accepted request cannot repeat spend on resume.
+  evidence: `run_veo_stage` persists the attempt count before the call and charges the reserved ceiling when an exception returns, but a hard process crash between the SDK request and exception handling still leaves no durable reservation; proving and recovering that window needs a crash-recovery design beyond this patch.
+- source_spec: `docs/implementation-artifacts/spec-2-3-autonomous-veo-generation-production-asset-manifest-structured-failure-inspection.md`
+  summary: Return a structured seed-tool failure contract when the Gemini client or source-image read fails directly inside the MCP tool.
+  evidence: The orchestrator catches agent/tool failures and writes a bounded halt report, but direct callers of `generate_veo_seed` still receive SDK/filesystem exceptions; exposing a seed-specific failure schema requires an additional agent/tool protocol decision.
+- source_spec: `docs/implementation-artifacts/spec-2-3-autonomous-veo-generation-production-asset-manifest-structured-failure-inspection.md`
+  summary: Validate generated media bytes with a real MP4/image decoder before approval.
+  evidence: Contract checks enforce non-empty bytes, hashes, operation provenance, and generated preview files; decoder validation would add a new runtime dependency and was not exercised by the SDK-shaped fake media used in this story.
+- source_spec: `docs/implementation-artifacts/spec-2-3-autonomous-veo-generation-production-asset-manifest-structured-failure-inspection.md`
+  summary: Preserve and validate all cited source assets and subtitle cue IDs when constructing a Veo prompt.
+  evidence: The current stage chooses the first available cited asset and omits unknown cue IDs, which is deterministic but can under-represent a malformed multi-source plan; resolving the intended prompt semantics belongs in the visual-plan/story contract.
+- source_spec: `docs/implementation-artifacts/spec-2-3-autonomous-veo-generation-production-asset-manifest-structured-failure-inspection.md`
+  summary: Add approved-result resume behavior to the standalone `generate_veo_clips.py` harness.
+  evidence: The orchestrator has paid-call-free keyed resume; the canonical harness remains an explicitly selected-shot operator tool and rewrites its per-shot result entry, so making it resumable needs a separate CLI contract.
+- source_spec: `docs/implementation-artifacts/spec-2-3-autonomous-veo-generation-production-asset-manifest-structured-failure-inspection.md`
+  summary: Make seed and clip MCP tools enforce a per-attempt maximum of one paid call each.
+  evidence: The scoped agent prompt limits the two registered tools and the orchestrator reserves one image plus one Veo estimate, but SDK tool-call counting would require an additional runtime wrapper around Claude Agent SDK events.

@@ -7,6 +7,7 @@ or resume-pointer tracking (Design Notes).
 
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 
@@ -19,6 +20,17 @@ import orchestrator.agents.story_agent as story_agent_module
 import orchestrator.agents.visual_agent as visual_agent_module
 import orchestrator.run as run
 from orchestrator.preflight import PreflightResult
+from orchestrator.contracts.production_assets import ProductionAssetEntry
+from orchestrator.contracts.veo import (
+    VeoFailureContract,
+    VeoOutcomeContract,
+    VeoResultContract,
+    VeoSeedContract,
+    sha256_file,
+    shot_fingerprint,
+)
+from orchestrator.contracts.visual_plan import VisualPlanContract
+from orchestrator.state.production_assets import load_production_assets, upsert_production_asset
 from orchestrator.state.run_manifest import load_run_manifest
 from orchestrator.tests.test_preflight import make_settings
 from orchestrator.tools.deterministic_tools import inspect_image
@@ -391,3 +403,318 @@ def test_persisted_subtitle_cues_with_deleted_audio_does_not_skip(chain, monkeyp
 
     assert len(tts_calls) == len(stt_calls) == len(dp_calls) == 1
     assert Path("audio/narration.wav").exists()
+
+
+def veo_visual_plan_for(asset_id: str, *, count: int = 1) -> VisualPlanContract:
+    data = visual_plan_for(asset_id)
+    data["shots"] = []
+    for sequence in range(1, count + 1):
+        data["shots"].append({
+            "sequence": sequence,
+            "generation_mode": "VEO",
+            "visual_treatment": "AI_VIDEO_CANDIDATE",
+            "source_asset_ids": [asset_id],
+            "shot_goal": f"Show beat {sequence}.",
+            "frame_composition": "Center the subject.",
+            "motion_plan": "Use restrained motion.",
+            "text_overlay": "",
+            "source_support": "Directly grounded in the source.",
+        })
+    return VisualPlanContract.model_validate(data)
+
+
+def approved_outcome_for(shot, *, attempt: int = 1) -> VeoOutcomeContract:
+    source = Path("source_images/one.png")
+    seed_path = Path("generated/veo_seeds") / f"shot_{shot.sequence:02d}_seed.png"
+    video_path = Path("generated/veo") / f"shot_{shot.sequence:02d}.mp4"
+    dump_path = Path("metadata/veo_operations") / f"shot_{shot.sequence:02d}_attempt_{attempt:02d}.json"
+    preview_path = Path("generated/veo/previews") / f"shot_{shot.sequence:02d}_01.jpg"
+    seed_path.parent.mkdir(parents=True, exist_ok=True)
+    video_path.parent.mkdir(parents=True, exist_ok=True)
+    dump_path.parent.mkdir(parents=True, exist_ok=True)
+    preview_path.parent.mkdir(parents=True, exist_ok=True)
+    seed_path.write_bytes(f"seed-{shot.sequence}".encode())
+    video_path.write_bytes(f"video-{shot.sequence}".encode())
+    dump_path.write_text("{}")
+    preview_path.write_bytes(b"preview")
+    seed = VeoSeedContract(
+        shot_sequence=shot.sequence,
+        shot_fingerprint=shot_fingerprint(shot),
+        source_asset_id=shot.source_asset_ids[0],
+        source_image_path=str(source),
+        source_image_sha256=sha256_file(source),
+        local_path=str(seed_path),
+        seed_sha256=sha256_file(seed_path),
+        prompt="Clean recomposition.",
+        model="image-model",
+        approved=True,
+        qa_summary="Seed matches the requested scene.",
+        cost_usd=0.04,
+    )
+    result = VeoResultContract(
+        shot_sequence=shot.sequence,
+        shot_fingerprint=shot_fingerprint(shot),
+        seed=seed,
+        local_video_path=str(video_path),
+        video_sha256=sha256_file(video_path),
+        gcs_uri=f"gs://bucket/shot-{shot.sequence}.mp4",
+        operation_name=f"operations/{shot.sequence}",
+        operation_dump_path=str(dump_path),
+        preview_paths=[str(preview_path)],
+        model="veo-model",
+        approved=True,
+        qa_summary="Clip motion and scene fidelity passed.",
+        cost_usd=1.2,
+    )
+    return VeoOutcomeContract(
+        produced_by="veo_agent",
+        status="SUCCESS",
+        shot_sequence=shot.sequence,
+        shot_fingerprint=shot_fingerprint(shot),
+        result=result,
+    )
+
+
+def failed_outcome_for(shot, *, retryable: bool, reason: str = "clip failed") -> VeoOutcomeContract:
+    failure = VeoFailureContract(
+        produced_by="veo_agent",
+        shot_sequence=shot.sequence,
+        shot_fingerprint=shot_fingerprint(shot),
+        stage="veo_generation",
+        code="SDK_ERROR",
+        reason=reason,
+        retryable=retryable,
+        attempt=1,
+        cost_usd=1.2,
+    )
+    return VeoOutcomeContract(
+        produced_by="veo_agent",
+        status="FAILURE",
+        shot_sequence=shot.sequence,
+        shot_fingerprint=shot_fingerprint(shot),
+        failure=failure,
+    )
+
+
+def test_veo_resume_matching_approved_entry_makes_zero_agent_or_paid_calls(chain, monkeypatch):
+    source, asset_id = chain
+    visual_plan = veo_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    create_audio_file()
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+    outcome = approved_outcome_for(visual_plan.shots[0])
+    entry = ProductionAssetEntry.from_veo_result(outcome.result, [asset_id])
+    upsert_production_asset(entry, path=run.PRODUCTION_ASSETS_FILE)
+    before = run.PRODUCTION_ASSETS_FILE.read_bytes()
+
+    async def refuse_agent(**kwargs):
+        raise AssertionError("matching approved VEO entry must make zero agent, seed, or Veo calls")
+
+    monkeypatch.setattr(run, "generate_veo_asset", refuse_agent)
+    manifest = load_run_manifest(run.RUN_STATE_DIR)
+    assert asyncio.run(run.run_veo_stage(make_settings(), manifest)) == 0
+    assert run.PRODUCTION_ASSETS_FILE.read_bytes() == before
+    assert manifest.budget_spent_usd == 0.0
+
+
+def test_two_successful_veo_shots_are_both_preserved_by_keyed_upsert(chain, monkeypatch):
+    source, asset_id = chain
+    visual_plan = veo_visual_plan_for(asset_id, count=2)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+    original_plan = run.VISUAL_PLAN_FILE.read_bytes()
+    calls = []
+
+    async def successful_agent(**kwargs):
+        calls.append(kwargs["shot"]["sequence"])
+        shot = visual_plan.shots[kwargs["shot"]["sequence"] - 1]
+        outcome = approved_outcome_for(shot, attempt=kwargs["attempt"])
+        return sdk_result(outcome.model_dump(mode="json"), cost=0.1)
+
+    monkeypatch.setattr(run, "generate_veo_asset", successful_agent)
+    manifest = load_run_manifest(run.RUN_STATE_DIR)
+    assert asyncio.run(run.run_veo_stage(make_settings(), manifest)) == 0
+
+    production = load_production_assets(run.PRODUCTION_ASSETS_FILE)
+    assert calls == [1, 2]
+    assert list(production.shots) == ["1", "2"]
+    assert run.VISUAL_PLAN_FILE.read_bytes() == original_plan
+    assert manifest.budget_spent_usd == pytest.approx(2.68)
+
+
+def test_veo_stage_generates_only_veo_mode_and_never_changes_plan(chain, monkeypatch):
+    source, asset_id = chain
+    plan_data = veo_visual_plan_for(asset_id, count=2).model_dump(mode="json")
+    plan_data["shots"][1]["generation_mode"] = "STILL"
+    plan_data["shots"][1]["visual_treatment"] = "USE_EXISTING_ART"
+    visual_plan = VisualPlanContract.model_validate(plan_data)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+    original_plan = run.VISUAL_PLAN_FILE.read_bytes()
+    calls = []
+
+    async def successful_agent(**kwargs):
+        calls.append(kwargs["shot"]["sequence"])
+        outcome = approved_outcome_for(visual_plan.shots[0], attempt=kwargs["attempt"])
+        return sdk_result(outcome.model_dump(mode="json"), cost=0.1)
+
+    monkeypatch.setattr(run, "generate_veo_asset", successful_agent)
+    assert asyncio.run(
+        run.run_veo_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))
+    ) == 0
+
+    production = load_production_assets(run.PRODUCTION_ASSETS_FILE)
+    assert calls == [1]
+    assert list(production.shots) == ["1"]
+    assert run.VISUAL_PLAN_FILE.read_bytes() == original_plan
+
+
+def test_veo_budget_gate_halts_before_any_agent_or_paid_call(chain, monkeypatch):
+    source, asset_id = chain
+    visual_plan = veo_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+
+    async def refuse_agent(**kwargs):
+        raise AssertionError("budget gate must run before the agent or either paid tool")
+
+    monkeypatch.setattr(run, "generate_veo_asset", refuse_agent)
+    manifest = load_run_manifest(run.RUN_STATE_DIR)
+    assert asyncio.run(run.run_veo_stage(make_settings(max_budget_usd=1.0), manifest)) == 1
+    assert not run.PRODUCTION_ASSETS_FILE.exists()
+
+
+def test_retryable_veo_failure_retries_with_correction_then_upserts(chain, monkeypatch):
+    source, asset_id = chain
+    visual_plan = veo_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+    calls = []
+
+    async def agent(**kwargs):
+        calls.append(kwargs)
+        if len(calls) == 1:
+            return sdk_result(failed_outcome_for(visual_plan.shots[0], retryable=True).model_dump(mode="json"), cost=0.1)
+        outcome = approved_outcome_for(visual_plan.shots[0], attempt=kwargs["attempt"])
+        return sdk_result(outcome.model_dump(mode="json"), cost=0.1)
+
+    monkeypatch.setattr(run, "generate_veo_asset", agent)
+    assert asyncio.run(run.run_veo_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 0
+    assert len(calls) == 2
+    assert calls[1]["correction"] == "clip failed"
+    assert calls[1]["previous_outcome"]["status"] == "FAILURE"
+    assert list(load_production_assets(run.PRODUCTION_ASSETS_FILE).shots) == ["1"]
+
+
+def test_nonretryable_veo_failure_halts_with_structured_report(chain, monkeypatch):
+    source, asset_id = chain
+    visual_plan = veo_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+
+    async def agent(**kwargs):
+        return sdk_result(failed_outcome_for(visual_plan.shots[0], retryable=False, reason="policy blocked").model_dump(mode="json"), cost=0.1)
+
+    monkeypatch.setattr(run, "generate_veo_asset", agent)
+    assert asyncio.run(run.run_veo_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 1
+    reports = sorted(run.RUN_STATE_DIR.glob("failure_veo_agent_*.json"))
+    assert reports
+    report = json.loads(reports[-1].read_text(encoding="utf-8"))
+    assert report["attempt_count"] == 1
+    assert "policy blocked" in report["reason"]
+
+
+def test_retryable_veo_failure_stops_at_attempt_ceiling(chain, monkeypatch):
+    source, asset_id = chain
+    visual_plan = veo_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+    calls = []
+
+    async def agent(**kwargs):
+        calls.append(kwargs["attempt"])
+        return sdk_result(failed_outcome_for(visual_plan.shots[0], retryable=True, reason="still failing").model_dump(mode="json"), cost=0.1)
+
+    monkeypatch.setattr(run, "generate_veo_asset", agent)
+    assert asyncio.run(run.run_veo_stage(make_settings(max_veo_attempts=2), load_run_manifest(run.RUN_STATE_DIR))) == 1
+    assert calls == [1, 2]
+    reports = sorted(run.RUN_STATE_DIR.glob("failure_veo_agent_*.json"))
+    assert reports
+    assert json.loads(reports[-1].read_text(encoding="utf-8"))["attempt_count"] == 2
+
+
+def test_corrupt_production_manifest_halts_without_reset_or_agent_call(chain, monkeypatch):
+    """A malformed persisted manifest is a hard resume failure, never a reset."""
+    source, asset_id = chain
+    visual_plan = veo_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+    run.PRODUCTION_ASSETS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    original = b"{ this is not valid json"
+    run.PRODUCTION_ASSETS_FILE.write_bytes(original)
+
+    async def refuse_agent(**kwargs):
+        raise AssertionError("corrupt production manifest must halt before the agent")
+
+    monkeypatch.setattr(run, "generate_veo_asset", refuse_agent)
+    assert asyncio.run(run.run_veo_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 1
+    assert run.PRODUCTION_ASSETS_FILE.read_bytes() == original
+
+
+def test_veo_agent_exception_charges_full_attempt_ceiling_and_halts(chain, monkeypatch):
+    """Fix #4: an exception from generate_veo_asset must charge the whole
+    per-attempt ceiling (remaining_budget), since a real cost is never
+    available on this branch and up to that much Claude spend may have
+    already occurred.
+    """
+    source, asset_id = chain
+    visual_plan = veo_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+
+    async def raising_agent(**kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(run, "generate_veo_asset", raising_agent)
+    settings = make_settings()
+    manifest = load_run_manifest(run.RUN_STATE_DIR)
+    expected_charge = settings.max_budget_usd - manifest.budget_spent_usd
+
+    assert asyncio.run(run.run_veo_stage(settings, manifest)) == 1
+
+    assert manifest.budget_spent_usd == pytest.approx(expected_charge)
+    assert not run.PRODUCTION_ASSETS_FILE.exists()
+
+    attempt_path = run.RUN_STATE_DIR / "veo_agent_shot_1_attempt_1.json"
+    assert attempt_path.is_file()
+    attempt_data = json.loads(attempt_path.read_text(encoding="utf-8"))
+    assert attempt_data["status"] == "EXCEPTION"
+    assert "boom" in attempt_data["error"]
+    assert attempt_data["charged_cost_usd"] == pytest.approx(expected_charge)
+
+    reports = sorted(run.RUN_STATE_DIR.glob("failure_veo_agent_*.json"))
+    assert reports
+    report = json.loads(reports[-1].read_text(encoding="utf-8"))
+    assert report["attempt_count"] == 1
+
+
+def test_stale_production_manifest_halts_before_agent_call(chain, monkeypatch):
+    """A keyed entry from an older visual plan cannot be reused silently."""
+    source, asset_id = chain
+    visual_plan = veo_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    outcome = approved_outcome_for(visual_plan.shots[0])
+    upsert_production_asset(
+        ProductionAssetEntry.from_veo_result(outcome.result, [asset_id]),
+        path=run.PRODUCTION_ASSETS_FILE,
+    )
+
+    stale_plan = visual_plan.model_dump(mode="json")
+    stale_plan["shots"][0]["shot_goal"] = "A changed shot must force a deliberate rerun."
+    run.VISUAL_PLAN_FILE.write_text(json.dumps(stale_plan), encoding="utf-8")
+
+    async def refuse_agent(**kwargs):
+        raise AssertionError("stale production manifest must halt before the agent")
+
+    monkeypatch.setattr(run, "generate_veo_asset", refuse_agent)
+    assert asyncio.run(run.run_veo_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 1

@@ -9,6 +9,7 @@ pattern used today by `generate_veo_clips.py`, `analyze_assets.py`,
 
 from __future__ import annotations
 
+import math
 import os
 from dataclasses import dataclass
 
@@ -26,6 +27,16 @@ DEFAULT_GCS_BUCKET_URI = "gs://sachin-kayaking-video-test/book_reels/veo/"
 DEFAULT_MAX_BUDGET_USD = 5.0
 DEFAULT_VEO_MODEL = "veo-3.1-fast-generate-001"
 DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
+DEFAULT_IMAGE_MODEL = "gemini-3.1-flash-image"
+DEFAULT_VEO_RESOLUTION = "720p"
+DEFAULT_VEO_DURATION_SECONDS = 8
+DEFAULT_VEO_POLL_SECONDS = 15.0
+DEFAULT_VEO_MAX_POLL_SECONDS = 900.0
+DEFAULT_MAX_VEO_ATTEMPTS = 3
+# Cost estimates are configuration, not hidden model knowledge. They are
+# intentionally conservative and can be updated without code changes.
+DEFAULT_IMAGE_CALL_COST_USD = 0.04
+DEFAULT_VEO_CALL_COST_USD = 1.20
 
 
 # Story 1.5: Gemini TTS / Google STT per-unit cost-rate constants. Unlike
@@ -47,6 +58,55 @@ class Settings:
     max_budget_usd: float
     veo_model: str
     gemini_model: str
+    image_model: str = DEFAULT_IMAGE_MODEL
+    veo_resolution: str = DEFAULT_VEO_RESOLUTION
+    veo_duration_seconds: int = DEFAULT_VEO_DURATION_SECONDS
+    veo_poll_seconds: float = DEFAULT_VEO_POLL_SECONDS
+    veo_max_poll_seconds: float = DEFAULT_VEO_MAX_POLL_SECONDS
+    max_veo_attempts: int = DEFAULT_MAX_VEO_ATTEMPTS
+    image_call_cost_usd: float = DEFAULT_IMAGE_CALL_COST_USD
+    veo_call_cost_usd: float = DEFAULT_VEO_CALL_COST_USD
+
+
+def _float_setting(name: str, default: float, *, positive: bool = False) -> float:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    try:
+        value = float(raw)
+    except ValueError as exc:
+        raise SettingsError(f"{name}={raw!r} is not a valid float") from exc
+    if not math.isfinite(value):
+        raise SettingsError(f"{name} must be finite")
+    if positive and value <= 0:
+        raise SettingsError(f"{name} must be greater than zero")
+    if value < 0:
+        raise SettingsError(f"{name} must not be negative")
+    return value
+
+
+def _str_setting(name: str, default: str) -> str:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    if not raw.strip():
+        raise SettingsError(f"{name} must not be empty")
+    return raw
+
+
+def _int_setting(name: str, default: int, *, positive: bool = False) -> int:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise SettingsError(f"{name}={raw!r} is not a valid integer") from exc
+    if positive and value <= 0:
+        raise SettingsError(f"{name} must be greater than zero")
+    if value < 0:
+        raise SettingsError(f"{name} must not be negative")
+    return value
 
 
 def load_settings() -> Settings:
@@ -58,23 +118,27 @@ def load_settings() -> Settings:
     propagate out of this function or out of module import.
     """
 
-    max_budget_raw = os.getenv("MAX_BUDGET_USD")
-
-    if max_budget_raw is None:
-        max_budget_usd = DEFAULT_MAX_BUDGET_USD
-    else:
-        try:
-            max_budget_usd = float(max_budget_raw)
-        except ValueError as exc:
-            raise SettingsError(
-                f"MAX_BUDGET_USD={max_budget_raw!r} is not a valid float"
-            ) from exc
+    max_budget_usd = _float_setting("MAX_BUDGET_USD", DEFAULT_MAX_BUDGET_USD)
 
     return Settings(
         project_id=os.getenv("GOOGLE_CLOUD_PROJECT", DEFAULT_PROJECT_ID),
         location=os.getenv("GOOGLE_CLOUD_LOCATION", DEFAULT_LOCATION),
         gcs_bucket_uri=os.getenv("GCS_BUCKET_URI", DEFAULT_GCS_BUCKET_URI),
         max_budget_usd=max_budget_usd,
-        veo_model=os.getenv("VEO_MODEL", DEFAULT_VEO_MODEL),
+        veo_model=_str_setting("VEO_MODEL", DEFAULT_VEO_MODEL),
         gemini_model=os.getenv("GEMINI_MODEL", DEFAULT_GEMINI_MODEL),
+        image_model=_str_setting("IMAGE_MODEL", DEFAULT_IMAGE_MODEL),
+        veo_resolution=_str_setting("VEO_RESOLUTION", DEFAULT_VEO_RESOLUTION),
+        veo_duration_seconds=_int_setting(
+            "VEO_DURATION_SECONDS", DEFAULT_VEO_DURATION_SECONDS, positive=True
+        ),
+        veo_poll_seconds=_float_setting("VEO_POLL_SECONDS", DEFAULT_VEO_POLL_SECONDS, positive=True),
+        veo_max_poll_seconds=_float_setting(
+            "VEO_MAX_POLL_SECONDS", DEFAULT_VEO_MAX_POLL_SECONDS, positive=True
+        ),
+        max_veo_attempts=_int_setting("MAX_VEO_ATTEMPTS", DEFAULT_MAX_VEO_ATTEMPTS, positive=True),
+        image_call_cost_usd=_float_setting(
+            "IMAGE_CALL_COST_USD", DEFAULT_IMAGE_CALL_COST_USD
+        ),
+        veo_call_cost_usd=_float_setting("VEO_CALL_COST_USD", DEFAULT_VEO_CALL_COST_USD),
     )

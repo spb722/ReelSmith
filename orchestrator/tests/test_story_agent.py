@@ -169,11 +169,15 @@ def stage(tmp_path, monkeypatch):
         no_voice_stage.calls.append((settings, manifest))
         return 0
 
+    async def no_veo_stage(settings, manifest):
+        return 0
+
     no_visual_stage.calls = []
     no_voice_stage.calls = []
     monkeypatch.setattr(run, "run_screenshot_stage", no_screenshot_stage)
     monkeypatch.setattr(run, "run_visual_stage", no_visual_stage)
     monkeypatch.setattr(run, "run_voice_stage", no_voice_stage)
+    monkeypatch.setattr(run, "run_veo_stage", no_veo_stage)
 
     return source, asset_ids, final_story_plan_for(asset_ids)
 
