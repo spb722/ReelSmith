@@ -267,7 +267,7 @@ def test_partial_chain_resumes_only_from_first_missing_stage(chain, monkeypatch)
     tts_calls, stt_calls, dp_calls = [], [], []
 
     monkeypatch.setattr(run, "generate_narration_audio", RecordingTool(
-        tts_calls, tool_content({"audio_path": "audio/narration.wav", "duration_seconds": 45.0, "prompt_word_count": 250}),
+        tts_calls, tool_content({"audio_path": "audio/narration.wav", "duration_seconds": 45.0, "prompt_word_count": 250, "model": "gemini-3.1-flash-tts-preview", "voice_name": "Gacrux"}),
         writes_audio=True,
     ))
     monkeypatch.setattr(run, "extract_word_timing", RecordingTool(
@@ -372,7 +372,7 @@ def test_fully_valid_chain_makes_zero_new_calls_anywhere(chain, monkeypatch):
 def _mock_voice_tools(monkeypatch):
     tts_calls, stt_calls, dp_calls = [], [], []
     monkeypatch.setattr(run, "generate_narration_audio", RecordingTool(
-        tts_calls, tool_content({"audio_path": "audio/narration.wav", "duration_seconds": 45.0, "prompt_word_count": 250}),
+        tts_calls, tool_content({"audio_path": "audio/narration.wav", "duration_seconds": 45.0, "prompt_word_count": 250, "model": "gemini-3.1-flash-tts-preview", "voice_name": "Gacrux"}),
         writes_audio=True,
     ))
     monkeypatch.setattr(run, "extract_word_timing", RecordingTool(

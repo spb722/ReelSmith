@@ -182,7 +182,11 @@ async def plan_visuals(
         # not tiny either; raised for the same reason as story_agent.py.
         max_buffer_size=20 * 1024 * 1024,
     )
+    result = None
     async for message in query(prompt=prompt, options=options):
         if isinstance(message, ResultMessage):
-            return message
+            result = message
+    # Exhaust the stream so SDK cleanup finishes in this task before returning.
+    if result is not None:
+        return result
     raise RuntimeError("Claude returned no ResultMessage")

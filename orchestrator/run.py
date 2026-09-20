@@ -21,6 +21,7 @@ import argparse
 import asyncio
 import json
 import math
+import shutil
 import sys
 import time
 import uuid
@@ -69,6 +70,7 @@ from orchestrator.tools.deterministic_tools import (
     ASSETS_FILE,
     DEFAULT_REMOTION_RENDER_OUTPUT,
     ImpactPhraseNotFoundError,
+    AlignmentQualityError,
     build_subtitle_cues,
     extract_word_timing,
     ingest,
@@ -81,6 +83,9 @@ from orchestrator.tools.gemini_tools import (
     NARRATION_WAV,
     generate_narration_audio,
     resolve_character_references,
+)
+from orchestrator.state.voice_cache import (
+    AUDIO_CACHE_FILE, load_audio_cache, save_audio_cache, selected_voice_name,
 )
 from orchestrator.tools.veo_tools import select_clip_duration_seconds
 from orchestrator.tools.timeline_converter import build_timeline_data
@@ -599,133 +604,100 @@ def _voice_pipeline_result(
 async def run_voice_pipeline(
     story_plan: FinalStoryPlanContract, settings: Settings, budget_spent_usd: float,
 ) -> ResultMessage:
-    """Run narration TTS -> word-timing STT -> subtitle-cue DP segmentation
-    directly, with no Claude/Agent-SDK session anywhere (AD-1: mirrors
-    `preflight`'s own no-judgment exception). Each tool's handler is called
-    the same way `run_screenshot_stage` calls `ingest.handler` directly.
-    Wraps the combined result in a synthetic `ResultMessage` so it reuses
-    `run_bounded_agent_stage` unchanged.
+    """Execute paid voice steps with verified audio reuse and explicit failure kinds.
 
-    AD-8: remaining budget is checked immediately before each paid call
-    (TTS, then STT), not only once per attempt via the outer loop. AD-9: a
-    failure after an earlier paid step already succeeded still returns that
-    step's real cost (via `total_cost_usd`) instead of letting the
-    exception propagate past `run_bounded_agent_stage`'s cost-accounting
-    code -- `subtype="error_max_budget_usd"` is the one hook
-    `run_bounded_agent_stage` already has for "halt this attempt
-    immediately, don't just retry", reused here for both an actual budget
-    shortfall (AD-8) and AD-12's non-recoverable phrase-not-found halt.
+    Costs use the configured rate estimates, including attempted recognition
+    requests that failed. A reused audio file contributes no new TTS charge.
     """
     start = time.monotonic()
     narration_script = story_plan.narration_script
     voice_direction = story_plan.voice_direction.model_dump(mode="json")
+    tts_cost = stt_cost = 0.0
 
-    budget_failure = _check_budget(settings, budget_spent_usd)
-    if budget_failure:
+    def result(subtype: str, message: str | None = None, output=None):
         return _voice_pipeline_result(
-            subtype="error_max_budget_usd", is_error=True, cost=0.0,
-            message=budget_failure.reason or "Budget exhausted before the TTS call", start=start,
+            subtype=subtype, is_error=subtype != "success",
+            cost=round(tts_cost + stt_cost, 6), message=message,
+            structured_output=output, start=start,
         )
 
-    print("voice_agent: step 1/3 TTS — generating narration audio…")
     try:
-        tts_response = await generate_narration_audio.handler({
-            "narration_script": narration_script,
-            "voice_direction": voice_direction,
-            "project_id": settings.project_id,
-            "location": settings.location,
-        })
-    except Exception as exc:
-        return _voice_pipeline_result(
-            subtype="error", is_error=True, cost=0.0,
-            message=f"TTS failed: {type(exc).__name__}: {exc}", start=start,
-        )
+        voice_name = selected_voice_name()
+    except ValueError as exc:
+        return result("error_configuration", str(exc))
+    cached = load_audio_cache(narration_script, voice_direction)
+    if cached is not None:
+        tts_payload, provenance = cached["tts"], cached["provenance"]
+        print(f"voice_agent: reusing verified narration audio (voice={voice_name})")
+    else:
+        budget_failure = _check_budget(settings, budget_spent_usd)
+        if budget_failure:
+            return result("error_max_budget_usd", budget_failure.reason)
+        try:
+            print(f"voice_agent: step 1/3 TTS — generating narration (voice={voice_name})…")
+            tts_response = await generate_narration_audio.handler({
+                "narration_script": narration_script, "voice_direction": voice_direction,
+                "project_id": settings.project_id, "location": settings.location,
+            })
+            tts_payload = json.loads(tts_response["content"][0]["text"])
+            duration = float(tts_payload["duration_seconds"])
+            if not math.isfinite(duration) or duration <= 0:
+                raise ValueError("TTS returned an invalid duration")
+            tts_cost = round(
+                tts_payload["prompt_word_count"] * GEMINI_TTS_INPUT_TOKEN_COST_USD
+                + duration * GEMINI_TTS_AUDIO_TOKENS_PER_SECOND * GEMINI_TTS_OUTPUT_TOKEN_COST_USD, 6,
+            )
+            provenance = save_audio_cache(tts_payload, narration_script, voice_direction)
+        except Exception as exc:
+            return result("error_tts", f"TTS failed: {type(exc).__name__}: {exc}")
 
-    tts_payload = json.loads(tts_response["content"][0]["text"])
     audio_duration_seconds = float(tts_payload["duration_seconds"])
-    print(
-        f"voice_agent: step 1/3 TTS done — {tts_payload['audio_path']} "
-        f"({audio_duration_seconds:.2f}s)"
-    )
-    # Real Gemini TTS per-unit pricing -- settings.py's new cost-rate
-    # constants (Code Map). Input-token cost is based on the actual prompt
-    # text Gemini receives (build_tts_prompt's fixed instructional preamble
-    # plus the narration), not just the bare narration_script.
-    tts_cost = round(
-        tts_payload["prompt_word_count"] * GEMINI_TTS_INPUT_TOKEN_COST_USD
-        + audio_duration_seconds * GEMINI_TTS_AUDIO_TOKENS_PER_SECOND * GEMINI_TTS_OUTPUT_TOKEN_COST_USD,
-        6,
-    )
-
     budget_failure = _check_budget(settings, budget_spent_usd + tts_cost)
     if budget_failure:
-        return _voice_pipeline_result(
-            subtype="error_max_budget_usd", is_error=True, cost=tts_cost,
-            message=budget_failure.reason or "Budget exhausted before the STT call", start=start,
-        )
+        return result("error_max_budget_usd", budget_failure.reason)
 
-    stt_cost = 0.0
     try:
         print("voice_agent: step 2/3 STT — aligning word timings (splits audio >55s)…")
+        # Failed requests can still incur charges. The tool reports how much
+        # audio it actually submitted, including a failed chunk when applicable.
+        stt_cost = round(audio_duration_seconds * STT_COST_PER_SECOND_USD, 6)
         stt_response = await extract_word_timing.handler({
-            "audio_path": tts_payload["audio_path"],
-            "narration_script": narration_script,
+            "audio_path": tts_payload["audio_path"], "narration_script": narration_script,
             "project_id": settings.project_id,
+            "diagnostics_path": str(RUN_STATE_DIR / "word_timing_diagnostics.json"),
         })
         stt_payload = json.loads(stt_response["content"][0]["text"])
-        stt_cost = round(audio_duration_seconds * STT_COST_PER_SECOND_USD, 6)
+        stt_cost = round(stt_payload.get("attempted_audio_seconds", audio_duration_seconds) * STT_COST_PER_SECOND_USD, 6)
+        _atomic_write_json(RUN_STATE_DIR / "word_timing_diagnostics.json", stt_payload)
+        stats = stt_payload["alignment_stats"]
         print(
-            f"voice_agent: step 2/3 STT done — "
-            f"exact_match_ratio={stt_payload['alignment_stats']['exact_match_ratio']:.3f}, "
-            f"words={len(stt_payload['words'])}"
+            f"voice_agent: literal alignment={stats['exact_match_ratio']:.3f}, "
+            f"normalized alignment={stats.get('normalized_match_ratio', stats['exact_match_ratio']):.3f}"
         )
+    except Exception as exc:
+        stt_cost = round(getattr(exc, "attempted_audio_seconds", audio_duration_seconds) * STT_COST_PER_SECOND_USD, 6)
+        kind = "error_alignment" if isinstance(exc, AlignmentQualityError) else "error_stt"
+        return result(kind, f"STT failed: {type(exc).__name__}: {exc}")
 
+    try:
         print("voice_agent: step 3/3 subtitles — building cue segments…")
         dp_response = await build_subtitle_cues.handler({
-            "word_timing": stt_payload,
-            "narration_script": narration_script,
+            "word_timing": stt_payload, "narration_script": narration_script,
             "voice_direction": voice_direction,
             "scenes": [scene.model_dump(mode="json") for scene in story_plan.scenes],
             "viewer_reflection": story_plan.story_arc.viewer_reflection,
         })
         dp_payload = json.loads(dp_response["content"][0]["text"])
-        print(f"voice_agent: step 3/3 subtitles done — {dp_payload['cue_count']} cues")
-    except ImpactPhraseNotFoundError as exc:
-        # AD-12: a text-authoring mismatch, not a transient/alignment
-        # failure -- no amount of audio regeneration can ever fix it.
-        # Forces an immediate halt (see subtype note above) instead of
-        # burning the retry ceiling on something deterministically doomed
-        # to fail identically every time.
-        return _voice_pipeline_result(
-            subtype="error_max_budget_usd", is_error=True, cost=tts_cost + stt_cost,
-            message=f"Non-recoverable (AD-12): {exc}", start=start,
-        )
     except Exception as exc:
-        # AD-9: TTS (and, if it got this far, STT) spend already happened
-        # and must still be recorded even though this attempt failed.
-        return _voice_pipeline_result(
-            subtype="error", is_error=True, cost=tts_cost + stt_cost,
-            message=f"{type(exc).__name__}: {exc}", start=start,
-        )
-
-    structured_output = {
-        "produced_by": "voice_agent",
-        "source_narration_script": narration_script,
-        "alignment_ratio": dp_payload["alignment_ratio"],
-        # Pass each cue through whole rather than re-projecting named keys.
-        # `SubtitleCuesContract.Cue` sets `extra="ignore"`, so the fields it
-        # doesn't model (duration_seconds, start/end_word_index,
-        # duration_warning) are still dropped at validation -- but a field it
-        # *does* model can no longer be lost by being forgotten here, which is
-        # exactly how every cue's `style_hint` silently became NORMAL and made
-        # the IMPACT/EMPHASIS/REFLECTION render paths unreachable.
+        # Segmentation and quality checks are deterministic for this evidence.
+        # Retrying TTS cannot repair an invalid impact phrase or segmentation.
+        return result("error_alignment" if isinstance(exc, AlignmentQualityError) else "error_subtitles",
+                      f"Subtitles failed: {type(exc).__name__}: {exc}")
+    return result("success", output={
+        "produced_by": "voice_agent", "source_narration_script": narration_script,
+        "audio_provenance": provenance, "alignment_ratio": dp_payload["alignment_ratio"],
         "cues": dp_payload["cues"],
-    }
-
-    return _voice_pipeline_result(
-        subtype="success", is_error=False, cost=round(tts_cost + stt_cost, 6),
-        structured_output=structured_output, start=start,
-    )
+    })
 
 
 def _voice_stage_skip_is_valid(story_plan: FinalStoryPlanContract) -> bool:
@@ -740,7 +712,24 @@ def _voice_stage_skip_is_valid(story_plan: FinalStoryPlanContract) -> bool:
     return True
 
 
-async def run_voice_stage(settings: Settings, manifest: RunManifest) -> int:
+def archive_voice_attempts(manifest: RunManifest) -> Path:
+    """Preserve the previous bounded batch before resetting only its ceiling."""
+    archive = RUN_STATE_DIR / "voice_history" / str(uuid.uuid4())
+    archive.mkdir(parents=True, exist_ok=False)
+    _atomic_write_json(archive / "run_manifest.json", manifest.to_dict())
+    evidence = list(RUN_STATE_DIR.glob("voice_agent_attempt_*.json"))
+    evidence += list(RUN_STATE_DIR.glob("failure_voice_agent_*.json"))
+    evidence += [RUN_STATE_DIR / "word_timing_diagnostics.json", AUDIO_CACHE_FILE, NARRATION_WAV, SUBTITLE_CUES_FILE]
+    for path in evidence:
+        if path.is_file():
+            shutil.copy2(path, archive / path.name)
+    manifest.iteration_counts["voice_agent"] = 0
+    save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+    print(f"voice_agent: previous attempts archived to {archive}; cumulative spend preserved")
+    return archive
+
+
+async def run_voice_stage(settings: Settings, manifest: RunManifest, *, retry_voice: bool = False) -> int:
     """Generate narration audio, word timing, and subtitle cues from the
     already-validated `FinalStoryPlanContract` -- gated on that contract and
     `VisualPlanContract` both existing (AC1's stated precondition;
@@ -759,34 +748,69 @@ async def run_voice_stage(settings: Settings, manifest: RunManifest) -> int:
     except (FileNotFoundError, ValueError, OSError) as exc:
         return _halt("voice_agent", "VisualPlanContract", f"No validated visual plan available: {exc}")
 
+    if retry_voice:
+        archive_voice_attempts(manifest)
+
     if _voice_stage_skip_is_valid(story_plan):
         print(f"voice_agent skipped: validated {SUBTITLE_CUES_FILE}")
         backfill_failure = _voice_shot_timing_backfill_or_halt(settings)
         return backfill_failure if backfill_failure is not None else 0
 
-    async def call_agent(feedback: str | None, previous_output: object, remaining_budget: float) -> ResultMessage:
-        return await run_voice_pipeline(story_plan, settings, manifest.budget_spent_usd)
+    count = manifest.iteration_counts.get("voice_agent", 0)
+    partial_paths = [str(FINAL_STORY_PLAN_FILE), str(VISUAL_PLAN_FILE), str(NARRATION_WAV),
+                     str(AUDIO_CACHE_FILE), str(RUN_STATE_DIR / "word_timing_diagnostics.json")]
+    partial_paths.extend(str(p) for p in sorted(RUN_STATE_DIR.glob("voice_agent_attempt_*.json")))
 
-    def validate_contract(contract: SubtitleCuesContract) -> None:
-        contract.validate_sources(story_plan)
+    def halt(reason):
+        return _halt("voice_agent", "SubtitleCuesContract", reason,
+                     attempt_count=count if type(count) is int else 0, partial_artifact_paths=partial_paths)
 
-    result = await run_bounded_agent_stage(
-        stage_id="voice_agent",
-        failed_contract_name="SubtitleCuesContract",
-        contract_cls=SubtitleCuesContract,
-        persisted_file=SUBTITLE_CUES_FILE,
-        validate_contract=validate_contract,
-        max_attempts=MAX_VOICE_AGENT_ATTEMPTS,
-        settings=settings,
-        manifest=manifest,
-        base_partial_paths=[str(FINAL_STORY_PLAN_FILE), str(VISUAL_PLAN_FILE)],
-        attempt_file_prefix="voice_agent_attempt",
-        call_agent=call_agent,
-    )
-    if result != 0:
-        return result
-    backfill_failure = _voice_shot_timing_backfill_or_halt(settings)
-    return backfill_failure if backfill_failure is not None else 0
+    if type(count) is not int or count < 0:
+        return halt("Invalid persisted voice_agent iteration count")
+    feedback = "Attempts already recorded; use --retry-voice to archive evidence and reset only the voice ceiling"
+    while count < MAX_VOICE_AGENT_ATTEMPTS:
+        budget_failure = _check_budget(settings, manifest.budget_spent_usd)
+        if budget_failure:
+            return halt(budget_failure.reason)
+        count += 1
+        manifest.iteration_counts["voice_agent"] = count
+        save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+        result = await run_voice_pipeline(story_plan, settings, manifest.budget_spent_usd)
+        if result.total_cost_usd is None or not math.isfinite(result.total_cost_usd) or result.total_cost_usd < 0:
+            return halt("Voice pipeline returned an unusable cost estimate")
+        manifest.budget_spent_usd += result.total_cost_usd
+        save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+        attempt_path = RUN_STATE_DIR / f"voice_agent_attempt_{count}.json"
+        _atomic_write_json(attempt_path, {
+            "structured_output": result.structured_output, "result": result.result,
+            "subtype": result.subtype, "errors": result.errors,
+            "estimated_cost_usd": result.total_cost_usd,
+        })
+        partial_paths.append(str(attempt_path))
+        diagnostics = RUN_STATE_DIR / "word_timing_diagnostics.json"
+        if diagnostics.exists():
+            evidence_path = RUN_STATE_DIR / f"voice_agent_attempt_{count}_alignment.json"
+            shutil.copy2(diagnostics, evidence_path)
+            partial_paths.append(str(evidence_path))
+        budget_failure = _check_budget(settings, manifest.budget_spent_usd)
+        if budget_failure:
+            return halt(budget_failure.reason)
+        if result.is_error:
+            feedback = result.result or result.subtype
+            if result.subtype not in {"error_tts", "error_stt"}:
+                return halt(feedback)
+        else:
+            try:
+                contract = SubtitleCuesContract.model_validate(result.structured_output)
+                contract.validate_sources(story_plan)
+            except ValueError as exc:
+                return halt(f"Subtitle contract failed: {exc}")
+            _atomic_write_json(SUBTITLE_CUES_FILE, contract.model_dump(mode="json"))
+            print(f"voice_agent validated: {SUBTITLE_CUES_FILE}")
+            backfill_failure = _voice_shot_timing_backfill_or_halt(settings)
+            return backfill_failure if backfill_failure is not None else 0
+        print(f"voice_agent attempt {count}/{MAX_VOICE_AGENT_ATTEMPTS} failed: {feedback}", file=sys.stderr)
+    return halt(f"Retry ceiling exhausted: {feedback}")
 
 
 def _veo_settings_payload(settings: Settings) -> dict:
@@ -1527,6 +1551,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         type=Path,
         help="Directory containing the source screenshots for this run.",
     )
+    parser.add_argument("--retry-voice", action="store_true",
+                        help="Archive previous voice evidence and reset only its bounded retry ceiling; keep cumulative spend.")
     args = parser.parse_args(argv)
 
     # A resumed invocation isn't literally "stage 1" -- but preflight
@@ -1562,32 +1588,28 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         )
     else:
         print("character reference: none configured -- source figures kept as drawn")
+    return asyncio.run(run_stages(args.source_images_dir, settings, manifest, retry_voice=args.retry_voice))
+
+
+async def run_stages(source_images_dir: Path, settings: Settings, manifest: RunManifest, *, retry_voice=False) -> int:
+    """All SDK stages and their stream cleanup share one live event loop."""
     print("=== stage: screenshot understanding (asset_analyst) ===")
-    screenshot_result = asyncio.run(run_screenshot_stage(args.source_images_dir, settings, manifest))
-    if screenshot_result != 0:
-        return screenshot_result
-    print("=== stage: narration (story_agent) ===")
-    narration_result = asyncio.run(run_narration_stage(settings, manifest))
-    if narration_result != 0:
-        return narration_result
-    print("=== stage: visual plan (visual_agent) ===")
-    visual_result = asyncio.run(run_visual_stage(settings, manifest))
-    if visual_result != 0:
-        return visual_result
-    print("=== stage: voice (TTS → STT → subtitles) ===")
-    voice_result = asyncio.run(run_voice_stage(settings, manifest))
-    if voice_result != 0:
-        return voice_result
-    print("=== stage: veo generation ===")
-    veo_result = asyncio.run(run_veo_stage(settings, manifest))
-    if veo_result != 0:
-        return veo_result
-    print("=== stage: stills generation ===")
-    stills_result = asyncio.run(run_stills_stage(settings, manifest))
-    if stills_result != 0:
-        return stills_result
-    print("=== stage: delivery (timeline → remotion sync → render) ===")
-    return asyncio.run(run_delivery_stage(settings, manifest))
+    result = await run_screenshot_stage(source_images_dir, settings, manifest)
+    if result:
+        return result
+    for name, stage in [
+        ("narration (story_agent)", run_narration_stage),
+        ("visual plan (visual_agent)", run_visual_stage),
+        ("voice (TTS → STT → subtitles)", run_voice_stage),
+        ("veo generation", run_veo_stage),
+        ("stills generation", run_stills_stage),
+        ("delivery (timeline → remotion sync → render)", run_delivery_stage),
+    ]:
+        print(f"=== stage: {name} ===")
+        result = await stage(settings, manifest, retry_voice=True) if stage is run_voice_stage and retry_voice else await stage(settings, manifest)
+        if result:
+            return result
+    return 0
 
 
 if __name__ == "__main__":

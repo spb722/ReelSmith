@@ -813,7 +813,10 @@ def test_prompt_lifts_a_downturned_face_toward_the_viewer(tmp_path, monkeypatch)
         shot_dict(generation_mode="STILL"), asset_with_figure(source), "N."
     )["prompt"]
 
-    assert "looking down, away, or into shadow" in prompt
+    # "away" is deliberately absent here: an away-facing figure now takes the
+    # other branch, because demanding a face on one is what the likeness filter
+    # refuses.
+    assert "looking down or into shadow" in prompt
     assert "reads clearly toward the viewer" in prompt
 
 
@@ -859,3 +862,187 @@ def test_persisted_analysis_still_withholds_the_character_from_a_peopleless_scen
     trimmed = {"asset_id": "img_aaaaaaaaaaaa", "source_path": str(source)}
     spec = build_still_spec(shot_dict(generation_mode="STILL"), trimmed, "Narration.")
     assert spec["character_reference_paths"] == []
+
+
+def test_actual_tts_request_respects_voice_override(monkeypatch):
+    import asyncio
+    from types import SimpleNamespace
+    from orchestrator.tools import gemini_tools as tools
+
+    monkeypatch.setenv("TTS_VOICE_NAME", "Algieba")
+    requests = []
+
+    def generate_content(**kwargs):
+        requests.append(kwargs)
+        return object()
+
+    monkeypatch.setattr(tools.genai, "Client", lambda **kwargs: SimpleNamespace(
+        models=SimpleNamespace(generate_content=generate_content)))
+    monkeypatch.setattr(tools, "extract_pcm", lambda response: b"\x00\x00" * 24000)
+    response = asyncio.run(tools.generate_narration_audio.handler({
+        "narration_script": "British cyclists improved one percent.", "voice_direction": {},
+        "project_id": "test", "location": "global",
+    }))
+    assert requests[0]["config"].speech_config.voice_config.prebuilt_voice_config.voice_name == "Algieba"
+    assert json.loads(response["content"][0]["text"])["voice_name"] == "Algieba"
+    assert "Don't try" not in requests[0]["contents"]
+
+
+def test_empty_tts_voice_fails_before_client_creation(monkeypatch):
+    import asyncio
+    from orchestrator.tools import gemini_tools as tools
+    monkeypatch.setenv("TTS_VOICE_NAME", "")
+    monkeypatch.setattr(tools.genai, "Client", lambda **kwargs: pytest.fail("No API call allowed"))
+    with pytest.raises(ValueError, match="TTS_VOICE_NAME"):
+        asyncio.run(tools.generate_narration_audio.handler({"narration_script": "Some text."}))
+
+
+# -- prompt ladder ----------------------------------------------------------
+#
+# The likeness filter refuses some scenes outright (block_reason=OTHER) and the
+# refusal is deterministic, so the strongest acceptable wording can only be
+# found by asking. A live run halted on shot 6 -- a figure the source draws from
+# behind -- because the prompt demanded a recognisable face on it.
+
+
+def test_prompt_ladder_descends_from_face_to_pose_to_no_character(tmp_path, monkeypatch):
+    body, _ = _write_character(tmp_path)
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", str(body))
+    monkeypatch.delenv("CHARACTER_FACE_REFERENCE_PATH", raising=False)
+
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    spec = build_still_spec(shot_dict(generation_mode="STILL"), asset_with_figure(source), "N.")
+
+    ladder = spec["prompt_ladder"]
+    assert [r["level"] for r in ladder] == [0, 1, 2]
+
+    assert "The face must be clearly visible" in ladder[0]["prompt"]
+    assert ladder[0]["reference_image_paths"] == [str(body)]
+
+    assert "keeping the source figure's existing pose" in ladder[1]["prompt"]
+    assert "The face must be clearly visible" not in ladder[1]["prompt"]
+    assert ladder[1]["reference_image_paths"] == [str(body)]
+
+    assert "CHARACTER SUBSTITUTION" not in ladder[2]["prompt"]
+    assert ladder[2]["reference_image_paths"] == []
+
+    # every rung still ends with the no-text override
+    assert all(r["prompt"].rstrip().endswith("clean plate without it.") for r in ladder)
+
+
+def test_ladder_is_a_single_rung_when_no_character_is_configured(tmp_path):
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    spec = build_still_spec(shot_dict(generation_mode="STILL"), asset_with_figure(source), "N.")
+
+    assert [r["level"] for r in spec["prompt_ladder"]] == [2]
+    assert spec["prompt"] == spec["prompt_ladder"][0]["prompt"]
+
+
+class RefusingModels(FakeModels):
+    """Refuses the first `refusals` calls, then returns an image."""
+
+    def __init__(self, refusals: int, response):
+        super().__init__(response)
+        self.refusals = refusals
+
+    def generate_content(self, **kwargs):
+        self.calls.append(kwargs)
+        if len(self.calls) <= self.refusals:
+            return BlockedResponse("OTHER")
+        return self.response
+
+
+def test_a_refused_rung_falls_through_to_the_next(tmp_path, monkeypatch):
+    from orchestrator.tools.gemini_tools import run_image_edit_ladder
+
+    body, _ = _write_character(tmp_path)
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", str(body))
+    monkeypatch.delenv("CHARACTER_FACE_REFERENCE_PATH", raising=False)
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    spec = build_still_spec(shot_dict(generation_mode="STILL"), asset_with_figure(source), "N.")
+
+    good = FakeResponse(
+        [FakeCandidate(FakeContent([FakePart(inline_data=FakeInlineData(_png_bytes()))]))]
+    )
+    client = FakeGeminiClient()
+    client.models = RefusingModels(1, good)
+
+    image, _, rung = run_image_edit_ladder(client, spec, model="m")
+    assert image is not None
+    assert rung["level"] == 1, "should have settled on the pose-preserving wording"
+    assert len(client.models.calls) == 2
+
+
+def test_refusing_every_rung_says_the_scene_is_the_trigger(tmp_path, monkeypatch):
+    from orchestrator.tools.gemini_tools import ImageEditRefused, run_image_edit_ladder
+
+    body, _ = _write_character(tmp_path)
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", str(body))
+    monkeypatch.delenv("CHARACTER_FACE_REFERENCE_PATH", raising=False)
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    spec = build_still_spec(shot_dict(generation_mode="STILL"), asset_with_figure(source), "N.")
+
+    client = FakeGeminiClient()
+    client.models = RefusingModels(99, None)
+
+    with pytest.raises(ImageEditRefused, match="the scene itself is the trigger"):
+        run_image_edit_ladder(client, spec, model="m")
+    assert len(client.models.calls) == 3
+
+
+def test_a_transient_null_does_not_advance_the_ladder(tmp_path, monkeypatch):
+    """Only a refusal descends. An empty response is retried at the same rung."""
+    from orchestrator.tools.gemini_tools import run_image_edit_ladder
+
+    body, _ = _write_character(tmp_path)
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", str(body))
+    monkeypatch.delenv("CHARACTER_FACE_REFERENCE_PATH", raising=False)
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    spec = build_still_spec(shot_dict(generation_mode="STILL"), asset_with_figure(source), "N.")
+
+    good = FakeResponse(
+        [FakeCandidate(FakeContent([FakePart(inline_data=FakeInlineData(_png_bytes()))]))]
+    )
+    client = FakeGeminiClient()
+    client.models = FlakyModels(1, good)
+
+    _, _, rung = run_image_edit_ladder(client, spec, model="m")
+    assert rung["level"] == 0, "a transient null must not cost the best wording"
+
+
+def test_a_downgraded_rung_tells_the_qa_agent_not_to_expect_a_face(tmp_path, monkeypatch):
+    """The agent must not reject an image for a face the model refused to draw."""
+    import asyncio
+
+    from orchestrator.tools import gemini_tools
+
+    body, _ = _write_character(tmp_path)
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", str(body))
+    monkeypatch.delenv("CHARACTER_FACE_REFERENCE_PATH", raising=False)
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+
+    good = FakeResponse(
+        [FakeCandidate(FakeContent([FakePart(inline_data=FakeInlineData(_png_bytes()))]))]
+    )
+    client = FakeGeminiClient()
+    client.models = RefusingModels(1, good)   # level 0 refused, level 1 accepted
+    monkeypatch.setattr(gemini_tools.genai, "Client", lambda **_: client)
+
+    result = asyncio.run(
+        gemini_tools.generate_still.handler({
+            "shot": shot_dict(generation_mode="STILL"),
+            "asset": asset_with_figure(source),
+            "subtitle_text": "N.",
+            "project_id": "p", "location": "global",
+            "image_model": "m", "cost_usd": 0.04,
+        })
+    )
+
+    labels = " ".join(b["text"] for b in result["content"] if b["type"] == "text")
+    assert "do NOT reject this image for a face that is turned away" in labels

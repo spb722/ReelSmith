@@ -29,11 +29,10 @@ from orchestrator.contracts.stills import STILLS_DIR, StillFailureContract, Stil
 from orchestrator.contracts.veo import VeoFailureContract, VeoSeedContract, sha256_file, shot_fingerprint
 from orchestrator.contracts.visual_plan import Shot
 from orchestrator.settings import load_settings
+from orchestrator.state.voice_cache import TTS_MODEL, TTS_VOICE_NAME, selected_voice_name
 from orchestrator.tools.deterministic_tools import tokenize
 
 # Ported verbatim from generate_voice.py -- config literals unchanged.
-TTS_MODEL = "gemini-3.1-flash-tts-preview"
-TTS_VOICE_NAME = "Gacrux"
 TTS_LANGUAGE_CODE = "en-US"
 
 AUDIO_DIR = Path("audio")
@@ -125,10 +124,6 @@ Avoid a commercial, trailer, motivational-speaker, or overly soothing sound.
 Keep the performance restrained and natural.
 Let important ideas land without melodrama.
 
-The phrase "Don't try." is the central paradox.
-Deliver it quietly and confidently, then allow the long pause after it.
-Do not shout it or make it theatrical.
-
 Give subtle vocal emphasis to:
 {emphasis_text}
 
@@ -189,6 +184,8 @@ async def generate_narration_audio(args: dict) -> dict:
     if not narration_script:
         raise ValueError("narration_script must not be empty")
 
+    voice_name = selected_voice_name()
+    print(f"TTS: model={TTS_MODEL} voice={voice_name}")
     prompt = build_tts_prompt(narration_script, args.get("voice_direction", {}))
 
     client = genai.Client(vertexai=True, project=args["project_id"], location=args["location"])
@@ -199,7 +196,7 @@ async def generate_narration_audio(args: dict) -> dict:
             speech_config=types.SpeechConfig(
                 language_code=TTS_LANGUAGE_CODE,
                 voice_config=types.VoiceConfig(
-                    prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=TTS_VOICE_NAME),
+                    prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice_name),
                 ),
             ),
         ),
@@ -213,7 +210,7 @@ async def generate_narration_audio(args: dict) -> dict:
         "audio_path": str(NARRATION_WAV),
         "duration_seconds": duration_seconds,
         "model": TTS_MODEL,
-        "voice_name": TTS_VOICE_NAME,
+        "voice_name": voice_name,
         # The actual Gemini input is this whole prompt (instructional
         # preamble + narration), not just the bare narration_script -- the
         # caller's input-token cost estimate must use this, not word count
@@ -277,27 +274,18 @@ def build_seed_spec(shot: dict, asset: dict, subtitle_text: str) -> dict:
         f"Narration context (for mood and meaning only, never to be written into the image): "
         f"{subtitle_text.strip()}. "
     )
-    character_paths = character_reference_paths_for_asset(asset)
-    if character_paths:
-        prompt += build_character_prompt_block(
-            focal_figure_description(authoritative_asset(asset)), len(character_paths)
-        )
-    # FINAL RULE stays last, after any character block.
-    prompt += (
-        "FINAL RULE, overriding anything above: render NO text of any kind -- no words, "
-        "letters, captions, titles, quotes, signage, or handwriting, anywhere in the frame. "
-        "If any description above mentions a text overlay, on-screen wording, or a line that "
-        "fades in, that belongs to a later compositing step, not to this image -- produce the "
-        "clean plate without it."
-    )
+    # FINAL RULE always lands last, after any character block, so a plan that
+    # asks for on-screen text cannot win.
+    ladder = build_prompt_ladder(prompt, asset)
     return {
         "shot_sequence": validated_shot.sequence,
         "shot_fingerprint": shot_fingerprint(validated_shot),
         "source_asset_id": asset["asset_id"],
         "source_image_path": str(source_path),
         "output_image_path": str(VEO_SEED_DIR / f"shot_{validated_shot.sequence:02d}_seed.png"),
-        "prompt": prompt,
-        "character_reference_paths": [str(path) for path in character_paths],
+        "prompt": ladder[0]["prompt"],
+        "character_reference_paths": list(ladder[0]["reference_image_paths"]),
+        "prompt_ladder": ladder,
     }
 
 
@@ -393,7 +381,9 @@ def focal_figure_description(asset: dict) -> str:
     return "the single human figure already present in the scene"
 
 
-def build_character_prompt_block(figure_description: str, reference_count: int) -> str:
+def build_character_prompt_block(
+    figure_description: str, reference_count: int, level: int = 0,
+) -> str:
     """The character-substitution instruction shared by stills and Veo seeds.
 
     Deliberately says *replace the figure already present* rather than *add a
@@ -409,23 +399,40 @@ def build_character_prompt_block(figure_description: str, reference_count: int) 
     else:
         which = "The SECOND image is a character reference. "
 
+    if level >= 1:
+        # Rung 2 of the ladder: identity carried by hair, build and clothing
+        # only. Asking for a visible face is what the likeness filter refuses
+        # on a figure the source draws from behind, and such a figure has no
+        # face to show anyway.
+        identity = (
+            "Redraw that one figure as the referenced character, matching their hair, "
+            "build, colouring and clothing, and keeping the source figure's existing pose, "
+            "body angle and head direction exactly as drawn -- do not turn, lift or rotate "
+            "the head, and do not add a face that the source does not show. "
+        )
+    else:
+        identity = (
+            "Redraw that one figure as the referenced character, keeping the character's "
+            "exact face: same face shape, eyes, eyebrows, nose, mouth, beard, hairstyle, "
+            "hair colour and skin tone. Study the face in the reference closely and carry "
+            "its proportions across even when the character is drawn small. The face must "
+            "be clearly visible, in focus, and detailed enough to recognise -- never "
+            "faceless, blank, featureless, blurred, hidden, or turned away, and never "
+            "simplified into dots or a plain oval even if the scene's other figures are "
+            "drawn that way. If the figure in the source scene was looking down or into "
+            "shadow, keep its pose and emotional beat but lift the head just enough that "
+            "the face reads clearly toward the viewer, and light the face enough to see "
+            "its features. "
+        )
+
     return (
         "CHARACTER SUBSTITUTION. The FIRST image is the source scene described above. "
         + which
         + "The character reference images show the person only -- never copy their plain "
         "background, standing pose, framing, crop, or layout into the scene. "
         f"The source scene already contains this human figure: {figure_description} "
-        "Redraw that one figure as the referenced character, keeping the character's exact "
-        "face: same face shape, eyes, eyebrows, nose, mouth, beard, hairstyle, hair colour "
-        "and skin tone. Study the face in the reference closely and carry its proportions "
-        "across even when the character is drawn small. The face must be clearly visible, "
-        "in focus, and detailed enough to recognise -- never faceless, blank, featureless, "
-        "blurred, hidden, or turned away, and never simplified into dots or a plain oval "
-        "even if the scene's other figures are drawn that way. If the figure in the source "
-        "scene was looking down, away, or into shadow, keep its pose and emotional beat but "
-        "lift and turn the head just enough that the face reads clearly toward the viewer, "
-        "and light the face enough to see its features. Draw the character in the character "
-        "reference's own "
+        + identity
+        + "Draw the character in the character reference's own "
         "illustration style, but keep everything else exactly as the source scene draws it: "
         "the scene's art style, palette, line quality, texture, lighting, background, props "
         "and composition are unchanged. Do NOT restyle the scene to match the character. "
@@ -488,6 +495,64 @@ def blocked_reason(response) -> str:
     return str(reason) if reason else ""
 
 
+class ImageEditRefused(RuntimeError):
+    """The image model declined this request and will decline it again.
+
+    Distinct from a transient empty response: a refusal is deterministic, so
+    the caller must change the request rather than retry it.
+    """
+
+    def __init__(self, message: str, *, reason: str = "") -> None:
+        super().__init__(message)
+        self.reason = reason
+
+
+FINAL_NO_TEXT_RULE = (
+    "FINAL RULE, overriding anything above: render NO text of any kind -- no words, "
+    "letters, captions, titles, quotes, signage, or handwriting, anywhere in the frame. "
+    "If any description above mentions a text overlay, on-screen wording, or a line that "
+    "fades in, that belongs to a later compositing step, not to this image -- produce the "
+    "clean plate without it."
+)
+
+# How many character-carrying wordings to try before dropping the character.
+CHARACTER_PROMPT_LEVELS = 2
+
+
+def build_prompt_ladder(base_prompt: str, asset: dict) -> list[dict]:
+    """Prompt variants to try in order, strongest first.
+
+    The image model's likeness filter refuses some combinations outright
+    (block_reason=OTHER) and the refusal is deterministic, so the only way to
+    find the strongest wording it will accept is to ask. Predicting it from the
+    figure description was tried and rejected: that means keyword-matching free
+    text an LLM wrote, which breaks on the first phrasing nobody listed.
+
+      0  character + a recognisable face        (best likeness)
+      1  character + the source's own pose      (no face invented)
+      2  no character                           (scene still renders)
+    """
+
+    character_paths = character_reference_paths_for_asset(asset)
+    description = focal_figure_description(authoritative_asset(asset))
+
+    ladder: list[dict] = []
+    for level in range(CHARACTER_PROMPT_LEVELS) if character_paths else ():
+        ladder.append({
+            "level": level,
+            "prompt": base_prompt + build_character_prompt_block(
+                description, len(character_paths), level,
+            ) + FINAL_NO_TEXT_RULE,
+            "reference_image_paths": [str(path) for path in character_paths],
+        })
+    ladder.append({
+        "level": CHARACTER_PROMPT_LEVELS,
+        "prompt": base_prompt + FINAL_NO_TEXT_RULE,
+        "reference_image_paths": [],
+    })
+    return ladder
+
+
 def run_gemini_image_edit(
     client: genai.Client,
     *,
@@ -547,9 +612,10 @@ def run_gemini_image_edit(
         diagnosis = describe_empty_image_response(response, model_text)
         blocked = blocked_reason(response)
         if blocked:
-            raise RuntimeError(
+            raise ImageEditRefused(
                 "Gemini image edit refused this request and will keep refusing it, "
-                f"so it was not retried. {diagnosis}"
+                f"so it was not retried. {diagnosis}",
+                reason=blocked,
             )
         if attempt < max_attempts:
             time.sleep(EMPTY_IMAGE_RETRY_SECONDS * attempt)
@@ -576,13 +642,8 @@ def generate_seed_image(
     """Run one Gemini image recomposition and materialize its seed."""
 
     source_path = Path(spec["source_image_path"])
-    generated_image, model_text = run_gemini_image_edit(
-        client,
-        source_image_path=source_path,
-        prompt=spec["prompt"],
-        model=model,
-        reference_image_paths=[Path(p) for p in spec.get("character_reference_paths", [])],
-    )
+    generated_image, model_text, rung = run_image_edit_ladder(client, spec, model=model)
+    spec["used_prompt_level"] = rung["level"]
 
     output_path = Path(spec["output_image_path"])
     _save_generated_image(generated_image, output_path)
@@ -643,28 +704,77 @@ def build_still_spec(shot: dict, asset: dict, subtitle_text: str) -> dict:
         f"Narration context (for mood and meaning only, never to be written into the image): "
         f"{subtitle_text.strip()}. "
     )
-    character_paths = character_reference_paths_for_asset(asset)
-    if character_paths:
-        prompt += build_character_prompt_block(
-            focal_figure_description(authoritative_asset(asset)), len(character_paths)
-        )
-    # FINAL RULE stays last, after any character block.
-    prompt += (
-        "FINAL RULE, overriding anything above: render NO text of any kind -- no words, "
-        "letters, captions, titles, quotes, signage, or handwriting, anywhere in the frame. "
-        "If any description above mentions a text overlay, on-screen wording, or a line that "
-        "fades in, that belongs to a later compositing step, not to this image -- produce the "
-        "clean plate without it."
-    )
+    # FINAL RULE always lands last, after any character block, so a plan that
+    # asks for on-screen text cannot win.
+    ladder = build_prompt_ladder(prompt, asset)
     return {
         "shot_sequence": validated_shot.sequence,
         "shot_fingerprint": shot_fingerprint(validated_shot),
         "source_asset_id": asset["asset_id"],
         "source_image_path": str(source_path),
         "output_image_path": str(STILLS_DIR / f"shot_{validated_shot.sequence:02d}.png"),
-        "prompt": prompt,
-        "character_reference_paths": [str(path) for path in character_paths],
+        "prompt": ladder[0]["prompt"],
+        "character_reference_paths": list(ladder[0]["reference_image_paths"]),
+        "prompt_ladder": ladder,
     }
+
+
+def run_image_edit_ladder(
+    client: genai.Client, spec: dict, *, model: str,
+) -> tuple[Image.Image, str, dict]:
+    """Walk the spec's prompt ladder until the model accepts one rung.
+
+    Returns the image, the model's text, and the rung that produced it. Only a
+    *refusal* advances the ladder -- a transient empty response is already
+    retried inside `run_gemini_image_edit`, and any other error propagates.
+    """
+
+    source_path = Path(spec["source_image_path"])
+    ladder = spec.get("prompt_ladder") or [{
+        "level": 0,
+        "prompt": spec["prompt"],
+        "reference_image_paths": spec.get("character_reference_paths", []),
+    }]
+
+    refusals: list[str] = []
+    for rung in ladder:
+        try:
+            image, model_text = run_gemini_image_edit(
+                client,
+                source_image_path=source_path,
+                prompt=rung["prompt"],
+                model=model,
+                reference_image_paths=[Path(p) for p in rung["reference_image_paths"]],
+            )
+        except ImageEditRefused as exc:
+            refusals.append(f"level {rung['level']}: {exc}")
+            continue
+        return image, model_text, rung
+
+    raise ImageEditRefused(
+        "Gemini image edit refused every prompt variant, including the one with no "
+        "character reference, so the scene itself is the trigger. "
+        + " | ".join(refusals)
+    )
+
+
+def describe_ladder_outcome(rung: dict) -> str:
+    """One line for the QA agent explaining which rung produced the image."""
+
+    return {
+        0: "Character reference applied with a recognisable face, as planned.",
+        1: (
+            "The image model refused the recognisable-face wording for this scene, so the "
+            "character was applied keeping the source figure's own pose and head direction. "
+            "Judge the likeness on hair, build, colouring and clothing -- do NOT reject this "
+            "image for a face that is turned away or not visible."
+        ),
+        2: (
+            "The image model refused every wording that included the character reference, so "
+            "this scene was generated without the character. The figure is the source's own. "
+            "Do NOT reject this image for missing the character."
+        ),
+    }.get(rung["level"], "")
 
 
 def generate_still_image(
@@ -677,13 +787,8 @@ def generate_still_image(
     """Run one Gemini image edit and materialize the resulting still."""
 
     source_path = Path(spec["source_image_path"])
-    generated_image, model_text = run_gemini_image_edit(
-        client,
-        source_image_path=source_path,
-        prompt=spec["prompt"],
-        model=model,
-        reference_image_paths=[Path(p) for p in spec.get("character_reference_paths", [])],
-    )
+    generated_image, model_text, rung = run_image_edit_ladder(client, spec, model=model)
+    spec["used_prompt_level"] = rung["level"]
 
     output_path = Path(spec["output_image_path"])
     _save_generated_image(generated_image, output_path)
@@ -700,6 +805,18 @@ def generate_still_image(
         cost_usd=cost_usd,
     )
     return result, model_text
+
+
+def _ladder_outcome_block(spec: dict) -> list[dict]:
+    """Tell the QA agent which prompt rung actually produced this image.
+
+    Without it the agent rejects a correct image for a face the model was
+    refused permission to draw, burning its whole retry ceiling on something no
+    retry can change.
+    """
+
+    note = describe_ladder_outcome({"level": spec.get("used_prompt_level", 0)})
+    return [{"type": "text", "text": note}] if note else []
 
 
 def _character_reference_blocks(spec: dict) -> list[dict]:
@@ -796,6 +913,7 @@ async def generate_veo_seed(args: dict) -> dict:
         "content": [
             {"type": "text", "text": json.dumps(payload, ensure_ascii=False)},
             _image_content(Path(seed.local_path)),
+            *_ladder_outcome_block(spec),
             *_character_reference_blocks(spec),
         ]
     }
@@ -861,6 +979,7 @@ async def generate_still(args: dict) -> dict:
         "content": [
             {"type": "text", "text": json.dumps(payload, ensure_ascii=False)},
             _image_content(Path(result.local_image_path)),
+            *_ladder_outcome_block(spec),
             *_character_reference_blocks(spec),
         ]
     }

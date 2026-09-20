@@ -1,9 +1,9 @@
 """Asset ingestion (ported from ingest_assets), word-timing alignment
 (ported from extract_word_timing.py, Code Map), and subtitle-cue DP
 segmentation (ported from build_subtitle_cues.py, Code Map) -- none invoke
-their originating script. `extract_word_timing`'s 0.85 exact-match-ratio
-gate and `build_subtitle_cues`'s 0.98 alignment recheck are both ported
-unmodified: they already raise on their own mechanical thresholds, which
+their originating script. `extract_word_timing`'s 0.85 extraction
+gate and `build_subtitle_cues`'s 0.98 alignment recheck use conservative
+written/spoken equivalence and retain literal metrics; these thresholds
 *is* the segmentation's quality bar (AD-2 in the Story 1.5 spec) -- never
 re-judged by an LLM. The DP's word/duration bounds, pause thresholds, and
 penalty functions are ported verbatim, unmodified, per AGENTS.md's policy
@@ -179,7 +179,7 @@ STT_MAX_CHUNK_SECONDS = 55.0
 # from the locked narration. Ported verbatim -- not re-tuned.
 MIN_EXACT_MATCH_RATIO = 0.85
 
-WORD_RE = re.compile(r"\b[\w’'-]+\b", flags=re.UNICODE)
+WORD_RE = re.compile(r"\b\d+(?:,\d{3})*(?:\.\d+)?%?(?![\w-])|\b[\w’'-]+\b", flags=re.UNICODE)
 
 
 def tokenize(text: str) -> list[str]:
@@ -262,7 +262,12 @@ def transcribe_audio_path_with_word_offsets(audio_path: Path, project_id: str) -
             f"STT: chunk {index}/{len(chunks)} "
             f"start={start_offset:.2f}s bytes={len(chunk_bytes)}"
         )
-        raw = transcribe_with_word_offsets(chunk_bytes, project_id)
+        try:
+            raw = transcribe_with_word_offsets(chunk_bytes, project_id)
+        except Exception as exc:
+            # The service may have processed a request before its response failed.
+            exc.attempted_audio_seconds = min(duration, start_offset + STT_MAX_CHUNK_SECONDS)
+            raise
         transcript, words = extract_recognition(raw)
         if transcript:
             transcript_parts.append(transcript)
@@ -329,84 +334,131 @@ def extract_recognition(response: dict) -> tuple[str, list[dict]]:
     return " ".join(transcript_parts).strip(), words
 
 
+class AlignmentQualityError(RuntimeError):
+    """Deterministic alignment rejection; repeating TTS cannot be assumed to help."""
+
+
+_SMALL_NUMBERS = "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen".split()
+_TENS = "zero ten twenty thirty forty fifty sixty seventy eighty ninety".split()
+
+
+def _spoken_integer(value: int) -> list[str]:
+    if value < 20:
+        return [_SMALL_NUMBERS[value]]
+    if value < 100:
+        return [_TENS[value // 10]] + (_spoken_integer(value % 10) if value % 10 else [])
+    scale, name = (100, "hundred") if value < 1000 else (1000, "thousand")
+    return _spoken_integer(value // scale) + [name] + (_spoken_integer(value % scale) if value % scale else [])
+
+
+def _equivalence_parts(words: list[str]) -> tuple[str, ...]:
+    """An intentionally small vocabulary: cardinals < 1m, decimals, %, hyphens.
+
+    No homophones, year shortcuts (e.g. 'twenty oh three'), ordinal guessing,
+    or generic punctuation removal. Leading-zero numbers are left literal.
+    """
+    parts: list[str] = []
+    for word in words:
+        cleaned = word.replace("’", "'").replace("‘", "'").lower().strip('.,;:!?"')
+        if re.fullmatch(r"(?:0|[1-9]\d{0,5}|[1-9]\d{0,2}(?:,\d{3})?)(?:\.\d{1,6})?%?", cleaned):
+            percent = cleaned.endswith("%")
+            number = cleaned.rstrip("%").replace(",", "")
+            integer, dot, decimal = number.partition(".")
+            parts.extend(_spoken_integer(int(integer)))
+            if dot:
+                parts.extend(["point", *(_SMALL_NUMBERS[int(d)] for d in decimal)])
+            if percent:
+                parts.append("percent")
+        elif cleaned == "%":
+            parts.append("percent")
+        else:
+            parts.extend(normalize_word(cleaned).split("-"))
+    # British cardinals may include 'and' after a hundred/thousand. Restrict
+    # this spelling variant to numeric context, never ordinary conjunctions.
+    numeric = set(_SMALL_NUMBERS + _TENS)
+    parts = [part for i, part in enumerate(parts) if not (
+        part == "and" and i > 0 and i + 1 < len(parts)
+        and parts[i - 1] in {"hundred", "thousand"} and parts[i + 1] in numeric
+    )]
+    return tuple(parts)
+
+
 def align_words(canonical_words: list[str], recognized_words: list[dict]) -> tuple[list[dict], dict]:
-    """Global sequence alignment between the locked narration and
-    Speech-to-Text words. Exact matches cost 0; substitutions, insertions,
-    and deletions cost 1. Ported verbatim from extract_word_timing.py.
+    """Global edit alignment with bounded, deterministic many-to-many matches.
+
+    Equivalent spans receive observed outer timestamps; multiple canonical
+    words partition that span uniformly, explicitly labelled as estimates.
+    Missing words remain mismatches even when a bounded gap supplies timing.
     """
     canon = [normalize_word(word) for word in canonical_words]
     recog = [normalize_word(item["word"]) for item in recognized_words]
-    n = len(canon)
-    m = len(recog)
-
+    n, m = len(canon), len(recog)
+    limit = 10
+    def signatures(words):
+        return {(end, size): _equivalence_parts(words[end-size:end])
+                for end in range(1, len(words)+1) for size in range(1, min(limit, end)+1)}
+    canonical_signatures = signatures(canonical_words)
+    recognized_signatures = signatures([item["word"] for item in recognized_words])
     dp = [[0] * (m + 1) for _ in range(n + 1)]
     back = [[None] * (m + 1) for _ in range(n + 1)]
-
     for i in range(1, n + 1):
-        dp[i][0] = i
-        back[i][0] = "delete"
+        dp[i][0], back[i][0] = i, ("delete", 1, 0)
     for j in range(1, m + 1):
-        dp[0][j] = j
-        back[0][j] = "insert"
-
+        dp[0][j], back[0][j] = j, ("insert", 0, 1)
     for i in range(1, n + 1):
         for j in range(1, m + 1):
-            exact = canon[i - 1] == recog[j - 1]
-            substitution_cost = 0 if exact else 1
-            diagonal = dp[i - 1][j - 1] + substitution_cost
-            delete = dp[i - 1][j] + 1
-            insert = dp[i][j - 1] + 1
-            best = min(diagonal, delete, insert)
-            dp[i][j] = best
-            # Prefer diagonal alignment when tied because it preserves
-            # timing for a canonical word.
-            if diagonal == best:
-                back[i][j] = "exact" if exact else "substitute"
-            elif delete == best:
-                back[i][j] = "delete"
-            else:
-                back[i][j] = "insert"
-
-    aligned_reversed: list[dict] = []
+            # The legacy punctuation/case normalization retains literal metrics,
+            # but a percent symbol must not disappear and become a false match.
+            exact = canon[i-1] == recog[j-1] and canonical_signatures[i, 1] == recognized_signatures[j, 1]
+            choices = [(dp[i-1][j-1] + (not exact), ("exact" if exact else "substitute", 1, 1)),
+                       (dp[i-1][j] + 1, ("delete", 1, 0)), (dp[i][j-1] + 1, ("insert", 0, 1))]
+            for a in range(1, min(limit, i)+1):
+                signature = canonical_signatures[i, a]
+                for b in range(1, min(limit, j)+1):
+                    if signature and signature == recognized_signatures[j, b]:
+                        choices.append((dp[i-a][j-b], ("equivalent", a, b)))
+            dp[i][j], back[i][j] = min(choices, key=lambda candidate: candidate[0])
+    operations = []
     i, j = n, m
-    exact_matches = substitutions = deletions = insertions = 0
-
-    while i > 0 or j > 0:
-        op = back[i][j]
-        if op in {"exact", "substitute"}:
-            rec = recognized_words[j - 1]
-            if op == "exact":
-                exact_matches += 1
-            else:
-                substitutions += 1
-            aligned_reversed.append({
-                "canonical_word": canonical_words[i - 1],
-                "recognized_word": rec["word"],
-                "start_seconds": rec["start_seconds"],
-                "end_seconds": rec["end_seconds"],
-                "alignment": op,
-            })
-            i -= 1
-            j -= 1
-        elif op == "delete":
-            deletions += 1
-            aligned_reversed.append({
-                "canonical_word": canonical_words[i - 1],
-                "recognized_word": None,
-                "start_seconds": None,
-                "end_seconds": None,
-                "alignment": "missing",
-            })
-            i -= 1
-        elif op == "insert":
+    while i or j:
+        op, a, b = back[i][j]
+        operations.append((op, i-a, i, j-b, j))
+        i, j = i-a, j-b
+    aligned, mismatches = [], []
+    exact_matches = equivalent_matches = substitutions = deletions = insertions = 0
+    timing_errors = []
+    previous_end = 0.0
+    for index, item in enumerate(recognized_words):
+        start, end = item["start_seconds"], item["end_seconds"]
+        if not (math.isfinite(start) and math.isfinite(end) and 0 <= start <= end and start >= previous_end):
+            timing_errors.append({"recognized_index": index + 1, "word": item["word"], "start_seconds": start, "end_seconds": end})
+        previous_end = end
+    for op, c0, c1, r0, r1 in reversed(operations):
+        observed = recognized_words[r0:r1]
+        if op not in {"exact", "equivalent"}:
+            mismatches.append({"operation": op, "canonical_indices": list(range(c0+1, c1+1)),
+                               "canonical_words": canonical_words[c0:c1], "recognized_indices": list(range(r0+1, r1+1)),
+                               "recognized_words": [r["word"] for r in observed]})
+        if op == "insert":
             insertions += 1
-            j -= 1
-        else:
-            raise RuntimeError(f"Unexpected alignment state at i={i}, j={j}.")
-
-    aligned = list(reversed(aligned_reversed))
-
-    # Interpolate timing for canonical words that STT omitted.
+            continue
+        exact_matches += (c1-c0) if op == "exact" else 0
+        equivalent_matches += (c1-c0) if op == "equivalent" else 0
+        substitutions += op == "substitute"
+        deletions += op == "delete"
+        for offset, word in enumerate(canonical_words[c0:c1]):
+            start = observed[0]["start_seconds"] if observed else None
+            end = observed[-1]["end_seconds"] if observed else None
+            width = (end-start)/(c1-c0) if observed else None
+            aligned.append({"canonical_word": word, "recognized_word": " ".join(r["word"] for r in observed) or None,
+                            "start_seconds": start + offset*width if observed else None,
+                            "end_seconds": start + (offset+1)*width if observed else None,
+                            "alignment": op if observed else "missing",
+                            "recognized_indices": list(range(r0+1, r1+1)),
+                            "timing_source": "observed_span_partition" if c1-c0 > 1 else "observed_span" if observed else "bounded_gap",
+                            "observed_span": {"start_seconds": start, "end_seconds": end} if observed else None})
+    # Fill gaps only inside the observed timeline; never extend the recording
+    # or claim omitted words as matches. Zero-width edge gaps stay zero-width.
     index = 0
     while index < len(aligned):
         if aligned[index]["start_seconds"] is not None:
@@ -415,36 +467,19 @@ def align_words(canonical_words: list[str], recognized_words: list[dict]) -> tup
         run_start = index
         while index < len(aligned) and aligned[index]["start_seconds"] is None:
             index += 1
-        run_end = index - 1
-        count = run_end - run_start + 1
-        previous_end = aligned[run_start - 1]["end_seconds"] if run_start > 0 else 0.0
-        next_start = (
-            aligned[index]["start_seconds"] if index < len(aligned)
-            else previous_end + 0.35 * count
-        )
-        gap = max(next_start - previous_end, 0.08 * count)
-        step = gap / count
-        for offset in range(count):
-            item = aligned[run_start + offset]
-            item["start_seconds"] = round(previous_end + step * offset, 3)
-            item["end_seconds"] = round(previous_end + step * (offset + 1), 3)
-            item["alignment"] = "interpolated"
-
-    for idx, item in enumerate(aligned, start=1):
-        item["index"] = idx
-        item["start_seconds"] = round(float(item["start_seconds"]), 3)
-        item["end_seconds"] = round(float(item["end_seconds"]), 3)
-
-    stats = {
-        "canonical_word_count": n,
-        "recognized_word_count": m,
-        "exact_matches": exact_matches,
-        "substitutions": substitutions,
-        "canonical_words_missing": deletions,
-        "extra_recognized_words": insertions,
-        "exact_match_ratio": round(exact_matches / n, 4) if n else 0.0,
-        "edit_distance": dp[n][m],
-    }
+        previous = aligned[run_start-1]["end_seconds"] if run_start else 0.0
+        following = aligned[index]["start_seconds"] if index < len(aligned) else previous
+        step = max(0.0, following-previous)/(index-run_start)
+        for offset, item in enumerate(aligned[run_start:index]):
+            item.update(start_seconds=previous+offset*step, end_seconds=previous+(offset+1)*step, alignment="interpolated")
+    for idx, item in enumerate(aligned, 1):
+        item.update(index=idx, start_seconds=round(item["start_seconds"], 3), end_seconds=round(item["end_seconds"], 3))
+    stats = {"canonical_word_count": n, "recognized_word_count": m, "exact_matches": exact_matches,
+             "equivalent_matches": equivalent_matches, "substitutions": substitutions,
+             "canonical_words_missing": deletions, "extra_recognized_words": insertions,
+             "exact_match_ratio": exact_matches/n if n else 0.0,
+             "normalized_match_ratio": (exact_matches+equivalent_matches)/(n+insertions) if n else 0.0,
+             "edit_distance": dp[n][m], "mismatches": mismatches, "timing_errors": timing_errors}
     return aligned, stats
 
 
@@ -465,24 +500,31 @@ async def extract_word_timing(args: dict) -> dict:
     recognized_transcript, recognized_words = transcribe_audio_path_with_word_offsets(
         audio_path, args["project_id"],
     )
-    if not recognized_words:
-        raise RuntimeError("Speech-to-Text returned no word timestamps.")
-
     aligned_words, stats = align_words(canonical_words, recognized_words)
-
-    if stats["exact_match_ratio"] < MIN_EXACT_MATCH_RATIO:
-        raise RuntimeError(
-            "ASR alignment quality is too low to trust automatically.\n"
-            f"Exact match ratio: {stats['exact_match_ratio']:.3f}\n"
-            f"Recognized transcript: {recognized_transcript}"
-        )
-
+    diagnostics_path = Path(args.get("diagnostics_path") or audio_path.parent / "word_timing_diagnostics.json")
     payload = {
         "locked_narration": narration,
         "recognized_transcript": recognized_transcript,
+        "recognized_words": recognized_words,
         "alignment_stats": stats,
         "words": aligned_words,
+        "attempted_audio_seconds": wav_duration_seconds(audio_path),
+        "diagnostics_path": str(diagnostics_path),
     }
+    diagnostics_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = diagnostics_path.with_suffix(".json.tmp")
+    temporary.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    temporary.replace(diagnostics_path)
+    if stats["normalized_match_ratio"] < MIN_EXACT_MATCH_RATIO or stats["timing_errors"]:
+        error = AlignmentQualityError(
+            "ASR alignment quality is too low to trust automatically.\n"
+            f"Literal match ratio: {stats['exact_match_ratio']:.3f}; "
+            f"normalized match ratio: {stats['normalized_match_ratio']:.3f}.\n"
+            f"Diagnostics: {diagnostics_path}"
+        )
+        error.attempted_audio_seconds = payload["attempted_audio_seconds"]
+        raise error
+
     return {"content": [{"type": "text", "text": json.dumps(payload, ensure_ascii=False)}]}
 
 
@@ -770,7 +812,20 @@ def segment_block(
     protected_boundaries: set[int],
 ) -> list[tuple[int, int]]:
     length = block_end - block_start + 1
-    if MIN_WORDS_PER_CUE <= length <= MAX_WORDS_PER_CUE:
+    # A block already sits between two mandatory boundaries -- a sentence end,
+    # or the edge of an impact phrase -- so it can never be widened. Once it is
+    # shorter than MIN_WORDS_PER_CUE it is atomic: no legal split exists, and
+    # the minimum is a preference for how to divide a *divisible* block, not a
+    # contract rule (SubtitleCuesContract requires only one word per cue).
+    # Emitting it as a single short cue is the only correct answer.
+    #
+    # Raising here halted a live run twice over: "Just", stranded between a
+    # full stop and the impact phrase "average at almost everything", and
+    # "Handwashing", a one-word sentence. Neither can merge into a neighbour --
+    # the preceding boundary is a full stop, and validate_rendered_text
+    # requires an IMPACT cue to reproduce its declared phrase exactly, so the
+    # orphan cannot join the impact cue either.
+    if length <= MAX_WORDS_PER_CUE:
         return [(block_start, block_end)]
 
     dp: dict[int, tuple[float, int | None]] = {block_start - 1: (0.0, None)}
@@ -993,11 +1048,12 @@ async def build_subtitle_cues(args: dict) -> dict:
     scenes = args.get("scenes", [])
     reflection_phrase = (args.get("viewer_reflection") or "").strip() or None
 
-    alignment_ratio = float(word_timing.get("alignment_stats", {}).get("exact_match_ratio", 0.0))
-    if alignment_ratio < MIN_ALIGNMENT_RATIO:
-        raise RuntimeError(
+    stats = word_timing.get("alignment_stats", {})
+    alignment_ratio = float(stats.get("normalized_match_ratio", stats.get("exact_match_ratio", 0.0)))
+    if not math.isfinite(alignment_ratio) or alignment_ratio < MIN_ALIGNMENT_RATIO or stats.get("timing_errors"):
+        raise AlignmentQualityError(
             "word_timing alignment is not accurate enough.\n"
-            f"Exact match ratio: {alignment_ratio:.3f}"
+            f"Normalized match ratio: {alignment_ratio:.3f}; literal match ratio: {stats.get('exact_match_ratio', 0.0):.3f}"
         )
 
     timing_narration = word_timing["locked_narration"].strip()

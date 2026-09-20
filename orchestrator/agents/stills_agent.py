@@ -105,7 +105,11 @@ async def generate_still_asset(
         output_format={"type": "json_schema", "schema": StillOutcomeContract.model_json_schema()},
         max_buffer_size=20 * 1024 * 1024,
     )
+    result = None
     async for message in query(prompt=prompt, options=options):
         if isinstance(message, ResultMessage):
-            return message
+            result = message
+    # Exhaust the stream so SDK cleanup finishes in this task before returning.
+    if result is not None:
+        return result
     raise RuntimeError("Stills agent returned no ResultMessage")

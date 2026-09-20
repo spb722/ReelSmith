@@ -208,3 +208,85 @@ def test_missing_audio_file_rejected():
     Path("audio/narration.wav").unlink()
     with pytest.raises(ValueError, match="audio"):
         contract.validate_sources(make_story_plan(NARRATION_SCRIPT))
+
+
+# -- atomic blocks ----------------------------------------------------------
+#
+# A block sits between two mandatory boundaries and can never be widened, so a
+# block shorter than MIN_WORDS_PER_CUE has no legal split. Raising there halted
+# a live run twice: once on "Just" (stranded between a full stop and the impact
+# phrase "average at almost everything") and once on "Handwashing" (a one-word
+# sentence).
+
+
+def _spans_for(narration: str) -> list[dict]:
+    from orchestrator.tools.deterministic_tools import WORD_RE
+
+    return [
+        {
+            "index": i + 1,
+            "word": m.group(),
+            "char_start": m.start(),
+            "char_end": m.end(),
+            "start_seconds": i * 0.6,
+            "end_seconds": i * 0.6 + 0.5,
+        }
+        for i, m in enumerate(WORD_RE.finditer(narration))
+    ]
+
+
+def test_word_stranded_before_an_impact_phrase_becomes_its_own_cue():
+    from orchestrator.tools import deterministic_tools as dt
+
+    narration = "The team wasn't terrible. Just average at almost everything."
+    spans = _spans_for(narration)
+    impact_ranges = dt.resolve_impact_ranges(spans, ["average at almost everything"])
+
+    ranges = dt.build_ranges(narration, spans, impact_ranges, [])
+
+    assert (5, 5) in ranges, f"orphan 'Just' should be its own cue, got {ranges}"
+    # the impact phrase still starts and ends exactly on cue boundaries
+    assert (6, 9) in ranges
+
+
+def test_one_word_sentence_becomes_its_own_cue():
+    from orchestrator.tools import deterministic_tools as dt
+
+    narration = "Bike seats. Handwashing. The pillows his riders slept on."
+    spans = _spans_for(narration)
+
+    ranges = dt.build_ranges(narration, spans, [], [])
+
+    assert (3, 3) in ranges, f"one-word sentence should be its own cue, got {ranges}"
+
+
+def test_atomic_block_does_not_absorb_the_impact_phrase():
+    """The orphan must not merge forward: validate_rendered_text requires an
+    IMPACT cue to reproduce its declared phrase verbatim."""
+    from orchestrator.tools import deterministic_tools as dt
+
+    narration = "The team wasn't terrible. Just average at almost everything."
+    spans = _spans_for(narration)
+    impacts = ["average at almost everything"]
+    impact_ranges = dt.resolve_impact_ranges(spans, impacts)
+
+    ranges = dt.build_ranges(narration, spans, impact_ranges, [])
+    cues = dt.build_cues(narration, spans, ranges, {}, impact_ranges, None)
+    dt.validate_rendered_text(cues, impacts, impact_ranges)
+
+    impact_cues = [c for c in cues if c["style_hint"] == "IMPACT"]
+    rendered = " ".join(w["word"] for c in impact_cues for w in c["words"])
+    assert rendered == "average at almost everything"
+
+
+def test_blocks_longer_than_the_maximum_are_still_split():
+    """The relaxation must not disable segmentation of divisible blocks."""
+    from orchestrator.tools import deterministic_tools as dt
+
+    narration = "Most people never discover what their habits could have become."
+    spans = _spans_for(narration)
+
+    ranges = dt.build_ranges(narration, spans, [], [])
+
+    assert len(ranges) > 1
+    assert all(end - start + 1 <= dt.MAX_WORDS_PER_CUE for start, end in ranges)

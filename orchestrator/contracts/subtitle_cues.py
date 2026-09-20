@@ -9,6 +9,8 @@ re-deriving a quality gate (Story 1.5 Design Notes).
 
 from __future__ import annotations
 
+import os
+import math
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -17,6 +19,7 @@ from pydantic.json_schema import SkipJsonSchema
 
 from orchestrator.contracts.final_story_plan import FinalStoryPlanContract
 from orchestrator.contracts.text_normalization import normalize_text
+from orchestrator.state.voice_cache import AUDIO_CACHE_FILE, validate_audio_provenance, selected_voice_name
 
 # Duplicated from orchestrator.tools.deterministic_tools.MIN_ALIGNMENT_RATIO
 # rather than imported: contracts stay free of the tools layer's heavier
@@ -66,6 +69,7 @@ class SubtitleCuesContract(ContractModel):
     produced_by: Literal["voice_agent"]
     source_narration_script: str
     alignment_ratio: float
+    audio_provenance: dict | None = None
     cues: Annotated[list[Cue], Field(min_length=1)]
 
     @model_validator(mode="after")
@@ -92,10 +96,18 @@ class SubtitleCuesContract(ContractModel):
                 "source_narration_script does not match the current "
                 "FinalStoryPlanContract's narration_script."
             )
-        if self.alignment_ratio < MIN_ALIGNMENT_RATIO:
+        if not math.isfinite(self.alignment_ratio) or not MIN_ALIGNMENT_RATIO <= self.alignment_ratio <= 1.0:
             raise ValueError(
                 f"alignment_ratio {self.alignment_ratio} is below the required minimum "
                 f"{MIN_ALIGNMENT_RATIO} (AD-10)."
             )
         if not AUDIO_FILE.exists():
             raise ValueError(f"Referenced audio file {AUDIO_FILE} does not exist (AD-11).")
+        selected_voice_name()  # An explicitly empty override is invalid even on resume.
+        if self.audio_provenance is not None:
+            validate_audio_provenance(
+                self.audio_provenance, story_plan.narration_script,
+                story_plan.voice_direction.model_dump(mode="json"),
+            )
+        elif "TTS_VOICE_NAME" in os.environ or AUDIO_CACHE_FILE.exists():
+            raise ValueError("Legacy subtitle cues have no verifiable voice/audio provenance")
