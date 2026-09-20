@@ -98,3 +98,12 @@ def test_agent_is_limited_to_seed_and_veo_tools_and_receives_correction(monkeypa
     assert "production_assets" not in json.dumps(options.output_format)
     assert "Remove retained UI." in prompt
     assert '"generation_mode": "VEO"' in prompt
+
+
+def test_prompt_requires_the_seed_and_clip_to_hold_the_character_face():
+    from orchestrator.agents.veo_agent import veo_agent
+
+    prompt = veo_agent.prompt
+    assert "character reference" in prompt
+    assert "never reject it for a missing character" in prompt
+    assert "stable and recognisable in every preview frame" in prompt

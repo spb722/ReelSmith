@@ -393,3 +393,247 @@ def test_image_prompt_forbids_text_after_a_composition_that_asks_for_it(builder,
     assert prompt.index("FINAL RULE") > prompt.index("text_overlay layered over")
     assert prompt.index("FINAL RULE") > prompt.index("Narration context")
     assert "render NO text of any kind" in prompt
+
+
+# -- character reference ----------------------------------------------------
+#
+# The autouse `working_directory` fixture chdirs into an empty tmp_path, so the
+# default `assets/character/character.png` never exists unless a test creates
+# it. That is what keeps every test above running with the feature off.
+
+
+def _write_character(tmp_path: Path, *, face: bool = True) -> tuple[Path, Path | None]:
+    body = tmp_path / "assets" / "character" / "character.png"
+    body.parent.mkdir(parents=True, exist_ok=True)
+    Image.new("RGB", (12, 30), "green").save(body)
+    face_path = None
+    if face:
+        face_path = body.parent / "character_face.png"
+        Image.new("RGB", (10, 10), "yellow").save(face_path)
+    return body, face_path
+
+
+def _enable_character(monkeypatch, body: Path, face: Path | None) -> None:
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", str(body))
+    monkeypatch.setenv("CHARACTER_FACE_REFERENCE_PATH", str(face) if face else "")
+
+
+def asset_with_figure(source_path: Path, *, asset_id: str = "img_aaaaaaaaaaaa") -> dict:
+    asset = asset_for(source_path, asset_id=asset_id)
+    asset["analysis"]["visual"].update(
+        {
+            "real_people_visible": False,
+            "illustrated_or_cartoon_figures_visible": True,
+            "figure_descriptions": ["Bald round-headed cartoon figure in a blue sweater."],
+            "visual_subjects": [{"subject_type": "ILLUSTRATED_PERSON"}],
+        }
+    )
+    return asset
+
+
+def asset_without_figure(source_path: Path, *, asset_id: str = "img_aaaaaaaaaaaa") -> dict:
+    asset = asset_for(source_path, asset_id=asset_id)
+    asset["analysis"]["visual"].update(
+        {
+            "real_people_visible": False,
+            "illustrated_or_cartoon_figures_visible": False,
+            "figure_descriptions": [],
+            "visual_subjects": [{"subject_type": "SYMBOL"}],
+        }
+    )
+    return asset
+
+
+@pytest.mark.parametrize(
+    "builder,mode",
+    [(build_seed_spec, "VEO"), (build_still_spec, "STILL")],
+)
+def test_no_character_configured_leaves_prompt_and_contents_unchanged(builder, mode, tmp_path):
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    spec = builder(shot_dict(generation_mode=mode), asset_with_figure(source), "Narration.")
+
+    assert spec["character_reference_paths"] == []
+    assert "CHARACTER SUBSTITUTION" not in spec["prompt"]
+
+    client = FakeGeminiClient(
+        FakeResponse([FakeCandidate(FakeContent([FakePart(inline_data=FakeInlineData(_png_bytes()))]))])
+    )
+    runner = generate_seed_image if mode == "VEO" else generate_still_image
+    runner(client, spec, model="m", cost_usd=0.04)
+    assert len(client.models.calls[0]["contents"]) == 2
+
+
+@pytest.mark.parametrize(
+    "builder,mode",
+    [(build_seed_spec, "VEO"), (build_still_spec, "STILL")],
+)
+def test_character_is_sent_when_the_asset_already_has_a_figure(builder, mode, tmp_path, monkeypatch):
+    body, face = _write_character(tmp_path)
+    _enable_character(monkeypatch, body, face)
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+
+    spec = builder(shot_dict(generation_mode=mode), asset_with_figure(source), "Narration.")
+
+    assert spec["character_reference_paths"] == [str(body), str(face)]
+    assert "CHARACTER SUBSTITUTION" in spec["prompt"]
+    assert "Bald round-headed cartoon figure" in spec["prompt"]
+    assert "authority on their facial features" in spec["prompt"]
+
+    client = FakeGeminiClient(
+        FakeResponse([FakeCandidate(FakeContent([FakePart(inline_data=FakeInlineData(_png_bytes()))]))])
+    )
+    runner = generate_seed_image if mode == "VEO" else generate_still_image
+    runner(client, spec, model="m", cost_usd=0.04)
+    # scene first, then body reference, then face reference, then the prompt
+    contents = client.models.calls[0]["contents"]
+    assert len(contents) == 4
+    assert isinstance(contents[-1], str)
+
+
+@pytest.mark.parametrize(
+    "builder,mode",
+    [(build_seed_spec, "VEO"), (build_still_spec, "STILL")],
+)
+def test_character_is_not_sent_when_the_scene_has_no_person(builder, mode, tmp_path, monkeypatch):
+    body, face = _write_character(tmp_path)
+    _enable_character(monkeypatch, body, face)
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+
+    spec = builder(shot_dict(generation_mode=mode), asset_without_figure(source), "Narration.")
+
+    assert spec["character_reference_paths"] == []
+    assert "CHARACTER SUBSTITUTION" not in spec["prompt"]
+
+
+def test_face_reference_alone_does_not_enable_the_character(tmp_path, monkeypatch):
+    face = tmp_path / "assets" / "character" / "character_face.png"
+    face.parent.mkdir(parents=True, exist_ok=True)
+    Image.new("RGB", (10, 10), "yellow").save(face)
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", str(tmp_path / "missing.png"))
+    monkeypatch.setenv("CHARACTER_FACE_REFERENCE_PATH", str(face))
+
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    spec = build_still_spec(shot_dict(generation_mode="STILL"), asset_with_figure(source), "N.")
+    assert spec["character_reference_paths"] == []
+
+
+def test_character_block_precedes_the_final_no_text_rule(tmp_path, monkeypatch):
+    body, face = _write_character(tmp_path)
+    _enable_character(monkeypatch, body, face)
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+
+    prompt = build_still_spec(
+        shot_dict(generation_mode="STILL"), asset_with_figure(source), "Narration."
+    )["prompt"]
+    assert prompt.index("CHARACTER SUBSTITUTION") < prompt.index("FINAL RULE")
+    assert prompt.rstrip().endswith("clean plate without it.")
+
+
+@pytest.mark.parametrize(
+    "builder,mode",
+    [(build_seed_spec, "VEO"), (build_still_spec, "STILL")],
+)
+def test_blanket_character_ban_is_replaced_by_an_invention_ban(builder, mode, tmp_path):
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    prompt = builder(shot_dict(generation_mode=mode), asset_for(source), "Narration.")["prompt"]
+
+    assert "do not add characters" not in prompt.lower()
+    assert "do not add extra characters" not in prompt.lower()
+    assert "invent people who are not" in prompt
+
+
+def test_missing_reference_image_raises_naming_the_reference(tmp_path):
+    from orchestrator.tools.gemini_tools import run_gemini_image_edit
+
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    missing = tmp_path / "nope.png"
+    client = FakeGeminiClient(FakeResponse([]))
+
+    with pytest.raises(FileNotFoundError, match="nope.png"):
+        run_gemini_image_edit(
+            client,
+            source_image_path=source,
+            prompt="p",
+            model="m",
+            reference_image_paths=[missing],
+        )
+
+
+def test_tool_result_carries_labelled_character_references(tmp_path, monkeypatch):
+    import asyncio
+    import json as _json
+
+    from orchestrator.tools import gemini_tools
+
+    body, face = _write_character(tmp_path)
+    _enable_character(monkeypatch, body, face)
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+
+    response = FakeResponse(
+        [FakeCandidate(FakeContent([FakePart(inline_data=FakeInlineData(_png_bytes()))]))]
+    )
+    monkeypatch.setattr(gemini_tools.genai, "Client", lambda **_: FakeGeminiClient(response))
+
+    result = asyncio.run(
+        gemini_tools.generate_still.handler(
+            {
+                "shot": shot_dict(generation_mode="STILL"),
+                "asset": asset_with_figure(source),
+                "subtitle_text": "Narration.",
+                "project_id": "p",
+                "location": "global",
+                "image_model": "m",
+                "cost_usd": 0.04,
+            }
+        )
+    )
+
+    blocks = result["content"]
+    images = [block for block in blocks if block["type"] == "image"]
+    assert len(images) == 3  # the still under QA, plus body and face references
+    labels = " ".join(block["text"] for block in blocks if block["type"] == "text")
+    assert "ONLY image under QA" in labels
+    # the reference must never leak into the payload the agent copies into its
+    # extra="forbid" outcome contract
+    payload = _json.loads(blocks[0]["text"])
+    assert not any("character" in key for key in payload)
+
+
+def test_tool_result_has_no_reference_blocks_when_the_scene_has_no_person(tmp_path, monkeypatch):
+    import asyncio
+
+    from orchestrator.tools import gemini_tools
+
+    body, face = _write_character(tmp_path)
+    _enable_character(monkeypatch, body, face)
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+
+    response = FakeResponse(
+        [FakeCandidate(FakeContent([FakePart(inline_data=FakeInlineData(_png_bytes()))]))]
+    )
+    monkeypatch.setattr(gemini_tools.genai, "Client", lambda **_: FakeGeminiClient(response))
+
+    result = asyncio.run(
+        gemini_tools.generate_still.handler(
+            {
+                "shot": shot_dict(generation_mode="STILL"),
+                "asset": asset_without_figure(source),
+                "subtitle_text": "Narration.",
+                "project_id": "p",
+                "location": "global",
+                "image_model": "m",
+                "cost_usd": 0.04,
+            }
+        )
+    )
+
+    assert len([block for block in result["content"] if block["type"] == "image"]) == 1

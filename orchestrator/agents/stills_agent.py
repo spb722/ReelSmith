@@ -36,7 +36,23 @@ photorealism, or -- the concrete defect this stage exists to catch -- shows
 the same focal subject or scene duplicated anywhere in frame (e.g. two
 tombstones, two of the same figure). Approve only if it shows exactly one
 instance of the focal subject, matches the shot's composition and goal, and
-leaves clean space for later Remotion subtitles/typography. Return SUCCESS
+leaves clean space for later Remotion subtitles/typography.
+When the tool result includes character reference image(s) after the generated
+still, the scene is one that already contained a person and that person must now
+be the referenced character. Those references are NOT under QA -- never judge the
+still against a reference's background, pose, crop, or framing. Approve only if
+the person in the still is unmistakably that character: same face shape, eyes,
+eyebrows, nose, mouth, beard, hairstyle, hair colour and skin tone, with the face
+clearly visible, in focus, and detailed. Reject a faceless, blank, featureless,
+blurred, obscured or turned-away figure, reject a face simplified into dots or a
+plain oval, reject a generic person who is not the reference, and reject a frame
+whose whole scene has been restyled to match the character -- only the person may
+be drawn in the character's style, the scene keeps the source's art style,
+palette and lighting. Other people in the scene, such as background silhouettes,
+must stay as the source drew them. When the tool result includes NO character
+reference, the source scene has no person in it: that still is correct without
+one -- never reject it for a missing character and never ask for a person to be
+added. Return SUCCESS
 with result.approved=true and a specific qa_summary describing what you
 verified. If visual QA fails, return a retryable still_qa failure. Include
 the still's cost_usd and local_image_path in partial_artifact_paths, plus a

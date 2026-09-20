@@ -383,3 +383,32 @@ def test_preview_positions_scale_with_the_real_clip_length(tmp_path, monkeypatch
     calls.clear()
     veo_tools.extract_video_previews(video, 1, 6)
     assert calls == ["0.375", "1.875", "4.125"]
+
+
+def test_video_prompt_bans_new_characters_but_protects_the_existing_face():
+    from orchestrator.contracts.veo import VeoSeedContract
+    from orchestrator.tools.veo_tools import build_video_prompt
+
+    shot = Shot.model_validate(
+        dict(
+            sequence=1,
+            generation_mode="VEO",
+            visual_treatment="AI_VIDEO_CANDIDATE",
+            source_asset_ids=["img_aaaaaaaaaaaa"],
+            shot_goal="Show the scene.",
+            frame_composition="Center the subject.",
+            motion_plan="Use quiet motion.",
+            text_overlay="",
+            source_support="Directly supported.",
+            video_candidate_rank=1,
+        )
+    )
+    seed = VeoSeedContract.model_construct()
+    prompt, negative_prompt = build_video_prompt(shot, seed)
+
+    assert "new characters, duplicate subjects" in prompt
+    assert "Keep every person already in the supplied frame exactly as drawn" in prompt
+    assert "never let a face drift" in prompt
+    # the negative prompt is deliberately unchanged: the character is already
+    # baked into the seed, so "extra people" still means "add nobody new"
+    assert "extra people, duplicate subjects" in negative_prompt

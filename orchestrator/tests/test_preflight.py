@@ -485,3 +485,71 @@ def test_check_remotion_delivery_toolchain_missing_node_modules(tmp_path, monkey
     assert result is not None
     assert result.failed_check == "remotion"
     assert "node_modules" in (result.reason or "")
+
+
+# -- character reference ----------------------------------------------------
+
+
+def _valid_character_png(path):
+    from PIL import Image
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    Image.new("RGB", (16, 32), "green").save(path)
+    return path
+
+
+def test_character_reference_absent_at_the_default_path_is_simply_off(tmp_path, monkeypatch):
+    from orchestrator.preflight import _check_character_reference
+    from orchestrator.settings import DEFAULT_CHARACTER_REFERENCE_PATH, load_settings
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("CHARACTER_REFERENCE_PATH", raising=False)
+    settings = load_settings()
+    assert settings.character_reference_path == DEFAULT_CHARACTER_REFERENCE_PATH
+    assert _check_character_reference(settings) is None
+
+
+def test_character_reference_absent_at_an_explicit_path_fails_loudly(tmp_path, monkeypatch):
+    from orchestrator.preflight import _check_character_reference
+    from orchestrator.settings import load_settings
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", str(tmp_path / "typo.png"))
+    result = _check_character_reference(load_settings())
+    assert result is not None and result.failed_check == "character_reference"
+
+
+def test_character_reference_must_be_a_png(tmp_path, monkeypatch):
+    from orchestrator.preflight import _check_character_reference
+    from orchestrator.settings import load_settings
+
+    monkeypatch.chdir(tmp_path)
+    wrong = tmp_path / "hero.jpg"
+    wrong.write_bytes(b"not really a jpeg")
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", str(wrong))
+    result = _check_character_reference(load_settings())
+    assert result is not None and "png" in (result.reason or "").lower()
+
+
+def test_oversized_character_reference_fails(tmp_path, monkeypatch):
+    from orchestrator import preflight
+    from orchestrator.settings import load_settings
+
+    monkeypatch.chdir(tmp_path)
+    big = _valid_character_png(tmp_path / "hero.png")
+    monkeypatch.setattr(preflight, "MAX_CHARACTER_REFERENCE_BYTES", 10)
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", str(big))
+    result = preflight._check_character_reference(load_settings())
+    assert result is not None and "limit" in (result.reason or "")
+
+
+def test_valid_character_reference_passes(tmp_path, monkeypatch):
+    from orchestrator.preflight import _check_character_reference
+    from orchestrator.settings import load_settings
+
+    monkeypatch.chdir(tmp_path)
+    body = _valid_character_png(tmp_path / "hero.png")
+    face = _valid_character_png(tmp_path / "hero_face.png")
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", str(body))
+    monkeypatch.setenv("CHARACTER_FACE_REFERENCE_PATH", str(face))
+    assert _check_character_reference(load_settings()) is None

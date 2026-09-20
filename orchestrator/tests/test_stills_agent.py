@@ -91,3 +91,12 @@ def test_agent_is_limited_to_still_tool_and_receives_correction(monkeypatch):
     assert "production_assets" not in json.dumps(options.output_format)
     assert "Remove the duplicated subject." in prompt
     assert '"generation_mode": "STILL"' in prompt
+
+
+def test_prompt_requires_the_still_to_match_the_character_reference():
+    from orchestrator.agents.stills_agent import stills_agent
+
+    prompt = stills_agent.prompt
+    assert "character reference" in prompt
+    assert "NOT under QA" in prompt
+    assert "never reject it for a missing character" in prompt

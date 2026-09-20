@@ -37,7 +37,22 @@ budget goes to the clip. Otherwise -- no previous outcome, or its
 failure.stage is "seed_qa" or "seed_generation" -- give the seed your normal
 full inspection: reject it if it contains app UI, visible text, duplicate/extra
 subjects, wrong scene or emotion, photorealistic drift, or a composition that
-does not serve the shot. On rejection, return a structured retryable seed_qa
+does not serve the shot. When the tool result includes character reference image(s) after the generated
+seed, the scene is one that already contained a person and that person must now
+be the referenced character. Those references are NOT under QA -- never judge the
+seed against a reference's background, pose, crop, or framing. Approve only if
+the person in the seed is unmistakably that character: same face shape, eyes,
+eyebrows, nose, mouth, beard, hairstyle, hair colour and skin tone, with the face
+clearly visible, in focus, and detailed. Reject a faceless, blank, featureless,
+blurred, obscured or turned-away figure, reject a face simplified into dots or a
+plain oval, reject a generic person who is not the reference, and reject a frame
+whose whole scene has been restyled to match the character -- only the person may
+be drawn in the character's style, the scene keeps the source's art style,
+palette and lighting. Other people in the scene, such as background silhouettes,
+must stay as the source drew them. When the tool result includes NO character
+reference, the source scene has no person in it: that seed is correct without
+one -- never reject it for a missing character and never ask for a person to be
+added. On rejection, return a structured retryable seed_qa
 failure. Include the seed's cost and path in partial_artifact_paths. Do not
 call Veo.
 2. On seed approval, copy the seed payload exactly, set approved=true, and add a
@@ -47,7 +62,11 @@ once with that approved seed and the supplied settings/attempt/correction.
 VeoOutcomeContract. Never flatten RAI reasons or operation errors.
 4. If it returns an unapproved result, inspect every returned preview image.
 Approve only if the clip preserves the seed's scene/style, has coherent restrained
-motion, no UI/text/extra subjects/distortion, and serves the shot. Return SUCCESS
+motion, no UI/text/extra subjects/distortion, and serves the shot. If the approved
+seed showed the character, approve the clip only if that character's face stays
+stable and recognisable in every preview frame -- reject warping, melting, face
+swapping, a face drifting toward a different person, or a face dissolving into a
+blank or generic figure. Return SUCCESS
 with result.approved=true and a specific clip qa_summary. If no preview images are
 available or visual QA fails, return a retryable clip_qa failure preserving the
 operation name/dump, paths, costs, and a concrete correction reason for the next

@@ -244,7 +244,11 @@ def build_video_prompt(shot: Shot, seed: VeoSeedContract, correction: str = "") 
         "Preserve its subjects, object count, composition, palette, texture, and editorial illustration style. "
         f"Shot goal: {shot.shot_goal}. Motion: {shot.motion_plan}. "
         "Keep motion restrained and coherent. Do not add words, subtitles, UI, logos, watermarks, "
-        "characters, duplicate subjects, photorealism, camera shake, or surreal distortions."
+        "new characters, duplicate subjects, photorealism, camera shake, or surreal distortions. "
+        "Keep every person already in the supplied frame exactly as drawn -- the same face, facial "
+        "features, beard, hairstyle, hair colour, skin tone, and clothing for the whole clip. Never "
+        "re-render, restyle, swap, blur, flatten, or dissolve a face, and never let a face drift "
+        "toward a different person."
     )
     if correction.strip():
         prompt += f" Correct the prior QA defect without changing the shot's assigned mode: {correction.strip()}"

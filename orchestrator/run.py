@@ -77,7 +77,11 @@ from orchestrator.tools.deterministic_tools import (
     sync_remotion_assets,
     tokenize,
 )
-from orchestrator.tools.gemini_tools import NARRATION_WAV, generate_narration_audio
+from orchestrator.tools.gemini_tools import (
+    NARRATION_WAV,
+    generate_narration_audio,
+    resolve_character_references,
+)
 from orchestrator.tools.veo_tools import select_clip_duration_seconds
 from orchestrator.tools.timeline_converter import build_timeline_data
 
@@ -1549,6 +1553,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         )
 
     print(f"Preflight passed for source images dir: {args.source_images_dir}.")
+    character_references = resolve_character_references()
+    if character_references:
+        print(
+            "character reference: "
+            + ", ".join(str(path) for path in character_references)
+            + " (applied only to shots whose source art already shows a person)"
+        )
+    else:
+        print("character reference: none configured -- source figures kept as drawn")
     print("=== stage: screenshot understanding (asset_analyst) ===")
     screenshot_result = asyncio.run(run_screenshot_stage(args.source_images_dir, settings, manifest))
     if screenshot_result != 0:

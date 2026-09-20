@@ -16,6 +16,7 @@ import json
 import wave
 from io import BytesIO
 from pathlib import Path
+from typing import Sequence
 
 from claude_agent_sdk import create_sdk_mcp_server, tool
 from google import genai
@@ -25,6 +26,7 @@ from PIL import Image
 from orchestrator.contracts.stills import STILLS_DIR, StillFailureContract, StillResultContract
 from orchestrator.contracts.veo import VeoFailureContract, VeoSeedContract, sha256_file, shot_fingerprint
 from orchestrator.contracts.visual_plan import Shot
+from orchestrator.settings import load_settings
 from orchestrator.tools.deterministic_tools import tokenize
 
 # Ported verbatim from generate_voice.py -- config literals unchanged.
@@ -248,7 +250,8 @@ def build_seed_spec(shot: dict, asset: dict, subtitle_text: str) -> dict:
         "for image-to-video generation. Remove all app UI, status bars, buttons, progress bars, "
         "card chrome, instruction text, captions, logos, and watermarks. Preserve the source's "
         "editorial illustration style, palette, subjects, and emotional meaning; do not drift to "
-        "photorealism and do not add characters or duplicate subjects. "
+        "photorealism, and do not duplicate subjects or invent people who are not "
+        "already in the source scene. "
         f"Shot goal: {validated_shot.shot_goal}. "
         f"Required composition: {validated_shot.frame_composition}. "
         f"Planned motion context: {validated_shot.motion_plan}. "
@@ -257,6 +260,14 @@ def build_seed_spec(shot: dict, asset: dict, subtitle_text: str) -> dict:
         f"Source art description: {production.get('story_art_description', '')}. "
         f"Narration context (for mood and meaning only, never to be written into the image): "
         f"{subtitle_text.strip()}. "
+    )
+    character_paths = character_reference_paths_for_asset(asset)
+    if character_paths:
+        prompt += build_character_prompt_block(
+            focal_figure_description(asset), len(character_paths)
+        )
+    # FINAL RULE stays last, after any character block.
+    prompt += (
         "FINAL RULE, overriding anything above: render NO text of any kind -- no words, "
         "letters, captions, titles, quotes, signage, or handwriting, anywhere in the frame. "
         "If any description above mentions a text overlay, on-screen wording, or a line that "
@@ -270,7 +281,120 @@ def build_seed_spec(shot: dict, asset: dict, subtitle_text: str) -> dict:
         "source_image_path": str(source_path),
         "output_image_path": str(VEO_SEED_DIR / f"shot_{validated_shot.sequence:02d}_seed.png"),
         "prompt": prompt,
+        "character_reference_paths": [str(path) for path in character_paths],
     }
+
+
+# Subject types in `analyzed_assets` that mean "a person is already drawn here".
+HUMAN_SUBJECT_TYPES = {"REAL_PERSON", "ILLUSTRATED_PERSON", "CARTOON_CHARACTER"}
+
+
+def resolve_character_references() -> list[Path]:
+    """Return the configured character reference images, most general first.
+
+    Empty list means the feature is off, which reproduces the pre-character
+    behaviour exactly. The path is read from settings here rather than taken
+    as a tool argument on purpose: the SDK marks every declared tool-schema
+    key required, so routing it through the agent would force the model to
+    retype the path on every call -- and identity-critical values are not
+    agent output (the same reasoning that made the orchestrator stamp
+    `shot_fingerprint` itself).
+    """
+
+    settings = load_settings()
+
+    body_raw = (settings.character_reference_path or "").strip()
+    if not body_raw:
+        return []
+    body = Path(body_raw)
+    if not body.is_file():
+        return []
+
+    # The face crop only ever supplements the full-body sheet; a face alone
+    # cannot describe a whole figure, so it is never used on its own.
+    references = [body]
+    face_raw = (settings.character_face_reference_path or "").strip()
+    if face_raw:
+        face = Path(face_raw)
+        if face.is_file() and face.resolve() != body.resolve():
+            references.append(face)
+    return references
+
+
+def asset_has_human_figure(asset: dict) -> bool:
+    """True when the analyzed asset already depicts a person.
+
+    The character only ever replaces a figure that is already there; it is
+    never inserted into a scene that has none. `analyzed_assets` already
+    answers this, so the rule is enforced in code rather than asked of the
+    image model.
+    """
+
+    visual = (asset.get("analysis") or {}).get("visual") or {}
+    if visual.get("real_people_visible") or visual.get("illustrated_or_cartoon_figures_visible"):
+        return True
+    return any(
+        (subject or {}).get("subject_type") in HUMAN_SUBJECT_TYPES
+        for subject in visual.get("visual_subjects") or []
+    )
+
+
+def focal_figure_description(asset: dict) -> str:
+    """The first described figure -- the one the character replaces."""
+
+    visual = (asset.get("analysis") or {}).get("visual") or {}
+    descriptions = [d for d in (visual.get("figure_descriptions") or []) if str(d).strip()]
+    if descriptions:
+        return str(descriptions[0]).strip()
+    return "the single human figure already present in the scene"
+
+
+def build_character_prompt_block(figure_description: str, reference_count: int) -> str:
+    """The character-substitution instruction shared by stills and Veo seeds.
+
+    Deliberately says *replace the figure already present* rather than *add a
+    person*: adding is what the surrounding prompt still forbids.
+    """
+
+    if reference_count >= 2:
+        which = (
+            "The SECOND image is a full-body character reference. The THIRD image is a "
+            "close-up of that same character's face and is the authority on their facial "
+            "features -- follow it exactly for the face. "
+        )
+    else:
+        which = "The SECOND image is a character reference. "
+
+    return (
+        "CHARACTER SUBSTITUTION. The FIRST image is the source scene described above. "
+        + which
+        + "The character reference images show the person only -- never copy their plain "
+        "background, standing pose, framing, crop, or layout into the scene. "
+        f"The source scene already contains this human figure: {figure_description} "
+        "Redraw that one figure as the referenced character, keeping the character's exact "
+        "face: same face shape, eyes, eyebrows, nose, mouth, beard, hairstyle, hair colour "
+        "and skin tone. The face must be clearly visible, in focus, and detailed enough to "
+        "recognise -- never faceless, blank, featureless, blurred, hidden, or turned away, "
+        "and never simplified into dots or a plain oval even if the scene's other figures "
+        "are drawn that way. Draw the character in the character reference's own "
+        "illustration style, but keep everything else exactly as the source scene draws it: "
+        "the scene's art style, palette, line quality, texture, lighting, background, props "
+        "and composition are unchanged. Do NOT restyle the scene to match the character. "
+        "Adapt only the character's pose, body angle, scale and clothing to the figure "
+        "already occupying that spot, so the character sits or stands exactly where that "
+        "figure stood and carries the same emotional beat. Replace that ONE focal figure "
+        "only. Every other person in the scene -- background silhouettes, crowds, secondary "
+        "figures -- stays exactly as the source draws them. Add no second character and no "
+        "duplicate of the character anywhere in the frame. "
+    )
+
+
+def character_reference_paths_for_asset(asset: dict) -> list[Path]:
+    """Character references to send for this asset, or [] when none apply."""
+
+    if not asset_has_human_figure(asset):
+        return []
+    return resolve_character_references()
 
 
 def run_gemini_image_edit(
@@ -279,6 +403,7 @@ def run_gemini_image_edit(
     source_image_path: Path,
     prompt: str,
     model: str,
+    reference_image_paths: Sequence[Path] = (),
 ) -> tuple[Image.Image, str]:
     """Run one Gemini image-edit call and return the generated image plus any
     explanatory model text. Shared by every one-shot Gemini image-edit tool
@@ -289,9 +414,18 @@ def run_gemini_image_edit(
     if not source_image_path.is_file():
         raise FileNotFoundError(f"Source image does not exist: {source_image_path}")
     source_image = Image.open(source_image_path).convert("RGB")
+    # Scene first: Gemini image-edit treats the leading image as the plate being
+    # edited, so a reference in front of it invites an edited portrait instead
+    # of an edited scene.
+    reference_images = []
+    for reference_path in reference_image_paths:
+        reference_path = Path(reference_path)
+        if not reference_path.is_file():
+            raise FileNotFoundError(f"Reference image does not exist: {reference_path}")
+        reference_images.append(Image.open(reference_path).convert("RGB"))
     response = client.models.generate_content(
         model=model,
-        contents=[source_image, prompt],
+        contents=[source_image, *reference_images, prompt],
         config=types.GenerateContentConfig(
             response_modalities=[types.Modality.TEXT, types.Modality.IMAGE],
         ),
@@ -320,7 +454,11 @@ def generate_seed_image(
 
     source_path = Path(spec["source_image_path"])
     generated_image, model_text = run_gemini_image_edit(
-        client, source_image_path=source_path, prompt=spec["prompt"], model=model,
+        client,
+        source_image_path=source_path,
+        prompt=spec["prompt"],
+        model=model,
+        reference_image_paths=[Path(p) for p in spec.get("character_reference_paths", [])],
     )
 
     output_path = Path(spec["output_image_path"])
@@ -370,7 +508,8 @@ def build_still_spec(shot: dict, asset: dict, subtitle_text: str) -> dict:
         "surrounding interface. Do not include any visible text, letters, numbers, logos, or watermarks. "
         "Preserve the source's editorial illustration style, palette, subjects, and emotional meaning; "
         "do not drift to photorealism. Show exactly one instance of the focal subject -- do not duplicate "
-        "the same subject or scene twice in frame. Do not add extra characters unless explicitly requested. "
+        "the same subject or scene twice in frame. Do not invent people who are not "
+        "already in the source scene. "
         "Leave clean visual space for later Remotion subtitles and typography. "
         f"Shot goal: {validated_shot.shot_goal}. "
         f"Required composition: {validated_shot.frame_composition}. "
@@ -380,6 +519,14 @@ def build_still_spec(shot: dict, asset: dict, subtitle_text: str) -> dict:
         f"Source art description: {production.get('story_art_description', '')}. "
         f"Narration context (for mood and meaning only, never to be written into the image): "
         f"{subtitle_text.strip()}. "
+    )
+    character_paths = character_reference_paths_for_asset(asset)
+    if character_paths:
+        prompt += build_character_prompt_block(
+            focal_figure_description(asset), len(character_paths)
+        )
+    # FINAL RULE stays last, after any character block.
+    prompt += (
         "FINAL RULE, overriding anything above: render NO text of any kind -- no words, "
         "letters, captions, titles, quotes, signage, or handwriting, anywhere in the frame. "
         "If any description above mentions a text overlay, on-screen wording, or a line that "
@@ -393,6 +540,7 @@ def build_still_spec(shot: dict, asset: dict, subtitle_text: str) -> dict:
         "source_image_path": str(source_path),
         "output_image_path": str(STILLS_DIR / f"shot_{validated_shot.sequence:02d}.png"),
         "prompt": prompt,
+        "character_reference_paths": [str(path) for path in character_paths],
     }
 
 
@@ -407,7 +555,11 @@ def generate_still_image(
 
     source_path = Path(spec["source_image_path"])
     generated_image, model_text = run_gemini_image_edit(
-        client, source_image_path=source_path, prompt=spec["prompt"], model=model,
+        client,
+        source_image_path=source_path,
+        prompt=spec["prompt"],
+        model=model,
+        reference_image_paths=[Path(p) for p in spec.get("character_reference_paths", [])],
     )
 
     output_path = Path(spec["output_image_path"])
@@ -425,6 +577,32 @@ def generate_still_image(
         cost_usd=cost_usd,
     )
     return result, model_text
+
+
+def _character_reference_blocks(spec: dict) -> list[dict]:
+    """Label + image blocks letting the QA agent compare against the character.
+
+    The reference travels in the tool *result*, never in `payload`: the agent
+    copies `payload` into its outcome contract, which is `extra="forbid"`, so
+    every extra key there is a fresh validation hazard.
+    """
+
+    paths = [Path(path) for path in spec.get("character_reference_paths", [])]
+    if not paths:
+        return []
+
+    blocks: list[dict] = [{
+        "type": "text",
+        "text": (
+            "The image above is the generated shot and is the ONLY image under QA. "
+            f"The next {len(paths)} image(s) are character reference sheets, NOT the shot: "
+            "use them only to check that the person drawn in the shot is this character. "
+            "Never judge the shot against a reference's background, pose, crop, or framing."
+        ),
+    }]
+    for path in paths:
+        blocks.append(_image_content(path))
+    return blocks
 
 
 def _image_content(path: Path) -> dict:
@@ -495,6 +673,7 @@ async def generate_veo_seed(args: dict) -> dict:
         "content": [
             {"type": "text", "text": json.dumps(payload, ensure_ascii=False)},
             _image_content(Path(seed.local_path)),
+            *_character_reference_blocks(spec),
         ]
     }
 
@@ -559,6 +738,7 @@ async def generate_still(args: dict) -> dict:
         "content": [
             {"type": "text", "text": json.dumps(payload, ensure_ascii=False)},
             _image_content(Path(result.local_image_path)),
+            *_character_reference_blocks(spec),
         ]
     }
 

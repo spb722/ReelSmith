@@ -16,9 +16,18 @@ from typing import Callable, Optional
 
 import google.auth
 
-from orchestrator.settings import Settings, SettingsError, load_settings
+from orchestrator.settings import (
+    DEFAULT_CHARACTER_FACE_REFERENCE_PATH,
+    DEFAULT_CHARACTER_REFERENCE_PATH,
+    Settings,
+    SettingsError,
+    load_settings,
+)
 
 REMOTION_DIR = Path("remotion")
+# Two base64 image blocks ride back to the agent inside its 20MB buffer;
+# a reference much larger than this is a mistake, not a high-quality sheet.
+MAX_CHARACTER_REFERENCE_BYTES = 4 * 1024 * 1024
 
 CredentialsFactory = Callable[[], object]
 StorageClientFactory = Callable[[str], object]
@@ -137,6 +146,86 @@ def _check_budget(
     return None
 
 
+def _character_reference_failure(
+    raw_path: str, default_path: str, label: str
+) -> Optional[PreflightResult]:
+    """Validate one configured character reference image.
+
+    An empty value means the feature is off. A missing file at the *default*
+    path also means off -- that is the state of every repo that never adopted
+    a character. A missing file at an *explicit* path is a typo and must be
+    loud rather than silently dropping the character.
+    """
+
+    raw = raw_path.strip()
+    if not raw:
+        return None
+
+    path = Path(raw)
+    if not path.is_file():
+        if raw == default_path:
+            return None
+        return PreflightResult(
+            passed=False,
+            failed_check="character_reference",
+            reason=f"{label} is configured as {raw!r} but no file exists there",
+        )
+
+    if path.suffix.lower() != ".png":
+        return PreflightResult(
+            passed=False,
+            failed_check="character_reference",
+            reason=f"{label} must be a .png (the tool result declares image/png), got {path.name!r}",
+        )
+
+    size = path.stat().st_size
+    if size == 0:
+        return PreflightResult(
+            passed=False, failed_check="character_reference", reason=f"{label} {raw!r} is empty"
+        )
+    if size > MAX_CHARACTER_REFERENCE_BYTES:
+        return PreflightResult(
+            passed=False,
+            failed_check="character_reference",
+            reason=(
+                f"{label} {raw!r} is {size} bytes, over the "
+                f"{MAX_CHARACTER_REFERENCE_BYTES}-byte limit -- export it around 1024px tall"
+            ),
+        )
+
+    try:
+        from PIL import Image
+
+        with Image.open(path) as image:
+            image.verify()
+    except Exception as exc:
+        return PreflightResult(
+            passed=False,
+            failed_check="character_reference",
+            reason=f"{label} {raw!r} is not a readable image: {type(exc).__name__}: {exc}",
+        )
+
+    return None
+
+
+def _check_character_reference(settings: Settings) -> Optional[PreflightResult]:
+    """Fail before any paid call when a configured character reference is unusable."""
+
+    body_failure = _character_reference_failure(
+        settings.character_reference_path,
+        DEFAULT_CHARACTER_REFERENCE_PATH,
+        "Character reference",
+    )
+    if body_failure is not None:
+        return body_failure
+
+    return _character_reference_failure(
+        settings.character_face_reference_path,
+        DEFAULT_CHARACTER_FACE_REFERENCE_PATH,
+        "Character face reference",
+    )
+
+
 def check_remotion_delivery_toolchain() -> PreflightResult | None:
     """Return a failed `PreflightResult` when Remotion cannot render, else None."""
     if shutil.which("npx") is None:
@@ -187,6 +276,7 @@ def run_preflight(
         lambda: _check_credentials(credentials_factory),
         lambda: _check_bucket(settings, storage_client_factory),
         lambda: _check_budget(settings, budget_spent_usd),
+        lambda: _check_character_reference(settings),
     ):
         failure = check()
         if failure is not None:

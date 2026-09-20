@@ -47,6 +47,13 @@ DEFAULT_MAX_VEO_ATTEMPTS = 3
 DEFAULT_IMAGE_CALL_COST_USD = 0.04
 DEFAULT_VEO_CALL_COST_USD = 1.20
 
+# Recurring-character reference images. Empty string disables the feature and
+# reproduces the pre-character behaviour exactly (one image per Gemini edit).
+# The face crop is optional and exists purely to hold facial detail steady --
+# a full-body sheet alone loses the face at small scale.
+DEFAULT_CHARACTER_REFERENCE_PATH = "assets/character/character.png"
+DEFAULT_CHARACTER_FACE_REFERENCE_PATH = "assets/character/character_face.png"
+
 
 # Story 1.5: Gemini TTS / Google STT per-unit cost-rate constants. Unlike
 # Claude calls (which get total_cost_usd automatically from the Agent SDK),
@@ -75,6 +82,8 @@ class Settings:
     max_veo_attempts: int = DEFAULT_MAX_VEO_ATTEMPTS
     image_call_cost_usd: float = DEFAULT_IMAGE_CALL_COST_USD
     veo_call_cost_usd: float = DEFAULT_VEO_CALL_COST_USD
+    character_reference_path: str = DEFAULT_CHARACTER_REFERENCE_PATH
+    character_face_reference_path: str = DEFAULT_CHARACTER_FACE_REFERENCE_PATH
 
 
 def _float_setting(name: str, default: float, *, positive: bool = False) -> float:
@@ -150,4 +159,12 @@ def load_settings() -> Settings:
             "IMAGE_CALL_COST_USD", DEFAULT_IMAGE_CALL_COST_USD
         ),
         veo_call_cost_usd=_float_setting("VEO_CALL_COST_USD", DEFAULT_VEO_CALL_COST_USD),
+        # Plain os.getenv, not _str_setting: an empty value is the documented
+        # "no character" switch, and _str_setting raises on an empty string.
+        character_reference_path=os.getenv(
+            "CHARACTER_REFERENCE_PATH", DEFAULT_CHARACTER_REFERENCE_PATH
+        ),
+        character_face_reference_path=os.getenv(
+            "CHARACTER_FACE_REFERENCE_PATH", DEFAULT_CHARACTER_FACE_REFERENCE_PATH
+        ),
     )

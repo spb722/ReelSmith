@@ -147,3 +147,25 @@ def test_invalid_veo_settings_fail_loud(name, value, monkeypatch):
     monkeypatch.setenv(name, value)
     with pytest.raises(SettingsError):
         load_settings()
+
+
+def test_character_reference_paths_default_to_the_assets_directory(monkeypatch):
+    monkeypatch.delenv("CHARACTER_REFERENCE_PATH", raising=False)
+    monkeypatch.delenv("CHARACTER_FACE_REFERENCE_PATH", raising=False)
+    settings = load_settings()
+    assert settings.character_reference_path == "assets/character/character.png"
+    assert settings.character_face_reference_path == "assets/character/character_face.png"
+
+
+def test_character_reference_path_is_env_overridable(monkeypatch):
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", "/tmp/hero.png")
+    assert load_settings().character_reference_path == "/tmp/hero.png"
+
+
+def test_empty_character_reference_path_disables_rather_than_raising(monkeypatch):
+    """The documented off switch -- `_str_setting` would raise on this."""
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", "")
+    monkeypatch.setenv("CHARACTER_FACE_REFERENCE_PATH", "")
+    settings = load_settings()
+    assert settings.character_reference_path == ""
+    assert settings.character_face_reference_path == ""
