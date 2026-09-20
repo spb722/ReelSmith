@@ -268,6 +268,18 @@ def build_video_prompt(shot: Shot, seed: VeoSeedContract, correction: str = "") 
     )
     if correction.strip():
         prompt += f" Correct the prior QA defect without changing the shot's assigned mode: {correction.strip()}"
+    # Last, so it also overrides the correction. shot_goal and motion_plan are
+    # passed almost verbatim, and a plan that says "text fades in softly over
+    # the closing seconds" made Veo burn garbled pseudo-text into a clip whose
+    # seed was clean. The image prompts have carried this override for exactly
+    # this reason; the video prompt was the gap.
+    prompt += (
+        " FINAL RULE, overriding anything above: render NO text of any kind -- no words, "
+        "letters, captions, subtitles, titles, quotes, signage, or handwriting, anywhere in "
+        "any frame of the clip. If any description above mentions a text overlay, on-screen "
+        "wording, a quote, or a line that fades in, that belongs to a later compositing step, "
+        "not to this video -- animate the clean plate without it."
+    )
     negative_prompt = (
         "text, subtitles, user interface, app chrome, logo, watermark, extra people, duplicate subjects, "
         "photorealistic live action, camera shake, fast zoom, surreal distortion"

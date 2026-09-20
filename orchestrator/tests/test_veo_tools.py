@@ -476,3 +476,33 @@ def test_resolve_binary_skips_a_broken_candidate(tmp_path, monkeypatch):
 
     monkeypatch.setattr(deterministic_tools.subprocess, "run", fake_run)
     assert deterministic_tools.resolve_binary("ffmpeg") == str(working)
+
+
+def test_video_prompt_overrides_a_plan_that_asks_for_text():
+    """shot_goal/motion_plan reach Veo almost verbatim, and a real plan said
+    "text fades in softly over the closing seconds" -- which Veo obeyed,
+    burning garbled pseudo-text into an otherwise clean clip."""
+    from orchestrator.contracts.veo import VeoSeedContract
+    from orchestrator.tools.veo_tools import build_video_prompt
+
+    shot = Shot.model_validate(
+        dict(
+            sequence=6,
+            generation_mode="VEO",
+            visual_treatment="AI_VIDEO_CANDIDATE",
+            source_asset_ids=["img_aaaaaaaaaaaa"],
+            shot_goal="Close on a reflective note as the closing line lands.",
+            frame_composition="Settle the closing narration as text_overlay over the scene.",
+            motion_plan="Slow pull-back; text fades in softly over the closing seconds.",
+            text_overlay="Happiness isn't a finish line",
+            source_support="Directly supported.",
+            video_candidate_rank=1,
+        )
+    )
+    prompt, _ = build_video_prompt(shot, VeoSeedContract.model_construct(), correction="redo it")
+
+    assert "FINAL RULE, overriding anything above" in prompt
+    # the override must come after both the plan text and the correction
+    assert prompt.index("FINAL RULE") > prompt.index("text fades in softly")
+    assert prompt.index("FINAL RULE") > prompt.index("redo it")
+    assert prompt.rstrip().endswith("animate the clean plate without it.")
