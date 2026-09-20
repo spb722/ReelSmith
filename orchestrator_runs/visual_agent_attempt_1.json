@@ -1,0 +1,174 @@
+{
+  "structured_output": {
+    "produced_by": "visual_agent",
+    "overall_visual_style": "A warm, halftone-textured flat-illustration style throughout, carried directly from the source app's recurring bald cartoon figure and muted amber/teal/orange palette; every shot crops out app chrome, the status bar, and the unrelated cricket-score banner so only the illustrated story world and narration-timed text overlays remain. Camera language stays slow, deliberate, and hushed -- soft push-ins, gentle horizontal pans, and unhurried pull-backs -- mirroring the narrator's calm, contemplative pacing, with motion intensity rising only slightly on the two human-scale \"practice\" scenes to underline physical, earned effort versus the stillness of realization.",
+    "shots": [
+      {
+        "sequence": 1,
+        "visual_treatment": "USE_EXISTING_ART",
+        "source_asset_ids": [
+          "img_87a825c5a858"
+        ],
+        "shot_goal": "Establish the prince's sheltered isolation amid abundance to open the hook with quiet foreboding.",
+        "frame_composition": "Crop to the story_art_region (x:54-943, y:457-702) per the asset's recommended CROP_TO_TEXT_AND_ART strategy, cutting out the status bar/cricket banner, header, progress bar, and nav arrows per its listed ui_regions; vertical reframe centers the bald prince figure (~433-563, 540-685) with silhouetted servants and trays flanking him under the arched, vine-draped colonnade.",
+        "motion_plan": "Slow, steady zoom-in toward the centered prince per the asset's own suggested_motion ('slow zoom-in on the prince figure'), tightening gradually over the shot so the servants and archways recede toward the frame edges, visually reinforcing isolation despite abundance; a single smooth push, no separate parallax layers.",
+        "text_overlay": "",
+        "source_support": "Grounded in img_87a825c5a858's story_art_region and figure_descriptions (centered bald prince, silhouetted servants with trays, ornate amber-lit courtyard); the fallback motion follows the asset's own suggested_motion, and cropping follows its visual_cleanup_needed notes about removing the cricket banner and app chrome.",
+        "video_motion_intent": "",
+        "video_candidate_rank": null,
+        "fade_in_frames": 10,
+        "fade_out_frames": 12,
+        "still_motion": {
+          "scale_from": 1,
+          "scale_to": 1.12,
+          "translate_x_from": 0,
+          "translate_x_to": 0,
+          "translate_y_from": 0.02,
+          "translate_y_to": -0.02,
+          "easing": "easeOut"
+        }
+      },
+      {
+        "sequence": 2,
+        "visual_treatment": "USE_EXISTING_ART",
+        "source_asset_ids": [
+          "img_c99892bd2a98"
+        ],
+        "shot_goal": "Visualize the extremity of his search -- renouncing the throne, sleeping in dirt, starving himself -- using the seated ascetic figure as the visual anchor the scene calls for.",
+        "frame_composition": "Crop to story_art_region (x:54-943, y:457-702), centering the seated cross-legged figure beneath the heart-leaved tree with the empty alms bowl beside him, removing the status bar/cricket banner and progress indicator per ui_regions.",
+        "motion_plan": "Gentle, slow zoom drifting inward toward the seated figure per the asset's suggested_motion ('slow zoom into the seated figure's face'), kept measured and unhurried to match the slow, weighted narration pacing note for this passage; movement stays understated so the figure reads as an ongoing state of searching rather than a single instant.",
+        "text_overlay": "",
+        "source_support": "Uses img_c99892bd2a98's seated meditating figure and empty bowl (figure_descriptions, visual_subjects) as the anchor image the scene's visual_intent explicitly requests, even though the narration here describes the flight itself; motion follows the asset's own suggested slow zoom toward the figure.",
+        "video_motion_intent": "",
+        "video_candidate_rank": null,
+        "fade_in_frames": 12,
+        "fade_out_frames": 8,
+        "still_motion": {
+          "scale_from": 1,
+          "scale_to": 1.15,
+          "translate_x_from": 0,
+          "translate_x_to": 0,
+          "translate_y_from": 0.04,
+          "translate_y_to": 0,
+          "easing": "ease"
+        }
+      },
+      {
+        "sequence": 3,
+        "visual_treatment": "SUBTLE_ANIMATION",
+        "source_asset_ids": [
+          "img_c99892bd2a98"
+        ],
+        "shot_goal": "Land the reversal -- his extremes failed, and the realization that everyone suffers becomes the Buddha's first teaching -- as a calm, weighty revelation.",
+        "frame_composition": "Same story_art_region crop as the previous shot (seated figure under the heart-leaved tree, empty bowl beside him), held slightly wider and steadier to let stillness read as the emotional center of the frame.",
+        "motion_plan": "Hushed, continuous drift: heart-shaped leaves settle slowly per the asset's own suggested 'gentle falling-leaves animation,' paired with a near-imperceptible push toward the figure, timed to hold through the flat 'It handed him nothing' beat before easing very slightly further as 'everyone suffers' resolves.",
+        "text_overlay": "It handed him nothing",
+        "source_support": "Reuses img_c99892bd2a98's seated figure and its own suggested_motion (falling leaves, slow zoom toward the figure) to carry the revelation without inventing new imagery; the tree's heart-shaped leaves are flagged in the asset's uncertainties as stylized rather than a literal Bodhi tree, so no botanical specificity is asserted.",
+        "video_motion_intent": "Gentle downward drift of the heart-shaped leaves falling from the canopy around the seated figure, with an almost imperceptible push-in toward him as stillness settles after 'it handed him nothing' -- slow, hushed motion that lets the revelation breathe rather than distracting from it.",
+        "video_candidate_rank": 2,
+        "fade_in_frames": 8,
+        "fade_out_frames": 14,
+        "still_motion": {
+          "scale_from": 1.05,
+          "scale_to": 1.18,
+          "translate_x_from": -0.02,
+          "translate_x_to": 0.02,
+          "translate_y_from": null,
+          "translate_y_to": null,
+          "easing": "linear"
+        }
+      },
+      {
+        "sequence": 4,
+        "visual_treatment": "USE_EXISTING_ART",
+        "source_asset_ids": [
+          "img_7e9bbe598ea9"
+        ],
+        "shot_goal": "Shift the lesson to a relatable modern register by showing Manson's unused guitar and idle props as evidence of dreaming without practicing.",
+        "frame_composition": "Crop to story_art_region (x:54-943, y:435-685) per CROP_TO_TEXT_AND_ART, framing the top-down flat-lay of guitar, alarm clock, spilled coffee mug, and notebook on the wood floor, with the standing figure kept at the frame's edge (~628-834, 410-540) beneath the diagonal orange spotlight band.",
+        "motion_plan": "Slow horizontal pan across the flat-lay per the asset's own suggested_motion ('slow pan across the flat-lay objects'), moving across guitar, clock, spilled mug and notebook, with a slight additional push toward the guitar as the visual focal point of 'never practiced.'",
+        "text_overlay": "loving the fame, never the practice",
+        "source_support": "Grounded in img_7e9bbe598ea9's visual_subjects (guitar, clock, spilled mug, notebook, standing figure) and its suggested_motion (slow pan, subtle zoom on the guitar); the figure is not asserted to be a literal portrait of the author, consistent with the asset's own uncertainty about whether 'Manson' refers to a specific confirmed public figure.",
+        "video_motion_intent": "Subtle wisps of steam rising from the spilled coffee and a faint ticking motion on the clock hands, with dust motes drifting through the diagonal spotlight -- small signs of time passing while the guitar sits untouched, reinforcing 'never practiced' through environmental motion rather than a single dramatic action.",
+        "video_candidate_rank": 4,
+        "fade_in_frames": 10,
+        "fade_out_frames": 6,
+        "still_motion": {
+          "scale_from": 1,
+          "scale_to": 1.06,
+          "translate_x_from": -0.05,
+          "translate_x_to": 0.05,
+          "translate_y_from": null,
+          "translate_y_to": null,
+          "easing": "linear"
+        }
+      },
+      {
+        "sequence": 5,
+        "visual_treatment": "USE_EXISTING_ART",
+        "source_asset_ids": [
+          "img_d5101d6cfa1e"
+        ],
+        "shot_goal": "Crystallize the core principle -- everyone wants the reward, few want the struggle -- by contrasting the solitary practicing figure with the empty chairs of an absent audience.",
+        "frame_composition": "Crop to story_art_region (x:54-943, y:490-700), centering the seated figure playing acoustic guitar under the warm floor lamp (~357-672, 490-660), with rows of empty folding chairs visible at either side, removing the 'Drag or tap the card' UI instruction and status bar per ui_regions.",
+        "motion_plan": "Slow zoom in on the figure playing guitar per the asset's own suggested_motion, paired with a gentle warm glow/flicker from the floor lamp; frame stays tight enough that the empty chairs remain a felt presence at the edges rather than the focal point.",
+        "text_overlay": "Few want the struggle that earns it",
+        "source_support": "Grounded in img_d5101d6cfa1e's visual_subjects (figure playing guitar, floor lamp, empty folding chairs) and its own suggested_motion ('slow zoom on figure playing guitar,' 'warm light flicker/glow animation from the lamp'), which together stage the solitary grind the narration names.",
+        "video_motion_intent": "The figure's fingers actually moving in a slow strum across the guitar strings, with the floor lamp's warm light gently breathing/flickering -- real motion of solitary practice against the empty chairs sells 'the struggle that earns it' far more than a static pose, and the narration here is short and punchy enough for a brief generated clip to carry it.",
+        "video_candidate_rank": 1,
+        "fade_in_frames": 6,
+        "fade_out_frames": 10,
+        "still_motion": {
+          "scale_from": 1,
+          "scale_to": 1.1,
+          "translate_x_from": 0,
+          "translate_x_to": 0,
+          "translate_y_from": 0.02,
+          "translate_y_to": -0.02,
+          "easing": "easeOut"
+        }
+      },
+      {
+        "sequence": 6,
+        "visual_treatment": "MIXED",
+        "source_asset_ids": [
+          "img_d5101d6cfa1e",
+          "img_189adab8f683"
+        ],
+        "shot_goal": "Close on a reflective note, letting the practicing figure's quiet dedication and the closing line hand the idea back to the viewer.",
+        "frame_composition": "Open on the same story_art_region as the previous shot (figure playing guitar under the lamp amid empty chairs) but framed slightly wider than shot 5's tight push, then settle the closing narration as text_overlay layered over the warm-lit scene, echoing the wording of img_189adab8f683's prominent_quote rather than reproducing that asset's plain white card, which its own production notes flag as having no illustrative art and needing generation to use visually.",
+        "motion_plan": "A slow, gentle zoom-out/pull-back from the practicing figure, widening to reveal more of the empty room and chairs so the frame has room to breathe as the final line lands; text fades in softly over the closing seconds.",
+        "text_overlay": "Happiness isn't a finish line",
+        "source_support": "Primary visual is grounded in img_d5101d6cfa1e's practicing-figure illustration and suggested_motion, deliberately reused to bookend the Manson thread; img_189adab8f683 contributes only its verified prominent_quote wording (which matches the narration's closing line), since the asset itself states it has no story_art_region and recommends NEEDS_GENERATION rather than direct visual reuse.",
+        "video_motion_intent": "A slow, unhurried pull-back/dolly-out from the practicing figure under the lamp, widening to reveal the empty chairs and quiet room, as if giving the viewer literal room to sit with the closing thought -- minimal, gentle camera movement matching the slowed, reflective pace of the final line.",
+        "video_candidate_rank": 3,
+        "fade_in_frames": 10,
+        "fade_out_frames": 20,
+        "still_motion": {
+          "scale_from": 1.12,
+          "scale_to": 1,
+          "translate_x_from": 0,
+          "translate_x_to": 0,
+          "translate_y_from": -0.02,
+          "translate_y_to": 0,
+          "easing": "easeOut"
+        }
+      }
+    ],
+    "quality_review": {
+      "verdict": "APPROVE",
+      "ready_for_generation": true,
+      "confidence": 0.9,
+      "scores": {
+        "source_fidelity": 9,
+        "generation_mode_appropriateness": 9,
+        "visual_coherence": 9,
+        "narrative_alignment": 9,
+        "internal_consistency": 9
+      }
+    }
+  },
+  "result": "{\"produced_by\":\"visual_agent\",\"overall_visual_style\":\"A warm, halftone-textured flat-illustration style throughout, carried directly from the source app's recurring bald cartoon figure and muted amber/teal/orange palette; every shot crops out app chrome, the status bar, and the unrelated cricket-score banner so only the illustrated story world and narration-timed text overlays remain. Camera language stays slow, deliberate, and hushed -- soft push-ins, gentle horizontal pans, and unhurried pull-backs -- mirroring the narrator's calm, contemplative pacing, with motion intensity rising only slightly on the two human-scale \\\"practice\\\" scenes to underline physical, earned effort versus the stillness of realization.\",\"shots\":[{\"sequence\":1,\"visual_treatment\":\"USE_EXISTING_ART\",\"source_asset_ids\":[\"img_87a825c5a858\"],\"shot_goal\":\"Establish the prince's sheltered isolation amid abundance to open the hook with quiet foreboding.\",\"frame_composition\":\"Crop to the story_art_region (x:54-943, y:457-702) per the asset's recommended CROP_TO_TEXT_AND_ART strategy, cutting out the status bar/cricket banner, header, progress bar, and nav arrows per its listed ui_regions; vertical reframe centers the bald prince figure (~433-563, 540-685) with silhouetted servants and trays flanking him under the arched, vine-draped colonnade.\",\"motion_plan\":\"Slow, steady zoom-in toward the centered prince per the asset's own suggested_motion ('slow zoom-in on the prince figure'), tightening gradually over the shot so the servants and archways recede toward the frame edges, visually reinforcing isolation despite abundance; a single smooth push, no separate parallax layers.\",\"text_overlay\":\"\",\"source_support\":\"Grounded in img_87a825c5a858's story_art_region and figure_descriptions (centered bald prince, silhouetted servants with trays, ornate amber-lit courtyard); the fallback motion follows the asset's own suggested_motion, and cropping follows its visual_cleanup_needed notes about removing the cricket banner and app chrome.\",\"video_motion_intent\":\"\",\"video_candidate_rank\":null,\"fade_in_frames\":10,\"fade_out_frames\":12,\"still_motion\":{\"scale_from\":1,\"scale_to\":1.12,\"translate_x_from\":0,\"translate_x_to\":0,\"translate_y_from\":0.02,\"translate_y_to\":-0.02,\"easing\":\"easeOut\"}},{\"sequence\":2,\"visual_treatment\":\"USE_EXISTING_ART\",\"source_asset_ids\":[\"img_c99892bd2a98\"],\"shot_goal\":\"Visualize the extremity of his search -- renouncing the throne, sleeping in dirt, starving himself -- using the seated ascetic figure as the visual anchor the scene calls for.\",\"frame_composition\":\"Crop to story_art_region (x:54-943, y:457-702), centering the seated cross-legged figure beneath the heart-leaved tree with the empty alms bowl beside him, removing the status bar/cricket banner and progress indicator per ui_regions.\",\"motion_plan\":\"Gentle, slow zoom drifting inward toward the seated figure per the asset's suggested_motion ('slow zoom into the seated figure's face'), kept measured and unhurried to match the slow, weighted narration pacing note for this passage; movement stays understated so the figure reads as an ongoing state of searching rather than a single instant.\",\"text_overlay\":\"\",\"source_support\":\"Uses img_c99892bd2a98's seated meditating figure and empty bowl (figure_descriptions, visual_subjects) as the anchor image the scene's visual_intent explicitly requests, even though the narration here describes the flight itself; motion follows the asset's own suggested slow zoom toward the figure.\",\"video_motion_intent\":\"\",\"video_candidate_rank\":null,\"fade_in_frames\":12,\"fade_out_frames\":8,\"still_motion\":{\"scale_from\":1,\"scale_to\":1.15,\"translate_x_from\":0,\"translate_x_to\":0,\"translate_y_from\":0.04,\"translate_y_to\":0,\"easing\":\"ease\"}},{\"sequence\":3,\"visual_treatment\":\"SUBTLE_ANIMATION\",\"source_asset_ids\":[\"img_c99892bd2a98\"],\"shot_goal\":\"Land the reversal -- his extremes failed, and the realization that everyone suffers becomes the Buddha's first teaching -- as a calm, weighty revelation.\",\"frame_composition\":\"Same story_art_region crop as the previous shot (seated figure under the heart-leaved tree, empty bowl beside him), held slightly wider and steadier to let stillness read as the emotional center of the frame.\",\"motion_plan\":\"Hushed, continuous drift: heart-shaped leaves settle slowly per the asset's own suggested 'gentle falling-leaves animation,' paired with a near-imperceptible push toward the figure, timed to hold through the flat 'It handed him nothing' beat before easing very slightly further as 'everyone suffers' resolves.\",\"text_overlay\":\"It handed him nothing\",\"source_support\":\"Reuses img_c99892bd2a98's seated figure and its own suggested_motion (falling leaves, slow zoom toward the figure) to carry the revelation without inventing new imagery; the tree's heart-shaped leaves are flagged in the asset's uncertainties as stylized rather than a literal Bodhi tree, so no botanical specificity is asserted.\",\"video_motion_intent\":\"Gentle downward drift of the heart-shaped leaves falling from the canopy around the seated figure, with an almost imperceptible push-in toward him as stillness settles after 'it handed him nothing' -- slow, hushed motion that lets the revelation breathe rather than distracting from it.\",\"video_candidate_rank\":2,\"fade_in_frames\":8,\"fade_out_frames\":14,\"still_motion\":{\"scale_from\":1.05,\"scale_to\":1.18,\"translate_x_from\":-0.02,\"translate_x_to\":0.02,\"translate_y_from\":null,\"translate_y_to\":null,\"easing\":\"linear\"}},{\"sequence\":4,\"visual_treatment\":\"USE_EXISTING_ART\",\"source_asset_ids\":[\"img_7e9bbe598ea9\"],\"shot_goal\":\"Shift the lesson to a relatable modern register by showing Manson's unused guitar and idle props as evidence of dreaming without practicing.\",\"frame_composition\":\"Crop to story_art_region (x:54-943, y:435-685) per CROP_TO_TEXT_AND_ART, framing the top-down flat-lay of guitar, alarm clock, spilled coffee mug, and notebook on the wood floor, with the standing figure kept at the frame's edge (~628-834, 410-540) beneath the diagonal orange spotlight band.\",\"motion_plan\":\"Slow horizontal pan across the flat-lay per the asset's own suggested_motion ('slow pan across the flat-lay objects'), moving across guitar, clock, spilled mug and notebook, with a slight additional push toward the guitar as the visual focal point of 'never practiced.'\",\"text_overlay\":\"loving the fame, never the practice\",\"source_support\":\"Grounded in img_7e9bbe598ea9's visual_subjects (guitar, clock, spilled mug, notebook, standing figure) and its suggested_motion (slow pan, subtle zoom on the guitar); the figure is not asserted to be a literal portrait of the author, consistent with the asset's own uncertainty about whether 'Manson' refers to a specific confirmed public figure.\",\"video_motion_intent\":\"Subtle wisps of steam rising from the spilled coffee and a faint ticking motion on the clock hands, with dust motes drifting through the diagonal spotlight -- small signs of time passing while the guitar sits untouched, reinforcing 'never practiced' through environmental motion rather than a single dramatic action.\",\"video_candidate_rank\":4,\"fade_in_frames\":10,\"fade_out_frames\":6,\"still_motion\":{\"scale_from\":1,\"scale_to\":1.06,\"translate_x_from\":-0.05,\"translate_x_to\":0.05,\"translate_y_from\":null,\"translate_y_to\":null,\"easing\":\"linear\"}},{\"sequence\":5,\"visual_treatment\":\"USE_EXISTING_ART\",\"source_asset_ids\":[\"img_d5101d6cfa1e\"],\"shot_goal\":\"Crystallize the core principle -- everyone wants the reward, few want the struggle -- by contrasting the solitary practicing figure with the empty chairs of an absent audience.\",\"frame_composition\":\"Crop to story_art_region (x:54-943, y:490-700), centering the seated figure playing acoustic guitar under the warm floor lamp (~357-672, 490-660), with rows of empty folding chairs visible at either side, removing the 'Drag or tap the card' UI instruction and status bar per ui_regions.\",\"motion_plan\":\"Slow zoom in on the figure playing guitar per the asset's own suggested_motion, paired with a gentle warm glow/flicker from the floor lamp; frame stays tight enough that the empty chairs remain a felt presence at the edges rather than the focal point.\",\"text_overlay\":\"Few want the struggle that earns it\",\"source_support\":\"Grounded in img_d5101d6cfa1e's visual_subjects (figure playing guitar, floor lamp, empty folding chairs) and its own suggested_motion ('slow zoom on figure playing guitar,' 'warm light flicker/glow animation from the lamp'), which together stage the solitary grind the narration names.\",\"video_motion_intent\":\"The figure's fingers actually moving in a slow strum across the guitar strings, with the floor lamp's warm light gently breathing/flickering -- real motion of solitary practice against the empty chairs sells 'the struggle that earns it' far more than a static pose, and the narration here is short and punchy enough for a brief generated clip to carry it.\",\"video_candidate_rank\":1,\"fade_in_frames\":6,\"fade_out_frames\":10,\"still_motion\":{\"scale_from\":1,\"scale_to\":1.1,\"translate_x_from\":0,\"translate_x_to\":0,\"translate_y_from\":0.02,\"translate_y_to\":-0.02,\"easing\":\"easeOut\"}},{\"sequence\":6,\"visual_treatment\":\"MIXED\",\"source_asset_ids\":[\"img_d5101d6cfa1e\",\"img_189adab8f683\"],\"shot_goal\":\"Close on a reflective note, letting the practicing figure's quiet dedication and the closing line hand the idea back to the viewer.\",\"frame_composition\":\"Open on the same story_art_region as the previous shot (figure playing guitar under the lamp amid empty chairs) but framed slightly wider than shot 5's tight push, then settle the closing narration as text_overlay layered over the warm-lit scene, echoing the wording of img_189adab8f683's prominent_quote rather than reproducing that asset's plain white card, which its own production notes flag as having no illustrative art and needing generation to use visually.\",\"motion_plan\":\"A slow, gentle zoom-out/pull-back from the practicing figure, widening to reveal more of the empty room and chairs so the frame has room to breathe as the final line lands; text fades in softly over the closing seconds.\",\"text_overlay\":\"Happiness isn't a finish line\",\"source_support\":\"Primary visual is grounded in img_d5101d6cfa1e's practicing-figure illustration and suggested_motion, deliberately reused to bookend the Manson thread; img_189adab8f683 contributes only its verified prominent_quote wording (which matches the narration's closing line), since the asset itself states it has no story_art_region and recommends NEEDS_GENERATION rather than direct visual reuse.\",\"video_motion_intent\":\"A slow, unhurried pull-back/dolly-out from the practicing figure under the lamp, widening to reveal the empty chairs and quiet room, as if giving the viewer literal room to sit with the closing thought -- minimal, gentle camera movement matching the slowed, reflective pace of the final line.\",\"video_candidate_rank\":3,\"fade_in_frames\":10,\"fade_out_frames\":20,\"still_motion\":{\"scale_from\":1.12,\"scale_to\":1,\"translate_x_from\":0,\"translate_x_to\":0,\"translate_y_from\":-0.02,\"translate_y_to\":0,\"easing\":\"easeOut\"}}],\"quality_review\":{\"verdict\":\"APPROVE\",\"ready_for_generation\":true,\"confidence\":0.9,\"scores\":{\"source_fidelity\":9,\"generation_mode_appropriateness\":9,\"visual_coherence\":9,\"narrative_alignment\":9,\"internal_consistency\":9}}}",
+  "subtype": "success",
+  "errors": null
+}

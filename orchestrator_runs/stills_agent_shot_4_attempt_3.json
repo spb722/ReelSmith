@@ -1,0 +1,27 @@
+{
+  "structured_output": {
+    "produced_by": "stills_agent",
+    "status": "SUCCESS",
+    "shot_sequence": 4,
+    "generation_mode": "STILL",
+    "shot_fingerprint": "ae84ddb5a66d096de6ab1892478dd9bd2e6ee86f560c3218d04e8585d9a8429f",
+    "result": {
+      "produced_by": "still_tool",
+      "shot_sequence": 4,
+      "shot_fingerprint": "ae84ddb5a66d096de6ab1892478dd9bd2e6ee86f560c3218d04e8585d9a8429f",
+      "source_asset_id": "img_7e9bbe598ea9",
+      "local_image_path": "generated/stills/shot_04.png",
+      "image_sha256": "b463611fddceb79cd97ebb5e54ee35a8d3a8579ede7a681edc99b94c26240338",
+      "model": "gemini-3.1-flash-image",
+      "approved": true,
+      "qa_summary": "Verified exactly one instance of each focal element: one electric guitar lying diagonally across the wood-plank floor, one alarm clock, one spilled coffee mug with a single coffee ring/splash stain, one closed notebook, and one standing cartoon figure (bald, blue sweater) looking down at the objects from the frame's edge -- the duplicate-mug defect from the prior attempt is resolved. Top-down flat-lay composition with diagonal orange/blue light band is preserved, matching the shot's frame_composition and the source asset's story_art_region. Art style remains flat, illustrative/cel-shaded (not photorealistic), and no app UI, status bars, buttons, visible text, letters, logos, or watermarks are present anywhere in frame. The lower portion of the frame is clean open floor with a smooth color gradient and no clutter, leaving adequate negative space for Remotion subtitle/typography overlay without occluding the props or figure.",
+      "cost_usd": 0.04
+    },
+    "failure": null
+  },
+  "result": "{\"produced_by\":\"stills_agent\",\"generation_mode\":\"STILL\",\"status\":\"SUCCESS\",\"shot_sequence\":4,\"shot_fingerprint\":\"61b6e6bbcc5bf9ed1f09c935db28b916b7c1de1a07ae36f326ced29b6a0a824b\",\"result\":{\"produced_by\":\"still_tool\",\"shot_sequence\":4,\"shot_fingerprint\":\"61b6e6bbcc5bf9ed1f09c935db28b916b7c1de1a07ae36f326ced29b6a0a824b\",\"source_asset_id\":\"img_7e9bbe598ea9\",\"local_image_path\":\"generated/stills/shot_04.png\",\"image_sha256\":\"b463611fddceb79cd97ebb5e54ee35a8d3a8579ede7a681edc99b94c26240338\",\"model\":\"gemini-3.1-flash-image\",\"approved\":true,\"cost_usd\":0.04,\"qa_summary\":\"Verified exactly one instance of each focal element: one electric guitar lying diagonally across the wood-plank floor, one alarm clock, one spilled coffee mug with a single coffee ring/splash stain, one closed notebook, and one standing cartoon figure (bald, blue sweater) looking down at the objects from the frame's edge -- the duplicate-mug defect from the prior attempt is resolved. Top-down flat-lay composition with diagonal orange/blue light band is preserved, matching the shot's frame_composition and the source asset's story_art_region. Art style remains flat, illustrative/cel-shaded (not photorealistic), and no app UI, status bars, buttons, visible text, letters, logos, or watermarks are present anywhere in frame. The lower portion of the frame is clean open floor with a smooth color gradient and no clutter, leaving adequate negative space for Remotion subtitle/typography overlay without occluding the props or figure.\"},\"failure\":null}",
+  "subtype": "success",
+  "errors": null,
+  "claude_cost_usd": 0.09051139999999999,
+  "paid_tool_cost_usd": 0.04
+}

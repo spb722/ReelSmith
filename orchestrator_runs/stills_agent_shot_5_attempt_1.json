@@ -1,0 +1,27 @@
+{
+  "structured_output": {
+    "produced_by": "stills_agent",
+    "status": "SUCCESS",
+    "shot_sequence": 5,
+    "generation_mode": "STILL",
+    "shot_fingerprint": "13dedcbd9a843d3fed2eaaffb7ba69f4e0de8544d568bfe1562d21d32b89a89e",
+    "result": {
+      "produced_by": "still_tool",
+      "shot_sequence": 5,
+      "shot_fingerprint": "13dedcbd9a843d3fed2eaaffb7ba69f4e0de8544d568bfe1562d21d32b89a89e",
+      "source_asset_id": "img_d5101d6cfa1e",
+      "local_image_path": "generated/stills/shot_05.png",
+      "image_sha256": "310e27a66d5047cf23eb0430a355dbf7a6b4ee9de0881e0b46c804732ce3d762",
+      "model": "gemini-3.1-flash-image",
+      "approved": true,
+      "qa_summary": "Verified exactly one instance of the focal subject: a single bald cartoon figure seated on a stool playing acoustic guitar, illuminated by one warm floor-lamp spotlight pool. Rows of empty folding chairs are clearly visible flanking the figure on both left and right sides, visually reinforcing the absence of an audience per the shot goal. No duplication of the figure, lamp, or any scene element anywhere in frame. Illustration style is fully consistent with the source asset's flat cartoon/halftone aesthetic -- no drift toward photorealism. No app UI chrome, status bar, buttons, logos, or watermarks are present; the only marks are small illustrated non-legible scribble squiggles on the crumpled floor papers (part of the original art, not real readable text/letters). Composition matches the requested frame_composition (story_art_region crop, solitary figure centered with empty chairs at edges) and leaves a large clean blank teal region across the top third of the frame for later Remotion subtitle/typography placement without occluding the art.",
+      "cost_usd": 0.04
+    },
+    "failure": null
+  },
+  "result": "{\"produced_by\":\"stills_agent\",\"status\":\"SUCCESS\",\"shot_sequence\":5,\"shot_fingerprint\":\"13dedcbd9a843d3fed2eaaffb7ba69f4e0de8544d568bfe1562d21d32b89a89e\",\"generation_mode\":\"STILL\",\"result\":{\"produced_by\":\"still_tool\",\"shot_sequence\":5,\"shot_fingerprint\":\"13dedcbd9a843d3fed2eaaffb7ba69f4e0de8544d568bfe1562d21d32b89a89e\",\"source_asset_id\":\"img_d5101d6cfa1e\",\"local_image_path\":\"generated/stills/shot_05.png\",\"image_sha256\":\"310e27a66d5047cf23eb0430a355dbf7a6b4ee9de0881e0b46c804732ce3d762\",\"model\":\"gemini-3.1-flash-image\",\"approved\":true,\"qa_summary\":\"Verified exactly one instance of the focal subject: a single bald cartoon figure seated on a stool playing acoustic guitar, illuminated by one warm floor-lamp spotlight pool. Rows of empty folding chairs are clearly visible flanking the figure on both left and right sides, visually reinforcing the absence of an audience per the shot goal. No duplication of the figure, lamp, or any scene element anywhere in frame. Illustration style is fully consistent with the source asset's flat cartoon/halftone aesthetic -- no drift toward photorealism. No app UI chrome, status bar, buttons, logos, or watermarks are present; the only marks are small illustrated non-legible scribble squiggles on the crumpled floor papers (part of the original art, not real readable text/letters). Composition matches the requested frame_composition (story_art_region crop, solitary figure centered with empty chairs at edges) and leaves a large clean blank teal region across the top third of the frame for later Remotion subtitle/typography placement without occluding the art.\",\"cost_usd\":0.04}}",
+  "subtype": "success",
+  "errors": null,
+  "claude_cost_usd": 0.0682078,
+  "paid_tool_cost_usd": 0.04
+}

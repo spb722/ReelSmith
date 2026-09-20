@@ -1,0 +1,8 @@
+{
+  "structured_output": null,
+  "result": "RuntimeError: word_timing alignment is not accurate enough.\nExact match ratio: 0.972",
+  "subtype": "error",
+  "errors": [
+    "RuntimeError: word_timing alignment is not accurate enough.\nExact match ratio: 0.972"
+  ]
+}

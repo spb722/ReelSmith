@@ -1,8 +1,13 @@
 {
-  "budget_spent_usd": 0.570431,
+  "budget_spent_usd": 3.8287648000000005,
   "iteration_counts": {
-    "asset_analyst": 1,
-    "story_agent": 4
+    "visual_agent": 1,
+    "veo_agent_shot_5": 1,
+    "veo_agent_shot_6": 3,
+    "stills_agent_shot_1": 1,
+    "stills_agent_shot_2": 1,
+    "stills_agent_shot_3": 1,
+    "stills_agent_shot_4": 1
   },
-  "session_id": "1f5adacc-b82a-4635-8129-97223b41e2a9"
+  "session_id": "7e7604c5-8196-4c14-89d4-889812163ffc"
 }

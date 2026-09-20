@@ -1,8 +1,0 @@
-SUCCESS
-Finished: 2026-09-14T09:02:56.432985+00:00
-Model: gemini-2.5-flash
-Words: 107
-Duration: 46.0s
-Effective WPM: 139.6
-Output: metadata/revised_story_plan.json
-Readable output: metadata/revised_story_plan.txt

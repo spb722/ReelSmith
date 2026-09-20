@@ -1,0 +1,8 @@
+{
+  "stage_id": "delivery",
+  "failed_contract_name": "TimelineConverter",
+  "reason": "Shot 2 does not start where the previous shot ended (gap or overlap): previous end 7.21, this start 7.64.",
+  "attempt_count": 1,
+  "timestamp": "2026-09-18T14:24:34.805585+00:00",
+  "partial_artifact_paths": []
+}

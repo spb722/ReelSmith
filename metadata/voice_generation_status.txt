@@ -1,7 +1,0 @@
-SUCCESS
-Finished: 2026-09-14T14:28:30.705696+00:00
-Model: gemini-3.1-flash-tts-preview
-Voice: Gacrux
-Output: audio/narration.wav
-Actual duration: 52.440s
-Actual effective WPM: 116.7

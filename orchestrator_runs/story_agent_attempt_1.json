@@ -1,6 +1,162 @@
 {
-  "structured_output": null,
-  "result": "You've hit your session limit · resets 11pm (Asia/Calcutta)",
+  "structured_output": {
+    "produced_by": "story_agent",
+    "story_title": "Choose Your Struggle",
+    "core_thesis": "Fulfillment doesn't come from escaping pain but from consciously choosing which struggle is worth carrying.",
+    "narrative_strategy": "Open with the sheltered prince who becomes the Buddha as a concrete, ancient example of suffering's inevitability, reveal his insight as a turning point, then pair it with a smaller, relatable modern anecdote (a writer who dreamed of rock stardom but never practiced) to show the same law of choosing struggle at human scale, closing on a reflective line that hands the idea back to the viewer.",
+    "target_duration_seconds": 43,
+    "target_word_count": 109,
+    "hook": "Twenty-five hundred years ago, a prince lived behind palace walls, hidden from all suffering.",
+    "narration_script": "Twenty-five hundred years ago, a prince lived behind palace walls, hidden from all suffering. When he finally saw it, he ran — gave up the throne, slept in the dirt, starved himself, sure that pain itself would hand him meaning. It handed him nothing. Under a tree, he saw the truth: rich or poor, everyone suffers. That became the Buddha's first teaching. Centuries later, a writer named Manson spent half his life dreaming of rock stardom, loving the fame, never the practice. Everyone wants the reward. Few want the struggle that earns it. Happiness isn't a finish line — it grows from the problems you actually choose to solve.",
+    "voice_direction": {
+      "persona": "A calm, thoughtful narrator sharing a piece of hard-won wisdom, not selling anything",
+      "tone": [
+        "contemplative",
+        "grounded",
+        "quietly intense",
+        "sincere"
+      ],
+      "pace_wpm": 150,
+      "delivery_notes": [
+        "Start slow and measured on the palace image to build stillness before tension",
+        "Let 'It handed him nothing' land as a flat, weighty beat with a brief pause before and after",
+        "Shift energy slightly warmer and more conversational on the Manson anecdote to signal relatability",
+        "Slow down again on the final line so the reflection breathes"
+      ],
+      "emphasis_phrases": [
+        "hidden from all suffering",
+        "It handed him nothing",
+        "everyone suffers",
+        "loving the fame, never the practice",
+        "Few want the struggle that earns it",
+        "Happiness isn't a finish line"
+      ],
+      "pause_after_phrases": [
+        "It handed him nothing.",
+        "That became the Buddha's first teaching.",
+        "Everyone wants the reward."
+      ]
+    },
+    "story_arc": {
+      "opening_tension": "A prince raised in total comfort has never encountered suffering, setting up an inevitable collision with reality.",
+      "human_or_concrete_story": "The prince flees the palace, tries to out-suffer suffering through extreme asceticism, and fails to find meaning in either indulgence or deprivation.",
+      "reversal_or_reveal": "Sitting under a tree, he realizes suffering is universal regardless of wealth or poverty — this becomes the Buddha's first teaching, and echoes in a modern writer who wanted the reward of stardom without the daily grind of practice.",
+      "principle_explanation": "Fulfillment doesn't come from avoiding pain or reaching some reward at a finish line; it comes from choosing which daily struggle you're willing to embrace and grow to love.",
+      "viewer_reflection": "The closing line turns the lesson outward, leaving the viewer to consider which problems they're actually choosing to solve in their own life."
+    },
+    "scenes": [
+      {
+        "sequence": 1,
+        "role": "HOOK",
+        "estimated_duration_seconds": 5.6,
+        "narration": "Twenty-five hundred years ago, a prince lived behind palace walls, hidden from all suffering.",
+        "source_asset_ids": [
+          "img_87a825c5a858"
+        ],
+        "source_support": "Heading 'Choose Your Struggle' and body text: 'To understand why suffering is inevitable, you have to look back 2,500 years to a young prince in Ancient India. Born into a luxury palace where every single desire was met, the prince was kept isolated behind high walls so he would never see sickness, poverty, or death.'",
+        "visual_intent": "Open on the illustrated palace courtyard with the lone prince surrounded by servants, emphasizing isolation amid abundance.",
+        "suggested_visual_treatment": "USE_EXISTING_ART",
+        "impact_text": "",
+        "emotional_goal": "Create quiet curiosity and foreboding about a sheltered life about to be disrupted."
+      },
+      {
+        "sequence": 2,
+        "role": "BUILDUP",
+        "estimated_duration_seconds": 10,
+        "narration": "When he finally saw it, he ran — gave up the throne, slept in the dirt, starved himself, sure that pain itself would hand him meaning.",
+        "source_asset_ids": [
+          "img_c99892bd2a98"
+        ],
+        "source_support": "Body text: 'So he ran. He gave up the throne, slept in the dirt, and starved himself for years, sure that suffering would hand him the meaning he craved.'",
+        "visual_intent": "Show the seated meditating figure beneath the tree as the visual anchor for his renunciation and search.",
+        "suggested_visual_treatment": "USE_EXISTING_ART",
+        "impact_text": "",
+        "emotional_goal": "Build tension around his desperate, extreme search for meaning."
+      },
+      {
+        "sequence": 3,
+        "role": "REVEAL",
+        "estimated_duration_seconds": 8.8,
+        "narration": "It handed him nothing. Under a tree, he saw the truth: rich or poor, everyone suffers. That became the Buddha's first teaching.",
+        "source_asset_ids": [
+          "img_c99892bd2a98"
+        ],
+        "source_support": "Body text: 'It handed him nothing. Sitting under a tree, he finally saw what he had missed all along: rich or poor, indulgent or starving, everyone suffers. He would become the Buddha, and this was his very first teaching.'",
+        "visual_intent": "Hold on the seated figure under the heart-leaved tree with the empty bowl beside him, the moment of realization.",
+        "suggested_visual_treatment": "SUBTLE_ANIMATION",
+        "impact_text": "It handed him nothing",
+        "emotional_goal": "Land the reversal as a calm, weighty revelation rather than a dramatic twist."
+      },
+      {
+        "sequence": 4,
+        "role": "HUMAN_STORY",
+        "estimated_duration_seconds": 8,
+        "narration": "Centuries later, a writer named Manson spent half his life dreaming of rock stardom, loving the fame, never the practice.",
+        "source_asset_ids": [
+          "img_7e9bbe598ea9"
+        ],
+        "source_support": "Body text: 'For half his life, Manson dreamed of being a rock star: the crowds, the noise, the fame. But he never practiced. He loved the daydream of success, not the daily grind of guitar practice.'",
+        "visual_intent": "Cut to the flat-lay of the unused guitar, spilled coffee, and idle clock, with the figure standing passively beside them.",
+        "suggested_visual_treatment": "USE_EXISTING_ART",
+        "impact_text": "loving the fame, never the practice",
+        "emotional_goal": "Shift the abstract lesson into something relatable and self-recognizable."
+      },
+      {
+        "sequence": 5,
+        "role": "EXPLANATION",
+        "estimated_duration_seconds": 4.4,
+        "narration": "Everyone wants the reward. Few want the struggle that earns it.",
+        "source_asset_ids": [
+          "img_d5101d6cfa1e"
+        ],
+        "source_support": "Body text: 'Everyone wants the reward, but far fewer want the struggle that earns it.'",
+        "visual_intent": "Show the figure practicing guitar alone under a lamp among empty chairs, contrasting desire for reward with the solitary grind.",
+        "suggested_visual_treatment": "USE_EXISTING_ART",
+        "impact_text": "Few want the struggle that earns it",
+        "emotional_goal": "Crystallize the core principle plainly and directly."
+      },
+      {
+        "sequence": 6,
+        "role": "REFLECTION",
+        "estimated_duration_seconds": 6,
+        "narration": "Happiness isn't a finish line — it grows from the problems you actually choose to solve.",
+        "source_asset_ids": [
+          "img_d5101d6cfa1e",
+          "img_189adab8f683"
+        ],
+        "source_support": "Body text: 'Happiness isn't waiting at a finish line where all your problems disappear. It grows out of the specific problems you actually enjoy solving.' Reinforced by summary card quote: 'Real fulfillment doesn't come from eliminating problems, but from choosing the specific set of problems you are willing to solve every day.'",
+        "visual_intent": "Close on the warm-lit practice scene or the summary quote card, letting the words sit as the final thought.",
+        "suggested_visual_treatment": "MIXED",
+        "impact_text": "Happiness isn't a finish line",
+        "emotional_goal": "Leave the viewer with a calm, reflective sense of ownership over their own struggle."
+      }
+    ],
+    "unused_assets": [],
+    "source_integrity_notes": [
+      "Every screenshot includes an unrelated cricket score notification banner ('Yet to bat 166/1 (24.2)') and app chrome (status bar, nav arrows, 'Continue' button); these were treated purely as UI noise and excluded from narration and visual intent.",
+      "The author's full name is only given as 'Manson' in the source text, with the analysis flagging uncertainty about whether this is Mark Manson; narration uses the source-safe generic phrasing 'a writer named Manson' rather than asserting an unverified full identity.",
+      "Body text describing 'It handed him nothing... rich or poor, indulgent or starving, everyone suffers' was condensed to 'rich or poor, everyone suffers' to keep spoken pacing natural while preserving the core claim.",
+      "The final summary/quote card (img_189adab8f683) has no illustrative art of its own; its text was used only to reinforce the closing line already drawn from img_d5101d6cfa1e's narrative slide, and it is paired as a secondary asset in the final scene rather than a standalone one.",
+      "The next-slide preview text visible faded at the bottom of several slides was ignored as it belongs to a different card than the one being described."
+    ],
+    "quality_review": {
+      "verdict": "APPROVE",
+      "ready_for_voice_generation": true,
+      "confidence": 0.91,
+      "scores": {
+        "source_fidelity": 9,
+        "hook_strength": 8,
+        "spoken_naturalness": 9,
+        "narrative_coherence": 9,
+        "voice_alignment": 9,
+        "pacing": 8,
+        "scene_structure": 9,
+        "visual_support": 9,
+        "internal_consistency": 9
+      }
+    }
+  },
+  "result": "{\"produced_by\":\"story_agent\",\"story_title\":\"Choose Your Struggle\",\"core_thesis\":\"Fulfillment doesn't come from escaping pain but from consciously choosing which struggle is worth carrying.\",\"narrative_strategy\":\"Open with the sheltered prince who becomes the Buddha as a concrete, ancient example of suffering's inevitability, reveal his insight as a turning point, then pair it with a smaller, relatable modern anecdote (a writer who dreamed of rock stardom but never practiced) to show the same law of choosing struggle at human scale, closing on a reflective line that hands the idea back to the viewer.\",\"target_duration_seconds\":43,\"target_word_count\":109,\"hook\":\"Twenty-five hundred years ago, a prince lived behind palace walls, hidden from all suffering.\",\"narration_script\":\"Twenty-five hundred years ago, a prince lived behind palace walls, hidden from all suffering. When he finally saw it, he ran — gave up the throne, slept in the dirt, starved himself, sure that pain itself would hand him meaning. It handed him nothing. Under a tree, he saw the truth: rich or poor, everyone suffers. That became the Buddha's first teaching. Centuries later, a writer named Manson spent half his life dreaming of rock stardom, loving the fame, never the practice. Everyone wants the reward. Few want the struggle that earns it. Happiness isn't a finish line — it grows from the problems you actually choose to solve.\",\"voice_direction\":{\"persona\":\"A calm, thoughtful narrator sharing a piece of hard-won wisdom, not selling anything\",\"tone\":[\"contemplative\",\"grounded\",\"quietly intense\",\"sincere\"],\"pace_wpm\":150,\"delivery_notes\":[\"Start slow and measured on the palace image to build stillness before tension\",\"Let 'It handed him nothing' land as a flat, weighty beat with a brief pause before and after\",\"Shift energy slightly warmer and more conversational on the Manson anecdote to signal relatability\",\"Slow down again on the final line so the reflection breathes\"],\"emphasis_phrases\":[\"hidden from all suffering\",\"It handed him nothing\",\"everyone suffers\",\"loving the fame, never the practice\",\"Few want the struggle that earns it\",\"Happiness isn't a finish line\"],\"pause_after_phrases\":[\"It handed him nothing.\",\"That became the Buddha's first teaching.\",\"Everyone wants the reward.\"]},\"story_arc\":{\"opening_tension\":\"A prince raised in total comfort has never encountered suffering, setting up an inevitable collision with reality.\",\"human_or_concrete_story\":\"The prince flees the palace, tries to out-suffer suffering through extreme asceticism, and fails to find meaning in either indulgence or deprivation.\",\"reversal_or_reveal\":\"Sitting under a tree, he realizes suffering is universal regardless of wealth or poverty — this becomes the Buddha's first teaching, and echoes in a modern writer who wanted the reward of stardom without the daily grind of practice.\",\"principle_explanation\":\"Fulfillment doesn't come from avoiding pain or reaching some reward at a finish line; it comes from choosing which daily struggle you're willing to embrace and grow to love.\",\"viewer_reflection\":\"The closing line turns the lesson outward, leaving the viewer to consider which problems they're actually choosing to solve in their own life.\"},\"scenes\":[{\"sequence\":1,\"role\":\"HOOK\",\"estimated_duration_seconds\":5.6,\"narration\":\"Twenty-five hundred years ago, a prince lived behind palace walls, hidden from all suffering.\",\"source_asset_ids\":[\"img_87a825c5a858\"],\"source_support\":\"Heading 'Choose Your Struggle' and body text: 'To understand why suffering is inevitable, you have to look back 2,500 years to a young prince in Ancient India. Born into a luxury palace where every single desire was met, the prince was kept isolated behind high walls so he would never see sickness, poverty, or death.'\",\"visual_intent\":\"Open on the illustrated palace courtyard with the lone prince surrounded by servants, emphasizing isolation amid abundance.\",\"suggested_visual_treatment\":\"USE_EXISTING_ART\",\"impact_text\":\"\",\"emotional_goal\":\"Create quiet curiosity and foreboding about a sheltered life about to be disrupted.\"},{\"sequence\":2,\"role\":\"BUILDUP\",\"estimated_duration_seconds\":10,\"narration\":\"When he finally saw it, he ran — gave up the throne, slept in the dirt, starved himself, sure that pain itself would hand him meaning.\",\"source_asset_ids\":[\"img_c99892bd2a98\"],\"source_support\":\"Body text: 'So he ran. He gave up the throne, slept in the dirt, and starved himself for years, sure that suffering would hand him the meaning he craved.'\",\"visual_intent\":\"Show the seated meditating figure beneath the tree as the visual anchor for his renunciation and search.\",\"suggested_visual_treatment\":\"USE_EXISTING_ART\",\"impact_text\":\"\",\"emotional_goal\":\"Build tension around his desperate, extreme search for meaning.\"},{\"sequence\":3,\"role\":\"REVEAL\",\"estimated_duration_seconds\":8.8,\"narration\":\"It handed him nothing. Under a tree, he saw the truth: rich or poor, everyone suffers. That became the Buddha's first teaching.\",\"source_asset_ids\":[\"img_c99892bd2a98\"],\"source_support\":\"Body text: 'It handed him nothing. Sitting under a tree, he finally saw what he had missed all along: rich or poor, indulgent or starving, everyone suffers. He would become the Buddha, and this was his very first teaching.'\",\"visual_intent\":\"Hold on the seated figure under the heart-leaved tree with the empty bowl beside him, the moment of realization.\",\"suggested_visual_treatment\":\"SUBTLE_ANIMATION\",\"impact_text\":\"It handed him nothing\",\"emotional_goal\":\"Land the reversal as a calm, weighty revelation rather than a dramatic twist.\"},{\"sequence\":4,\"role\":\"HUMAN_STORY\",\"estimated_duration_seconds\":8,\"narration\":\"Centuries later, a writer named Manson spent half his life dreaming of rock stardom, loving the fame, never the practice.\",\"source_asset_ids\":[\"img_7e9bbe598ea9\"],\"source_support\":\"Body text: 'For half his life, Manson dreamed of being a rock star: the crowds, the noise, the fame. But he never practiced. He loved the daydream of success, not the daily grind of guitar practice.'\",\"visual_intent\":\"Cut to the flat-lay of the unused guitar, spilled coffee, and idle clock, with the figure standing passively beside them.\",\"suggested_visual_treatment\":\"USE_EXISTING_ART\",\"impact_text\":\"loving the fame, never the practice\",\"emotional_goal\":\"Shift the abstract lesson into something relatable and self-recognizable.\"},{\"sequence\":5,\"role\":\"EXPLANATION\",\"estimated_duration_seconds\":4.4,\"narration\":\"Everyone wants the reward. Few want the struggle that earns it.\",\"source_asset_ids\":[\"img_d5101d6cfa1e\"],\"source_support\":\"Body text: 'Everyone wants the reward, but far fewer want the struggle that earns it.'\",\"visual_intent\":\"Show the figure practicing guitar alone under a lamp among empty chairs, contrasting desire for reward with the solitary grind.\",\"suggested_visual_treatment\":\"USE_EXISTING_ART\",\"impact_text\":\"Few want the struggle that earns it\",\"emotional_goal\":\"Crystallize the core principle plainly and directly.\"},{\"sequence\":6,\"role\":\"REFLECTION\",\"estimated_duration_seconds\":6,\"narration\":\"Happiness isn't a finish line — it grows from the problems you actually choose to solve.\",\"source_asset_ids\":[\"img_d5101d6cfa1e\",\"img_189adab8f683\"],\"source_support\":\"Body text: 'Happiness isn't waiting at a finish line where all your problems disappear. It grows out of the specific problems you actually enjoy solving.' Reinforced by summary card quote: 'Real fulfillment doesn't come from eliminating problems, but from choosing the specific set of problems you are willing to solve every day.'\",\"visual_intent\":\"Close on the warm-lit practice scene or the summary quote card, letting the words sit as the final thought.\",\"suggested_visual_treatment\":\"MIXED\",\"impact_text\":\"Happiness isn't a finish line\",\"emotional_goal\":\"Leave the viewer with a calm, reflective sense of ownership over their own struggle.\"}],\"unused_assets\":[],\"source_integrity_notes\":[\"Every screenshot includes an unrelated cricket score notification banner ('Yet to bat 166/1 (24.2)') and app chrome (status bar, nav arrows, 'Continue' button); these were treated purely as UI noise and excluded from narration and visual intent.\",\"The author's full name is only given as 'Manson' in the source text, with the analysis flagging uncertainty about whether this is Mark Manson; narration uses the source-safe generic phrasing 'a writer named Manson' rather than asserting an unverified full identity.\",\"Body text describing 'It handed him nothing... rich or poor, indulgent or starving, everyone suffers' was condensed to 'rich or poor, everyone suffers' to keep spoken pacing natural while preserving the core claim.\",\"The final summary/quote card (img_189adab8f683) has no illustrative art of its own; its text was used only to reinforce the closing line already drawn from img_d5101d6cfa1e's narrative slide, and it is paired as a secondary asset in the final scene rather than a standalone one.\",\"The next-slide preview text visible faded at the bottom of several slides was ignored as it belongs to a different card than the one being described.\"],\"quality_review\":{\"verdict\":\"APPROVE\",\"ready_for_voice_generation\":true,\"confidence\":0.91,\"scores\":{\"source_fidelity\":9,\"hook_strength\":8,\"spoken_naturalness\":9,\"narrative_coherence\":9,\"voice_alignment\":9,\"pacing\":8,\"scene_structure\":9,\"visual_support\":9,\"internal_consistency\":9}}}",
   "subtype": "success",
   "errors": null
 }

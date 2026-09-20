@@ -2,1177 +2,1301 @@
   "produced_by": "asset_analyst",
   "assets": [
     {
-      "asset_id": "img_dcfce1645810",
-      "source_path": "source_images/IMG_8802.PNG",
-      "original_filename": "IMG_8802.PNG",
+      "asset_id": "img_87a825c5a858",
+      "source_path": "source_images/IMG_8849.PNG",
+      "original_filename": "IMG_8849.PNG",
       "analysis": {
-        "content_type": "Story app intro/title screen with speech bubble and illustrated mascot character",
+        "content_type": "Illustrated narrative slide within a storytelling/learning app, with device status bar and app chrome overlaying the content",
         "source_text": {
-          "heading": "The Backwards Law",
-          "body_text": "Starting with the 1st idea: The Backwards Law. Smart people love complexity. Brains don't.",
-          "prominent_quote": "",
-          "other_story_text": [],
-          "ui_text": [
-            "9:47",
-            "41"
-          ],
-          "verbatim_blocks": [
-            {
-              "reading_order": 1,
-              "block_type": "HEADING",
-              "text": "The Backwards Law",
-              "region": {
-                "x_min": 56,
-                "y_min": 118,
-                "x_max": 540,
-                "y_max": 150
-              }
-            },
-            {
-              "reading_order": 2,
-              "block_type": "BODY",
-              "text": "Starting with the 1st idea: The Backwards Law. Smart people love complexity. Brains don't.",
-              "region": {
-                "x_min": 56,
-                "y_min": 370,
-                "x_max": 945,
-                "y_max": 500
-              }
-            }
-          ],
-          "transcription_confidence": 0.97
-        },
-        "visual": {
-          "description": "A rounded speech-bubble panel with introductory text sits above a large illustrated orange flame-shaped cartoon mascot with a friendly cartoon face, standing and pointing one finger upward, set against a plain light lavender-pink gradient background.",
-          "main_elements": [
-            "speech bubble with intro text",
-            "orange flame-shaped cartoon mascot pointing upward",
-            "light lavender background",
-            "app navigation controls"
-          ],
-          "visual_subjects": [
-            {
-              "subject_type": "CARTOON_CHARACTER",
-              "description": "Orange flame-shaped mascot with large cartoon eyes and a smiling mouth, standing on two legs, one arm raised with index finger pointing up",
-              "region": {
-                "x_min": 355,
-                "y_min": 555,
-                "x_max": 600,
-                "y_max": 760
-              }
-            }
-          ],
-          "real_people_visible": false,
-          "illustrated_or_cartoon_figures_visible": true,
-          "figure_descriptions": [
-            "Orange flame-shaped cartoon mascot with a friendly face, pointing upward with one hand"
-          ],
-          "environment": "Plain light lavender/pink gradient app background",
-          "important_actions": [
-            "Mascot pointing upward, as if introducing or emphasizing a point"
-          ],
-          "composition_notes": "Speech bubble centered near top third, mascot character centered below with generous negative space, bottom app navigation bar"
-        },
-        "semantic_summary": {
-          "core_idea": "Introduces the first idea to be explored in the story: the 'Backwards Law', framed around brains preferring simplicity over complexity.",
-          "concepts": [
-            "Backwards Law",
-            "simplicity vs. complexity",
-            "story introduction"
-          ],
-          "emotional_tone": [
-            "curious",
-            "inviting",
-            "playful"
-          ],
-          "requires_external_context": true,
-          "context_needed": [
-            "Source material this app is summarizing (referenced later as 'Manson')"
-          ]
-        },
-        "named_entities": [
-          {
-            "name": "The Backwards Law",
-            "entity_type": "Concept/Title",
-            "evidence": "Heading text 'The Backwards Law' and body text referencing it as 'the 1st idea'"
-          }
-        ],
-        "possible_story_roles": [
-          "HOOK",
-          "SETUP"
-        ],
-        "production": {
-          "contains_app_ui": true,
-          "story_art_region_present": true,
-          "story_art_region": {
-            "x_min": 355,
-            "y_min": 555,
-            "x_max": 600,
-            "y_max": 760
-          },
-          "story_text_region": {
-            "x_min": 56,
-            "y_min": 370,
-            "x_max": 945,
-            "y_max": 500
-          },
-          "ui_regions": [
-            {
-              "description": "Status bar (time, signal, wifi, battery)",
-              "region": {
-                "x_min": 0,
-                "y_min": 0,
-                "x_max": 1000,
-                "y_max": 60
-              }
-            },
-            {
-              "description": "Header with title and translate/close icons",
-              "region": {
-                "x_min": 0,
-                "y_min": 100,
-                "x_max": 1000,
-                "y_max": 230
-              }
-            },
-            {
-              "description": "Bottom navigation with back/forward arrows and play button",
-              "region": {
-                "x_min": 0,
-                "y_min": 900,
-                "x_max": 1000,
-                "y_max": 1000
-              }
-            }
-          ],
-          "story_art_description": "Orange flame-shaped cartoon mascot character pointing upward, friendly and energetic pose, centered on plain background",
-          "vertical_video_suitability": "high",
-          "recommended_crop_strategy": "CROP_TO_TEXT_AND_ART",
-          "safe_to_crop_ui_without_losing_story": true,
-          "suggested_motion": [
-            "Gentle zoom in on mascot",
-            "Fade/scale in of speech bubble text"
-          ],
-          "visual_cleanup_needed": [
-            "Remove status bar and app chrome (close/translate icons, nav arrows, play button) for final video"
-          ]
-        },
-        "uncertainties": [
-          "Exact name/identity of the mascot character is not stated on screen"
-        ]
-      }
-    },
-    {
-      "asset_id": "img_badc7b4efc85",
-      "source_path": "source_images/IMG_8803.PNG",
-      "original_filename": "IMG_8803.PNG",
-      "analysis": {
-        "content_type": "Story app content card (1st of 4) with body text and full-width illustration",
-        "source_text": {
-          "heading": "The Backwards Law",
-          "body_text": "Manson opens his whole argument with the least likely role model imaginable: Charles Bukowski.\n\nA drunk and a gambler, Bukowski spent 30 years getting rejected by every publisher he wrote to, filing mail at a post office and drinking away the rest.",
+          "heading": "Choose Your Struggle",
+          "body_text": "To understand why suffering is inevitable, you have to look back 2,500 years to a young prince in Ancient India.\n\nBorn into a luxury palace where every single desire was met, the prince was kept isolated behind high walls so he would never see sickness, poverty, or death.",
           "prominent_quote": "",
           "other_story_text": [
-            "When he finally broke through at 50, it looked like the ultimate underdog story: the"
+            "So he ran. He gave up the throne, slept in the dirt, and starved himself for years, sure that"
           ],
           "ui_text": [
-            "9:47",
-            "41"
+            "2:39",
+            "Yet to bat",
+            "166/1 (24.2)",
+            "32",
+            "Choose Your Struggle"
           ],
           "verbatim_blocks": [
             {
               "reading_order": 1,
               "block_type": "HEADING",
-              "text": "The Backwards Law",
+              "text": "Choose Your Struggle",
               "region": {
-                "x_min": 56,
-                "y_min": 118,
-                "x_max": 540,
-                "y_max": 150
+                "x_min": 54,
+                "y_min": 75,
+                "x_max": 574,
+                "y_max": 115
               }
             },
             {
               "reading_order": 2,
-              "block_type": "BODY",
-              "text": "Manson opens his whole argument with the least likely role model imaginable: Charles Bukowski.",
+              "block_type": "HEADING",
+              "text": "Choose Your Struggle",
               "region": {
-                "x_min": 56,
-                "y_min": 200,
-                "x_max": 945,
-                "y_max": 320
+                "x_min": 54,
+                "y_min": 152,
+                "x_max": 628,
+                "y_max": 190
               }
             },
             {
               "reading_order": 3,
               "block_type": "BODY",
-              "text": "A drunk and a gambler, Bukowski spent 30 years getting rejected by every publisher he wrote to, filing mail at a post office and drinking away the rest.",
+              "text": "To understand why suffering is inevitable, you have to look back 2,500 years to a young prince in Ancient India.",
               "region": {
-                "x_min": 56,
-                "y_min": 350,
-                "x_max": 945,
-                "y_max": 500
+                "x_min": 54,
+                "y_min": 205,
+                "x_max": 953,
+                "y_max": 290
               }
             },
             {
               "reading_order": 4,
-              "block_type": "OTHER",
-              "text": "When he finally broke through at 50, it looked like the ultimate underdog story: the",
+              "block_type": "BODY",
+              "text": "Born into a luxury palace where every single desire was met, the prince was kept isolated behind high walls so he would never see sickness, poverty, or death.",
               "region": {
-                "x_min": 56,
-                "y_min": 955,
-                "x_max": 945,
-                "y_max": 990
+                "x_min": 54,
+                "y_min": 320,
+                "x_max": 953,
+                "y_max": 420
+              }
+            },
+            {
+              "reading_order": 5,
+              "block_type": "OTHER",
+              "text": "So he ran. He gave up the throne, slept in the dirt, and starved himself for years, sure that",
+              "region": {
+                "x_min": 54,
+                "y_min": 985,
+                "x_max": 953,
+                "y_max": 1000
+              }
+            },
+            {
+              "reading_order": 6,
+              "block_type": "UI",
+              "text": "Yet to bat 166/1 (24.2)",
+              "region": {
+                "x_min": 195,
+                "y_min": 15,
+                "x_max": 802,
+                "y_max": 45
               }
             }
           ],
           "transcription_confidence": 0.95
         },
         "visual": {
-          "description": "A painterly, illustrated night-time scene of a writer's desk: a lit desk lamp illuminates a manual typewriter with a sheet of paper loaded, beside an ashtray with a lit cigarette, a coffee mug with a spill stain, and crumpled balls of paper; an unmade bed with a blue blanket sits behind the desk.",
+          "description": "A minimalist, halftone-textured flat illustration shows a lone bald cartoon prince in a blue sweater standing at the center of an ornate ancient palace courtyard, surrounded by silhouetted servants offering trays of fruit, drinks, and folded cloth beneath arched colonnades draped with hanging leafy vines.",
           "main_elements": [
-            "vintage typewriter with paper",
-            "lit desk lamp",
-            "ashtray with lit cigarette",
-            "coffee mug with spill stain",
-            "crumpled paper balls",
-            "unmade bed"
+            "Palace courtyard illustration",
+            "Cartoon prince figure",
+            "Silhouetted servants with trays",
+            "Narrative text paragraphs",
+            "App header UI",
+            "Cricket score notification banner",
+            "Slide progress indicator",
+            "Navigation arrows and play button",
+            "Truncated preview text of next slide"
           ],
           "visual_subjects": [
             {
-              "subject_type": "OBJECT",
-              "description": "Vintage black typewriter with a blank sheet of paper loaded, under lamp light",
+              "subject_type": "ILLUSTRATED_PERSON",
+              "description": "Bald, round-headed cartoon prince wearing a blue sweater and dark trousers, standing alone with a neutral expression.",
               "region": {
-                "x_min": 270,
-                "y_min": 620,
-                "x_max": 600,
-                "y_max": 800
+                "x_min": 433,
+                "y_min": 540,
+                "x_max": 563,
+                "y_max": 685
+              }
+            },
+            {
+              "subject_type": "ILLUSTRATED_PERSON",
+              "description": "Multiple black silhouette figures (servants) surrounding the prince, each holding trays of fruit, drinks, or cloth.",
+              "region": {
+                "x_min": 54,
+                "y_min": 575,
+                "x_max": 953,
+                "y_max": 700
               }
             },
             {
               "subject_type": "ENVIRONMENT",
-              "description": "Dim, moody bedroom/writer's room at night with warm lamp lighting",
+              "description": "Ornate ancient palace courtyard with stone arches, carved reliefs, and hanging vine garlands lit in warm amber tones.",
               "region": {
-                "x_min": 55,
-                "y_min": 570,
-                "x_max": 940,
-                "y_max": 900
+                "x_min": 54,
+                "y_min": 457,
+                "x_max": 943,
+                "y_max": 702
               }
             }
           ],
           "real_people_visible": false,
-          "illustrated_or_cartoon_figures_visible": false,
-          "figure_descriptions": [],
-          "environment": "Dim, moody bedroom writer's desk scene at night, warm lamp lighting, painterly illustration style",
-          "important_actions": [],
-          "composition_notes": "Two paragraphs of text stacked above a full-width, edge-to-edge rounded-corner illustration; progress bar shows 1 of 4 segments filled"
+          "illustrated_or_cartoon_figures_visible": true,
+          "figure_descriptions": [
+            "Bald round-headed cartoon prince wearing a blue sweater and dark trousers, minimalist flat illustration style with black dot eyes and a neutral expression.",
+            "Multiple black silhouette figures (servants) holding trays of fruit, drinks, and folded cloth, depicted without facial features."
+          ],
+          "environment": "Ornate ancient palace courtyard interior with stone arches, wall carvings/reliefs, and hanging vine/leaf garlands, rendered in warm orange/amber tones.",
+          "important_actions": [
+            "Prince standing isolated in the center while servants offer him food and goods on trays."
+          ],
+          "composition_notes": "Symmetrical courtyard composition with a vanishing point down a colonnade; the prince is centered and visually dwarfed by surrounding servants, emphasizing isolation despite abundance."
         },
         "semantic_summary": {
-          "core_idea": "Introduces Charles Bukowski as an unlikely role model who spent decades being rejected, struggling, and drinking before any success.",
+          "core_idea": "Origin story of the Buddha: a sheltered young prince in Ancient India who never encountered hardship, setting up the theme that suffering is inevitable.",
           "concepts": [
-            "unlikely role models",
-            "struggle before success",
-            "rejection",
-            "perseverance"
+            "Origin of suffering",
+            "Sheltered upbringing",
+            "Impermanence of pleasure",
+            "Buddhist origin story",
+            "Contrast between luxury and awareness"
           ],
           "emotional_tone": [
-            "gritty",
-            "somber",
-            "intriguing"
+            "Contemplative",
+            "Somber",
+            "Curious",
+            "Foreboding"
           ],
           "requires_external_context": true,
           "context_needed": [
-            "Identity of 'Manson' (implied author of the source material)",
-            "Background on Charles Bukowski's life and writing career"
+            "Continuation on subsequent slides reveals the prince becomes the Buddha."
           ]
         },
         "named_entities": [
           {
-            "name": "Manson",
-            "entity_type": "Person (referenced author)",
-            "evidence": "'Manson opens his whole argument with the least likely role model imaginable'"
+            "name": "Ancient India",
+            "entity_type": "Historical setting/location",
+            "evidence": "you have to look back 2,500 years to a young prince in Ancient India."
           },
           {
-            "name": "Charles Bukowski",
-            "entity_type": "Person",
-            "evidence": "'the least likely role model imaginable: Charles Bukowski'"
+            "name": "Choose Your Struggle",
+            "entity_type": "Content series/lesson title",
+            "evidence": "Header and heading text 'Choose Your Struggle' displayed at top of screen."
           }
         ],
         "possible_story_roles": [
+          "HOOK",
           "SETUP",
-          "EXAMPLE",
           "CONTEXT"
         ],
         "production": {
           "contains_app_ui": true,
           "story_art_region_present": true,
           "story_art_region": {
-            "x_min": 55,
-            "y_min": 570,
-            "x_max": 940,
-            "y_max": 900
+            "x_min": 54,
+            "y_min": 457,
+            "x_max": 943,
+            "y_max": 702
           },
           "story_text_region": {
-            "x_min": 56,
-            "y_min": 200,
-            "x_max": 945,
-            "y_max": 500
+            "x_min": 54,
+            "y_min": 152,
+            "x_max": 953,
+            "y_max": 430
           },
           "ui_regions": [
             {
-              "description": "Status bar",
+              "description": "Device status bar with time and cricket score notification banner",
               "region": {
                 "x_min": 0,
                 "y_min": 0,
                 "x_max": 1000,
-                "y_max": 60
+                "y_max": 50
               }
             },
             {
-              "description": "Header with title, translate/close icons",
+              "description": "App header with title, translate icon, and close button",
               "region": {
                 "x_min": 0,
-                "y_min": 100,
+                "y_min": 70,
                 "x_max": 1000,
-                "y_max": 165
+                "y_max": 120
               }
             },
             {
-              "description": "Progress bar (4 segments, 1st filled)",
+              "description": "Slide progress indicator (4 segments)",
               "region": {
-                "x_min": 56,
-                "y_min": 170,
-                "x_max": 945,
-                "y_max": 182
+                "x_min": 50,
+                "y_min": 130,
+                "x_max": 950,
+                "y_max": 145
               }
             },
             {
-              "description": "Bottom nav with back/forward/play buttons and truncated preview of next card's text",
+              "description": "Previous/next arrow buttons and play button",
               "region": {
                 "x_min": 0,
-                "y_min": 940,
+                "y_min": 900,
+                "x_max": 1000,
+                "y_max": 960
+              }
+            },
+            {
+              "description": "Faded preview of next slide's text peeking at bottom edge",
+              "region": {
+                "x_min": 0,
+                "y_min": 975,
                 "x_max": 1000,
                 "y_max": 1000
               }
             }
           ],
-          "story_art_description": "Illustrated painterly night scene of a cluttered writer's desk with a typewriter, lamp, ashtray and unmade bed, conveying a gritty struggling-artist atmosphere",
+          "story_art_description": "Flat, halftone-textured illustration of a lone cartoon prince surrounded by silhouetted servants bearing trays of food and goods inside an ornate ancient palace courtyard.",
           "vertical_video_suitability": "high",
           "recommended_crop_strategy": "CROP_TO_TEXT_AND_ART",
           "safe_to_crop_ui_without_losing_story": true,
           "suggested_motion": [
-            "Slow pan across the desk illustration",
-            "Ken Burns zoom toward the typewriter"
+            "Slow zoom-in on the prince figure to emphasize isolation",
+            "Subtle parallax drift across courtyard arches",
+            "Sequential fade-in of paragraphs"
           ],
           "visual_cleanup_needed": [
-            "Remove status bar and app chrome",
-            "Crop out truncated preview text at bottom belonging to the next card"
+            "Remove/crop device status bar and cricket score banner (unrelated notification)",
+            "Crop truncated preview text at bottom to avoid confusion",
+            "Remove nav arrows and play button UI chrome for final video"
           ]
         },
         "uncertainties": [
-          "Bottom preview text is cut off by the UI and belongs to the next card; only a partial sentence is visible",
-          "Full identity of 'Manson' is not confirmed within this single screenshot"
+          "Cricket score banner ('Yet to bat 166/1 (24.2)') is an unrelated phone notification overlay, not story content.",
+          "Bottom preview text is truncated by UI fade and only partially legible.",
+          "Exact app name/brand is not visible in this crop."
         ]
       }
     },
     {
-      "asset_id": "img_fe38b500f8d1",
-      "source_path": "source_images/IMG_8804.PNG",
-      "original_filename": "IMG_8804.PNG",
+      "asset_id": "img_c99892bd2a98",
+      "source_path": "source_images/IMG_8850.PNG",
+      "original_filename": "IMG_8850.PNG",
       "analysis": {
-        "content_type": "Story app content card (2nd of 4) with body text and full-width illustration",
+        "content_type": "Illustrated narrative slide within a storytelling/learning app, with device status bar and app chrome overlaying the content",
         "source_text": {
           "heading": "",
-          "body_text": "When he finally broke through at 50, it looked like the ultimate underdog story: the man who never gave up and made it.\n\nBut on his tombstone, Bukowski didn't leave a message about hustling or believing in yourself. He left two words: Don't try.",
-          "prominent_quote": "Don't try.",
-          "other_story_text": [
-            "His success didn't come from wanting it more; it came from accepting who he was"
-          ],
-          "ui_text": [
-            "9:47",
-            "41"
-          ],
-          "verbatim_blocks": [
-            {
-              "reading_order": 1,
-              "block_type": "BODY",
-              "text": "When he finally broke through at 50, it looked like the ultimate underdog story: the man who never gave up and made it.",
-              "region": {
-                "x_min": 56,
-                "y_min": 200,
-                "x_max": 945,
-                "y_max": 330
-              }
-            },
-            {
-              "reading_order": 2,
-              "block_type": "BODY",
-              "text": "But on his tombstone, Bukowski didn't leave a message about hustling or believing in yourself. He left two words: Don't try.",
-              "region": {
-                "x_min": 56,
-                "y_min": 360,
-                "x_max": 945,
-                "y_max": 500
-              }
-            },
-            {
-              "reading_order": 3,
-              "block_type": "OTHER",
-              "text": "His success didn't come from wanting it more; it came from accepting who he was",
-              "region": {
-                "x_min": 56,
-                "y_min": 955,
-                "x_max": 945,
-                "y_max": 990
-              }
-            }
-          ],
-          "transcription_confidence": 0.96
-        },
-        "visual": {
-          "description": "A painterly illustration of a single blank stone gravestone standing amid tall golden grass, under a warm, pale sky, with scattered orange leaves on the ground.",
-          "main_elements": [
-            "blank stone gravestone",
-            "golden grass field",
-            "warm pastel sky",
-            "scattered leaves"
-          ],
-          "visual_subjects": [
-            {
-              "subject_type": "OBJECT",
-              "description": "Blank stone gravestone with no visible inscription, standing in a field",
-              "region": {
-                "x_min": 400,
-                "y_min": 620,
-                "x_max": 590,
-                "y_max": 800
-              }
-            },
-            {
-              "subject_type": "ENVIRONMENT",
-              "description": "Golden/amber grass field at sunset or sunrise",
-              "region": {
-                "x_min": 55,
-                "y_min": 570,
-                "x_max": 940,
-                "y_max": 900
-              }
-            }
-          ],
-          "real_people_visible": false,
-          "illustrated_or_cartoon_figures_visible": false,
-          "figure_descriptions": [],
-          "environment": "Open golden grass field under a warm pastel sky, painterly illustration style",
-          "important_actions": [],
-          "composition_notes": "Two text paragraphs stacked above a full-width rounded-corner illustration; progress bar shows 2 of 4 segments filled"
-        },
-        "semantic_summary": {
-          "core_idea": "Reveals the twist that Bukowski's actual tombstone epitaph, 'Don't try,' contradicts the typical hustle-culture underdog narrative about his success.",
-          "concepts": [
-            "subverted expectations",
-            "anti-hustle philosophy",
-            "acceptance vs. striving"
-          ],
-          "emotional_tone": [
-            "surprising",
-            "poignant",
-            "reflective"
-          ],
-          "requires_external_context": true,
-          "context_needed": [
-            "Knowledge that Charles Bukowski's real tombstone reads 'Don't Try'"
-          ]
-        },
-        "named_entities": [
-          {
-            "name": "Bukowski",
-            "entity_type": "Person",
-            "evidence": "'Bukowski didn't leave a message about hustling or believing in yourself'"
-          }
-        ],
-        "possible_story_roles": [
-          "REVERSAL",
-          "REVEAL"
-        ],
-        "production": {
-          "contains_app_ui": true,
-          "story_art_region_present": true,
-          "story_art_region": {
-            "x_min": 55,
-            "y_min": 570,
-            "x_max": 940,
-            "y_max": 900
-          },
-          "story_text_region": {
-            "x_min": 56,
-            "y_min": 200,
-            "x_max": 945,
-            "y_max": 500
-          },
-          "ui_regions": [
-            {
-              "description": "Status bar",
-              "region": {
-                "x_min": 0,
-                "y_min": 0,
-                "x_max": 1000,
-                "y_max": 60
-              }
-            },
-            {
-              "description": "Header with title, translate/close icons",
-              "region": {
-                "x_min": 0,
-                "y_min": 100,
-                "x_max": 1000,
-                "y_max": 165
-              }
-            },
-            {
-              "description": "Progress bar (4 segments, 2nd filled)",
-              "region": {
-                "x_min": 56,
-                "y_min": 170,
-                "x_max": 945,
-                "y_max": 182
-              }
-            },
-            {
-              "description": "Bottom nav with back/forward/play buttons and truncated preview of next card's text",
-              "region": {
-                "x_min": 0,
-                "y_min": 940,
-                "x_max": 1000,
-                "y_max": 1000
-              }
-            }
-          ],
-          "story_art_description": "Illustrated painterly scene of a solitary blank gravestone in a golden grass field, evoking mortality and legacy",
-          "vertical_video_suitability": "high",
-          "recommended_crop_strategy": "CROP_TO_TEXT_AND_ART",
-          "safe_to_crop_ui_without_losing_story": true,
-          "suggested_motion": [
-            "Slow push-in toward the gravestone",
-            "Subtle grass sway parallax"
-          ],
-          "visual_cleanup_needed": [
-            "Remove status bar and app chrome",
-            "Crop out truncated preview text at bottom belonging to the next card"
-          ]
-        },
-        "uncertainties": [
-          "Bottom preview text is cut off by the UI and belongs to the next card"
-        ]
-      }
-    },
-    {
-      "asset_id": "img_6f6dabaab3eb",
-      "source_path": "source_images/IMG_8805.PNG",
-      "original_filename": "IMG_8805.PNG",
-      "analysis": {
-        "content_type": "Story app content card (3rd of 4) with body text and full-width illustration",
-        "source_text": {
-          "heading": "",
-          "body_text": "His success didn't come from wanting it more; it came from accepting who he was and writing from that honest baseline without trying to prove anything.\n\nManson saw the same law in his own life. The boldest moves he ever made (quitting a corporate job and moving overseas) only happened when he stopped obsessing over the outcome.",
+          "body_text": "So he ran. He gave up the throne, slept in the dirt, and starved himself for years, sure that suffering would hand him the meaning he craved.\n\nIt handed him nothing. Sitting under a tree, he finally saw what he had missed all along: rich or poor, indulgent or starving, everyone suffers.\n\nHe would become the Buddha, and this was his very first teaching.",
           "prominent_quote": "",
           "other_story_text": [
-            "Lifting the concept from philosopher Alan Watts, Manson calls this the Backwards Law."
+            "If pain is unavoidable, Manson argues, the question is which pain is worth carrying."
           ],
           "ui_text": [
-            "9:47",
-            "41"
+            "2:39",
+            "Yet to bat",
+            "166/1 (24.2)",
+            "32",
+            "Choose Your Struggle"
           ],
           "verbatim_blocks": [
             {
               "reading_order": 1,
-              "block_type": "BODY",
-              "text": "His success didn't come from wanting it more; it came from accepting who he was and writing from that honest baseline without trying to prove anything.",
+              "block_type": "HEADING",
+              "text": "Choose Your Struggle",
               "region": {
-                "x_min": 56,
-                "y_min": 200,
-                "x_max": 945,
-                "y_max": 360
+                "x_min": 54,
+                "y_min": 75,
+                "x_max": 574,
+                "y_max": 115
               }
             },
             {
               "reading_order": 2,
               "block_type": "BODY",
-              "text": "Manson saw the same law in his own life. The boldest moves he ever made (quitting a corporate job and moving overseas) only happened when he stopped obsessing over the outcome.",
+              "text": "So he ran. He gave up the throne, slept in the dirt, and starved himself for years, sure that suffering would hand him the meaning he craved.",
               "region": {
-                "x_min": 56,
-                "y_min": 390,
-                "x_max": 945,
-                "y_max": 560
+                "x_min": 54,
+                "y_min": 170,
+                "x_max": 953,
+                "y_max": 260
               }
             },
             {
               "reading_order": 3,
-              "block_type": "OTHER",
-              "text": "Lifting the concept from philosopher Alan Watts, Manson calls this the Backwards Law.",
+              "block_type": "BODY",
+              "text": "It handed him nothing. Sitting under a tree, he finally saw what he had missed all along: rich or poor, indulgent or starving, everyone suffers.",
               "region": {
-                "x_min": 56,
-                "y_min": 955,
-                "x_max": 945,
-                "y_max": 990
+                "x_min": 54,
+                "y_min": 300,
+                "x_max": 953,
+                "y_max": 400
+              }
+            },
+            {
+              "reading_order": 4,
+              "block_type": "BODY",
+              "text": "He would become the Buddha, and this was his very first teaching.",
+              "region": {
+                "x_min": 54,
+                "y_min": 430,
+                "x_max": 953,
+                "y_max": 480
+              }
+            },
+            {
+              "reading_order": 5,
+              "block_type": "OTHER",
+              "text": "If pain is unavoidable, Manson argues, the question is which pain is worth carrying.",
+              "region": {
+                "x_min": 54,
+                "y_min": 985,
+                "x_max": 953,
+                "y_max": 1000
+              }
+            },
+            {
+              "reading_order": 6,
+              "block_type": "UI",
+              "text": "Yet to bat 166/1 (24.2)",
+              "region": {
+                "x_min": 195,
+                "y_min": 15,
+                "x_max": 802,
+                "y_max": 45
               }
             }
           ],
           "transcription_confidence": 0.96
         },
         "visual": {
-          "description": "A minimalist, flat-illustration scene of a stick-figure-style person in a blue top and black pants standing at the edge of a grassy cliff, releasing a black briefcase that falls toward the ocean below; a warm orange sunset sky with a flock of small birds fills the background.",
+          "description": "The same minimalist bald cartoon figure, now seated cross-legged in meditation beneath a tree with multicolored heart-shaped leaves, an empty alms bowl beside him, depicting the moment of enlightenment.",
           "main_elements": [
-            "cliff edge with tall grass",
-            "person releasing a briefcase",
-            "ocean below",
-            "sunset sky",
-            "flock of birds"
+            "Seated meditating figure under a tree",
+            "Heart-shaped falling leaves",
+            "Alms bowl",
+            "Narrative text describing enlightenment",
+            "App header UI",
+            "Progress indicator",
+            "Preview text of next slide"
           ],
           "visual_subjects": [
             {
               "subject_type": "ILLUSTRATED_PERSON",
-              "description": "Minimalist stick-figure-style person with a round blank face, wearing a blue top and black pants, standing at a cliff edge and letting go of a briefcase",
+              "description": "Bald cartoon figure seated cross-legged in a meditation pose, wearing a blue sweater and dark trousers, calm neutral expression.",
               "region": {
-                "x_min": 230,
-                "y_min": 620,
-                "x_max": 460,
-                "y_max": 850
+                "x_min": 325,
+                "y_min": 515,
+                "x_max": 672,
+                "y_max": 710
               }
             },
             {
               "subject_type": "OBJECT",
-              "description": "Black briefcase falling from the person's hand toward the ocean",
+              "description": "Empty alms bowl resting on the ground near the figure's hand.",
               "region": {
-                "x_min": 390,
-                "y_min": 750,
-                "x_max": 480,
-                "y_max": 830
+                "x_min": 563,
+                "y_min": 650,
+                "x_max": 704,
+                "y_max": 700
+              }
+            },
+            {
+              "subject_type": "ENVIRONMENT",
+              "description": "Tree with branches bearing multicolored heart-shaped leaves (teal, orange, brown) against a warm gradient sky.",
+              "region": {
+                "x_min": 54,
+                "y_min": 457,
+                "x_max": 943,
+                "y_max": 702
               }
             }
           ],
           "real_people_visible": false,
           "illustrated_or_cartoon_figures_visible": true,
           "figure_descriptions": [
-            "Minimalist blank-faced stick-figure person in a blue top, releasing a briefcase off a cliff"
+            "Same minimalist bald cartoon figure now shown seated cross-legged in meditation pose beneath a tree, wearing the same blue sweater and dark trousers, with a calm neutral expression and an empty bowl beside him."
           ],
-          "environment": "Grassy cliff overlooking the ocean at sunset, flat illustration style",
+          "environment": "Illustrated tree with branches bearing multicolored heart-shaped leaves (teal, orange, brown) against a warm gradient sky, with dark teal and amber tones for water/ground.",
           "important_actions": [
-            "Person releasing/dropping a briefcase off a cliff toward the ocean"
+            "Figure sits in meditation under the tree after giving up extreme asceticism, reflecting on the realization that everyone suffers."
           ],
-          "composition_notes": "Two text paragraphs stacked above a full-width rounded-corner illustration; progress bar shows 3 of 4 segments filled"
+          "composition_notes": "Centered symmetrical composition with the tree canopy framing the seated figure, drawing focus to his contemplative posture; the empty bowl signals renunciation of both indulgence and starvation."
         },
         "semantic_summary": {
-          "core_idea": "Illustrates the Backwards Law through the author's (Manson's) own life: his boldest career moves, like quitting a job and moving overseas, happened only once he stopped obsessing over outcomes.",
+          "core_idea": "The prince's failed asceticism leads him to realize suffering is universal, becoming the Buddha's first teaching.",
           "concepts": [
-            "letting go of outcomes",
-            "career risk-taking",
-            "acceptance leading to action"
+            "Buddhist enlightenment",
+            "Universality of suffering",
+            "Middle way between indulgence and asceticism",
+            "Origin of Buddhism"
           ],
           "emotional_tone": [
-            "liberating",
-            "contemplative",
-            "hopeful"
+            "Reflective",
+            "Revelatory",
+            "Calm",
+            "Bittersweet"
+          ],
+          "requires_external_context": false,
+          "context_needed": []
+        },
+        "named_entities": [
+          {
+            "name": "Buddha",
+            "entity_type": "Religious/historical figure",
+            "evidence": "He would become the Buddha, and this was his very first teaching."
+          },
+          {
+            "name": "Choose Your Struggle",
+            "entity_type": "Content series/lesson title",
+            "evidence": "Header text 'Choose Your Struggle' displayed at top of screen."
+          }
+        ],
+        "possible_story_roles": [
+          "BUILDUP",
+          "REVEAL",
+          "EXPLANATION"
+        ],
+        "production": {
+          "contains_app_ui": true,
+          "story_art_region_present": true,
+          "story_art_region": {
+            "x_min": 54,
+            "y_min": 457,
+            "x_max": 943,
+            "y_max": 702
+          },
+          "story_text_region": {
+            "x_min": 54,
+            "y_min": 170,
+            "x_max": 953,
+            "y_max": 480
+          },
+          "ui_regions": [
+            {
+              "description": "Device status bar with time and cricket score notification banner",
+              "region": {
+                "x_min": 0,
+                "y_min": 0,
+                "x_max": 1000,
+                "y_max": 50
+              }
+            },
+            {
+              "description": "App header with title, translate icon, and close button",
+              "region": {
+                "x_min": 0,
+                "y_min": 70,
+                "x_max": 1000,
+                "y_max": 120
+              }
+            },
+            {
+              "description": "Slide progress indicator (4 segments)",
+              "region": {
+                "x_min": 50,
+                "y_min": 130,
+                "x_max": 950,
+                "y_max": 145
+              }
+            },
+            {
+              "description": "Previous/next arrow buttons and play button",
+              "region": {
+                "x_min": 0,
+                "y_min": 900,
+                "x_max": 1000,
+                "y_max": 960
+              }
+            },
+            {
+              "description": "Faded preview of next slide's text peeking at bottom edge",
+              "region": {
+                "x_min": 0,
+                "y_min": 975,
+                "x_max": 1000,
+                "y_max": 1000
+              }
+            }
+          ],
+          "story_art_description": "Illustration of the same recurring cartoon figure seated in meditation under a heart-leaved tree, symbolizing the Buddha's enlightenment.",
+          "vertical_video_suitability": "high",
+          "recommended_crop_strategy": "CROP_TO_TEXT_AND_ART",
+          "safe_to_crop_ui_without_losing_story": true,
+          "suggested_motion": [
+            "Gentle falling-leaves animation",
+            "Slow zoom into the seated figure's face",
+            "Sequential fade-in of paragraphs"
+          ],
+          "visual_cleanup_needed": [
+            "Remove/crop device status bar and cricket score banner",
+            "Crop truncated preview text at bottom",
+            "Remove nav arrows and play button UI chrome for final video"
+          ]
+        },
+        "uncertainties": [
+          "Cricket score banner is an unrelated phone notification overlay, not story content.",
+          "Tree leaf shapes (hearts) appear stylized rather than a literal depiction of a Bodhi/fig tree."
+        ]
+      }
+    },
+    {
+      "asset_id": "img_7e9bbe598ea9",
+      "source_path": "source_images/IMG_8851.PNG",
+      "original_filename": "IMG_8851.PNG",
+      "analysis": {
+        "content_type": "Illustrated narrative slide within a storytelling/learning app, with device status bar and app chrome overlaying the content",
+        "source_text": {
+          "heading": "",
+          "body_text": "If pain is unavoidable, Manson argues, the question is which pain is worth carrying.\n\nFor half his life, Manson dreamed of being a rock star: the crowds, the noise, the fame. But he never practiced. He loved the daydream of success, not the daily grind of guitar practice.",
+          "prominent_quote": "",
+          "other_story_text": [
+            "Everyone wants the reward, but far fewer want the struggle that earns it."
+          ],
+          "ui_text": [
+            "2:39",
+            "Yet to bat",
+            "166/1 (24.2)",
+            "32",
+            "Choose Your Struggle"
+          ],
+          "verbatim_blocks": [
+            {
+              "reading_order": 1,
+              "block_type": "HEADING",
+              "text": "Choose Your Struggle",
+              "region": {
+                "x_min": 54,
+                "y_min": 75,
+                "x_max": 574,
+                "y_max": 115
+              }
+            },
+            {
+              "reading_order": 2,
+              "block_type": "BODY",
+              "text": "If pain is unavoidable, Manson argues, the question is which pain is worth carrying.",
+              "region": {
+                "x_min": 54,
+                "y_min": 170,
+                "x_max": 953,
+                "y_max": 240
+              }
+            },
+            {
+              "reading_order": 3,
+              "block_type": "BODY",
+              "text": "For half his life, Manson dreamed of being a rock star: the crowds, the noise, the fame. But he never practiced. He loved the daydream of success, not the daily grind of guitar practice.",
+              "region": {
+                "x_min": 54,
+                "y_min": 265,
+                "x_max": 953,
+                "y_max": 400
+              }
+            },
+            {
+              "reading_order": 4,
+              "block_type": "OTHER",
+              "text": "Everyone wants the reward, but far fewer want the struggle that earns it.",
+              "region": {
+                "x_min": 54,
+                "y_min": 985,
+                "x_max": 953,
+                "y_max": 1000
+              }
+            },
+            {
+              "reading_order": 5,
+              "block_type": "UI",
+              "text": "Yet to bat 166/1 (24.2)",
+              "region": {
+                "x_min": 195,
+                "y_min": 15,
+                "x_max": 802,
+                "y_max": 45
+              }
+            }
+          ],
+          "transcription_confidence": 0.96
+        },
+        "visual": {
+          "description": "A top-down, flat-lay style illustration of an electric guitar, an alarm clock, a spilled coffee mug, and a notebook arranged on a wooden floor lit by a diagonal orange spotlight, with the recurring cartoon figure standing passively at the edge.",
+          "main_elements": [
+            "Top-down still-life illustration",
+            "Electric guitar",
+            "Alarm clock",
+            "Spilled coffee mug",
+            "Notebook/book",
+            "Cartoon figure standing beside objects",
+            "Narrative text about rock star dream vs. practice"
+          ],
+          "visual_subjects": [
+            {
+              "subject_type": "OBJECT",
+              "description": "Electric guitar lying diagonally across the wooden floor.",
+              "region": {
+                "x_min": 249,
+                "y_min": 410,
+                "x_max": 899,
+                "y_max": 625
+              }
+            },
+            {
+              "subject_type": "OBJECT",
+              "description": "Alarm clock resting on the floor near the guitar.",
+              "region": {
+                "x_min": 477,
+                "y_min": 425,
+                "x_max": 650,
+                "y_max": 500
+              }
+            },
+            {
+              "subject_type": "OBJECT",
+              "description": "Spilled coffee mug with a coffee ring stain.",
+              "region": {
+                "x_min": 195,
+                "y_min": 490,
+                "x_max": 357,
+                "y_max": 550
+              }
+            },
+            {
+              "subject_type": "OBJECT",
+              "description": "Closed notebook/book on the floor.",
+              "region": {
+                "x_min": 195,
+                "y_min": 540,
+                "x_max": 412,
+                "y_max": 610
+              }
+            },
+            {
+              "subject_type": "ILLUSTRATED_PERSON",
+              "description": "Bald cartoon figure in a blue sweater standing at the edge of the scene, looking down at the unused objects.",
+              "region": {
+                "x_min": 628,
+                "y_min": 410,
+                "x_max": 834,
+                "y_max": 540
+              }
+            }
+          ],
+          "real_people_visible": false,
+          "illustrated_or_cartoon_figures_visible": true,
+          "figure_descriptions": [
+            "Same minimalist bald cartoon figure in blue sweater and dark trousers standing passively at the edge of a scene, looking down at an unused electric guitar, clock, spilled coffee, and notebook arranged on a wooden floor lit by a diagonal orange spotlight."
+          ],
+          "environment": "Top-down view of a wood-plank floor with a diagonal orange/red light band suggesting a stage spotlight or passage of time; muted, moody color palette.",
+          "important_actions": [
+            "Figure stands near an unused guitar and spilled coffee, symbolizing abandoned practice and wasted time while daydreaming of fame."
+          ],
+          "composition_notes": "Bird's-eye/flat-lay composition emphasizes the objects (guitar, clock, coffee, notebook) as symbolic props while the figure is pushed to the corner, visually secondary to the metaphor of neglected practice."
+        },
+        "semantic_summary": {
+          "core_idea": "Introduces author Manson's personal anecdote about wanting rock stardom without doing the practice, setting up the idea that people want rewards without the required struggle.",
+          "concepts": [
+            "Desire for reward without effort",
+            "Daydreaming vs. discipline",
+            "Choosing which pain to endure",
+            "Practice/grind"
+          ],
+          "emotional_tone": [
+            "Wistful",
+            "Critical",
+            "Relatable",
+            "Cautionary"
           ],
           "requires_external_context": true,
           "context_needed": [
-            "Continuation of the Backwards Law concept established in earlier cards"
+            "Assumes reader knows or will learn 'Manson' refers to author Mark Manson and his book's argument about choosing struggles."
           ]
         },
         "named_entities": [
           {
             "name": "Manson",
-            "entity_type": "Person (referenced author)",
-            "evidence": "'Manson saw the same law in his own life'"
+            "entity_type": "Author/person",
+            "evidence": "If pain is unavoidable, Manson argues, the question is which pain is worth carrying. / For half his life, Manson dreamed of being a rock star."
+          },
+          {
+            "name": "Choose Your Struggle",
+            "entity_type": "Content series/lesson title",
+            "evidence": "Header text 'Choose Your Struggle' displayed at top of screen."
           }
         ],
         "possible_story_roles": [
           "EXAMPLE",
+          "CONTEXT",
           "BUILDUP"
         ],
         "production": {
           "contains_app_ui": true,
           "story_art_region_present": true,
           "story_art_region": {
-            "x_min": 55,
-            "y_min": 570,
-            "x_max": 940,
-            "y_max": 900
+            "x_min": 54,
+            "y_min": 435,
+            "x_max": 943,
+            "y_max": 685
           },
           "story_text_region": {
-            "x_min": 56,
-            "y_min": 200,
-            "x_max": 945,
-            "y_max": 560
+            "x_min": 54,
+            "y_min": 170,
+            "x_max": 953,
+            "y_max": 400
           },
           "ui_regions": [
             {
-              "description": "Status bar",
+              "description": "Device status bar with time and cricket score notification banner",
               "region": {
                 "x_min": 0,
                 "y_min": 0,
                 "x_max": 1000,
-                "y_max": 60
+                "y_max": 50
               }
             },
             {
-              "description": "Header with title, translate/close icons",
+              "description": "App header with title, translate icon, and close button",
               "region": {
                 "x_min": 0,
-                "y_min": 100,
+                "y_min": 70,
                 "x_max": 1000,
-                "y_max": 165
+                "y_max": 120
               }
             },
             {
-              "description": "Progress bar (4 segments, 3rd filled)",
+              "description": "Slide progress indicator (4 segments)",
               "region": {
-                "x_min": 56,
-                "y_min": 170,
-                "x_max": 945,
-                "y_max": 182
+                "x_min": 50,
+                "y_min": 130,
+                "x_max": 950,
+                "y_max": 145
               }
             },
             {
-              "description": "Bottom nav with back/forward/play buttons and truncated preview of next card's text",
+              "description": "Previous/next arrow buttons and play button",
               "region": {
                 "x_min": 0,
-                "y_min": 940,
+                "y_min": 900,
+                "x_max": 1000,
+                "y_max": 960
+              }
+            },
+            {
+              "description": "Faded preview of next slide's text peeking at bottom edge",
+              "region": {
+                "x_min": 0,
+                "y_min": 975,
                 "x_max": 1000,
                 "y_max": 1000
               }
             }
           ],
-          "story_art_description": "Flat illustration of a minimalist figure releasing a briefcase off a grassy cliff into the ocean at sunset, symbolizing letting go",
+          "story_art_description": "Top-down flat illustration of an abandoned electric guitar, clock, spilled coffee, and notebook with the cartoon figure standing nearby, symbolizing unpracticed ambition.",
           "vertical_video_suitability": "high",
           "recommended_crop_strategy": "CROP_TO_TEXT_AND_ART",
           "safe_to_crop_ui_without_losing_story": true,
           "suggested_motion": [
-            "Parallax drift of birds and clouds",
-            "Slow zoom on the falling briefcase"
+            "Slow pan across the flat-lay objects",
+            "Subtle zoom on the guitar",
+            "Sequential fade-in of paragraphs"
           ],
           "visual_cleanup_needed": [
-            "Remove status bar and app chrome",
-            "Crop out truncated preview text at bottom belonging to the next card"
+            "Remove/crop device status bar and cricket score banner",
+            "Crop truncated preview text at bottom",
+            "Remove nav arrows and play button UI chrome for final video"
           ]
         },
         "uncertainties": [
-          "Bottom preview text is cut off by the UI and belongs to the next card"
+          "'Manson' is inferred to refer to author Mark Manson based on context/style, but the full name is not explicitly stated in this slide.",
+          "Cricket score banner is an unrelated phone notification overlay, not story content."
         ]
       }
     },
     {
-      "asset_id": "img_ef0dc599dff0",
-      "source_path": "source_images/IMG_8806.PNG",
-      "original_filename": "IMG_8806.PNG",
+      "asset_id": "img_d5101d6cfa1e",
+      "source_path": "source_images/IMG_8852.PNG",
+      "original_filename": "IMG_8852.PNG",
       "analysis": {
-        "content_type": "Story app content card (4th of 4) with body text, full-width illustration, and interactive card prompt",
+        "content_type": "Illustrated narrative slide within a storytelling/learning app, transitioning into an interactive card, with device status bar and app chrome overlaying the content",
         "source_text": {
           "heading": "",
-          "body_text": "Lifting the concept from philosopher Alan Watts, Manson calls this the Backwards Law.\n\nThe harder you chase a good feeling, the more you remind yourself you don't have it. Straining for success makes you feel like a failure.\n\nThe moment you stop fighting the burn and accept the discomfort, it loses its power over you.",
+          "body_text": "Everyone wants the reward, but far fewer want the struggle that earns it.\n\nHappiness isn't waiting at a finish line where all your problems disappear. It grows out of the specific problems you actually enjoy solving.\n\nThe people who win aren't the ones who avoid pain, but the ones who fall in love with the process.",
           "prominent_quote": "",
           "other_story_text": [],
           "ui_text": [
-            "9:47",
-            "42",
+            "2:40",
+            "Yet to bat",
+            "166/1 (24.2)",
+            "31",
+            "Choose Your Struggle",
             "Drag or tap the card to see it"
           ],
           "verbatim_blocks": [
             {
               "reading_order": 1,
-              "block_type": "BODY",
-              "text": "Lifting the concept from philosopher Alan Watts, Manson calls this the Backwards Law.",
+              "block_type": "HEADING",
+              "text": "Choose Your Struggle",
               "region": {
-                "x_min": 56,
-                "y_min": 200,
-                "x_max": 945,
-                "y_max": 290
+                "x_min": 54,
+                "y_min": 75,
+                "x_max": 574,
+                "y_max": 115
               }
             },
             {
               "reading_order": 2,
               "block_type": "BODY",
-              "text": "The harder you chase a good feeling, the more you remind yourself you don't have it. Straining for success makes you feel like a failure.",
+              "text": "Everyone wants the reward, but far fewer want the struggle that earns it.",
               "region": {
-                "x_min": 56,
-                "y_min": 320,
-                "x_max": 945,
-                "y_max": 460
+                "x_min": 54,
+                "y_min": 170,
+                "x_max": 953,
+                "y_max": 220
               }
             },
             {
               "reading_order": 3,
               "block_type": "BODY",
-              "text": "The moment you stop fighting the burn and accept the discomfort, it loses its power over you.",
+              "text": "Happiness isn't waiting at a finish line where all your problems disappear. It grows out of the specific problems you actually enjoy solving.",
               "region": {
-                "x_min": 56,
-                "y_min": 490,
-                "x_max": 945,
-                "y_max": 590
+                "x_min": 54,
+                "y_min": 250,
+                "x_max": 953,
+                "y_max": 350
               }
             },
             {
               "reading_order": 4,
+              "block_type": "BODY",
+              "text": "The people who win aren't the ones who avoid pain, but the ones who fall in love with the process.",
+              "region": {
+                "x_min": 54,
+                "y_min": 380,
+                "x_max": 953,
+                "y_max": 460
+              }
+            },
+            {
+              "reading_order": 5,
               "block_type": "UI",
               "text": "Drag or tap the card to see it",
               "region": {
-                "x_min": 150,
-                "y_min": 900,
-                "x_max": 800,
-                "y_max": 930
+                "x_min": 195,
+                "y_min": 860,
+                "x_max": 807,
+                "y_max": 900
+              }
+            },
+            {
+              "reading_order": 6,
+              "block_type": "UI",
+              "text": "Yet to bat 166/1 (24.2)",
+              "region": {
+                "x_min": 195,
+                "y_min": 15,
+                "x_max": 802,
+                "y_max": 45
               }
             }
           ],
           "transcription_confidence": 0.96
         },
         "visual": {
-          "description": "A painterly illustration of a person in a blue top, seen from behind, standing at a bathroom sink and looking into a mirror; the mirror reflection shows a flat, expressionless face with a small hourglass on a shelf behind it, steam rising from a coffee mug on the sink, warm lamp light on the left, tiled walls.",
+          "description": "The recurring cartoon figure sits on a wooden stool playing an acoustic guitar, illuminated by a single warm floor lamp, surrounded by rows of empty folding chairs, with a mug, open book, and crumpled papers scattered at his feet.",
           "main_elements": [
-            "bathroom sink and mirror",
-            "person viewed from behind",
-            "hourglass in mirror reflection",
-            "steaming coffee mug",
-            "tiled walls",
-            "warm lamp light"
+            "Illustration of figure playing guitar under a floor lamp",
+            "Rows of empty folding chairs",
+            "Crumpled paper/lyrics on floor",
+            "Open book and mug at figure's feet",
+            "Narrative text about happiness and process",
+            "UI instruction 'Drag or tap the card to see it'",
+            "Peek of next interactive card"
           ],
           "visual_subjects": [
             {
               "subject_type": "ILLUSTRATED_PERSON",
-              "description": "Person in a blue top, viewed from behind, standing at a sink and looking into a mirror at their own reflection",
+              "description": "Bald cartoon figure seated on a stool, playing an acoustic guitar, illuminated by a floor lamp.",
               "region": {
-                "x_min": 270,
-                "y_min": 610,
-                "x_max": 660,
-                "y_max": 870
+                "x_min": 357,
+                "y_min": 490,
+                "x_max": 672,
+                "y_max": 660
               }
             },
             {
               "subject_type": "OBJECT",
-              "description": "Small hourglass sitting on a shelf, visible in the mirror reflection behind the person's face",
+              "description": "Tall floor lamp casting a warm spotlight on the figure.",
               "region": {
-                "x_min": 430,
-                "y_min": 605,
-                "x_max": 520,
-                "y_max": 660
+                "x_min": 130,
+                "y_min": 450,
+                "x_max": 357,
+                "y_max": 650
+              }
+            },
+            {
+              "subject_type": "ENVIRONMENT",
+              "description": "Rows of empty folding chairs on either side of the room, suggesting an empty audience.",
+              "region": {
+                "x_min": 0,
+                "y_min": 490,
+                "x_max": 1000,
+                "y_max": 650
+              }
+            },
+            {
+              "subject_type": "OBJECT",
+              "description": "Crumpled papers, possibly discarded lyric sheets, on the floor near the figure.",
+              "region": {
+                "x_min": 563,
+                "y_min": 625,
+                "x_max": 780,
+                "y_max": 675
               }
             }
           ],
           "real_people_visible": false,
           "illustrated_or_cartoon_figures_visible": true,
           "figure_descriptions": [
-            "Person in a blue top viewed from behind at a bathroom sink, facing their mirror reflection"
+            "The same recurring bald cartoon figure, seated on a wooden stool playing an acoustic guitar, illuminated by a single floor lamp, surrounded by empty folding chairs arranged like an audience."
           ],
-          "environment": "Tiled bathroom at a sink, warm lamp lighting, painterly illustration style",
+          "environment": "Dim teal-toned room resembling a rehearsal space or empty small venue, with a wooden floor, rows of empty folding chairs on either side, and a single warm spotlight from a floor lamp on the musician.",
           "important_actions": [
-            "Person looking at their own reflection in a mirror"
+            "Figure practices guitar alone in an empty room, illustrating dedication to the process rather than performing for an audience or reward."
           ],
-          "composition_notes": "Three text paragraphs stacked above a full-width rounded-corner illustration; progress bar shows all 4 segments filled; below is an instructional prompt and the top edge of an interactive card peeking in from the bottom"
+          "composition_notes": "The lamp creates a warm spotlight pool contrasting with the cool blue-gray empty chairs, visually isolating the practicing figure and symbolizing solitary dedication ('falling in love with the process') despite no audience."
         },
         "semantic_summary": {
-          "core_idea": "Explains the Backwards Law (credited to philosopher Alan Watts): chasing good feelings pushes them further away, while accepting discomfort dissolves its power.",
+          "core_idea": "Concludes that fulfillment comes from loving the daily process/struggle itself, not from chasing an end reward.",
           "concepts": [
-            "Backwards Law",
-            "acceptance vs. resistance",
-            "paradox of pursuing happiness"
+            "Fulfillment through process",
+            "Delayed gratification myth",
+            "Loving the grind",
+            "Intrinsic motivation"
           ],
           "emotional_tone": [
-            "insightful",
-            "calm",
-            "philosophical"
+            "Inspiring",
+            "Reflective",
+            "Encouraging",
+            "Quietly hopeful"
           ],
-          "requires_external_context": true,
-          "context_needed": [
-            "Prior cards establishing Bukowski's story and Manson's framing of the Backwards Law"
-          ]
+          "requires_external_context": false,
+          "context_needed": []
         },
         "named_entities": [
           {
-            "name": "Alan Watts",
-            "entity_type": "Person (philosopher)",
-            "evidence": "'Lifting the concept from philosopher Alan Watts'"
-          },
-          {
-            "name": "Manson",
-            "entity_type": "Person (referenced author)",
-            "evidence": "'Manson calls this the Backwards Law'"
-          },
-          {
-            "name": "Backwards Law",
-            "entity_type": "Concept",
-            "evidence": "'Manson calls this the Backwards Law'"
+            "name": "Choose Your Struggle",
+            "entity_type": "Content series/lesson title",
+            "evidence": "Header text 'Choose Your Struggle' displayed at top of screen."
           }
         ],
         "possible_story_roles": [
-          "EXPLANATION",
-          "PAYOFF"
+          "PAYOFF",
+          "REFLECTION",
+          "EXPLANATION"
         ],
         "production": {
           "contains_app_ui": true,
           "story_art_region_present": true,
           "story_art_region": {
-            "x_min": 55,
-            "y_min": 610,
-            "x_max": 940,
-            "y_max": 870
+            "x_min": 54,
+            "y_min": 490,
+            "x_max": 943,
+            "y_max": 700
           },
           "story_text_region": {
-            "x_min": 56,
-            "y_min": 200,
-            "x_max": 945,
-            "y_max": 590
+            "x_min": 54,
+            "y_min": 170,
+            "x_max": 953,
+            "y_max": 460
           },
           "ui_regions": [
             {
-              "description": "Status bar",
+              "description": "Device status bar with time and cricket score notification banner",
               "region": {
                 "x_min": 0,
                 "y_min": 0,
                 "x_max": 1000,
-                "y_max": 60
+                "y_max": 50
               }
             },
             {
-              "description": "Header with title, translate/close icons",
+              "description": "App header with title, translate icon, and close button",
               "region": {
                 "x_min": 0,
-                "y_min": 100,
+                "y_min": 70,
                 "x_max": 1000,
-                "y_max": 165
+                "y_max": 120
               }
             },
             {
-              "description": "Progress bar (4 segments, all filled)",
+              "description": "Slide progress indicator (4 segments, final segment active)",
               "region": {
-                "x_min": 56,
-                "y_min": 170,
-                "x_max": 945,
-                "y_max": 182
+                "x_min": 50,
+                "y_min": 130,
+                "x_max": 950,
+                "y_max": 145
               }
             },
             {
-              "description": "Instructional prompt text 'Drag or tap the card to see it'",
+              "description": "'Drag or tap the card to see it' instructional UI text",
               "region": {
-                "x_min": 150,
-                "y_min": 900,
-                "x_max": 800,
-                "y_max": 930
+                "x_min": 195,
+                "y_min": 860,
+                "x_max": 807,
+                "y_max": 900
               }
             },
             {
-              "description": "Bottom nav with back/forward/play buttons, plus top edge of a partially visible interactive card",
+              "description": "Peek of next interactive purple-bordered card at very bottom edge",
               "region": {
-                "x_min": 0,
-                "y_min": 950,
-                "x_max": 1000,
+                "x_min": 50,
+                "y_min": 975,
+                "x_max": 950,
                 "y_max": 1000
               }
             }
           ],
-          "story_art_description": "Illustrated painterly scene of a person confronting their own reflection at a bathroom mirror, with a symbolic hourglass, evoking self-reflection and the passage of time",
+          "story_art_description": "Illustration of the recurring cartoon figure playing acoustic guitar alone under a lamp, surrounded by empty folding chairs, symbolizing dedication to process over performance.",
           "vertical_video_suitability": "high",
           "recommended_crop_strategy": "CROP_TO_TEXT_AND_ART",
           "safe_to_crop_ui_without_losing_story": true,
           "suggested_motion": [
-            "Slow push-in on the mirror reflection",
-            "Subtle steam animation from the coffee mug"
+            "Slow zoom on figure playing guitar",
+            "Warm light flicker/glow animation from the lamp",
+            "Sequential fade-in of paragraphs"
           ],
           "visual_cleanup_needed": [
-            "Remove status bar and app chrome",
-            "Crop out partially visible interactive card element at the very bottom edge"
+            "Remove/crop status bar and cricket score banner",
+            "Remove 'Drag or tap the card to see it' UI instruction text, not part of story",
+            "Crop peek of next interactive card at bottom edge"
           ]
         },
         "uncertainties": [
-          "The interactive card partially visible at the bottom edge is not fully shown in this screenshot; its complete content appears in the next screenshot"
+          "Cricket score banner is an unrelated phone notification overlay, not story content.",
+          "The crumpled papers on the floor are ambiguous in exact content (possibly discarded lyrics/sheet music)."
         ]
       }
     },
     {
-      "asset_id": "img_37c610ebb57b",
-      "source_path": "source_images/IMG_8807.PNG",
-      "original_filename": "IMG_8807.PNG",
+      "asset_id": "img_189adab8f683",
+      "source_path": "source_images/IMG_8853.PNG",
+      "original_filename": "IMG_8853.PNG",
       "analysis": {
-        "content_type": "Story app interactive summary/quote card with reflective question and share/save controls",
+        "content_type": "Interactive summary/quote card UI within a storytelling/learning app, with device status bar and app chrome overlaying the content",
         "source_text": {
-          "heading": "The Backwards Law",
-          "body_text": "You burn so much energy trying to feel good that the effort itself becomes the problem.\n\nWhat would change if you stopped trying to fix your discomfort today and just let yourself feel it?",
-          "prominent_quote": "Chase good feelings and they run from you; accept the bad, and it loosens its grip.",
+          "heading": "Choose Your Struggle",
+          "body_text": "Real fulfillment doesn't come from eliminating problems, but from choosing the specific set of problems you are willing to solve every day.\n\nBefore chasing any goal, stop asking how badly you want the reward. Ask instead whether you can stand the daily grind it demands; commit to it only, if the answer is yes.",
+          "prominent_quote": "Real fulfillment doesn't come from eliminating problems, but from choosing the specific set of problems you are willing to solve every day.",
           "other_story_text": [],
           "ui_text": [
-            "9:48",
-            "42",
+            "2:40",
+            "Yet to bat",
+            "166/1 (24.2)",
+            "31",
+            "Choose Your Struggle",
             "Continue"
           ],
           "verbatim_blocks": [
             {
               "reading_order": 1,
-              "block_type": "STORY_LABEL",
-              "text": "The Backwards Law",
+              "block_type": "HEADING",
+              "text": "Choose Your Struggle",
               "region": {
-                "x_min": 295,
-                "y_min": 610,
-                "x_max": 620,
-                "y_max": 645
+                "x_min": 54,
+                "y_min": 75,
+                "x_max": 574,
+                "y_max": 115
               }
             },
             {
               "reading_order": 2,
-              "block_type": "BODY",
-              "text": "You burn so much energy trying to feel good that the effort itself becomes the problem.",
+              "block_type": "HEADING",
+              "text": "Choose Your Struggle",
               "region": {
-                "x_min": 125,
-                "y_min": 770,
-                "x_max": 830,
-                "y_max": 850
+                "x_min": 295,
+                "y_min": 278,
+                "x_max": 646,
+                "y_max": 300
               }
             },
             {
               "reading_order": 3,
               "block_type": "QUOTE",
-              "text": "Chase good feelings and they run from you; accept the bad, and it loosens its grip.",
+              "text": "Real fulfillment doesn't come from eliminating problems, but from choosing the specific set of problems you are willing to solve every day.",
               "region": {
-                "x_min": 125,
-                "y_min": 890,
-                "x_max": 865,
-                "y_max": 970
+                "x_min": 130,
+                "y_min": 360,
+                "x_max": 880,
+                "y_max": 460
               }
             },
             {
               "reading_order": 4,
               "block_type": "BODY",
-              "text": "What would change if you stopped trying to fix your discomfort today and just let yourself feel it?",
+              "text": "Before chasing any goal, stop asking how badly you want the reward. Ask instead whether you can stand the daily grind it demands; commit to it only, if the answer is yes.",
               "region": {
-                "x_min": 125,
-                "y_min": 1000,
-                "x_max": 830,
-                "y_max": 1000
+                "x_min": 130,
+                "y_min": 490,
+                "x_max": 880,
+                "y_max": 610
+              }
+            },
+            {
+              "reading_order": 5,
+              "block_type": "UI",
+              "text": "Continue",
+              "region": {
+                "x_min": 65,
+                "y_min": 860,
+                "x_max": 790,
+                "y_max": 920
+              }
+            },
+            {
+              "reading_order": 6,
+              "block_type": "UI",
+              "text": "Yet to bat 166/1 (24.2)",
+              "region": {
+                "x_min": 195,
+                "y_min": 15,
+                "x_max": 802,
+                "y_max": 45
               }
             }
           ],
           "transcription_confidence": 0.97
         },
         "visual": {
-          "description": "A purple-bordered rounded card centered on a plain lavender background, containing a small purple line-art icon of stacked/framed papers, a title, body text, a highlighted purple quote, and share and bookmark icons at the bottom; a solid purple 'Continue' button sits below the card.",
+          "description": "A centered white card with a rounded purple border displays a circular abstract logo icon, the title 'Choose Your Struggle', and a two-paragraph pull-quote summarizing the lesson, with share and bookmark icons at the bottom and a large 'Continue' button below the card.",
           "main_elements": [
-            "purple-bordered quote card",
-            "line-art icon of stacked framed papers",
-            "highlighted quote text",
-            "share icon",
-            "bookmark icon",
-            "Continue button"
+            "Purple-bordered summary card",
+            "Circular abstract logo icon",
+            "Pull-quote text",
+            "Secondary paragraph text",
+            "Share icon",
+            "Bookmark icon",
+            "Continue button",
+            "Status bar/cricket banner UI"
           ],
           "visual_subjects": [
             {
               "subject_type": "SYMBOL",
-              "description": "Purple line-art icon resembling stacked framed papers or certificates, positioned at the top-left of the card",
+              "description": "Small circular abstract swirl/leaf-style logo icon at the top of the card.",
               "region": {
-                "x_min": 125,
-                "y_min": 560,
+                "x_min": 141,
+                "y_min": 270,
                 "x_max": 260,
-                "y_max": 650
+                "y_max": 315
               }
             }
           ],
           "real_people_visible": false,
           "illustrated_or_cartoon_figures_visible": false,
           "figure_descriptions": [],
-          "environment": "Plain lavender app background with a centered UI card; no illustrated scene",
+          "environment": "Plain light lavender/pink app background with a centered white card bearing a purple rounded border; minimal, clean UI aesthetic with no illustrated scene.",
           "important_actions": [],
-          "composition_notes": "Card dominates the frame with icon and title at top, body/quote text in middle, share and bookmark icons at bottom edge of card; Continue button and play control below"
+          "composition_notes": "The card is centered and framed by a purple border, with the logo and title at top, quote text as focal content, and share/bookmark icons at the bottom corners; a large 'Continue' call-to-action button anchors the screen beneath the card."
         },
         "semantic_summary": {
-          "core_idea": "Summarizes the Backwards Law takeaway as a shareable/savable quote card and poses a reflective question to the reader about accepting discomfort.",
+          "core_idea": "Final takeaway/summary card distilling the lesson: fulfillment comes from consciously choosing which daily problems to embrace, not from avoiding problems altogether.",
           "concepts": [
-            "summary quote",
-            "reflective question",
-            "acceptance of discomfort"
+            "Intentional struggle",
+            "Fulfillment philosophy",
+            "Goal-setting reflection",
+            "Commitment to process"
           ],
           "emotional_tone": [
-            "reflective",
-            "empowering",
-            "conclusive"
+            "Motivational",
+            "Instructive",
+            "Empowering"
           ],
           "requires_external_context": true,
           "context_needed": [
-            "Prior cards establishing the Backwards Law concept (Bukowski example, Alan Watts framing)"
+            "Builds on the preceding narrative slides (the Buddha's story and Manson's rock star anecdote) to justify this concluding advice."
           ]
         },
         "named_entities": [
           {
-            "name": "Backwards Law",
-            "entity_type": "Concept",
-            "evidence": "Card title 'The Backwards Law'"
+            "name": "Choose Your Struggle",
+            "entity_type": "Content series/lesson title",
+            "evidence": "Card title text 'Choose Your Struggle' shown on the summary card and app header."
           }
         ],
         "possible_story_roles": [
-          "REFLECTION",
           "PAYOFF",
+          "REFLECTION",
           "ENDING"
         ],
         "production": {
           "contains_app_ui": true,
-          "story_art_region_present": true,
+          "story_art_region_present": false,
           "story_art_region": {
-            "x_min": 55,
-            "y_min": 505,
-            "x_max": 945,
-            "y_max": 995
+            "x_min": 0,
+            "y_min": 0,
+            "x_max": 0,
+            "y_max": 0
           },
           "story_text_region": {
-            "x_min": 125,
-            "y_min": 770,
-            "x_max": 865,
-            "y_max": 970
+            "x_min": 65,
+            "y_min": 230,
+            "x_max": 920,
+            "y_max": 660
           },
           "ui_regions": [
             {
-              "description": "Status bar",
+              "description": "Device status bar with time and cricket score notification banner",
               "region": {
                 "x_min": 0,
                 "y_min": 0,
                 "x_max": 1000,
-                "y_max": 60
+                "y_max": 50
               }
             },
             {
-              "description": "Header with title, translate/close icons",
+              "description": "App header with title, translate icon, and close button",
               "region": {
                 "x_min": 0,
-                "y_min": 100,
+                "y_min": 70,
                 "x_max": 1000,
-                "y_max": 165
+                "y_max": 120
               }
             },
             {
-              "description": "Progress bar (4 segments, all filled)",
+              "description": "Slide progress indicator (4 segments, final segment active)",
               "region": {
-                "x_min": 56,
-                "y_min": 170,
-                "x_max": 945,
-                "y_max": 182
+                "x_min": 50,
+                "y_min": 130,
+                "x_max": 950,
+                "y_max": 145
               }
             },
             {
-              "description": "Continue button and play button",
+              "description": "Share and bookmark icons at bottom of card",
               "region": {
-                "x_min": 0,
-                "y_min": 940,
-                "x_max": 1000,
-                "y_max": 1000
+                "x_min": 130,
+                "y_min": 900,
+                "x_max": 880,
+                "y_max": 940
+              }
+            },
+            {
+              "description": "'Continue' call-to-action button",
+              "region": {
+                "x_min": 65,
+                "y_min": 860,
+                "x_max": 790,
+                "y_max": 920
               }
             }
           ],
-          "story_art_description": "Purple-bordered quote/summary card with a line-art icon and a highlighted takeaway quote, designed as a shareable graphic",
+          "story_art_description": "",
           "vertical_video_suitability": "medium",
-          "recommended_crop_strategy": "CROP_TO_TEXT_AND_ART",
+          "recommended_crop_strategy": "NEEDS_GENERATION",
           "safe_to_crop_ui_without_losing_story": true,
           "suggested_motion": [
-            "Static hold with subtle highlight/emphasis animation on the quote text",
-            "Fade-in of the quote line"
+            "Slow fade/zoom on quote text",
+            "Sequential highlight animation of bolded phrases"
           ],
           "visual_cleanup_needed": [
-            "Remove status bar, header icons, Continue button, and play button for final video use"
+            "Remove status bar and cricket score banner",
+            "Remove 'Continue' button and share/bookmark icons for final video export",
+            "Consider generating supporting background art since no illustrative artwork exists on this slide"
           ]
         },
         "uncertainties": [
-          "Whether this card functions as a standalone shareable summary or as an interactive overlay revealed by the prior card's drag/tap prompt is not fully clear from a single screenshot"
+          "No illustrative artwork present on this slide, only a text summary card.",
+          "Cricket score banner is an unrelated notification overlay.",
+          "The exact meaning/brand of the circular logo icon is not identifiable."
         ]
       }
     }

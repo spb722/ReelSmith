@@ -1,0 +1,140 @@
+{
+  "produced_by": "orchestrator",
+  "shots": {
+    "5": {
+      "shot_sequence": 5,
+      "shot_fingerprint": "64257670d5597ce44d1d1e5b260cad36a2241d2edd34f98d8e89bdd1f9dae96a",
+      "generation_mode": "VEO",
+      "asset_type": "video",
+      "local_path": "generated/veo/shot_05.mp4",
+      "asset_sha256": "76e5d58e36971cc370f79d570486d11b71f14acf8fe11c34c5d11f92460c569f",
+      "approved": true,
+      "source_asset_ids": [
+        "img_d5101d6cfa1e"
+      ],
+      "seed_path": "generated/veo_seeds/shot_05_seed.png",
+      "seed_sha256": "4b4b9a5ccacc8a3e75dcb36ecc7a9acc07cb26138b830f4d9da4a868a9cad95a",
+      "generation_model": "veo-3.1-fast-generate-001",
+      "gcs_uri": "gs://sachin-kayaking-video-test/book_reels/veo/12489142529020241446/sample_0.mp4",
+      "operation_name": "projects/gen-lang-client-0240752803/locations/global/publishers/google/models/veo-3.1-fast-generate-001/operations/493111ba-7b9a-4801-80c4-7ca5623daa70",
+      "operation_dump_path": "metadata/veo_operations/shot_05_attempt_01.json",
+      "preview_paths": [
+        "generated/veo/previews/shot_05_01.jpg",
+        "generated/veo/previews/shot_05_02.jpg",
+        "generated/veo/previews/shot_05_03.jpg"
+      ],
+      "qa_summary": "Inspected all three preview frames across the clip: the solitary cartoon figure remains seated on the stool playing acoustic guitar with hands correctly positioned on strings/neck throughout, the warm floor lamp glow is stable and consistent, and rows of empty folding chairs remain visible at both edges as a felt presence without becoming the focal point. Motion across the three previews shows a slow, restrained zoom-in on the figure exactly per the planned motion_plan, with no jitter, warping, morphing limbs, extra/duplicate subjects, added characters, app UI, or legible on-screen text -- the crumpled paper props still show only illustrated scribble marks. Illustration style, palette, and composition remain faithful to the approved seed with no photorealistic drift, so the clip serves the shot goal of contrasting solitary practice against the empty audience.",
+      "cost_usd": 1.24
+    },
+    "6": {
+      "shot_sequence": 6,
+      "shot_fingerprint": "6d23bdd80e40c3a3db0dc5a394a92013f9d0e1d662f178839b811845755e363b",
+      "generation_mode": "VEO",
+      "asset_type": "video",
+      "local_path": "generated/veo/shot_06.mp4",
+      "asset_sha256": "e7a4932cf6284a516e6dd2179ae4b9734aea0521a837c955b396fdd0651333d6",
+      "approved": true,
+      "source_asset_ids": [
+        "img_d5101d6cfa1e",
+        "img_189adab8f683"
+      ],
+      "seed_path": "generated/veo_seeds/shot_06_seed.png",
+      "seed_sha256": "5f3e701bd97dc66e3d7fee2097a6cec79c8616b3a8b75023fc6477f8da4837f4",
+      "generation_model": "veo-3.1-fast-generate-001",
+      "gcs_uri": "gs://sachin-kayaking-video-test/book_reels/veo/6578272018256186387/sample_0.mp4",
+      "operation_name": "projects/gen-lang-client-0240752803/locations/global/publishers/google/models/veo-3.1-fast-generate-001/operations/73ab48d3-31a5-4556-b058-d2b3fbb9bc5f",
+      "operation_dump_path": "metadata/veo_operations/shot_06_attempt_03.json",
+      "preview_paths": [
+        "generated/veo/previews/shot_06_01.jpg",
+        "generated/veo/previews/shot_06_02.jpg",
+        "generated/veo/previews/shot_06_03.jpg"
+      ],
+      "qa_summary": "All three preview frames confirm a clean, coherent slow pull-back/zoom-out from the practicing figure playing guitar under the warm lamp spotlight: framing widens progressively across the sequence to reveal significantly more of the empty folding chairs on both sides and in the foreground/background, exactly matching the specified dolly-out motion intent. Illustrated flat-color style, teal palette, and warm lamp glow are preserved consistently from the seed with no photorealistic drift. No duplicate or extra human figures, no distortion or warping of the figure/guitar/lamp/chairs, no app UI, no watermark, and critically -- zero baked-in text or captions in any frame (the earlier double-caption defect from attempt 2 is fully resolved). Camera movement is gentle and restrained, matching the quiet reflective pace called for by the closing line, and leaves clean, uncluttered space for the short text_overlay to be composited and faded in during post per fade_in_frames/fade_out_frames. Approved.",
+      "cost_usd": 1.24
+    },
+    "1": {
+      "shot_sequence": 1,
+      "shot_fingerprint": "bbeb483095558b493f9337fdcc01a2dac83e55ecb6e8939ffb9ecdc34d0cf449",
+      "generation_mode": "STILL",
+      "asset_type": "still",
+      "local_path": "generated/stills/shot_01.png",
+      "asset_sha256": "0cb1995bf2e7f1da02ce2f71013f1cd45d0ec775fdf77012c81c69fee0850c2b",
+      "approved": true,
+      "source_asset_ids": [
+        "img_87a825c5a858"
+      ],
+      "seed_path": null,
+      "seed_sha256": null,
+      "generation_model": "gemini-3.1-flash-image",
+      "gcs_uri": null,
+      "operation_name": null,
+      "operation_dump_path": null,
+      "preview_paths": [],
+      "qa_summary": "Verified exactly one instance of the focal subject: a single bald, round-headed cartoon prince in a blue sweater and dark trousers, centered in the frame, standing alone amid symmetrical rows of black silhouetted servants bearing trays of fruit, drinks, and folded cloth on either side. Scene is set beneath an arched, vine-draped amber-lit colonnade matching the source art's story_art_region content, with no duplicated prince or duplicated focal scene anywhere in frame. No app UI, status bar, cricket banner, header, progress bar, nav arrows, on-image text, letters, logos, or watermarks are present -- all app chrome was successfully cropped out per the shot's frame_composition. Style remains a flat, halftone-textured illustration consistent with the source asset (no drift to photorealism). Composition matches the shot goal of quiet isolation-amid-abundance: the lone prince is visually dwarfed and flanked by servants, reinforcing foreboding. The plain cream sky band at top and solid amber/brown band at bottom are clean, uncluttered negative space well suited for later Remotion subtitle/typography overlay without occluding the illustrated figures.",
+      "cost_usd": 0.04
+    },
+    "2": {
+      "shot_sequence": 2,
+      "shot_fingerprint": "9dd640ee3bdc978527bd4b5ba2a3f9f07a2b2f636c9b05cab281959f955360a8",
+      "generation_mode": "STILL",
+      "asset_type": "still",
+      "local_path": "generated/stills/shot_02.png",
+      "asset_sha256": "2f19f8e5df0804770602e52bdc2bd38e8fe50f9a577d8dafb184aa38563aa5b9",
+      "approved": true,
+      "source_asset_ids": [
+        "img_c99892bd2a98"
+      ],
+      "seed_path": null,
+      "seed_sha256": null,
+      "generation_model": "gemini-3.1-flash-image",
+      "gcs_uri": null,
+      "operation_name": null,
+      "operation_dump_path": null,
+      "preview_paths": [],
+      "qa_summary": "Verified exactly one instance of the focal subject: a single minimalist bald cartoon figure seated cross-legged beneath the heart-leaved tree, wearing the same blue sweater and dark trousers, with a single empty alms bowl beside his hand. No duplicate figures, tombstones, or repeated scene elements anywhere in frame. Style remains flat illustrated/vector-cartoon (hatched shading, stylized heart leaves), not photorealistic. No app UI chrome, status bar, progress indicator, banners, visible text, letters, logos, or watermarks are present -- the crop cleanly isolates the story art region. Composition centers the seated figure under the tree canopy matching the shot's frame_composition intent, and the large open tan foreground area at the bottom of frame leaves clean, uncluttered space for later Remotion subtitle/typography overlays without occluding the subject.",
+      "cost_usd": 0.04
+    },
+    "3": {
+      "shot_sequence": 3,
+      "shot_fingerprint": "08727f115e24a96fe87f75297550cb5363336bf110c304d7c621ba25e1d32be5",
+      "generation_mode": "STILL",
+      "asset_type": "still",
+      "local_path": "generated/stills/shot_03.png",
+      "asset_sha256": "0b38a3365a1b0f1f11a45a9290d9785b4720d1570785ddbec0e97525235327bf",
+      "approved": true,
+      "source_asset_ids": [
+        "img_c99892bd2a98"
+      ],
+      "seed_path": null,
+      "seed_sha256": null,
+      "generation_model": "gemini-3.1-flash-image",
+      "gcs_uri": null,
+      "operation_name": null,
+      "operation_dump_path": null,
+      "preview_paths": [],
+      "qa_summary": "Verified exactly one instance of the focal subject: a single bald cartoon figure seated cross-legged in meditation beneath the heart-leaved tree, with a single empty alms bowl beside his hand. The tree's forked trunk is a single tree (not a duplicated scene element). No app UI, status bars, buttons, visible text, letters, logos, or watermarks present. Style remains flat illustrated/stylized (dotted-texture, hand-drawn linework) with no drift toward photorealism. Composition matches the shot goal: centered figure under the canopy, calm/still mood, with generous clean negative space above the tree and below the figure for later Remotion subtitle/typography placement. Approved.",
+      "cost_usd": 0.04
+    },
+    "4": {
+      "shot_sequence": 4,
+      "shot_fingerprint": "ce7f8af0cd0f3b1cceda24f6c686bc715b2b86f29ccd208d438546ab710b755c",
+      "generation_mode": "STILL",
+      "asset_type": "still",
+      "local_path": "generated/stills/shot_04.png",
+      "asset_sha256": "47c6a68ef886968ff21969d167c17f7270352fd849b64d4c2294d6d12b65f35d",
+      "approved": true,
+      "source_asset_ids": [
+        "img_7e9bbe598ea9"
+      ],
+      "seed_path": null,
+      "seed_sha256": null,
+      "generation_model": "gemini-3.1-flash-image",
+      "gcs_uri": null,
+      "operation_name": null,
+      "operation_dump_path": null,
+      "preview_paths": [],
+      "qa_summary": "Verified single instance of each focal element: exactly one electric guitar lying diagonally as the visual centerpiece, one alarm clock, one spilled coffee mug with stain, one closed notebook (with illustrative squiggle marks, not legible real text), and exactly one cartoon figure positioned at the lower-right edge beneath the diagonal orange spotlight band -- no duplicated subjects or scenes anywhere in frame. Illustration style is fully consistent with the source flat-lay art (flat cel-shaded rendering, halftone shadow textures), with no drift toward photorealism. No app UI chrome, status bar, buttons, icons, watermarks, or logos are visible; crop matches the intended story_art_region composition (top-down flat-lay of props with figure at frame edge). Top and side wood-floor areas remain open/uncluttered, leaving clean space for Remotion subtitle and typography overlay. Composition matches shot_goal of using the unused guitar and idle props as evidence of 'dreaming without practicing.'",
+      "cost_usd": 0.04
+    }
+  }
+}

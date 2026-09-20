@@ -1,0 +1,32 @@
+{
+  "name": "projects/gen-lang-client-0240752803/locations/global/publishers/google/models/veo-3.1-fast-generate-001/operations/73ab48d3-31a5-4556-b058-d2b3fbb9bc5f",
+  "metadata": null,
+  "done": true,
+  "error": null,
+  "response": {
+    "generated_videos": [
+      {
+        "video": {
+          "uri": "gs://sachin-kayaking-video-test/book_reels/veo/6578272018256186387/sample_0.mp4",
+          "video_bytes": null,
+          "mime_type": "video/mp4"
+        }
+      }
+    ],
+    "rai_media_filtered_count": 0,
+    "rai_media_filtered_reasons": null
+  },
+  "result": {
+    "generated_videos": [
+      {
+        "video": {
+          "uri": "gs://sachin-kayaking-video-test/book_reels/veo/6578272018256186387/sample_0.mp4",
+          "video_bytes": null,
+          "mime_type": "video/mp4"
+        }
+      }
+    ],
+    "rai_media_filtered_count": 0,
+    "rai_media_filtered_reasons": null
+  }
+}

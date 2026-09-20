@@ -1,327 +1,239 @@
 {
-  "visual_concept": {
-    "overall_approach": "A grounded, reflective visual journey that leverages the existing textured illustrations. The edit will rely on slow, deliberate camera movements (Ken Burns style) to match the philosophical, mature tone of the narration, allowing the viewer time to absorb the concepts.",
-    "visual_tone": [
-      "Reflective",
-      "Melancholic",
-      "Philosophical",
-      "Calm",
-      "Introspective"
-    ],
-    "editing_style": "Slow-paced and deliberate. Cuts should be soft and motivated by shifts in the narrative from concrete story to abstract philosophy. The rhythm should feel like a deep breath.",
-    "subtitle_strategy": "Clean, centered, and minimal. Use subtle color or weight shifts to emphasize key phrases like 'Don't try' and 'The Backwards Law'. Subtitles should not distract from the visual texture.",
-    "asset_usage_strategy": "Maximize the emotional weight of the existing illustrations by cropping into specific details (e.g., the messy desk, the sad reflection, the falling briefcase) and panning to reveal context. Reuse assets by focusing on different quadrants to create thematic bookends.",
-    "ai_video_policy": "Strictly avoid AI video generation. The existing illustrations have a cohesive, textured, halftone style that would be disrupted by generative video. Rely entirely on CROP_AND_RECOMPOSE and SUBTLE_ANIMATION."
-  },
-  "global_style_guide": {
-    "format": "9:16 Vertical",
-    "camera_motion_language": "Slow pushes, subtle pans, and gentle drifts. No sudden movements or snap zooms. Motion should feel like a steady, guiding hand.",
-    "transition_language": "Soft crossfades (15-24 frames) to maintain a dreamlike, reflective flow. Hard cuts should only be used if a stark contrast is needed.",
-    "text_treatment": "Elegant serif or clean, thin sans-serif for impact text. Impact text should fade in smoothly and sit comfortably within the negative space of the compositions.",
-    "background_and_texture_notes": "Preserve the halftone dot patterns and visible textures of the original art. Do not over-sharpen or denoise.",
-    "color_and_contrast_notes": "Enhance the warm oranges and purples to create a cohesive color grade across the different illustrations. Keep the shadows lifted to maintain a soft, vintage feel."
-  },
+  "produced_by": "visual_agent",
+  "overall_visual_style": "A warm, halftone-textured flat-illustration style throughout, carried directly from the source app's recurring bald cartoon figure and muted amber/teal/orange palette; every shot crops out app chrome, the status bar, and the unrelated cricket-score banner so only the illustrated story world and narration-timed text overlays remain. Camera language stays slow, deliberate, and hushed -- soft push-ins, gentle horizontal pans, and unhurried pull-backs -- mirroring the narrator's calm, contemplative pacing, with motion intensity rising only slightly on the two human-scale \"practice\" scenes to underline physical, earned effort versus the stillness of realization.",
   "shots": [
     {
       "sequence": 1,
+      "generation_mode": "STILL",
+      "visual_treatment": "USE_EXISTING_ART",
+      "source_asset_ids": [
+        "img_87a825c5a858"
+      ],
+      "shot_goal": "Establish the prince's sheltered isolation amid abundance to open the hook with quiet foreboding.",
+      "frame_composition": "Crop to the story_art_region (x:54-943, y:457-702) per the asset's recommended CROP_TO_TEXT_AND_ART strategy, cutting out the status bar/cricket banner, header, progress bar, and nav arrows per its listed ui_regions; vertical reframe centers the bald prince figure (~433-563, 540-685) with silhouetted servants and trays flanking him under the arched, vine-draped colonnade.",
+      "motion_plan": "Slow, steady zoom-in toward the centered prince per the asset's own suggested_motion ('slow zoom-in on the prince figure'), tightening gradually over the shot so the servants and archways recede toward the frame edges, visually reinforcing isolation despite abundance; a single smooth push, no separate parallax layers.",
+      "text_overlay": "",
+      "source_support": "Grounded in img_87a825c5a858's story_art_region and figure_descriptions (centered bald prince, silhouetted servants with trays, ornate amber-lit courtyard); the fallback motion follows the asset's own suggested_motion, and cropping follows its visual_cleanup_needed notes about removing the cricket banner and app chrome.",
+      "video_candidate_rank": null,
+      "video_motion_intent": "",
+      "scene_content_fingerprint": "9581481808f2bb8b7d2a76447e94664e938356d3329aa9cc873c96e72c566455",
       "start_seconds": 0.0,
-      "end_seconds": 12.0,
-      "narrative_function": "HOOK",
+      "end_seconds": 7.64,
       "primary_subtitle_cue_ids": [
         "cue_001",
         "cue_002",
         "cue_003",
-        "cue_004",
-        "cue_005"
+        "cue_004"
       ],
-      "source_asset_ids": [
-        "img_fe38b500f8d1"
-      ],
-      "visual_treatment": "CROP_AND_RECOMPOSE",
-      "shot_goal": "Establish the hook and the central paradox of Bukowski's success.",
-      "frame_composition": "Start with a medium-wide crop of the grassy field, with the tombstone centered in the lower third.",
-      "motion_plan": "A very slow, steady push-in on the tombstone, coming to a rest just as the final phrase is spoken.",
-      "text_overlay": "Don't try. (Fades in exactly at 9.92s, centered over the tombstone)",
-      "subtitle_emphasis_notes": "Highlight 'Don't try.' in cue_005.",
-      "transition_in": "Fade from black.",
-      "transition_out": "Soft crossfade.",
-      "source_support": "Directly uses the tombstone illustration to support the epitaph hook.",
-      "fade_in_frames": 0,
-      "fade_out_frames": 6,
+      "fade_in_frames": 10,
+      "fade_out_frames": 12,
       "still_motion": {
         "scale_from": 1.0,
-        "scale_to": 1.07,
-        "easing": "linear"
-      }
+        "scale_to": 1.12,
+        "translate_x_from": 0.0,
+        "translate_x_to": 0.0,
+        "translate_y_from": 0.02,
+        "translate_y_to": -0.02,
+        "easing": "easeOut"
+      },
+      "video_promotion_decided": true
     },
     {
       "sequence": 2,
-      "start_seconds": 12.0,
-      "end_seconds": 18.5,
-      "narrative_function": "SETUP",
+      "generation_mode": "STILL",
+      "visual_treatment": "USE_EXISTING_ART",
+      "source_asset_ids": [
+        "img_c99892bd2a98"
+      ],
+      "shot_goal": "Visualize the extremity of his search -- renouncing the throne, sleeping in dirt, starving himself -- using the seated ascetic figure as the visual anchor the scene calls for.",
+      "frame_composition": "Crop to story_art_region (x:54-943, y:457-702), centering the seated cross-legged figure beneath the heart-leaved tree with the empty alms bowl beside him, removing the status bar/cricket banner and progress indicator per ui_regions.",
+      "motion_plan": "Gentle, slow zoom drifting inward toward the seated figure per the asset's suggested_motion ('slow zoom into the seated figure's face'), kept measured and unhurried to match the slow, weighted narration pacing note for this passage; movement stays understated so the figure reads as an ongoing state of searching rather than a single instant.",
+      "text_overlay": "",
+      "source_support": "Uses img_c99892bd2a98's seated meditating figure and empty bowl (figure_descriptions, visual_subjects) as the anchor image the scene's visual_intent explicitly requests, even though the narration here describes the flight itself; motion follows the asset's own suggested slow zoom toward the figure.",
+      "video_candidate_rank": null,
+      "video_motion_intent": "",
+      "scene_content_fingerprint": "d13e2895c4e3a136135ee498077f2ba4aae0b89f0df529e2cfa3641e4c64f861",
+      "start_seconds": 7.64,
+      "end_seconds": 19.12,
       "primary_subtitle_cue_ids": [
+        "cue_005",
         "cue_006",
         "cue_007",
-        "cue_008"
-      ],
-      "source_asset_ids": [
-        "img_badc7b4efc85"
-      ],
-      "visual_treatment": "CROP_AND_RECOMPOSE",
-      "shot_goal": "Illustrate the gritty reality of Bukowski's 30-year struggle.",
-      "frame_composition": "Tight crop on the messy desk, focusing on the typewriter, ashtray, and crumpled papers.",
-      "motion_plan": "Slow, horizontal pan from left to right across the desk, emphasizing the clutter and passage of time.",
-      "text_overlay": "",
-      "subtitle_emphasis_notes": "Keep subtitles neutral to let the visual clutter speak.",
-      "transition_in": "Soft crossfade from the tombstone.",
-      "transition_out": "Soft crossfade.",
-      "source_support": "Uses the writer's desk illustration to depict the years of rejection and struggle.",
-      "fade_in_frames": 6,
-      "fade_out_frames": 6,
-      "still_motion": null
-    },
-    {
-      "sequence": 3,
-      "start_seconds": 18.5,
-      "end_seconds": 24.5,
-      "narrative_function": "PIVOT",
-      "primary_subtitle_cue_ids": [
+        "cue_008",
         "cue_009",
         "cue_010",
         "cue_011"
       ],
-      "source_asset_ids": [
-        "img_fe38b500f8d1"
-      ],
-      "visual_treatment": "CROP_AND_RECOMPOSE",
-      "shot_goal": "Visually represent the shift from struggle to self-acceptance and peace.",
-      "frame_composition": "Crop entirely into the warm, light orange and yellow sky and the tops of the golden grass from the tombstone image. Exclude the tombstone itself.",
-      "motion_plan": "Slow, upward drift into the warm sky, creating a feeling of lightness and release.",
-      "text_overlay": "Accept Who You Are (Fades in softly at 20.0s)",
-      "subtitle_emphasis_notes": "Highlight 'accepting who he was' in cue_010.",
-      "transition_in": "Soft crossfade from the dark desk to the bright, warm sky.",
-      "transition_out": "Soft crossfade.",
-      "source_support": "Repurposes the peaceful sky from the tombstone asset to symbolize the 'honest baseline' of acceptance.",
-      "fade_in_frames": 6,
-      "fade_out_frames": 4,
+      "fade_in_frames": 12,
+      "fade_out_frames": 8,
       "still_motion": {
-        "scale_from": 1.02,
-        "scale_to": 1.07,
-        "translate_y_from": 0,
-        "translate_y_to": -2,
+        "scale_from": 1.0,
+        "scale_to": 1.15,
+        "translate_x_from": 0.0,
+        "translate_x_to": 0.0,
+        "translate_y_from": 0.04,
+        "translate_y_to": 0.0,
         "easing": "ease"
-      }
+      },
+      "video_promotion_decided": true
     },
     {
-      "sequence": 4,
-      "start_seconds": 24.5,
-      "end_seconds": 33.8,
-      "narrative_function": "EXPLANATION",
+      "sequence": 3,
+      "generation_mode": "STILL",
+      "visual_treatment": "SUBTLE_ANIMATION",
+      "source_asset_ids": [
+        "img_c99892bd2a98"
+      ],
+      "shot_goal": "Land the reversal -- his extremes failed, and the realization that everyone suffers becomes the Buddha's first teaching -- as a calm, weighty revelation.",
+      "frame_composition": "Same story_art_region crop as the previous shot (seated figure under the heart-leaved tree, empty bowl beside him), held slightly wider and steadier to let stillness read as the emotional center of the frame.",
+      "motion_plan": "Hushed, continuous drift: heart-shaped leaves settle slowly per the asset's own suggested 'gentle falling-leaves animation,' paired with a near-imperceptible push toward the figure, timed to hold through the flat 'It handed him nothing' beat before easing very slightly further as 'everyone suffers' resolves.",
+      "text_overlay": "It handed him nothing",
+      "source_support": "Reuses img_c99892bd2a98's seated figure and its own suggested_motion (falling leaves, slow zoom toward the figure) to carry the revelation without inventing new imagery; the tree's heart-shaped leaves are flagged in the asset's uncertainties as stylized rather than a literal Bodhi tree, so no botanical specificity is asserted.",
+      "video_candidate_rank": 2,
+      "video_motion_intent": "Gentle downward drift of the heart-shaped leaves falling from the canopy around the seated figure, with an almost imperceptible push-in toward him as stillness settles after 'it handed him nothing' -- slow, hushed motion that lets the revelation breathe rather than distracting from it.",
+      "scene_content_fingerprint": "a85a337d807846b479a16415b7dbfba1a82ea028a4ce5d72958cffd411e13c11",
+      "start_seconds": 19.12,
+      "end_seconds": 32.0,
       "primary_subtitle_cue_ids": [
         "cue_012",
         "cue_013",
         "cue_014",
-        "cue_015"
-      ],
-      "source_asset_ids": [
-        "img_37c610ebb57b"
-      ],
-      "visual_treatment": "CROP_AND_RECOMPOSE",
-      "shot_goal": "Introduce the core philosophical concept clearly.",
-      "frame_composition": "Center the stylized maze/loop icon on the purple background.",
-      "motion_plan": "Very slow, subtle scale-up of the icon to draw focus to the cyclical nature of the concept.",
-      "text_overlay": "The Backwards Law (Fades in at 24.96s)",
-      "subtitle_emphasis_notes": "Highlight 'The Backwards Law' in cue_012.",
-      "transition_in": "Soft crossfade.",
-      "transition_out": "Soft crossfade.",
-      "source_support": "Uses the dedicated title card asset for the concept.",
-      "fade_in_frames": 4,
-      "fade_out_frames": 0,
-      "still_motion": {
-        "scale_from": 1.0,
-        "scale_to": 1.06,
-        "translate_x_from": 0,
-        "translate_x_to": 1.5,
-        "easing": "ease"
-      }
-    },
-    {
-      "sequence": 5,
-      "start_seconds": 33.8,
-      "end_seconds": 38.4,
-      "narrative_function": "STORY",
-      "primary_subtitle_cue_ids": [
+        "cue_015",
         "cue_016",
         "cue_017"
       ],
-      "source_asset_ids": [
-        "img_ef0dc599dff0"
-      ],
-      "visual_treatment": "CROP_AND_RECOMPOSE",
-      "shot_goal": "Illustrate the internal pain of straining for success and feeling like a failure.",
-      "frame_composition": "Tight crop on the mirror, focusing specifically on the sad reflection of the figure's face.",
-      "motion_plan": "Slow push-in directly toward the sad reflection in the mirror, increasing the sense of introspection and discomfort.",
-      "text_overlay": "",
-      "subtitle_emphasis_notes": "Highlight 'feel like a failure' in cue_017.",
-      "transition_in": "Soft crossfade.",
-      "transition_out": "Soft crossfade.",
-      "source_support": "Uses the mirror reflection asset to show the negative emotional result of chasing feelings.",
-      "fade_in_frames": 0,
-      "fade_out_frames": 4,
-      "still_motion": null
+      "fade_in_frames": 8,
+      "fade_out_frames": 14,
+      "still_motion": {
+        "scale_from": 1.05,
+        "scale_to": 1.18,
+        "translate_x_from": -0.02,
+        "translate_x_to": 0.02,
+        "translate_y_from": null,
+        "translate_y_to": null,
+        "easing": "linear"
+      },
+      "video_promotion_decided": true
     },
     {
-      "sequence": 6,
-      "start_seconds": 38.4,
-      "end_seconds": 45.0,
-      "narrative_function": "PRINCIPLE",
+      "sequence": 4,
+      "generation_mode": "STILL",
+      "visual_treatment": "USE_EXISTING_ART",
+      "source_asset_ids": [
+        "img_7e9bbe598ea9"
+      ],
+      "shot_goal": "Shift the lesson to a relatable modern register by showing Manson's unused guitar and idle props as evidence of dreaming without practicing.",
+      "frame_composition": "Crop to story_art_region (x:54-943, y:435-685) per CROP_TO_TEXT_AND_ART, framing the top-down flat-lay of guitar, alarm clock, spilled coffee mug, and notebook on the wood floor, with the standing figure kept at the frame's edge (~628-834, 410-540) beneath the diagonal orange spotlight band.",
+      "motion_plan": "Slow horizontal pan across the flat-lay per the asset's own suggested_motion ('slow pan across the flat-lay objects'), moving across guitar, clock, spilled mug and notebook, with a slight additional push toward the guitar as the visual focal point of 'never practiced.'",
+      "text_overlay": "loving the fame, never the practice",
+      "source_support": "Grounded in img_7e9bbe598ea9's visual_subjects (guitar, clock, spilled mug, notebook, standing figure) and its suggested_motion (slow pan, subtle zoom on the guitar); the figure is not asserted to be a literal portrait of the author, consistent with the asset's own uncertainty about whether 'Manson' refers to a specific confirmed public figure.",
+      "video_candidate_rank": 4,
+      "video_motion_intent": "Subtle wisps of steam rising from the spilled coffee and a faint ticking motion on the clock hands, with dust motes drifting through the diagonal spotlight -- small signs of time passing while the guitar sits untouched, reinforcing 'never practiced' through environmental motion rather than a single dramatic action.",
+      "scene_content_fingerprint": "aa9490319e56c3a995c515091120540ba5ac7ac3fdb085de18ca359a9e3816ae",
+      "start_seconds": 32.0,
+      "end_seconds": 41.8,
       "primary_subtitle_cue_ids": [
         "cue_018",
         "cue_019",
-        "cue_020"
-      ],
-      "source_asset_ids": [
-        "img_6f6dabaab3eb"
-      ],
-      "visual_treatment": "CROP_AND_RECOMPOSE",
-      "shot_goal": "Visually represent the act of letting go of outcomes and making bold moves.",
-      "frame_composition": "Start with the stick figure on the cliff, then frame downwards to follow the trajectory of the falling briefcase.",
-      "motion_plan": "Slow pan downwards, tracking the implied motion of the briefcase falling into the ocean below.",
-      "text_overlay": "",
-      "subtitle_emphasis_notes": "Highlight 'stop obsessing' in cue_020.",
-      "transition_in": "Soft crossfade.",
-      "transition_out": "Continuous motion into the next shot (or soft crossfade to a different crop).",
-      "source_support": "Uses the cliff/briefcase illustration to symbolize letting go of attachments.",
-      "fade_in_frames": 4,
-      "fade_out_frames": 6,
-      "still_motion": null
-    },
-    {
-      "sequence": 7,
-      "start_seconds": 45.0,
-      "end_seconds": 49.6,
-      "narrative_function": "PRINCIPLE",
-      "primary_subtitle_cue_ids": [
+        "cue_020",
         "cue_021",
         "cue_022"
       ],
-      "source_asset_ids": [
-        "img_6f6dabaab3eb"
-      ],
-      "visual_treatment": "CROP_AND_RECOMPOSE",
-      "shot_goal": "Show the liberation that comes from accepting discomfort.",
-      "frame_composition": "Crop into the upper right quadrant of the image: the open ocean, the warm horizon, and the birds flying free.",
-      "motion_plan": "Slow pan to the right, following the birds toward the open horizon.",
-      "text_overlay": "",
-      "subtitle_emphasis_notes": "Highlight 'Accept discomfort' in cue_021.",
-      "transition_in": "Soft crossfade from the falling briefcase.",
-      "transition_out": "Soft crossfade.",
-      "source_support": "Repurposes the open horizon of the cliff asset to symbolize freedom and loss of power over the individual.",
-      "fade_in_frames": 6,
-      "fade_out_frames": 8,
-      "still_motion": {
-        "scale_from": 1.02,
-        "scale_to": 1.04,
-        "translate_x_from": 0,
-        "translate_x_to": 1.2,
-        "easing": "ease"
-      }
-    },
-    {
-      "sequence": 8,
-      "start_seconds": 49.6,
-      "end_seconds": 52.44,
-      "narrative_function": "REFLECTION",
-      "primary_subtitle_cue_ids": [
-        "cue_023",
-        "cue_024"
-      ],
-      "source_asset_ids": [
-        "img_fe38b500f8d1"
-      ],
-      "visual_treatment": "CROP_AND_RECOMPOSE",
-      "shot_goal": "Leave the viewer with an open, spacious, and calm visual to ponder the final question.",
-      "frame_composition": "Extreme crop into just the warm, textured sky of the tombstone image. No ground, no objects. Just pure color and texture.",
-      "motion_plan": "An almost imperceptible, very slow drift upwards into the empty sky.",
-      "text_overlay": "",
-      "subtitle_emphasis_notes": "Use a slightly softer, more elegant font weight for these final reflection cues.",
-      "transition_in": "Long, soft crossfade (24 frames).",
-      "transition_out": "Fade to black.",
-      "source_support": "Uses the sky texture to create a blank canvas for the viewer's own reflection, bookending the visual tone of the piece.",
-      "fade_in_frames": 8,
-      "fade_out_frames": 0,
+      "fade_in_frames": 10,
+      "fade_out_frames": 6,
       "still_motion": {
         "scale_from": 1.0,
-        "scale_to": 1.015,
+        "scale_to": 1.06,
+        "translate_x_from": -0.05,
+        "translate_x_to": 0.05,
+        "translate_y_from": null,
+        "translate_y_to": null,
+        "easing": "linear"
+      },
+      "video_promotion_decided": true
+    },
+    {
+      "sequence": 5,
+      "generation_mode": "VEO",
+      "visual_treatment": "USE_EXISTING_ART",
+      "source_asset_ids": [
+        "img_d5101d6cfa1e"
+      ],
+      "shot_goal": "Crystallize the core principle -- everyone wants the reward, few want the struggle -- by contrasting the solitary practicing figure with the empty chairs of an absent audience.",
+      "frame_composition": "Crop to story_art_region (x:54-943, y:490-700), centering the seated figure playing acoustic guitar under the warm floor lamp (~357-672, 490-660), with rows of empty folding chairs visible at either side, removing the 'Drag or tap the card' UI instruction and status bar per ui_regions.",
+      "motion_plan": "Slow zoom in on the figure playing guitar per the asset's own suggested_motion, paired with a gentle warm glow/flicker from the floor lamp; frame stays tight enough that the empty chairs remain a felt presence at the edges rather than the focal point.",
+      "text_overlay": "Few want the struggle that earns it",
+      "source_support": "Grounded in img_d5101d6cfa1e's visual_subjects (figure playing guitar, floor lamp, empty folding chairs) and its own suggested_motion ('slow zoom on figure playing guitar,' 'warm light flicker/glow animation from the lamp'), which together stage the solitary grind the narration names.",
+      "video_candidate_rank": 1,
+      "video_motion_intent": "The figure's fingers actually moving in a slow strum across the guitar strings, with the floor lamp's warm light gently breathing/flickering -- real motion of solitary practice against the empty chairs sells 'the struggle that earns it' far more than a static pose, and the narration here is short and punchy enough for a brief generated clip to carry it.",
+      "scene_content_fingerprint": "1b83dd45856bbe8a7f58cae70272855041eae3abc9874e5f515e5f5c4ad5a8a1",
+      "start_seconds": 41.8,
+      "end_seconds": 47.28,
+      "primary_subtitle_cue_ids": [
+        "cue_023",
+        "cue_024",
+        "cue_025"
+      ],
+      "fade_in_frames": 6,
+      "fade_out_frames": 10,
+      "still_motion": {
+        "scale_from": 1.0,
+        "scale_to": 1.1,
+        "translate_x_from": 0.0,
+        "translate_x_to": 0.0,
+        "translate_y_from": 0.02,
+        "translate_y_to": -0.02,
         "easing": "easeOut"
-      }
+      },
+      "video_promotion_decided": true
+    },
+    {
+      "sequence": 6,
+      "generation_mode": "VEO",
+      "visual_treatment": "MIXED",
+      "source_asset_ids": [
+        "img_d5101d6cfa1e",
+        "img_189adab8f683"
+      ],
+      "shot_goal": "Close on a reflective note, letting the practicing figure's quiet dedication and the closing line hand the idea back to the viewer.",
+      "frame_composition": "Open on the same story_art_region as the previous shot (figure playing guitar under the lamp amid empty chairs) but framed slightly wider than shot 5's tight push, then settle the closing narration as text_overlay layered over the warm-lit scene, echoing the wording of img_189adab8f683's prominent_quote rather than reproducing that asset's plain white card, which its own production notes flag as having no illustrative art and needing generation to use visually.",
+      "motion_plan": "A slow, gentle zoom-out/pull-back from the practicing figure, widening to reveal more of the empty room and chairs so the frame has room to breathe as the final line lands; text fades in softly over the closing seconds.",
+      "text_overlay": "Happiness isn't a finish line",
+      "source_support": "Primary visual is grounded in img_d5101d6cfa1e's practicing-figure illustration and suggested_motion, deliberately reused to bookend the Manson thread; img_189adab8f683 contributes only its verified prominent_quote wording (which matches the narration's closing line), since the asset itself states it has no story_art_region and recommends NEEDS_GENERATION rather than direct visual reuse.",
+      "video_candidate_rank": 3,
+      "video_motion_intent": "A slow, unhurried pull-back/dolly-out from the practicing figure under the lamp, widening to reveal the empty chairs and quiet room, as if giving the viewer literal room to sit with the closing thought -- minimal, gentle camera movement matching the slowed, reflective pace of the final line.",
+      "scene_content_fingerprint": "ee41b9c147c3410fa68746627d8a2488059bfe06639cbe526e3d8d06613b6fa4",
+      "start_seconds": 47.28,
+      "end_seconds": 53.24,
+      "primary_subtitle_cue_ids": [
+        "cue_026",
+        "cue_027",
+        "cue_028"
+      ],
+      "fade_in_frames": 10,
+      "fade_out_frames": 20,
+      "still_motion": {
+        "scale_from": 1.12,
+        "scale_to": 1.0,
+        "translate_x_from": 0.0,
+        "translate_x_to": 0.0,
+        "translate_y_from": -0.02,
+        "translate_y_to": 0.0,
+        "easing": "easeOut"
+      },
+      "video_promotion_decided": true
     }
   ],
-  "asset_utilization": [
-    {
-      "asset_id": "img_dcfce1645810",
-      "usage_summary": "Unused due to tonal mismatch (cartoon style).",
-      "shot_sequences": [],
-      "priority": "UNUSED"
-    },
-    {
-      "asset_id": "img_badc7b4efc85",
-      "usage_summary": "Used to establish the gritty reality of Bukowski's struggle.",
-      "shot_sequences": [
-        2
-      ],
-      "priority": "PRIMARY"
-    },
-    {
-      "asset_id": "img_fe38b500f8d1",
-      "usage_summary": "Used as the primary thematic anchor. The full image is used for the hook, and the peaceful sky is extracted for the pivot and the final reflection.",
-      "shot_sequences": [
-        1,
-        3,
-        8
-      ],
-      "priority": "PRIMARY"
-    },
-    {
-      "asset_id": "img_6f6dabaab3eb",
-      "usage_summary": "Used to illustrate the concept of letting go of outcomes and the resulting freedom.",
-      "shot_sequences": [
-        6,
-        7
-      ],
-      "priority": "PRIMARY"
-    },
-    {
-      "asset_id": "img_ef0dc599dff0",
-      "usage_summary": "Used to visually represent the internal discomfort of straining for success.",
-      "shot_sequences": [
-        5
-      ],
-      "priority": "PRIMARY"
-    },
-    {
-      "asset_id": "img_37c610ebb57b",
-      "usage_summary": "Used as a clean title card to introduce the core philosophical concept.",
-      "shot_sequences": [
-        4
-      ],
-      "priority": "SECONDARY"
+  "quality_review": {
+    "verdict": "APPROVE",
+    "ready_for_generation": true,
+    "confidence": 0.9,
+    "scores": {
+      "source_fidelity": 9,
+      "generation_mode_appropriateness": 9,
+      "visual_coherence": 9,
+      "narrative_alignment": 9,
+      "internal_consistency": 9
     }
-  ],
-  "editor_notes": [
-    "Pacing is critical here. The audio duration is slightly longer than originally planned (52.44s vs 46.0s), which gives us beautiful room to let the visuals breathe. Do not rush the camera movements.",
-    "The transition between Shot 2 (the dark desk) and Shot 3 (the bright sky) is the emotional pivot of the video. Make sure the crossfade feels intentional and timed perfectly with the word 'success' at 19.04s.",
-    "For Shot 8, ensure the crop of the sky is completely devoid of the tombstone or grass. It needs to feel like an infinite, warm space.",
-    "Keep the text overlays minimal. The impact text 'Don't try.' in Shot 1 must hit exactly on the audio cue for maximum effect."
-  ],
-  "pipeline_schema_version": "1.0",
-  "generated_at_utc": "2026-09-14T15:22:44.497900+00:00",
-  "model": "gemini-3.1-pro-preview",
-  "source_files": {
-    "analyzed_assets": "metadata/analyzed_assets.json",
-    "final_story_plan": "metadata/final_story_plan.json",
-    "voice_generation": "metadata/voice_generation.json",
-    "subtitle_cues": "metadata/subtitle_cues.json"
-  },
-  "final_duration_seconds": 52.44
+  }
 }

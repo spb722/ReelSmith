@@ -1,0 +1,29 @@
+{
+  "structured_output": {
+    "produced_by": "stills_agent",
+    "status": "FAILURE",
+    "shot_sequence": 6,
+    "generation_mode": "STILL",
+    "shot_fingerprint": "7f41c24b431614449c9af43122c03a3948fc2651311220c7e886d9d24bb5ad55",
+    "result": null,
+    "failure": {
+      "produced_by": "stills_agent",
+      "shot_sequence": 6,
+      "shot_fingerprint": "7f41c24b431614449c9af43122c03a3948fc2651311220c7e886d9d24bb5ad55",
+      "stage": "still_qa",
+      "code": "BAKED_IN_TEXT_OVERLAY",
+      "reason": "The generated image has the closing line ('HAPPINESS GROWS OUT OF THE SPECIFIC PROBLEMS YOU ACTUALLY ENJOY SOLVING.') rendered as large baked-in white capital-letter text directly on the image itself, occupying the bottom third of the frame. This violates the visible-text/letters rejection criterion and leaves no clean, text-free space for the Remotion subtitle/typography layer to place the actual overlay ('Happiness isn't a finish line'). Additionally, the composition wastes roughly the top quarter of the frame as plain white empty space rather than extending or reframing the illustrated scene, and the illustration itself is also letterboxed with dark rounded card-like borders reminiscent of the source app's UI card, which should be avoided. Retry must regenerate the base illustration ONLY as a full-bleed vertical crop of the warm-lit guitar-practice scene (figure under lamp, empty folding chairs receding, mug/book/crumpled papers at feet) reusing the story_art_region content, with no card border/frame, no white margins, no baked-in text, letters, quote strings, or any UI elements -- leaving clean, uncluttered space (e.g. lower third or a calm background area) for the Remotion subtitle overlay to be composited afterward. Ensure exactly one instance of the guitar-playing figure appears (no duplication) and the style stays illustrated/cartoon, not photorealistic.",
+      "retryable": true,
+      "attempt": 1,
+      "partial_artifact_paths": [
+        "generated/stills/shot_06.png"
+      ],
+      "cost_usd": 0.04
+    }
+  },
+  "result": "{\"produced_by\":\"stills_agent\",\"generation_mode\":\"STILL\",\"status\":\"FAILURE\",\"shot_sequence\":6,\"shot_fingerprint\":\"7f41c24b431614449c9af43122c03a3948fc2651311220c7e886d9d24bb5ad55\",\"failure\":{\"produced_by\":\"stills_agent\",\"shot_sequence\":6,\"shot_fingerprint\":\"7f41c24b431614449c9af43122c03a3948fc2651311220c7e886d9d24bb5ad55\",\"stage\":\"still_qa\",\"code\":\"BAKED_IN_TEXT_OVERLAY\",\"reason\":\"The generated image has the closing line ('HAPPINESS GROWS OUT OF THE SPECIFIC PROBLEMS YOU ACTUALLY ENJOY SOLVING.') rendered as large baked-in white capital-letter text directly on the image itself, occupying the bottom third of the frame. This violates the visible-text/letters rejection criterion and leaves no clean, text-free space for the Remotion subtitle/typography layer to place the actual overlay ('Happiness isn't a finish line'). Additionally, the composition wastes roughly the top quarter of the frame as plain white empty space rather than extending or reframing the illustrated scene, and the illustration itself is also letterboxed with dark rounded card-like borders reminiscent of the source app's UI card, which should be avoided. Retry must regenerate the base illustration ONLY as a full-bleed vertical crop of the warm-lit guitar-practice scene (figure under lamp, empty folding chairs receding, mug/book/crumpled papers at feet) reusing the story_art_region content, with no card border/frame, no white margins, no baked-in text, letters, quote strings, or any UI elements -- leaving clean, uncluttered space (e.g. lower third or a calm background area) for the Remotion subtitle overlay to be composited afterward. Ensure exactly one instance of the guitar-playing figure appears (no duplication) and the style stays illustrated/cartoon, not photorealistic.\",\"retryable\":true,\"attempt\":1,\"partial_artifact_paths\":[\"generated/stills/shot_06.png\"],\"cost_usd\":0.04}}",
+  "subtype": "success",
+  "errors": null,
+  "claude_cost_usd": 0.06623500000000002,
+  "paid_tool_cost_usd": 0.04
+}

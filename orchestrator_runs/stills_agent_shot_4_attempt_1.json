@@ -1,0 +1,27 @@
+{
+  "structured_output": {
+    "produced_by": "stills_agent",
+    "status": "SUCCESS",
+    "shot_sequence": 4,
+    "generation_mode": "STILL",
+    "shot_fingerprint": "ce7f8af0cd0f3b1cceda24f6c686bc715b2b86f29ccd208d438546ab710b755c",
+    "result": {
+      "produced_by": "still_tool",
+      "shot_sequence": 4,
+      "shot_fingerprint": "ce7f8af0cd0f3b1cceda24f6c686bc715b2b86f29ccd208d438546ab710b755c",
+      "source_asset_id": "img_7e9bbe598ea9",
+      "local_image_path": "generated/stills/shot_04.png",
+      "image_sha256": "47c6a68ef886968ff21969d167c17f7270352fd849b64d4c2294d6d12b65f35d",
+      "model": "gemini-3.1-flash-image",
+      "approved": true,
+      "qa_summary": "Verified single instance of each focal element: exactly one electric guitar lying diagonally as the visual centerpiece, one alarm clock, one spilled coffee mug with stain, one closed notebook (with illustrative squiggle marks, not legible real text), and exactly one cartoon figure positioned at the lower-right edge beneath the diagonal orange spotlight band -- no duplicated subjects or scenes anywhere in frame. Illustration style is fully consistent with the source flat-lay art (flat cel-shaded rendering, halftone shadow textures), with no drift toward photorealism. No app UI chrome, status bar, buttons, icons, watermarks, or logos are visible; crop matches the intended story_art_region composition (top-down flat-lay of props with figure at frame edge). Top and side wood-floor areas remain open/uncluttered, leaving clean space for Remotion subtitle and typography overlay. Composition matches shot_goal of using the unused guitar and idle props as evidence of 'dreaming without practicing.'",
+      "cost_usd": 0.04
+    },
+    "failure": null
+  },
+  "result": "{\"produced_by\":\"stills_agent\",\"status\":\"SUCCESS\",\"shot_sequence\":4,\"shot_fingerprint\":\"ce7f8af0cd0f3b1cceda24f6c686bc715b2b86f29ccd208d438546ab710b755c\",\"generation_mode\":\"STILL\",\"result\":{\"produced_by\":\"still_tool\",\"shot_sequence\":4,\"shot_fingerprint\":\"ce7f8af0cd0f3b1cceda24f6c686bc715b2b86f29ccd208d438546ab710b755c\",\"source_asset_id\":\"img_7e9bbe598ea9\",\"local_image_path\":\"generated/stills/shot_04.png\",\"image_sha256\":\"47c6a68ef886968ff21969d167c17f7270352fd849b64d4c2294d6d12b65f35d\",\"model\":\"gemini-3.1-flash-image\",\"approved\":true,\"qa_summary\":\"Verified single instance of each focal element: exactly one electric guitar lying diagonally as the visual centerpiece, one alarm clock, one spilled coffee mug with stain, one closed notebook (with illustrative squiggle marks, not legible real text), and exactly one cartoon figure positioned at the lower-right edge beneath the diagonal orange spotlight band -- no duplicated subjects or scenes anywhere in frame. Illustration style is fully consistent with the source flat-lay art (flat cel-shaded rendering, halftone shadow textures), with no drift toward photorealism. No app UI chrome, status bar, buttons, icons, watermarks, or logos are visible; crop matches the intended story_art_region composition (top-down flat-lay of props with figure at frame edge). Top and side wood-floor areas remain open/uncluttered, leaving clean space for Remotion subtitle and typography overlay. Composition matches shot_goal of using the unused guitar and idle props as evidence of 'dreaming without practicing.'\",\"cost_usd\":0.04},\"failure\":null}",
+  "subtype": "success",
+  "errors": null,
+  "claude_cost_usd": 0.0765126,
+  "paid_tool_cost_usd": 0.04
+}

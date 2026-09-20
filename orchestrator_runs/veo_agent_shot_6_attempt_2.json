@@ -1,0 +1,34 @@
+{
+  "structured_output": {
+    "produced_by": "veo_agent",
+    "status": "FAILURE",
+    "shot_sequence": 6,
+    "generation_mode": "VEO",
+    "shot_fingerprint": "6d23bdd80e40c3a3db0dc5a394a92013f9d0e1d662f178839b811845755e363b",
+    "result": null,
+    "failure": {
+      "produced_by": "veo_agent",
+      "shot_sequence": 6,
+      "shot_fingerprint": "6d23bdd80e40c3a3db0dc5a394a92013f9d0e1d662f178839b811845755e363b",
+      "stage": "seed_qa",
+      "code": "SEED_CONTAINS_BAKED_TEXT_OVERLAY",
+      "reason": "Regenerated seed still bakes the full closing narration as visible text directly into the pixel content -- and now does so twice: once in serif italic-accented text across the top third of the frame ('Happiness isn’t a finish line— it grows from the problems you actually choose to solve.') and again as a duplicate italic caption block beneath the illustration near the bottom, overlapping the front row of empty chairs. Per the shot spec, only the short text_overlay ('Happiness isn't a finish line') is meant to be composited in post and fade in softly during only the closing seconds (fade_in_frames=10, fade_out_frames=20) -- it must not be permanently burned into the seed plate, must not use the longer full-sentence subtitle wording, and must not appear twice. A static double text block baked into the seed would (a) display the wrong/longer wording for the entire clip instead of fading in near the end, (b) get warped/duplicated/smeared once Veo's slow pull-back motion is applied since it is now part of the image content, and (c) violates the seed-QA rule against any visible text in the seed. The underlying illustration itself is otherwise sound: practicing figure on the stool with guitar, warm lamp spotlight pool, wider framing than shot 5 revealing more empty folding chairs on both sides, teal palette matching the source story_art_region, mug/book/crumpled papers at his feet, no app UI chrome, no duplicate human subjects, no photorealistic drift. Regenerate the seed as a completely clean plate: the illustration only (figure, lamp, wider empty-chair room, floor props), with zero text anywhere in the frame -- top, bottom, or elsewhere -- so the closing line can be layered and animated separately in post exactly per fade_in_frames/fade_out_frames.",
+      "retryable": true,
+      "attempt": 2,
+      "operation_name": null,
+      "operation_dump_path": null,
+      "rai_media_filtered_count": 0,
+      "rai_media_filtered_reasons": [],
+      "operation_error": null,
+      "partial_artifact_paths": [
+        "generated/veo_seeds/shot_06_seed.png"
+      ],
+      "cost_usd": 0.04
+    }
+  },
+  "result": "{\"produced_by\":\"veo_agent\",\"status\":\"FAILURE\",\"shot_sequence\":6,\"shot_fingerprint\":\"6d23bdd80e40c3a3db0dc5a394a92013f9d0e1d662f178839b811845755e363b\",\"generation_mode\":\"VEO\",\"result\":null,\"failure\":{\"produced_by\":\"veo_agent\",\"shot_sequence\":6,\"shot_fingerprint\":\"6d23bdd80e40c3a3db0dc5a394a92013f9d0e1d662f178839b811845755e363b\",\"stage\":\"seed_qa\",\"code\":\"SEED_CONTAINS_BAKED_TEXT_OVERLAY\",\"reason\":\"Regenerated seed still bakes the full closing narration as visible text directly into the pixel content -- and now does so twice: once in serif italic-accented text across the top third of the frame ('Happiness isn’t a finish line— it grows from the problems you actually choose to solve.') and again as a duplicate italic caption block beneath the illustration near the bottom, overlapping the front row of empty chairs. Per the shot spec, only the short text_overlay ('Happiness isn't a finish line') is meant to be composited in post and fade in softly during only the closing seconds (fade_in_frames=10, fade_out_frames=20) -- it must not be permanently burned into the seed plate, must not use the longer full-sentence subtitle wording, and must not appear twice. A static double text block baked into the seed would (a) display the wrong/longer wording for the entire clip instead of fading in near the end, (b) get warped/duplicated/smeared once Veo's slow pull-back motion is applied since it is now part of the image content, and (c) violates the seed-QA rule against any visible text in the seed. The underlying illustration itself is otherwise sound: practicing figure on the stool with guitar, warm lamp spotlight pool, wider framing than shot 5 revealing more empty folding chairs on both sides, teal palette matching the source story_art_region, mug/book/crumpled papers at his feet, no app UI chrome, no duplicate human subjects, no photorealistic drift. Regenerate the seed as a completely clean plate: the illustration only (figure, lamp, wider empty-chair room, floor props), with zero text anywhere in the frame -- top, bottom, or elsewhere -- so the closing line can be layered and animated separately in post exactly per fade_in_frames/fade_out_frames.\",\"retryable\":true,\"attempt\":2,\"operation_name\":null,\"operation_dump_path\":null,\"rai_media_filtered_count\":0,\"rai_media_filtered_reasons\":[],\"operation_error\":null,\"partial_artifact_paths\":[\"generated/veo_seeds/shot_06_seed.png\"],\"cost_usd\":0.04}}",
+  "subtype": "success",
+  "errors": null,
+  "claude_cost_usd": 0.10070660000000001,
+  "paid_tool_cost_usd": 0.04
+}

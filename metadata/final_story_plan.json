@@ -1,195 +1,157 @@
 {
-  "story_title": "The Backwards Law: Don't Try",
-  "core_thesis": "True success and peace often come not from striving harder, but from accepting reality and letting go of the obsessive pursuit of desired outcomes.",
-  "narrative_strategy": "The story opens with a provocative hook from Charles Bukowski's epitaph, immediately creating curiosity. It then delves into his life as a concrete human example, revealing how his unconventional success aligns with the core wisdom. This leads into a clear explanation of 'The Backwards Law' with supporting examples, culminating in a direct reflection for the viewer.",
-  "target_duration_seconds": 46.0,
-  "hook": "After a lifetime of struggle and eventual success, Charles Bukowski left two words on his tombstone: 'Don't try.'",
-  "narration_script": "After a lifetime of struggle and eventual success, Charles Bukowski left two words on his tombstone: 'Don't try.' He faced 30 years of rejection. His breakthrough at 50 seemed like an underdog tale. But success came from accepting who he was, not from wanting it more. This is 'The Backwards Law,' from Alan Watts. The harder you chase good feelings, the more they elude you. Straining for success makes you feel like a failure. Sometimes, the boldest moves only happen when we stop obsessing over the outcome. Accept discomfort, and it loses its power. What if you just let yourself feel it?",
+  "produced_by": "story_agent",
+  "story_title": "Choose Your Struggle",
+  "core_thesis": "Fulfillment doesn't come from escaping pain but from consciously choosing which struggle is worth carrying.",
+  "narrative_strategy": "Open with the sheltered prince who becomes the Buddha as a concrete, ancient example of suffering's inevitability, reveal his insight as a turning point, then pair it with a smaller, relatable modern anecdote (a writer who dreamed of rock stardom but never practiced) to show the same law of choosing struggle at human scale, closing on a reflective line that hands the idea back to the viewer.",
+  "target_duration_seconds": 42.8,
+  "target_word_count": 107,
+  "hook": "Twenty-five hundred years ago, a prince lived behind palace walls, hidden from all suffering.",
+  "narration_script": "Twenty-five hundred years ago, a prince lived behind palace walls, hidden from all suffering. When he finally saw it, he ran — gave up the throne, slept in the dirt, starved himself, sure that pain itself would hand him meaning. It handed him nothing. Under a tree, he saw the truth: rich or poor, everyone suffers. That became the Buddha's first teaching. Centuries later, a writer named Manson spent half his life dreaming of rock stardom, loving the fame, never the practice. Everyone wants the reward. Few want the struggle that earns it. Happiness isn't a finish line — it grows from the problems you actually choose to solve.",
   "voice_direction": {
-    "persona": "Mature, thoughtful guide",
+    "persona": "A calm, thoughtful narrator sharing a piece of hard-won wisdom, not selling anything",
     "tone": [
-      "calm",
-      "confident",
-      "reflective",
-      "slightly intense"
+      "contemplative",
+      "grounded",
+      "quietly intense",
+      "sincere"
     ],
+    "pace_wpm": 150,
     "delivery_notes": [
-      "Maintain a steady, deliberate pace.",
-      "Allow short pauses to emphasize key phrases.",
-      "Deliver the final question with genuine curiosity, inviting reflection."
+      "Start slow and measured on the palace image to build stillness before tension",
+      "Let 'It handed him nothing' land as a flat, weighty beat with a brief pause before and after",
+      "Shift energy slightly warmer and more conversational on the Manson anecdote to signal relatability",
+      "Slow down again on the final line so the reflection breathes"
     ],
     "emphasis_phrases": [
-      "'Don't try.'",
-      "accepting who he was",
-      "The Backwards Law",
-      "accept discomfort",
-      "What if you just let yourself feel it?"
+      "hidden from all suffering",
+      "It handed him nothing",
+      "everyone suffers",
+      "loving the fame, never the practice",
+      "Few want the struggle that earns it",
+      "Happiness isn't a finish line"
     ],
     "pause_after_phrases": [
-      "'Don't try.'",
-      "not from wanting it more.",
-      "from Alan Watts.",
-      "feel like a failure.",
-      "over the outcome."
-    ],
-    "pace_wpm": 133
+      "It handed him nothing.",
+      "That became the Buddha's first teaching.",
+      "Everyone wants the reward."
+    ]
   },
   "story_arc": {
-    "opening_tension": "The paradoxical epitaph 'Don't try' from a successful, struggling writer immediately creates curiosity and contradiction.",
-    "human_or_concrete_story": "The story of Charles Bukowski's 30 years of rejection and his eventual breakthrough at 50 provides a concrete example of struggle and unexpected success.",
-    "reversal_or_reveal": "The reveal that Bukowski's success came from 'accepting who he was' rather than 'wanting it more' directly challenges conventional wisdom.",
-    "principle_explanation": "The concept of 'The Backwards Law' is clearly explained, detailing how chasing good feelings or success can be counterproductive, and how acceptance is key.",
-    "viewer_reflection": "The story concludes by asking the viewer to consider the impact of simply accepting discomfort, turning the wisdom inward."
+    "opening_tension": "A prince raised in total comfort has never encountered suffering, setting up an inevitable collision with reality.",
+    "human_or_concrete_story": "The prince flees the palace, tries to out-suffer suffering through extreme asceticism, and fails to find meaning in either indulgence or deprivation.",
+    "reversal_or_reveal": "Sitting under a tree, he realizes suffering is universal regardless of wealth or poverty — this becomes the Buddha's first teaching, and echoes in a modern writer who wanted the reward of stardom without the daily grind of practice.",
+    "principle_explanation": "Fulfillment doesn't come from avoiding pain or reaching some reward at a finish line; it comes from choosing which daily struggle you're willing to embrace and grow to love.",
+    "viewer_reflection": "The closing line turns the lesson outward, leaving the viewer to consider which problems they're actually choosing to solve in their own life."
   },
   "scenes": [
     {
       "sequence": 1,
       "role": "HOOK",
-      "estimated_duration_seconds": 9.0,
-      "narration": "After a lifetime of struggle and eventual success, Charles Bukowski left two words on his tombstone: 'Don't try.'",
+      "estimated_duration_seconds": 5.6,
+      "narration": "Twenty-five hundred years ago, a prince lived behind palace walls, hidden from all suffering.",
       "source_asset_ids": [
-        "img_fe38b500f8d1"
+        "img_87a825c5a858"
       ],
-      "source_support": "Direct quote of Bukowski's epitaph and the context of his success.",
-      "visual_intent": "A stark, reflective image of a tombstone, perhaps with the words 'Don't try' appearing subtly.",
+      "source_support": "Heading 'Choose Your Struggle' and body text: 'To understand why suffering is inevitable, you have to look back 2,500 years to a young prince in Ancient India. Born into a luxury palace where every single desire was met, the prince was kept isolated behind high walls so he would never see sickness, poverty, or death.'",
+      "visual_intent": "Open on the illustrated palace courtyard with the lone prince surrounded by servants, emphasizing isolation amid abundance.",
       "suggested_visual_treatment": "USE_EXISTING_ART",
-      "impact_text": "Don't try.",
-      "emotional_goal": "Intrigue, curiosity, contradiction"
+      "impact_text": "",
+      "emotional_goal": "Create quiet curiosity and foreboding about a sheltered life about to be disrupted."
     },
     {
       "sequence": 2,
-      "role": "HUMAN_STORY",
-      "estimated_duration_seconds": 14.0,
-      "narration": "He faced 30 years of rejection. His breakthrough at 50 seemed like an underdog tale. But success came from accepting who he was, not from wanting it more.",
+      "role": "BUILDUP",
+      "estimated_duration_seconds": 10.0,
+      "narration": "When he finally saw it, he ran — gave up the throne, slept in the dirt, starved himself, sure that pain itself would hand him meaning.",
       "source_asset_ids": [
-        "img_badc7b4efc85",
-        "img_fe38b500f8d1",
-        "img_6f6dabaab3eb"
+        "img_c99892bd2a98"
       ],
-      "source_support": "Details of Bukowski's 30 years of rejection, his breakthrough at 50, and the idea that his success stemmed from self-acceptance.",
-      "visual_intent": "Transition from a struggling writer's desk to a visual representing self-acceptance or inner peace, perhaps a subtle shift in lighting or focus.",
-      "suggested_visual_treatment": "MIXED",
-      "impact_text": "Accept Who You Are",
-      "emotional_goal": "Empathy, surprise, re-evaluation"
+      "source_support": "Body text: 'So he ran. He gave up the throne, slept in the dirt, and starved himself for years, sure that suffering would hand him the meaning he craved.'",
+      "visual_intent": "Show the seated meditating figure beneath the tree as the visual anchor for his renunciation and search.",
+      "suggested_visual_treatment": "USE_EXISTING_ART",
+      "impact_text": "",
+      "emotional_goal": "Build tension around his desperate, extreme search for meaning."
     },
     {
       "sequence": 3,
-      "role": "EXPLANATION",
-      "estimated_duration_seconds": 23.0,
-      "narration": "This is 'The Backwards Law,' from Alan Watts. The harder you chase good feelings, the more they elude you. Straining for success makes you feel like a failure. Sometimes, the boldest moves only happen when we stop obsessing over the outcome. Accept discomfort, and it loses its power. What if you just let yourself feel it?",
+      "role": "REVEAL",
+      "estimated_duration_seconds": 8.8,
+      "narration": "It handed him nothing. Under a tree, he saw the truth: rich or poor, everyone suffers. That became the Buddha's first teaching.",
       "source_asset_ids": [
-        "img_6f6dabaab3eb",
-        "img_ef0dc599dff0",
-        "img_37c610ebb57b"
+        "img_c99892bd2a98"
       ],
-      "source_support": "Introduction of 'The Backwards Law' and Alan Watts, explanation of chasing feelings, the example of letting go of outcomes, and the core principle of accepting discomfort.",
-      "visual_intent": "A sequence of visuals: a person looking in a mirror (self-reflection), a figure dropping a briefcase (letting go), and finally a thoughtful, open visual inviting personal contemplation.",
+      "source_support": "Body text: 'It handed him nothing. Sitting under a tree, he finally saw what he had missed all along: rich or poor, indulgent or starving, everyone suffers. He would become the Buddha, and this was his very first teaching.'",
+      "visual_intent": "Hold on the seated figure under the heart-leaved tree with the empty bowl beside him, the moment of realization.",
+      "suggested_visual_treatment": "SUBTLE_ANIMATION",
+      "impact_text": "It handed him nothing",
+      "emotional_goal": "Land the reversal as a calm, weighty revelation rather than a dramatic twist."
+    },
+    {
+      "sequence": 4,
+      "role": "HUMAN_STORY",
+      "estimated_duration_seconds": 8.0,
+      "narration": "Centuries later, a writer named Manson spent half his life dreaming of rock stardom, loving the fame, never the practice.",
+      "source_asset_ids": [
+        "img_7e9bbe598ea9"
+      ],
+      "source_support": "Body text: 'For half his life, Manson dreamed of being a rock star: the crowds, the noise, the fame. But he never practiced. He loved the daydream of success, not the daily grind of guitar practice.'",
+      "visual_intent": "Cut to the flat-lay of the unused guitar, spilled coffee, and idle clock, with the figure standing passively beside them.",
+      "suggested_visual_treatment": "USE_EXISTING_ART",
+      "impact_text": "loving the fame, never the practice",
+      "emotional_goal": "Shift the abstract lesson into something relatable and self-recognizable."
+    },
+    {
+      "sequence": 5,
+      "role": "EXPLANATION",
+      "estimated_duration_seconds": 4.4,
+      "narration": "Everyone wants the reward. Few want the struggle that earns it.",
+      "source_asset_ids": [
+        "img_d5101d6cfa1e"
+      ],
+      "source_support": "Body text: 'Everyone wants the reward, but far fewer want the struggle that earns it.'",
+      "visual_intent": "Show the figure practicing guitar alone under a lamp among empty chairs, contrasting desire for reward with the solitary grind.",
+      "suggested_visual_treatment": "USE_EXISTING_ART",
+      "impact_text": "Few want the struggle that earns it",
+      "emotional_goal": "Crystallize the core principle plainly and directly."
+    },
+    {
+      "sequence": 6,
+      "role": "REFLECTION",
+      "estimated_duration_seconds": 6.0,
+      "narration": "Happiness isn't a finish line — it grows from the problems you actually choose to solve.",
+      "source_asset_ids": [
+        "img_d5101d6cfa1e",
+        "img_189adab8f683"
+      ],
+      "source_support": "Body text: 'Happiness isn't waiting at a finish line where all your problems disappear. It grows out of the specific problems you actually enjoy solving.' Reinforced by summary card quote: 'Real fulfillment doesn't come from eliminating problems, but from choosing the specific set of problems you are willing to solve every day.'",
+      "visual_intent": "Close on the warm-lit practice scene or the summary quote card, letting the words sit as the final thought.",
       "suggested_visual_treatment": "MIXED",
-      "impact_text": "The Backwards Law",
-      "emotional_goal": "Understanding, insight, contemplation"
+      "impact_text": "Happiness isn't a finish line",
+      "emotional_goal": "Leave the viewer with a calm, reflective sense of ownership over their own struggle."
     }
   ],
-  "unused_assets": [
-    {
-      "asset_id": "img_dcfce1645810",
-      "reason": "The visual style of the cartoon character and the opening line 'Smart people love complexity. Brains don't.' did not align with the mature, reflective tone established by the Bukowski story and the other illustrations. It would have disrupted the narrative flow and emotional consistency."
-    }
-  ],
+  "unused_assets": [],
   "source_integrity_notes": [
-    "Multiple assets (img_badc7b4efc85, img_fe38b500f8d1) provided overlapping information about Charles Bukowski's life and breakthrough, which was deduplicated and synthesized for conciseness.",
-    "The specific identity of 'Manson' was flagged as uncertain in the source analysis, so the script was generalized to focus on the lesson of letting go of outcomes rather than naming the author."
+    "Every screenshot includes an unrelated cricket score notification banner ('Yet to bat 166/1 (24.2)') and app chrome (status bar, nav arrows, 'Continue' button); these were treated purely as UI noise and excluded from narration and visual intent.",
+    "The author's full name is only given as 'Manson' in the source text, with the analysis flagging uncertainty about whether this is Mark Manson; narration uses the source-safe generic phrasing 'a writer named Manson' rather than asserting an unverified full identity.",
+    "Body text describing 'It handed him nothing... rich or poor, indulgent or starving, everyone suffers' was condensed to 'rich or poor, everyone suffers' to keep spoken pacing natural while preserving the core claim.",
+    "The final summary/quote card (img_189adab8f683) has no illustrative art of its own; its text was used only to reinforce the closing line already drawn from img_d5101d6cfa1e's narrative slide, and it is paired as a secondary asset in the final scene rather than a standalone one.",
+    "The next-slide preview text visible faded at the bottom of several slides was ignored as it belongs to a different card than the one being described."
   ],
-  "review_resolution": [
-    {
-      "issue_id": "I01",
-      "status": "RESOLVED",
-      "resolution": "Removed the bare reference to 'Manson' and generalized the sentence to focus on the core lesson: 'Sometimes, the boldest moves only happen when we stop obsessing over the outcome.'",
-      "source_safety_note": "This change aligns with the source text's message about letting go of outcomes (img_6f6dabaab3eb) while avoiding the introduction of an unexplained and uncertain entity."
+  "quality_review": {
+    "verdict": "APPROVE",
+    "ready_for_voice_generation": true,
+    "confidence": 0.91,
+    "scores": {
+      "source_fidelity": 9,
+      "hook_strength": 8,
+      "spoken_naturalness": 9,
+      "narrative_coherence": 9,
+      "voice_alignment": 9,
+      "pacing": 8,
+      "scene_structure": 9,
+      "visual_support": 9,
+      "internal_consistency": 9
     }
-  ],
-  "change_summary": [
-    "Revised Scene 3 narration to remove the unexplained reference to 'Manson', generalizing the point about bold moves and obsessing over outcomes.",
-    "Updated voice direction pause phrases to match the new narration."
-  ],
-  "target_word_count": 102,
-  "calculated_word_count": 102,
-  "calculated_scene_duration_seconds": 46.0,
-  "calculated_effective_wpm": 133.0,
-  "revision_iteration": 1,
-  "revised_at_utc": "2026-09-14T14:16:29.237353+00:00",
-  "model": "gemini-3.1-pro-preview",
-  "quality_loop": {
-    "status": "APPROVED",
-    "iterations_used": 2,
-    "max_iterations": 4,
-    "approved_at_utc": "2026-09-14T14:16:43.192561+00:00",
-    "final_review": {
-      "verdict": "APPROVE",
-      "confidence": 1.0,
-      "review_summary": "The script is excellent and ready for voice generation. The previous issue regarding the unexplained and uncertain reference to 'Manson' has been successfully resolved by generalizing the lesson about letting go of outcomes. The narrative flows smoothly from a compelling concrete hook (Bukowski) into a clear philosophical explanation (Alan Watts/The Backwards Law), ending with a strong reflective question for the viewer. Pacing, word count, and visual support are all well-aligned.",
-      "scores": {
-        "source_fidelity": 10,
-        "hook_strength": 9,
-        "spoken_naturalness": 9,
-        "narrative_coherence": 9,
-        "voice_alignment": 9,
-        "pacing": 9,
-        "scene_structure": 9,
-        "visual_support": 9,
-        "internal_consistency": 10
-      },
-      "strengths": [
-        "The hook is highly engaging, using a paradoxical real-world example to immediately capture attention.",
-        "The resolution of the 'Manson' clarity issue was handled perfectly, preserving the core lesson without introducing confusing or uncertain entities.",
-        "The pacing is excellent for a reflective, philosophical piece, allowing the viewer time to absorb the concepts.",
-        "The transition from the concrete story of Bukowski to the abstract concept of The Backwards Law is seamless."
-      ],
-      "issues": [],
-      "suggestions": [],
-      "must_fix_before_voice": [],
-      "source_integrity_assessment": {
-        "status": "PASS",
-        "notes": [
-          "All factual claims are directly supported by the provided source assets.",
-          "The script correctly navigates the source uncertainties by omitting the ambiguous reference to 'Manson' while retaining the underlying philosophical point."
-        ]
-      },
-      "ready_for_voice_generation": true,
-      "iteration": 2,
-      "reviewed_at_utc": "2026-09-14T14:16:43.190471+00:00",
-      "model": "gemini-3.1-pro-preview",
-      "deterministic_checks": {
-        "word_count": 102,
-        "duration_seconds": 46.0,
-        "effective_wpm": 133.0,
-        "checks": [
-          {
-            "check": "scene_narration_matches_script",
-            "status": "PASS"
-          },
-          {
-            "check": "word_count_range",
-            "status": "PASS",
-            "details": "102 words; expected 90-115"
-          },
-          {
-            "check": "duration_range",
-            "status": "PASS",
-            "details": "46.0s; expected 40-50s"
-          },
-          {
-            "check": "effective_wpm",
-            "status": "PASS",
-            "details": "133.0"
-          },
-          {
-            "check": "valid_source_asset_ids",
-            "status": "PASS",
-            "details": "all valid"
-          }
-        ]
-      }
-    }
-  },
-  "pipeline_schema_version": "2.0"
+  }
 }

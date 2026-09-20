@@ -1,0 +1,34 @@
+{
+  "structured_output": {
+    "produced_by": "veo_agent",
+    "status": "FAILURE",
+    "shot_sequence": 6,
+    "generation_mode": "VEO",
+    "shot_fingerprint": "6d23bdd80e40c3a3db0dc5a394a92013f9d0e1d662f178839b811845755e363b",
+    "result": null,
+    "failure": {
+      "produced_by": "veo_agent",
+      "shot_sequence": 6,
+      "shot_fingerprint": "6d23bdd80e40c3a3db0dc5a394a92013f9d0e1d662f178839b811845755e363b",
+      "stage": "seed_qa",
+      "code": "SEED_CONTAINS_BAKED_TEXT_OVERLAY",
+      "reason": "Generated seed image has the full closing narration ('Happiness isn't a finish line— it grows from the problems you actually choose to solve.') rendered as large burned-in text across the top third of the frame. This is prohibited visible text baked into the production seed: the shot spec calls for the shorter text_overlay ('Happiness isn't a finish line') to be layered on top of the video during post-production and to fade in softly only over the closing seconds, animated independently of the plate. A static, full-sentence text block permanently composited into the seed image would (a) show the wrong/longer wording throughout the whole clip instead of fading in near the end, (b) get warped/duplicated by Veo's pull-back camera motion since it is now part of the pixel content, and (c) violates the seed-QA rule against seeds containing visible text. Otherwise the illustration itself (practicing figure under lamp, empty folding chairs, warm spotlight pool, wider framing than shot 5, teal palette, no app UI, no duplicate subjects) faithfully matches img_d5101d6cfa1e's story_art_region and the shot's frame_composition/motion_plan. Regenerate the seed with the text overlay layer omitted entirely (clean warm-lit illustration only, wider framing revealing more empty chairs, no text of any kind), so the closing line can be composited separately in post per fade_in_frames/fade_out_frames.",
+      "retryable": true,
+      "attempt": 1,
+      "operation_name": null,
+      "operation_dump_path": null,
+      "rai_media_filtered_count": 0,
+      "rai_media_filtered_reasons": [],
+      "operation_error": null,
+      "partial_artifact_paths": [
+        "generated/veo_seeds/shot_06_seed.png"
+      ],
+      "cost_usd": 0.04
+    }
+  },
+  "result": "{\"produced_by\":\"veo_agent\",\"generation_mode\":\"VEO\",\"status\":\"FAILURE\",\"shot_sequence\":6,\"shot_fingerprint\":\"6d23bdd80e40c3a3db0dc5a394a92013f9d0e1d662f178839b811845755e363b\",\"result\":null,\"failure\":{\"produced_by\":\"veo_agent\",\"shot_sequence\":6,\"shot_fingerprint\":\"6d23bdd80e40c3a3db0dc5a394a92013f9d0e1d662f178839b811845755e363b\",\"stage\":\"seed_qa\",\"code\":\"SEED_CONTAINS_BAKED_TEXT_OVERLAY\",\"reason\":\"Generated seed image has the full closing narration ('Happiness isn't a finish line— it grows from the problems you actually choose to solve.') rendered as large burned-in text across the top third of the frame. This is prohibited visible text baked into the production seed: the shot spec calls for the shorter text_overlay ('Happiness isn't a finish line') to be layered on top of the video during post-production and to fade in softly only over the closing seconds, animated independently of the plate. A static, full-sentence text block permanently composited into the seed image would (a) show the wrong/longer wording throughout the whole clip instead of fading in near the end, (b) get warped/duplicated by Veo's pull-back camera motion since it is now part of the pixel content, and (c) violates the seed-QA rule against seeds containing visible text. Otherwise the illustration itself (practicing figure under lamp, empty folding chairs, warm spotlight pool, wider framing than shot 5, teal palette, no app UI, no duplicate subjects) faithfully matches img_d5101d6cfa1e's story_art_region and the shot's frame_composition/motion_plan. Regenerate the seed with the text overlay layer omitted entirely (clean warm-lit illustration only, wider framing revealing more empty chairs, no text of any kind), so the closing line can be composited separately in post per fade_in_frames/fade_out_frames.\",\"retryable\":true,\"attempt\":1,\"partial_artifact_paths\":[\"generated/veo_seeds/shot_06_seed.png\"],\"cost_usd\":0.04,\"rai_media_filtered_count\":0,\"rai_media_filtered_reasons\":[],\"operation_name\":null,\"operation_dump_path\":null,\"operation_error\":null}}",
+  "subtype": "success",
+  "errors": null,
+  "claude_cost_usd": 0.0919982,
+  "paid_tool_cost_usd": 0.04
+}

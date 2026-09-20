@@ -1,0 +1,8 @@
+{
+  "stage_id": "stills_agent",
+  "failed_contract_name": "StillOutcomeContract",
+  "reason": "Invalid stills agent outcome: Stills agent outcome does not match the requested source shot",
+  "attempt_count": 1,
+  "timestamp": "2026-09-18T14:11:27.758706+00:00",
+  "partial_artifact_paths": []
+}

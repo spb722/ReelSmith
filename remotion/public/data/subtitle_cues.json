@@ -1,966 +1,929 @@
 {
-  "status": "SUCCESS",
-  "source_word_timing": "metadata/word_timing.json",
-  "source_story_plan": "metadata/final_story_plan.json",
-  "strategy": "Deterministic dynamic-programming subtitle segmentation using exact word timestamps, punctuation, pauses, protected phrases, semantic ending penalties, and cue-length constraints.",
-  "alignment_ratio": 1.0,
-  "cue_count": 24,
-  "settings": {
-    "min_words_per_cue": 2,
-    "max_words_per_cue": 6,
-    "ideal_words_per_cue": 4,
-    "ideal_duration_seconds": 1.65,
-    "soft_max_duration_seconds": 3.0
-  },
-  "long_cue_warnings": [],
+  "produced_by": "voice_agent",
+  "source_narration_script": "Twenty-five hundred years ago, a prince lived behind palace walls, hidden from all suffering. When he finally saw it, he ran — gave up the throne, slept in the dirt, starved himself, sure that pain itself would hand him meaning. It handed him nothing. Under a tree, he saw the truth: rich or poor, everyone suffers. That became the Buddha's first teaching. Centuries later, a writer named Manson spent half his life dreaming of rock stardom, loving the fame, never the practice. Everyone wants the reward. Few want the struggle that earns it. Happiness isn't a finish line — it grows from the problems you actually choose to solve.",
+  "alignment_ratio": 0.9813,
   "cues": [
     {
       "cue_id": "cue_001",
-      "start_seconds": 0.2,
-      "end_seconds": 2.59,
-      "duration_seconds": 2.39,
-      "start_word_index": 1,
-      "end_word_index": 5,
-      "word_count": 5,
-      "text": "After a lifetime of struggle",
-      "style_hint": "NORMAL",
-      "duration_warning": false,
+      "start_seconds": 0.0,
+      "end_seconds": 2.31,
+      "word_count": 4,
+      "text": "Twenty-five hundred years ago,",
       "words": [
         {
           "index": 1,
-          "word": "After",
-          "start_seconds": 0.24,
-          "end_seconds": 0.68
+          "word": "Twenty-five",
+          "start_seconds": 0.0,
+          "end_seconds": 0.24
         },
         {
           "index": 2,
-          "word": "a",
-          "start_seconds": 0.68,
-          "end_seconds": 0.76
+          "word": "hundred",
+          "start_seconds": 0.24,
+          "end_seconds": 1.36
         },
         {
           "index": 3,
-          "word": "lifetime",
-          "start_seconds": 0.76,
-          "end_seconds": 1.56
+          "word": "years",
+          "start_seconds": 1.36,
+          "end_seconds": 1.64
         },
         {
           "index": 4,
-          "word": "of",
-          "start_seconds": 1.56,
-          "end_seconds": 1.68
-        },
-        {
-          "index": 5,
-          "word": "struggle",
-          "start_seconds": 1.68,
-          "end_seconds": 2.44
+          "word": "ago",
+          "start_seconds": 1.64,
+          "end_seconds": 2.08
         }
-      ]
+      ],
+      "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_002",
-      "start_seconds": 2.6,
-      "end_seconds": 4.53,
-      "duration_seconds": 1.93,
-      "start_word_index": 6,
-      "end_word_index": 8,
+      "start_seconds": 2.32,
+      "end_seconds": 3.43,
       "word_count": 3,
-      "text": "and eventual success,",
-      "style_hint": "NORMAL",
-      "duration_warning": false,
+      "text": "a prince lived",
       "words": [
         {
+          "index": 5,
+          "word": "a",
+          "start_seconds": 2.36,
+          "end_seconds": 2.44
+        },
+        {
           "index": 6,
-          "word": "and",
-          "start_seconds": 2.64,
-          "end_seconds": 3.0
+          "word": "prince",
+          "start_seconds": 2.44,
+          "end_seconds": 3.16
         },
         {
           "index": 7,
-          "word": "eventual",
-          "start_seconds": 3.0,
-          "end_seconds": 3.56
-        },
-        {
-          "index": 8,
-          "word": "success",
-          "start_seconds": 3.56,
-          "end_seconds": 4.28
+          "word": "lived",
+          "start_seconds": 3.16,
+          "end_seconds": 3.48
         }
-      ]
+      ],
+      "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_003",
-      "start_seconds": 4.8,
-      "end_seconds": 7.19,
-      "duration_seconds": 2.39,
-      "start_word_index": 9,
-      "end_word_index": 12,
-      "word_count": 4,
-      "text": "Charles Bukowski left two",
-      "style_hint": "NORMAL",
-      "duration_warning": false,
+      "start_seconds": 3.44,
+      "end_seconds": 5.23,
+      "word_count": 3,
+      "text": "behind palace walls,",
       "words": [
         {
+          "index": 8,
+          "word": "behind",
+          "start_seconds": 3.48,
+          "end_seconds": 3.92
+        },
+        {
           "index": 9,
-          "word": "Charles",
-          "start_seconds": 4.84,
-          "end_seconds": 5.36
+          "word": "palace",
+          "start_seconds": 3.92,
+          "end_seconds": 4.4
         },
         {
           "index": 10,
-          "word": "Bukowski",
-          "start_seconds": 5.36,
-          "end_seconds": 6.24
-        },
-        {
-          "index": 11,
-          "word": "left",
-          "start_seconds": 6.28,
-          "end_seconds": 6.76
-        },
-        {
-          "index": 12,
-          "word": "two",
-          "start_seconds": 6.76,
-          "end_seconds": 7.24
+          "word": "walls",
+          "start_seconds": 4.4,
+          "end_seconds": 5.0
         }
-      ]
+      ],
+      "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_004",
-      "start_seconds": 7.2,
-      "end_seconds": 9.05,
-      "duration_seconds": 1.85,
-      "start_word_index": 13,
-      "end_word_index": 16,
+      "start_seconds": 5.24,
+      "end_seconds": 7.21,
       "word_count": 4,
-      "text": "words on his tombstone:",
-      "style_hint": "NORMAL",
-      "duration_warning": false,
+      "text": "hidden from all suffering.",
       "words": [
         {
+          "index": 11,
+          "word": "hidden",
+          "start_seconds": 5.28,
+          "end_seconds": 5.72
+        },
+        {
+          "index": 12,
+          "word": "from",
+          "start_seconds": 5.72,
+          "end_seconds": 6.04
+        },
+        {
           "index": 13,
-          "word": "words",
-          "start_seconds": 7.24,
-          "end_seconds": 7.76
+          "word": "all",
+          "start_seconds": 6.04,
+          "end_seconds": 6.32
         },
         {
           "index": 14,
-          "word": "on",
-          "start_seconds": 7.76,
-          "end_seconds": 7.92
-        },
-        {
-          "index": 15,
-          "word": "his",
-          "start_seconds": 7.92,
-          "end_seconds": 8.08
-        },
-        {
-          "index": 16,
-          "word": "tombstone",
-          "start_seconds": 8.08,
-          "end_seconds": 8.8
+          "word": "suffering",
+          "start_seconds": 6.32,
+          "end_seconds": 6.96
         }
-      ]
+      ],
+      "style_hint": "EMPHASIS"
     },
     {
       "cue_id": "cue_005",
-      "start_seconds": 9.92,
-      "end_seconds": 11.65,
-      "duration_seconds": 1.73,
-      "start_word_index": 17,
-      "end_word_index": 18,
-      "word_count": 2,
-      "text": "'Don't try.'",
-      "style_hint": "IMPACT",
-      "duration_warning": false,
+      "start_seconds": 7.64,
+      "end_seconds": 9.31,
+      "word_count": 5,
+      "text": "When he finally saw it,",
       "words": [
         {
+          "index": 15,
+          "word": "When",
+          "start_seconds": 7.68,
+          "end_seconds": 7.8
+        },
+        {
+          "index": 16,
+          "word": "he",
+          "start_seconds": 7.8,
+          "end_seconds": 7.92
+        },
+        {
           "index": 17,
-          "word": "Don't",
-          "start_seconds": 9.96,
-          "end_seconds": 10.6
+          "word": "finally",
+          "start_seconds": 7.92,
+          "end_seconds": 8.44
         },
         {
           "index": 18,
-          "word": "try",
-          "start_seconds": 10.72,
-          "end_seconds": 11.4
+          "word": "saw",
+          "start_seconds": 8.44,
+          "end_seconds": 8.76
+        },
+        {
+          "index": 19,
+          "word": "it",
+          "start_seconds": 8.76,
+          "end_seconds": 9.12
         }
-      ]
+      ],
+      "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_006",
-      "start_seconds": 12.24,
-      "end_seconds": 14.85,
-      "duration_seconds": 2.61,
-      "start_word_index": 19,
-      "end_word_index": 24,
-      "word_count": 6,
-      "text": "He faced 30 years of rejection.",
-      "style_hint": "NORMAL",
-      "duration_warning": false,
+      "start_seconds": 9.32,
+      "end_seconds": 10.45,
+      "word_count": 2,
+      "text": "he ran—",
       "words": [
         {
-          "index": 19,
-          "word": "He",
-          "start_seconds": 12.28,
-          "end_seconds": 12.48
-        },
-        {
           "index": 20,
-          "word": "faced",
-          "start_seconds": 12.48,
-          "end_seconds": 12.96
+          "word": "he",
+          "start_seconds": 9.36,
+          "end_seconds": 9.6
         },
         {
           "index": 21,
-          "word": "30",
-          "start_seconds": 12.96,
-          "end_seconds": 13.44
-        },
-        {
-          "index": 22,
-          "word": "years",
-          "start_seconds": 13.44,
-          "end_seconds": 13.84
-        },
-        {
-          "index": 23,
-          "word": "of",
-          "start_seconds": 13.84,
-          "end_seconds": 13.96
-        },
-        {
-          "index": 24,
-          "word": "rejection",
-          "start_seconds": 13.96,
-          "end_seconds": 14.6
+          "word": "ran",
+          "start_seconds": 9.6,
+          "end_seconds": 10.2
         }
-      ]
+      ],
+      "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_007",
-      "start_seconds": 15.12,
-      "end_seconds": 16.43,
-      "duration_seconds": 1.31,
-      "start_word_index": 25,
-      "end_word_index": 28,
+      "start_seconds": 10.64,
+      "end_seconds": 12.15,
       "word_count": 4,
-      "text": "His breakthrough at 50",
-      "style_hint": "NORMAL",
-      "duration_warning": false,
+      "text": "gave up the throne,",
       "words": [
         {
+          "index": 22,
+          "word": "gave",
+          "start_seconds": 10.68,
+          "end_seconds": 10.96
+        },
+        {
+          "index": 23,
+          "word": "up",
+          "start_seconds": 10.96,
+          "end_seconds": 11.12
+        },
+        {
+          "index": 24,
+          "word": "the",
+          "start_seconds": 11.12,
+          "end_seconds": 11.2
+        },
+        {
           "index": 25,
-          "word": "His",
-          "start_seconds": 15.16,
-          "end_seconds": 15.36
-        },
-        {
-          "index": 26,
-          "word": "breakthrough",
-          "start_seconds": 15.36,
-          "end_seconds": 15.88
-        },
-        {
-          "index": 27,
-          "word": "at",
-          "start_seconds": 15.88,
-          "end_seconds": 16.0
-        },
-        {
-          "index": 28,
-          "word": "50",
-          "start_seconds": 16.0,
-          "end_seconds": 16.48
+          "word": "throne",
+          "start_seconds": 11.2,
+          "end_seconds": 11.92
         }
-      ]
+      ],
+      "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_008",
-      "start_seconds": 16.44,
-      "end_seconds": 18.33,
-      "duration_seconds": 1.89,
-      "start_word_index": 29,
-      "end_word_index": 33,
-      "word_count": 5,
-      "text": "seemed like an underdog tale.",
-      "style_hint": "NORMAL",
-      "duration_warning": false,
+      "start_seconds": 12.16,
+      "end_seconds": 13.65,
+      "word_count": 4,
+      "text": "slept in the dirt,",
       "words": [
         {
+          "index": 26,
+          "word": "slept",
+          "start_seconds": 12.2,
+          "end_seconds": 12.6
+        },
+        {
+          "index": 27,
+          "word": "in",
+          "start_seconds": 12.6,
+          "end_seconds": 12.68
+        },
+        {
+          "index": 28,
+          "word": "the",
+          "start_seconds": 12.68,
+          "end_seconds": 12.8
+        },
+        {
           "index": 29,
-          "word": "seemed",
-          "start_seconds": 16.48,
-          "end_seconds": 16.84
-        },
-        {
-          "index": 30,
-          "word": "like",
-          "start_seconds": 16.84,
-          "end_seconds": 17.0
-        },
-        {
-          "index": 31,
-          "word": "an",
-          "start_seconds": 17.0,
-          "end_seconds": 17.12
-        },
-        {
-          "index": 32,
-          "word": "underdog",
-          "start_seconds": 17.12,
-          "end_seconds": 17.68
-        },
-        {
-          "index": 33,
-          "word": "tale",
-          "start_seconds": 17.68,
-          "end_seconds": 18.08
+          "word": "dirt",
+          "start_seconds": 12.8,
+          "end_seconds": 13.4
         }
-      ]
+      ],
+      "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_009",
-      "start_seconds": 18.8,
-      "end_seconds": 19.95,
-      "duration_seconds": 1.15,
-      "start_word_index": 34,
-      "end_word_index": 36,
-      "word_count": 3,
-      "text": "But success came",
-      "style_hint": "NORMAL",
-      "duration_warning": false,
+      "start_seconds": 13.68,
+      "end_seconds": 15.21,
+      "word_count": 2,
+      "text": "starved himself,",
       "words": [
         {
-          "index": 34,
-          "word": "But",
-          "start_seconds": 18.84,
-          "end_seconds": 19.04
+          "index": 30,
+          "word": "starved",
+          "start_seconds": 13.72,
+          "end_seconds": 14.32
         },
         {
-          "index": 35,
-          "word": "success",
-          "start_seconds": 19.04,
-          "end_seconds": 19.68
-        },
-        {
-          "index": 36,
-          "word": "came",
-          "start_seconds": 19.68,
-          "end_seconds": 20.0
+          "index": 31,
+          "word": "himself",
+          "start_seconds": 14.32,
+          "end_seconds": 14.96
         }
-      ]
+      ],
+      "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_010",
-      "start_seconds": 19.96,
-      "end_seconds": 22.17,
-      "duration_seconds": 2.21,
-      "start_word_index": 37,
-      "end_word_index": 41,
-      "word_count": 5,
-      "text": "from accepting who he was,",
-      "style_hint": "EMPHASIS",
-      "duration_warning": false,
+      "start_seconds": 15.32,
+      "end_seconds": 17.19,
+      "word_count": 4,
+      "text": "sure that pain itself",
       "words": [
         {
-          "index": 37,
-          "word": "from",
-          "start_seconds": 20.0,
-          "end_seconds": 20.2
+          "index": 32,
+          "word": "sure",
+          "start_seconds": 15.36,
+          "end_seconds": 15.72
         },
         {
-          "index": 38,
-          "word": "accepting",
-          "start_seconds": 20.2,
-          "end_seconds": 20.92
+          "index": 33,
+          "word": "that",
+          "start_seconds": 15.72,
+          "end_seconds": 15.96
         },
         {
-          "index": 39,
-          "word": "who",
-          "start_seconds": 20.92,
-          "end_seconds": 21.16
+          "index": 34,
+          "word": "pain",
+          "start_seconds": 15.96,
+          "end_seconds": 16.44
         },
         {
-          "index": 40,
-          "word": "he",
-          "start_seconds": 21.16,
-          "end_seconds": 21.4
-        },
-        {
-          "index": 41,
-          "word": "was",
-          "start_seconds": 21.4,
-          "end_seconds": 21.92
+          "index": 35,
+          "word": "itself",
+          "start_seconds": 16.44,
+          "end_seconds": 17.24
         }
-      ]
+      ],
+      "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_011",
-      "start_seconds": 22.48,
-      "end_seconds": 24.29,
-      "duration_seconds": 1.81,
-      "start_word_index": 42,
-      "end_word_index": 46,
-      "word_count": 5,
-      "text": "not from wanting it more.",
-      "style_hint": "NORMAL",
-      "duration_warning": false,
+      "start_seconds": 17.2,
+      "end_seconds": 18.65,
+      "word_count": 4,
+      "text": "would hand him meaning.",
       "words": [
         {
-          "index": 42,
-          "word": "not",
-          "start_seconds": 22.52,
-          "end_seconds": 22.8
+          "index": 36,
+          "word": "would",
+          "start_seconds": 17.24,
+          "end_seconds": 17.44
         },
         {
-          "index": 43,
-          "word": "from",
-          "start_seconds": 22.8,
-          "end_seconds": 23.08
+          "index": 37,
+          "word": "hand",
+          "start_seconds": 17.44,
+          "end_seconds": 17.72
         },
         {
-          "index": 44,
-          "word": "wanting",
-          "start_seconds": 23.08,
-          "end_seconds": 23.48
+          "index": 38,
+          "word": "him",
+          "start_seconds": 17.72,
+          "end_seconds": 17.88
         },
         {
-          "index": 45,
-          "word": "it",
-          "start_seconds": 23.48,
-          "end_seconds": 23.64
-        },
-        {
-          "index": 46,
-          "word": "more",
-          "start_seconds": 23.64,
-          "end_seconds": 24.04
+          "index": 39,
+          "word": "meaning",
+          "start_seconds": 17.88,
+          "end_seconds": 18.4
         }
-      ]
+      ],
+      "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_012",
-      "start_seconds": 24.92,
-      "end_seconds": 27.11,
-      "duration_seconds": 2.19,
-      "start_word_index": 47,
-      "end_word_index": 51,
-      "word_count": 5,
-      "text": "This is 'The Backwards Law,'",
-      "style_hint": "EMPHASIS",
-      "duration_warning": false,
+      "start_seconds": 19.12,
+      "end_seconds": 21.21,
+      "word_count": 4,
+      "text": "It handed him nothing.",
       "words": [
         {
-          "index": 47,
-          "word": "This",
-          "start_seconds": 24.96,
-          "end_seconds": 25.48
+          "index": 40,
+          "word": "It",
+          "start_seconds": 19.16,
+          "end_seconds": 19.36
         },
         {
-          "index": 48,
-          "word": "is",
-          "start_seconds": 25.48,
-          "end_seconds": 25.68
+          "index": 41,
+          "word": "handed",
+          "start_seconds": 19.36,
+          "end_seconds": 19.76
         },
         {
-          "index": 49,
-          "word": "The",
-          "start_seconds": 25.68,
-          "end_seconds": 25.8
+          "index": 42,
+          "word": "him",
+          "start_seconds": 19.76,
+          "end_seconds": 20.12
         },
         {
-          "index": 50,
-          "word": "Backwards",
-          "start_seconds": 25.8,
-          "end_seconds": 26.56
-        },
-        {
-          "index": 51,
-          "word": "Law",
-          "start_seconds": 26.56,
-          "end_seconds": 26.92
+          "index": 43,
+          "word": "nothing",
+          "start_seconds": 20.28,
+          "end_seconds": 20.96
         }
-      ]
+      ],
+      "style_hint": "IMPACT"
     },
     {
       "cue_id": "cue_013",
-      "start_seconds": 27.12,
-      "end_seconds": 28.49,
-      "duration_seconds": 1.37,
-      "start_word_index": 52,
-      "end_word_index": 54,
+      "start_seconds": 22.0,
+      "end_seconds": 23.27,
       "word_count": 3,
-      "text": "from Alan Watts.",
-      "style_hint": "NORMAL",
-      "duration_warning": false,
+      "text": "Under a tree,",
       "words": [
         {
-          "index": 52,
-          "word": "from",
-          "start_seconds": 27.16,
-          "end_seconds": 27.4
+          "index": 44,
+          "word": "Under",
+          "start_seconds": 22.04,
+          "end_seconds": 22.36
         },
         {
-          "index": 53,
-          "word": "Alan",
-          "start_seconds": 27.4,
-          "end_seconds": 27.72
+          "index": 45,
+          "word": "a",
+          "start_seconds": 22.36,
+          "end_seconds": 22.44
         },
         {
-          "index": 54,
-          "word": "Watts",
-          "start_seconds": 27.72,
-          "end_seconds": 28.24
+          "index": 46,
+          "word": "tree",
+          "start_seconds": 22.44,
+          "end_seconds": 23.04
         }
-      ]
+      ],
+      "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_014",
-      "start_seconds": 29.08,
-      "end_seconds": 31.45,
-      "duration_seconds": 2.37,
-      "start_word_index": 55,
-      "end_word_index": 60,
-      "word_count": 6,
-      "text": "The harder you chase good feelings,",
-      "style_hint": "NORMAL",
-      "duration_warning": false,
+      "start_seconds": 23.28,
+      "end_seconds": 24.73,
+      "word_count": 4,
+      "text": "he saw the truth:",
       "words": [
         {
-          "index": 55,
-          "word": "The",
-          "start_seconds": 29.12,
-          "end_seconds": 29.32
+          "index": 47,
+          "word": "he",
+          "start_seconds": 23.32,
+          "end_seconds": 23.52
         },
         {
-          "index": 56,
-          "word": "harder",
-          "start_seconds": 29.32,
-          "end_seconds": 29.8
+          "index": 48,
+          "word": "saw",
+          "start_seconds": 23.52,
+          "end_seconds": 23.76
         },
         {
-          "index": 57,
-          "word": "you",
-          "start_seconds": 29.8,
-          "end_seconds": 29.96
+          "index": 49,
+          "word": "the",
+          "start_seconds": 23.76,
+          "end_seconds": 23.92
         },
         {
-          "index": 58,
-          "word": "chase",
-          "start_seconds": 29.96,
-          "end_seconds": 30.36
-        },
-        {
-          "index": 59,
-          "word": "good",
-          "start_seconds": 30.36,
-          "end_seconds": 30.6
-        },
-        {
-          "index": 60,
-          "word": "feelings",
-          "start_seconds": 30.6,
-          "end_seconds": 31.2
+          "index": 50,
+          "word": "truth",
+          "start_seconds": 23.92,
+          "end_seconds": 24.48
         }
-      ]
+      ],
+      "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_015",
-      "start_seconds": 31.8,
-      "end_seconds": 33.61,
-      "duration_seconds": 1.81,
-      "start_word_index": 61,
-      "end_word_index": 65,
-      "word_count": 5,
-      "text": "the more they elude you.",
-      "style_hint": "NORMAL",
-      "duration_warning": false,
+      "start_seconds": 25.04,
+      "end_seconds": 26.41,
+      "word_count": 3,
+      "text": "rich or poor,",
       "words": [
         {
-          "index": 61,
-          "word": "the",
-          "start_seconds": 31.84,
-          "end_seconds": 31.96
+          "index": 51,
+          "word": "rich",
+          "start_seconds": 25.08,
+          "end_seconds": 25.52
         },
         {
-          "index": 62,
-          "word": "more",
-          "start_seconds": 31.96,
-          "end_seconds": 32.36
+          "index": 52,
+          "word": "or",
+          "start_seconds": 25.52,
+          "end_seconds": 25.64
         },
         {
-          "index": 63,
-          "word": "they",
-          "start_seconds": 32.36,
-          "end_seconds": 32.52
-        },
-        {
-          "index": 64,
-          "word": "elude",
-          "start_seconds": 32.52,
-          "end_seconds": 33.04
-        },
-        {
-          "index": 65,
-          "word": "you",
-          "start_seconds": 33.04,
-          "end_seconds": 33.36
+          "index": 53,
+          "word": "poor",
+          "start_seconds": 25.64,
+          "end_seconds": 26.16
         }
-      ]
+      ],
+      "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_016",
-      "start_seconds": 34.08,
-      "end_seconds": 35.89,
-      "duration_seconds": 1.81,
-      "start_word_index": 66,
-      "end_word_index": 68,
-      "word_count": 3,
-      "text": "Straining for success",
-      "style_hint": "NORMAL",
-      "duration_warning": false,
+      "start_seconds": 26.68,
+      "end_seconds": 28.21,
+      "word_count": 2,
+      "text": "everyone suffers.",
       "words": [
         {
-          "index": 66,
-          "word": "Straining",
-          "start_seconds": 34.12,
-          "end_seconds": 34.76
+          "index": 54,
+          "word": "everyone",
+          "start_seconds": 26.72,
+          "end_seconds": 27.32
         },
         {
-          "index": 67,
-          "word": "for",
-          "start_seconds": 34.76,
-          "end_seconds": 34.92
-        },
-        {
-          "index": 68,
-          "word": "success",
-          "start_seconds": 34.92,
-          "end_seconds": 35.64
+          "index": 55,
+          "word": "suffers",
+          "start_seconds": 27.32,
+          "end_seconds": 27.96
         }
-      ]
+      ],
+      "style_hint": "EMPHASIS"
     },
     {
       "cue_id": "cue_017",
-      "start_seconds": 36.12,
-      "end_seconds": 38.05,
-      "duration_seconds": 1.93,
-      "start_word_index": 69,
-      "end_word_index": 74,
+      "start_seconds": 28.6,
+      "end_seconds": 31.29,
       "word_count": 6,
-      "text": "makes you feel like a failure.",
-      "style_hint": "NORMAL",
-      "duration_warning": false,
+      "text": "That became the Buddha's first teaching.",
       "words": [
         {
+          "index": 56,
+          "word": "That",
+          "start_seconds": 28.64,
+          "end_seconds": 29.04
+        },
+        {
+          "index": 57,
+          "word": "became",
+          "start_seconds": 29.04,
+          "end_seconds": 29.36
+        },
+        {
+          "index": 58,
+          "word": "the",
+          "start_seconds": 29.36,
+          "end_seconds": 29.44
+        },
+        {
+          "index": 59,
+          "word": "Buddha's",
+          "start_seconds": 29.44,
+          "end_seconds": 29.92
+        },
+        {
+          "index": 60,
+          "word": "first",
+          "start_seconds": 29.92,
+          "end_seconds": 30.48
+        },
+        {
+          "index": 61,
+          "word": "teaching",
+          "start_seconds": 30.48,
+          "end_seconds": 31.04
+        }
+      ],
+      "style_hint": "NORMAL"
+    },
+    {
+      "cue_id": "cue_018",
+      "start_seconds": 32.0,
+      "end_seconds": 33.41,
+      "word_count": 2,
+      "text": "Centuries later,",
+      "words": [
+        {
+          "index": 62,
+          "word": "Centuries",
+          "start_seconds": 32.04,
+          "end_seconds": 32.68
+        },
+        {
+          "index": 63,
+          "word": "later",
+          "start_seconds": 32.68,
+          "end_seconds": 33.16
+        }
+      ],
+      "style_hint": "NORMAL"
+    },
+    {
+      "cue_id": "cue_019",
+      "start_seconds": 33.48,
+      "end_seconds": 34.95,
+      "word_count": 4,
+      "text": "a writer named Manson",
+      "words": [
+        {
+          "index": 64,
+          "word": "a",
+          "start_seconds": 33.52,
+          "end_seconds": 33.64
+        },
+        {
+          "index": 65,
+          "word": "writer",
+          "start_seconds": 33.64,
+          "end_seconds": 34.0
+        },
+        {
+          "index": 66,
+          "word": "named",
+          "start_seconds": 34.0,
+          "end_seconds": 34.32
+        },
+        {
+          "index": 67,
+          "word": "Manson",
+          "start_seconds": 34.32,
+          "end_seconds": 34.96
+        }
+      ],
+      "style_hint": "NORMAL"
+    },
+    {
+      "cue_id": "cue_020",
+      "start_seconds": 34.96,
+      "end_seconds": 36.27,
+      "word_count": 4,
+      "text": "spent half his life",
+      "words": [
+        {
+          "index": 68,
+          "word": "spent",
+          "start_seconds": 35.0,
+          "end_seconds": 35.4
+        },
+        {
           "index": 69,
-          "word": "makes",
-          "start_seconds": 36.16,
-          "end_seconds": 36.44
+          "word": "half",
+          "start_seconds": 35.4,
+          "end_seconds": 35.72
         },
         {
           "index": 70,
-          "word": "you",
-          "start_seconds": 36.44,
-          "end_seconds": 36.56
+          "word": "his",
+          "start_seconds": 35.72,
+          "end_seconds": 35.96
         },
         {
           "index": 71,
-          "word": "feel",
-          "start_seconds": 36.56,
+          "word": "life",
+          "start_seconds": 35.96,
+          "end_seconds": 36.32
+        }
+      ],
+      "style_hint": "NORMAL"
+    },
+    {
+      "cue_id": "cue_021",
+      "start_seconds": 36.28,
+      "end_seconds": 38.05,
+      "word_count": 4,
+      "text": "dreaming of rock stardom,",
+      "words": [
+        {
+          "index": 72,
+          "word": "dreaming",
+          "start_seconds": 36.32,
           "end_seconds": 36.84
         },
         {
-          "index": 72,
-          "word": "like",
+          "index": 73,
+          "word": "of",
           "start_seconds": 36.84,
           "end_seconds": 37.0
         },
         {
-          "index": 73,
-          "word": "a",
-          "start_seconds": 37.0,
-          "end_seconds": 37.04
-        },
-        {
           "index": 74,
-          "word": "failure",
-          "start_seconds": 37.04,
-          "end_seconds": 37.8
-        }
-      ]
-    },
-    {
-      "cue_id": "cue_018",
-      "start_seconds": 38.72,
-      "end_seconds": 41.15,
-      "duration_seconds": 2.43,
-      "start_word_index": 75,
-      "end_word_index": 78,
-      "word_count": 4,
-      "text": "Sometimes, the boldest moves",
-      "style_hint": "NORMAL",
-      "duration_warning": false,
-      "words": [
+          "word": "rock",
+          "start_seconds": 37.0,
+          "end_seconds": 37.28
+        },
         {
           "index": 75,
-          "word": "Sometimes",
-          "start_seconds": 38.76,
-          "end_seconds": 39.6
-        },
-        {
-          "index": 76,
-          "word": "the",
-          "start_seconds": 39.96,
-          "end_seconds": 40.08
-        },
-        {
-          "index": 77,
-          "word": "boldest",
-          "start_seconds": 40.08,
-          "end_seconds": 40.72
-        },
-        {
-          "index": 78,
-          "word": "moves",
-          "start_seconds": 40.72,
-          "end_seconds": 41.2
+          "word": "stardom",
+          "start_seconds": 37.28,
+          "end_seconds": 37.8
         }
-      ]
-    },
-    {
-      "cue_id": "cue_019",
-      "start_seconds": 41.16,
-      "end_seconds": 42.79,
-      "duration_seconds": 1.63,
-      "start_word_index": 79,
-      "end_word_index": 83,
-      "word_count": 5,
-      "text": "only happen when we stop",
-      "style_hint": "NORMAL",
-      "duration_warning": false,
-      "words": [
-        {
-          "index": 79,
-          "word": "only",
-          "start_seconds": 41.2,
-          "end_seconds": 41.6
-        },
-        {
-          "index": 80,
-          "word": "happen",
-          "start_seconds": 41.6,
-          "end_seconds": 42.04
-        },
-        {
-          "index": 81,
-          "word": "when",
-          "start_seconds": 42.04,
-          "end_seconds": 42.2
-        },
-        {
-          "index": 82,
-          "word": "we",
-          "start_seconds": 42.2,
-          "end_seconds": 42.32
-        },
-        {
-          "index": 83,
-          "word": "stop",
-          "start_seconds": 42.32,
-          "end_seconds": 42.8
-        }
-      ]
-    },
-    {
-      "cue_id": "cue_020",
-      "start_seconds": 42.8,
-      "end_seconds": 44.73,
-      "duration_seconds": 1.93,
-      "start_word_index": 84,
-      "end_word_index": 87,
-      "word_count": 4,
-      "text": "obsessing over the outcome.",
-      "style_hint": "NORMAL",
-      "duration_warning": false,
-      "words": [
-        {
-          "index": 84,
-          "word": "obsessing",
-          "start_seconds": 42.84,
-          "end_seconds": 43.6
-        },
-        {
-          "index": 85,
-          "word": "over",
-          "start_seconds": 43.6,
-          "end_seconds": 43.8
-        },
-        {
-          "index": 86,
-          "word": "the",
-          "start_seconds": 43.8,
-          "end_seconds": 43.96
-        },
-        {
-          "index": 87,
-          "word": "outcome",
-          "start_seconds": 43.96,
-          "end_seconds": 44.48
-        }
-      ]
-    },
-    {
-      "cue_id": "cue_021",
-      "start_seconds": 45.4,
-      "end_seconds": 47.21,
-      "duration_seconds": 1.81,
-      "start_word_index": 88,
-      "end_word_index": 89,
-      "word_count": 2,
-      "text": "Accept discomfort,",
-      "style_hint": "EMPHASIS",
-      "duration_warning": false,
-      "words": [
-        {
-          "index": 88,
-          "word": "Accept",
-          "start_seconds": 45.44,
-          "end_seconds": 46.08
-        },
-        {
-          "index": 89,
-          "word": "discomfort",
-          "start_seconds": 46.08,
-          "end_seconds": 46.96
-        }
-      ]
+      ],
+      "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_022",
-      "start_seconds": 47.36,
-      "end_seconds": 49.29,
-      "duration_seconds": 1.93,
-      "start_word_index": 90,
-      "end_word_index": 94,
-      "word_count": 5,
-      "text": "and it loses its power.",
-      "style_hint": "NORMAL",
-      "duration_warning": false,
+      "start_seconds": 38.28,
+      "end_seconds": 41.17,
+      "word_count": 6,
+      "text": "loving the fame, never the practice.",
       "words": [
         {
-          "index": 90,
-          "word": "and",
-          "start_seconds": 47.4,
-          "end_seconds": 47.52
+          "index": 76,
+          "word": "loving",
+          "start_seconds": 38.32,
+          "end_seconds": 38.68
         },
         {
-          "index": 91,
-          "word": "it",
-          "start_seconds": 47.52,
-          "end_seconds": 47.72
+          "index": 77,
+          "word": "the",
+          "start_seconds": 38.68,
+          "end_seconds": 38.8
         },
         {
-          "index": 92,
-          "word": "loses",
-          "start_seconds": 47.72,
-          "end_seconds": 48.24
+          "index": 78,
+          "word": "fame",
+          "start_seconds": 38.8,
+          "end_seconds": 39.4
         },
         {
-          "index": 93,
-          "word": "its",
-          "start_seconds": 48.24,
-          "end_seconds": 48.44
+          "index": 79,
+          "word": "never",
+          "start_seconds": 39.8,
+          "end_seconds": 40.16
         },
         {
-          "index": 94,
-          "word": "power",
-          "start_seconds": 48.44,
-          "end_seconds": 49.04
+          "index": 80,
+          "word": "the",
+          "start_seconds": 40.16,
+          "end_seconds": 40.28
+        },
+        {
+          "index": 81,
+          "word": "practice",
+          "start_seconds": 40.28,
+          "end_seconds": 40.92
         }
-      ]
+      ],
+      "style_hint": "IMPACT"
     },
     {
       "cue_id": "cue_023",
-      "start_seconds": 50.08,
-      "end_seconds": 50.87,
-      "duration_seconds": 0.79,
-      "start_word_index": 95,
-      "end_word_index": 98,
+      "start_seconds": 41.8,
+      "end_seconds": 43.81,
       "word_count": 4,
-      "text": "What if you just",
-      "style_hint": "REFLECTION",
-      "duration_warning": false,
+      "text": "Everyone wants the reward.",
       "words": [
         {
-          "index": 95,
-          "word": "What",
-          "start_seconds": 50.12,
-          "end_seconds": 50.32
+          "index": 82,
+          "word": "Everyone",
+          "start_seconds": 41.84,
+          "end_seconds": 42.44
         },
         {
-          "index": 96,
-          "word": "if",
-          "start_seconds": 50.32,
-          "end_seconds": 50.48
+          "index": 83,
+          "word": "wants",
+          "start_seconds": 42.44,
+          "end_seconds": 42.76
         },
         {
-          "index": 97,
-          "word": "you",
-          "start_seconds": 50.48,
-          "end_seconds": 50.6
+          "index": 84,
+          "word": "the",
+          "start_seconds": 42.76,
+          "end_seconds": 42.84
         },
         {
-          "index": 98,
-          "word": "just",
-          "start_seconds": 50.6,
-          "end_seconds": 50.92
+          "index": 85,
+          "word": "reward",
+          "start_seconds": 42.84,
+          "end_seconds": 43.56
         }
-      ]
+      ],
+      "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_024",
-      "start_seconds": 50.88,
-      "end_seconds": 52.44,
-      "duration_seconds": 1.56,
-      "start_word_index": 99,
-      "end_word_index": 102,
+      "start_seconds": 44.16,
+      "end_seconds": 45.47,
       "word_count": 4,
-      "text": "let yourself feel it?",
-      "style_hint": "REFLECTION",
-      "duration_warning": false,
+      "text": "Few want the struggle",
       "words": [
         {
+          "index": 86,
+          "word": "Few",
+          "start_seconds": 44.2,
+          "end_seconds": 44.56
+        },
+        {
+          "index": 87,
+          "word": "want",
+          "start_seconds": 44.56,
+          "end_seconds": 44.8
+        },
+        {
+          "index": 88,
+          "word": "the",
+          "start_seconds": 44.8,
+          "end_seconds": 44.88
+        },
+        {
+          "index": 89,
+          "word": "struggle",
+          "start_seconds": 44.88,
+          "end_seconds": 45.52
+        }
+      ],
+      "style_hint": "IMPACT"
+    },
+    {
+      "cue_id": "cue_025",
+      "start_seconds": 45.48,
+      "end_seconds": 46.69,
+      "word_count": 3,
+      "text": "that earns it.",
+      "words": [
+        {
+          "index": 90,
+          "word": "that",
+          "start_seconds": 45.52,
+          "end_seconds": 45.8
+        },
+        {
+          "index": 91,
+          "word": "earns",
+          "start_seconds": 45.8,
+          "end_seconds": 46.12
+        },
+        {
+          "index": 92,
+          "word": "it",
+          "start_seconds": 46.12,
+          "end_seconds": 46.44
+        }
+      ],
+      "style_hint": "IMPACT"
+    },
+    {
+      "cue_id": "cue_026",
+      "start_seconds": 47.28,
+      "end_seconds": 49.33,
+      "word_count": 5,
+      "text": "Happiness isn't a finish line—",
+      "words": [
+        {
+          "index": 93,
+          "word": "Happiness",
+          "start_seconds": 47.32,
+          "end_seconds": 47.92
+        },
+        {
+          "index": 94,
+          "word": "isn't",
+          "start_seconds": 47.92,
+          "end_seconds": 48.16
+        },
+        {
+          "index": 95,
+          "word": "a",
+          "start_seconds": 48.16,
+          "end_seconds": 48.2
+        },
+        {
+          "index": 96,
+          "word": "finish",
+          "start_seconds": 48.2,
+          "end_seconds": 48.68
+        },
+        {
+          "index": 97,
+          "word": "line",
+          "start_seconds": 48.68,
+          "end_seconds": 49.08
+        }
+      ],
+      "style_hint": "IMPACT"
+    },
+    {
+      "cue_id": "cue_027",
+      "start_seconds": 49.52,
+      "end_seconds": 51.07,
+      "word_count": 5,
+      "text": "it grows from the problems",
+      "words": [
+        {
+          "index": 98,
+          "word": "it",
+          "start_seconds": 49.56,
+          "end_seconds": 49.72
+        },
+        {
           "index": 99,
-          "word": "let",
-          "start_seconds": 50.92,
-          "end_seconds": 51.12
+          "word": "grows",
+          "start_seconds": 49.72,
+          "end_seconds": 50.28
         },
         {
           "index": 100,
-          "word": "yourself",
-          "start_seconds": 51.12,
-          "end_seconds": 51.64
+          "word": "from",
+          "start_seconds": 50.28,
+          "end_seconds": 50.44
         },
         {
           "index": 101,
-          "word": "feel",
-          "start_seconds": 51.64,
-          "end_seconds": 51.96
+          "word": "the",
+          "start_seconds": 50.44,
+          "end_seconds": 50.56
         },
         {
           "index": 102,
-          "word": "it",
-          "start_seconds": 51.96,
-          "end_seconds": 52.28
+          "word": "problems",
+          "start_seconds": 50.56,
+          "end_seconds": 51.12
         }
-      ]
+      ],
+      "style_hint": "NORMAL"
+    },
+    {
+      "cue_id": "cue_028",
+      "start_seconds": 51.08,
+      "end_seconds": 53.24,
+      "word_count": 5,
+      "text": "you actually choose to solve.",
+      "words": [
+        {
+          "index": 103,
+          "word": "you",
+          "start_seconds": 51.12,
+          "end_seconds": 51.4
+        },
+        {
+          "index": 104,
+          "word": "actually",
+          "start_seconds": 51.4,
+          "end_seconds": 51.96
+        },
+        {
+          "index": 105,
+          "word": "choose",
+          "start_seconds": 51.96,
+          "end_seconds": 52.36
+        },
+        {
+          "index": 106,
+          "word": "to",
+          "start_seconds": 52.36,
+          "end_seconds": 52.48
+        },
+        {
+          "index": 107,
+          "word": "solve",
+          "start_seconds": 52.48,
+          "end_seconds": 53.08
+        }
+      ],
+      "style_hint": "NORMAL"
     }
   ]
 }

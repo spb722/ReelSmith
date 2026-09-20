@@ -1,0 +1,8 @@
+{
+  "stage_id": "delivery",
+  "failed_contract_name": "sync_remotion_assets",
+  "reason": "SameFileError: PosixPath('remotion/public/data/timeline.json') and PosixPath('remotion/public/data/timeline.json') are the same file",
+  "attempt_count": 1,
+  "timestamp": "2026-09-19T02:10:01.865256+00:00",
+  "partial_artifact_paths": []
+}

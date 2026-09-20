@@ -1,6 +1,0 @@
-{
-  "cue_end_word_indices": [
-    5,
-    8,
-    10,
-    1

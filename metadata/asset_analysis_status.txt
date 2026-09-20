@@ -1,8 +1,0 @@
-SUCCESS
-Finished: 2026-09-14T04:57:47.583920+00:00
-Model: gemini-2.5-flash
-Newly analyzed: 6
-Skipped existing: 0
-Failed: 0
-Total available analyses: 6
-Merged output: metadata/analyzed_assets.json

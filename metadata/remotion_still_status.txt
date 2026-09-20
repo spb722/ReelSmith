@@ -1,2 +1,0 @@
-SUCCESS
-Results: metadata/remotion_still_results.json

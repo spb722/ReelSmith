@@ -1,5 +1,0 @@
-SUCCESS
-Output: metadata/word_timing.json
-Canonical words: 102
-Recognized words: 102
-Exact match ratio: 1.000
