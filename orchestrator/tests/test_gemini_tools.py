@@ -50,6 +50,14 @@ def working_directory(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
 
 
+@pytest.fixture(autouse=True)
+def no_empty_image_backoff(monkeypatch):
+    """Keep the empty-response retry loop instant under test."""
+    from orchestrator.tools import gemini_tools
+
+    monkeypatch.setattr(gemini_tools, "EMPTY_IMAGE_RETRY_SECONDS", 0.0)
+
+
 def _write_source_image(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     Image.new("RGB", (20, 40), "red").save(path)
@@ -637,3 +645,48 @@ def test_tool_result_has_no_reference_blocks_when_the_scene_has_no_person(tmp_pa
     )
 
     assert len([block for block in result["content"] if block["type"] == "image"]) == 1
+
+
+class FlakyModels(FakeModels):
+    """Returns an image-less response first, then a real image."""
+
+    def __init__(self, empty_first: int, response):
+        super().__init__(response)
+        self.empty_first = empty_first
+
+    def generate_content(self, **kwargs):
+        self.calls.append(kwargs)
+        if len(self.calls) <= self.empty_first:
+            return FakeResponse([FakeCandidate(FakeContent([FakePart(text="I cannot do that.")]))])
+        return self.response
+
+
+def test_transient_empty_image_response_is_retried_inside_the_tool(tmp_path):
+    from orchestrator.tools.gemini_tools import run_gemini_image_edit
+
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    good = FakeResponse(
+        [FakeCandidate(FakeContent([FakePart(inline_data=FakeInlineData(_png_bytes()))]))]
+    )
+    client = FakeGeminiClient()
+    client.models = FlakyModels(2, good)
+
+    image, _ = run_gemini_image_edit(
+        client, source_image_path=source, prompt="p", model="m"
+    )
+    assert image is not None
+    assert len(client.models.calls) == 3
+
+
+def test_persistent_empty_image_response_reports_the_model_text(tmp_path):
+    from orchestrator.tools.gemini_tools import run_gemini_image_edit
+
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    client = FakeGeminiClient()
+    client.models = FlakyModels(99, None)
+
+    with pytest.raises(RuntimeError, match="after 3 attempts"):
+        run_gemini_image_edit(client, source_image_path=source, prompt="p", model="m")
+    assert len(client.models.calls) == 3

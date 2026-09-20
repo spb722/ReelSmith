@@ -13,6 +13,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import time
 import wave
 from io import BytesIO
 from pathlib import Path
@@ -41,6 +42,11 @@ SAMPLE_RATE = 24000
 CHANNELS = 1
 SAMPLE_WIDTH = 2  # 16-bit PCM
 VEO_SEED_DIR = Path("generated/veo_seeds")
+
+# An image-edit call that comes back with text and no image is usually
+# transient -- the identical request succeeds on a retry.
+EMPTY_IMAGE_MAX_ATTEMPTS = 3
+EMPTY_IMAGE_RETRY_SECONDS = 2.0
 
 
 def count_words(text: str) -> int:
@@ -397,6 +403,28 @@ def character_reference_paths_for_asset(asset: dict) -> list[Path]:
     return resolve_character_references()
 
 
+def describe_empty_image_response(response, model_text: str) -> str:
+    """Summarise why an image-edit call came back without an image."""
+
+    details: list[str] = []
+    feedback = getattr(response, "prompt_feedback", None)
+    blocked = getattr(feedback, "block_reason", None) if feedback is not None else None
+    if blocked:
+        details.append(f"prompt_feedback.block_reason={blocked}")
+    for candidate in getattr(response, "candidates", None) or []:
+        finish = getattr(candidate, "finish_reason", None)
+        if finish:
+            details.append(f"finish_reason={finish}")
+        for rating in getattr(candidate, "safety_ratings", None) or []:
+            if getattr(rating, "blocked", False):
+                details.append(f"blocked_safety_category={getattr(rating, 'category', '?')}")
+    if model_text:
+        details.append(f"model_text={model_text[:600]!r}")
+    if not details:
+        details.append("no candidates, no text, and no block reason were returned")
+    return " ".join(details)
+
+
 def run_gemini_image_edit(
     client: genai.Client,
     *,
@@ -404,6 +432,7 @@ def run_gemini_image_edit(
     prompt: str,
     model: str,
     reference_image_paths: Sequence[Path] = (),
+    max_attempts: int = EMPTY_IMAGE_MAX_ATTEMPTS,
 ) -> tuple[Image.Image, str]:
     """Run one Gemini image-edit call and return the generated image plus any
     explanatory model text. Shared by every one-shot Gemini image-edit tool
@@ -423,17 +452,33 @@ def run_gemini_image_edit(
         if not reference_path.is_file():
             raise FileNotFoundError(f"Reference image does not exist: {reference_path}")
         reference_images.append(Image.open(reference_path).convert("RGB"))
-    response = client.models.generate_content(
-        model=model,
-        contents=[source_image, *reference_images, prompt],
-        config=types.GenerateContentConfig(
-            response_modalities=[types.Modality.TEXT, types.Modality.IMAGE],
-        ),
+    # The image model intermittently answers with text and no image for a
+    # request it satisfies on an identical retry. Absorbing that here costs one
+    # cheap image call; letting it reach the agent costs a whole Claude attempt
+    # out of a ceiling of three, which is how a transient null previously
+    # halted a run.
+    diagnosis = ""
+    for attempt in range(1, max_attempts + 1):
+        response = client.models.generate_content(
+            model=model,
+            contents=[source_image, *reference_images, prompt],
+            config=types.GenerateContentConfig(
+                response_modalities=[types.Modality.TEXT, types.Modality.IMAGE],
+            ),
+        )
+        generated_image, model_text = extract_generated_image(response)
+        if generated_image is not None:
+            return generated_image, model_text
+        # The model's own text is the only thing that distinguishes a refusal
+        # (safety, likeness, policy) from a transient empty response, so it
+        # must reach the failure report rather than being discarded here.
+        diagnosis = describe_empty_image_response(response, model_text)
+        if attempt < max_attempts:
+            time.sleep(EMPTY_IMAGE_RETRY_SECONDS * attempt)
+
+    raise RuntimeError(
+        f"Gemini image edit returned no image after {max_attempts} attempts. {diagnosis}"
     )
-    generated_image, model_text = extract_generated_image(response)
-    if generated_image is None:
-        raise RuntimeError("Gemini image edit returned no image")
-    return generated_image, model_text
 
 
 def _save_generated_image(generated_image: Image.Image, output_path: Path) -> None:
