@@ -785,3 +785,32 @@ def test_image_calls_are_paced_apart(tmp_path, monkeypatch):
 
     # the second call waits out the remainder of the 5s window
     assert slept and 0 < slept[0] <= 5.0
+
+
+def test_only_the_body_reference_is_sent_by_default(tmp_path, monkeypatch):
+    """Default config sends one reference; the face crop is opt-in."""
+    body, face = _write_character(tmp_path)
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", str(body))
+    monkeypatch.delenv("CHARACTER_FACE_REFERENCE_PATH", raising=False)
+
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    spec = build_still_spec(shot_dict(generation_mode="STILL"), asset_with_figure(source), "N.")
+
+    assert spec["character_reference_paths"] == [str(body)]
+    assert "authority on their facial features" not in spec["prompt"]
+
+
+def test_prompt_lifts_a_downturned_face_toward_the_viewer(tmp_path, monkeypatch):
+    body, _ = _write_character(tmp_path)
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", str(body))
+    monkeypatch.delenv("CHARACTER_FACE_REFERENCE_PATH", raising=False)
+
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    prompt = build_still_spec(
+        shot_dict(generation_mode="STILL"), asset_with_figure(source), "N."
+    )["prompt"]
+
+    assert "looking down, away, or into shadow" in prompt
+    assert "reads clearly toward the viewer" in prompt

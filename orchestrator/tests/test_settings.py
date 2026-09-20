@@ -149,12 +149,15 @@ def test_invalid_veo_settings_fail_loud(name, value, monkeypatch):
         load_settings()
 
 
-def test_character_reference_paths_default_to_the_assets_directory(monkeypatch):
+def test_character_body_reference_defaults_on_and_face_reference_defaults_off(monkeypatch):
+    """The face crop is opt-in: a photoreal portrait crop trips the image
+    model's likeness filter (block_reason=OTHER) where the body sheet alone
+    is accepted."""
     monkeypatch.delenv("CHARACTER_REFERENCE_PATH", raising=False)
     monkeypatch.delenv("CHARACTER_FACE_REFERENCE_PATH", raising=False)
     settings = load_settings()
     assert settings.character_reference_path == "assets/character/character.png"
-    assert settings.character_face_reference_path == "assets/character/character_face.png"
+    assert settings.character_face_reference_path == ""
 
 
 def test_character_reference_path_is_env_overridable(monkeypatch):

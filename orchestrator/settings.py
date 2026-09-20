@@ -49,10 +49,14 @@ DEFAULT_VEO_CALL_COST_USD = 1.20
 
 # Recurring-character reference images. Empty string disables the feature and
 # reproduces the pre-character behaviour exactly (one image per Gemini edit).
-# The face crop is optional and exists purely to hold facial detail steady --
-# a full-body sheet alone loses the face at small scale.
 DEFAULT_CHARACTER_REFERENCE_PATH = "assets/character/character.png"
-DEFAULT_CHARACTER_FACE_REFERENCE_PATH = "assets/character/character_face.png"
+# Off by default, and deliberately so. Sending a tight, photoreal close-up of a
+# real person's face alongside the body sheet made the image model return
+# prompt_feedback.block_reason=OTHER -- its likeness filter reads a portrait
+# crop as a request to depict a real individual. The identical request with the
+# full-body sheet alone is accepted. Point CHARACTER_FACE_REFERENCE_PATH at a
+# flatter, more illustrated face crop to opt back in.
+DEFAULT_CHARACTER_FACE_REFERENCE_PATH = ""
 
 
 # Story 1.5: Gemini TTS / Google STT per-unit cost-rate constants. Unlike
