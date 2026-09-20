@@ -26,6 +26,7 @@ from orchestrator.contracts.veo import (
 from orchestrator.contracts.visual_plan import Shot
 from orchestrator.settings import VEO_ALLOWED_DURATION_SECONDS
 from orchestrator.state.run_manifest import _atomic_write_json
+from orchestrator.tools.deterministic_tools import resolve_binary
 
 
 VEO_OUTPUT_DIR = Path("generated/veo")
@@ -219,14 +220,16 @@ def extract_video_previews(
     """Extract three deterministic JPEGs for semantic clip QA."""
 
     VEO_PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
+    ffmpeg = resolve_binary("ffmpeg")
     paths: list[str] = []
+    errors: list[str] = []
     positions = tuple(round(clip_duration_seconds * f, 3) for f in PREVIEW_POSITION_FRACTIONS)
     for index, position in enumerate(positions, start=1):
         output = VEO_PREVIEW_DIR / f"shot_{shot_sequence:02d}_{index:02d}.jpg"
         output.unlink(missing_ok=True)
         completed = subprocess.run(
             [
-                "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+                ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
                 "-ss", str(position), "-i", str(video_path), "-frames:v", "1", str(output),
             ],
             capture_output=True,
@@ -235,6 +238,19 @@ def extract_video_previews(
         )
         if completed.returncode == 0 and output.is_file() and output.stat().st_size > 0:
             paths.append(str(output))
+        else:
+            errors.append(
+                f"{position}s: exit {completed.returncode} {(completed.stderr or '').strip()[:200]}"
+            )
+
+    # Clip QA is impossible without frames, and an agent cannot fix a broken
+    # ffmpeg by retrying. Failing loudly here turns three wasted attempts and an
+    # opaque "preview_paths was empty" halt into one actionable message.
+    if not paths:
+        raise RuntimeError(
+            f"ffmpeg ({ffmpeg}) extracted no preview frames from {video_path}: "
+            + "; ".join(errors)
+        )
     return paths
 
 

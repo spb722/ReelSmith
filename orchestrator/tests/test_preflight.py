@@ -553,3 +553,25 @@ def test_valid_character_reference_passes(tmp_path, monkeypatch):
     monkeypatch.setenv("CHARACTER_REFERENCE_PATH", str(body))
     monkeypatch.setenv("CHARACTER_FACE_REFERENCE_PATH", str(face))
     assert _check_character_reference(load_settings()) is None
+
+
+def test_media_toolchain_check_fails_when_no_working_ffmpeg_exists(monkeypatch):
+    from orchestrator import preflight
+    from orchestrator.settings import load_settings
+    from orchestrator.tools import deterministic_tools
+
+    def boom(name):
+        raise deterministic_tools.MissingBinaryError(f"No working {name} found.")
+
+    monkeypatch.setattr(deterministic_tools, "resolve_binary", boom)
+    result = preflight._check_media_toolchain(load_settings())
+    assert result is not None and result.failed_check == "ffmpeg"
+
+
+def test_media_toolchain_check_passes_with_a_working_ffmpeg(monkeypatch):
+    from orchestrator import preflight
+    from orchestrator.settings import load_settings
+    from orchestrator.tools import deterministic_tools
+
+    monkeypatch.setattr(deterministic_tools, "resolve_binary", lambda name: f"/usr/bin/{name}")
+    assert preflight._check_media_toolchain(load_settings()) is None

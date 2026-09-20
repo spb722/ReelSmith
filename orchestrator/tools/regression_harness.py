@@ -24,6 +24,8 @@ from pathlib import Path
 
 import numpy as np
 from claude_agent_sdk import create_sdk_mcp_server, tool
+
+from orchestrator.tools.deterministic_tools import resolve_binary
 from PIL import Image
 from scipy.fftpack import dct
 
@@ -46,7 +48,7 @@ PHASH_HIGH_FREQ_FACTOR = 4
 def _run_ffprobe(args: list[str], *, video_path: Path) -> dict[str, str]:
     try:
         result = subprocess.run(
-            ["ffprobe", "-v", "error", *args],
+            [resolve_binary("ffprobe"), "-v", "error", *args],
             capture_output=True, text=True, check=True,
         )
     except FileNotFoundError as exc:

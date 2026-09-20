@@ -54,7 +54,15 @@ def working_directory(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
 
 
-def test_response_inline_bytes_materialize_deterministic_mp4_and_dump():
+def test_response_inline_bytes_materialize_deterministic_mp4_and_dump(monkeypatch):
+    def _fake_previews(video_path, shot_sequence, clip_duration_seconds):
+        # the contract requires previews to live under generated/veo/previews/
+        preview = veo_tools.VEO_PREVIEW_DIR / f"shot_{shot_sequence:02d}_01.jpg"
+        preview.parent.mkdir(parents=True, exist_ok=True)
+        preview.write_bytes(b"jpeg")
+        return [str(preview)]
+
+    monkeypatch.setattr(veo_tools, "extract_video_previews", _fake_previews)
     shot = shot_for()
     operation = {
         "name": "operations/inline",
@@ -79,7 +87,15 @@ def test_response_inline_bytes_materialize_deterministic_mp4_and_dump():
     assert Path(outcome.result.operation_dump_path).is_file()
 
 
-def test_result_uri_is_downloaded_and_kept_as_provenance():
+def test_result_uri_is_downloaded_and_kept_as_provenance(monkeypatch):
+    def _fake_previews(video_path, shot_sequence, clip_duration_seconds):
+        # the contract requires previews to live under generated/veo/previews/
+        preview = veo_tools.VEO_PREVIEW_DIR / f"shot_{shot_sequence:02d}_01.jpg"
+        preview.parent.mkdir(parents=True, exist_ok=True)
+        preview.write_bytes(b"jpeg")
+        return [str(preview)]
+
+    monkeypatch.setattr(veo_tools, "extract_video_previews", _fake_previews)
     shot = shot_for(2)
     operation = {
         "name": "operations/uri",
@@ -373,6 +389,7 @@ def test_preview_positions_scale_with_the_real_clip_length(tmp_path, monkeypatch
         return subprocess.CompletedProcess(args, 0, "", "")
 
     monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(veo_tools, "resolve_binary", lambda name: name)
     monkeypatch.setattr(veo_tools.subprocess, "run", fake_run)
     video = tmp_path / "clip.mp4"
     video.write_bytes(b"mp4")
@@ -412,3 +429,50 @@ def test_video_prompt_bans_new_characters_but_protects_the_existing_face():
     # the negative prompt is deliberately unchanged: the character is already
     # baked into the seed, so "extra people" still means "add nobody new"
     assert "extra people, duplicate subjects" in negative_prompt
+
+
+def test_preview_extraction_failure_is_raised_not_swallowed(tmp_path, monkeypatch):
+    """A broken ffmpeg must not surface as a silently empty preview list.
+
+    It previously did, which cost three agent attempts and halted a run with
+    "preview_paths was empty" instead of naming the real cause.
+    """
+    import subprocess as _subprocess
+
+    def failing_run(args, **kwargs):
+        return _subprocess.CompletedProcess(args, 134, "", "dyld: Library not loaded: libintl.8")
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(veo_tools, "resolve_binary", lambda name: name)
+    monkeypatch.setattr(veo_tools.subprocess, "run", failing_run)
+    video = tmp_path / "clip.mp4"
+    video.write_bytes(b"mp4")
+
+    with pytest.raises(RuntimeError, match="extracted no preview frames"):
+        veo_tools.extract_video_previews(video, 1, 8)
+
+
+def test_resolve_binary_skips_a_broken_candidate(tmp_path, monkeypatch):
+    """PATH order is not enough: a shadowing binary that aborts at load time
+    must be stepped over, which is the real Anaconda-ffmpeg situation."""
+    from orchestrator.tools import deterministic_tools
+
+    broken = tmp_path / "broken" / "ffmpeg"
+    working = tmp_path / "working" / "ffmpeg"
+    for path in (broken, working):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("#!/bin/sh\n")
+        path.chmod(0o755)
+
+    monkeypatch.setattr(deterministic_tools, "_RESOLVED_BINARIES", {})
+    monkeypatch.setattr(deterministic_tools.shutil, "which", lambda name: str(broken))
+    monkeypatch.setattr(deterministic_tools, "FALLBACK_BINARY_DIRS", (str(working.parent),))
+
+    import subprocess as _subprocess
+
+    def fake_run(args, **kwargs):
+        code = 134 if args[0] == str(broken) else 0
+        return _subprocess.CompletedProcess(args, code, "", "")
+
+    monkeypatch.setattr(deterministic_tools.subprocess, "run", fake_run)
+    assert deterministic_tools.resolve_binary("ffmpeg") == str(working)

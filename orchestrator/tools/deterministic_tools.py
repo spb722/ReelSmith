@@ -20,6 +20,7 @@ import hashlib
 import io
 import json
 import math
+import os
 import re
 import shutil
 import subprocess
@@ -100,6 +101,65 @@ async def ingest(args: dict) -> dict:
     temporary.write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
     temporary.replace(ASSETS_FILE)
     return {"content": [{"type": "text", "text": json.dumps(manifest, ensure_ascii=False)}]}
+
+
+# ============================================================
+# EXTERNAL BINARY RESOLUTION
+# ============================================================
+
+# `shutil.which` is not enough on this project's target machine: the Anaconda
+# install ships an ffmpeg/ffprobe that shadows Homebrew's on PATH but aborts at
+# load time with a missing libintl. Every candidate is therefore actually run
+# before it is trusted. A silently broken binary previously surfaced as "no
+# preview frames", three wasted agent attempts, and a halted run.
+_RESOLVED_BINARIES: dict[str, str] = {}
+
+FALLBACK_BINARY_DIRS = ("/opt/homebrew/bin", "/usr/local/bin", "/usr/bin")
+
+
+class MissingBinaryError(RuntimeError):
+    """Raised when no working copy of a required external binary exists."""
+
+
+def resolve_binary(name: str) -> str:
+    """Return a path to a *working* copy of `name`, preferring PATH order.
+
+    Honours an explicit override first (e.g. `FFMPEG_BINARY`), then PATH, then
+    the usual Homebrew/system locations. The chosen path is cached per process.
+    """
+
+    cached = _RESOLVED_BINARIES.get(name)
+    if cached:
+        return cached
+
+    candidates: list[str] = []
+    override = os.getenv(f"{name.upper()}_BINARY")
+    if override:
+        candidates.append(override)
+    found = shutil.which(name)
+    if found:
+        candidates.append(found)
+    candidates.extend(str(Path(directory) / name) for directory in FALLBACK_BINARY_DIRS)
+
+    attempted: list[str] = []
+    for candidate in candidates:
+        if not Path(candidate).is_file():
+            continue
+        attempted.append(candidate)
+        try:
+            completed = subprocess.run(
+                [candidate, "-version"], capture_output=True, text=True, check=False, timeout=20
+            )
+        except (OSError, subprocess.SubprocessError):
+            continue
+        if completed.returncode == 0:
+            _RESOLVED_BINARIES[name] = candidate
+            return candidate
+
+    raise MissingBinaryError(
+        f"No working {name} found. Tried: {attempted or 'nothing on PATH'}. "
+        f"Install {name}, or set {name.upper()}_BINARY to a working copy."
+    )
 
 
 # ============================================================

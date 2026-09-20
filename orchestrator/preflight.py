@@ -226,6 +226,24 @@ def _check_character_reference(settings: Settings) -> Optional[PreflightResult]:
     )
 
 
+def _check_media_toolchain(settings: Settings) -> Optional[PreflightResult]:
+    """Fail before any paid call when ffmpeg cannot run.
+
+    Veo clip QA needs extracted preview frames; without them the agent cannot
+    approve a clip it otherwise generated fine. A broken ffmpeg shadowing a
+    working one on PATH cost a live run three attempts and a halt, so this is
+    checked up front rather than discovered after a Veo clip is paid for.
+    """
+
+    from orchestrator.tools.deterministic_tools import MissingBinaryError, resolve_binary
+
+    try:
+        resolve_binary("ffmpeg")
+    except MissingBinaryError as exc:
+        return PreflightResult(passed=False, failed_check="ffmpeg", reason=str(exc))
+    return None
+
+
 def check_remotion_delivery_toolchain() -> PreflightResult | None:
     """Return a failed `PreflightResult` when Remotion cannot render, else None."""
     if shutil.which("npx") is None:
@@ -277,6 +295,7 @@ def run_preflight(
         lambda: _check_bucket(settings, storage_client_factory),
         lambda: _check_budget(settings, budget_spent_usd),
         lambda: _check_character_reference(settings),
+        lambda: _check_media_toolchain(settings),
     ):
         failure = check()
         if failure is not None:
