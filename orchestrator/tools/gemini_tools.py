@@ -280,7 +280,7 @@ def build_seed_spec(shot: dict, asset: dict, subtitle_text: str) -> dict:
     character_paths = character_reference_paths_for_asset(asset)
     if character_paths:
         prompt += build_character_prompt_block(
-            focal_figure_description(asset), len(character_paths)
+            focal_figure_description(authoritative_asset(asset)), len(character_paths)
         )
     # FINAL RULE stays last, after any character block.
     prompt += (
@@ -335,6 +335,34 @@ def resolve_character_references() -> list[Path]:
         if face.is_file() and face.resolve() != body.resolve():
             references.append(face)
     return references
+
+
+ANALYZED_ASSETS_FILE = Path("metadata/analyzed_assets.json")
+
+
+def authoritative_asset(asset: dict) -> dict:
+    """Re-read the agent-supplied asset from the persisted analysis.
+
+    The agent relays this dict from its prompt into the tool call, and a large
+    one can come back trimmed -- a live run lost `analysis.visual` on shot 6,
+    the only shot citing two assets, which silently disabled the character for
+    that shot. The asset_id survives (it is already cross-checked against the
+    shot), so everything else is read from the file the analyst wrote. Same
+    rule as shot_fingerprint: nothing that decides identity is taken from
+    agent output.
+    """
+
+    asset_id = asset.get("asset_id")
+    if not asset_id or not ANALYZED_ASSETS_FILE.is_file():
+        return asset
+    try:
+        persisted = json.loads(ANALYZED_ASSETS_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return asset
+    for candidate in persisted.get("assets") or []:
+        if candidate.get("asset_id") == asset_id:
+            return candidate
+    return asset
 
 
 def asset_has_human_figure(asset: dict) -> bool:
@@ -413,7 +441,7 @@ def build_character_prompt_block(figure_description: str, reference_count: int) 
 def character_reference_paths_for_asset(asset: dict) -> list[Path]:
     """Character references to send for this asset, or [] when none apply."""
 
-    if not asset_has_human_figure(asset):
+    if not asset_has_human_figure(authoritative_asset(asset)):
         return []
     return resolve_character_references()
 
@@ -618,7 +646,7 @@ def build_still_spec(shot: dict, asset: dict, subtitle_text: str) -> dict:
     character_paths = character_reference_paths_for_asset(asset)
     if character_paths:
         prompt += build_character_prompt_block(
-            focal_figure_description(asset), len(character_paths)
+            focal_figure_description(authoritative_asset(asset)), len(character_paths)
         )
     # FINAL RULE stays last, after any character block.
     prompt += (

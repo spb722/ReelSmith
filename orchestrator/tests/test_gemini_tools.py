@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from io import BytesIO
 from pathlib import Path
 
@@ -814,3 +815,47 @@ def test_prompt_lifts_a_downturned_face_toward_the_viewer(tmp_path, monkeypatch)
 
     assert "looking down, away, or into shadow" in prompt
     assert "reads clearly toward the viewer" in prompt
+
+
+def _write_analyzed_assets(tmp_path: Path, asset: dict) -> None:
+    path = tmp_path / "metadata" / "analyzed_assets.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"assets": [asset]}), encoding="utf-8")
+
+
+def test_character_survives_an_agent_trimming_the_asset_analysis(tmp_path, monkeypatch):
+    """The agent relays the asset dict into the tool call and can drop its
+    analysis. A live run lost the character on shot 6 exactly this way, so the
+    figure check reads the persisted analysis instead of trusting the relay.
+    """
+    body, _ = _write_character(tmp_path)
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", str(body))
+    monkeypatch.delenv("CHARACTER_FACE_REFERENCE_PATH", raising=False)
+
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    _write_analyzed_assets(tmp_path, asset_with_figure(source))
+
+    trimmed = {"asset_id": "img_aaaaaaaaaaaa", "source_path": str(source)}
+    spec = build_still_spec(shot_dict(generation_mode="STILL"), trimmed, "Narration.")
+
+    assert spec["character_reference_paths"] == [str(body)]
+    assert "CHARACTER SUBSTITUTION" in spec["prompt"]
+    # the figure description also comes from the persisted record
+    assert "Bald round-headed cartoon figure" in spec["prompt"]
+
+
+def test_persisted_analysis_still_withholds_the_character_from_a_peopleless_scene(
+    tmp_path, monkeypatch
+):
+    body, _ = _write_character(tmp_path)
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", str(body))
+    monkeypatch.delenv("CHARACTER_FACE_REFERENCE_PATH", raising=False)
+
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    _write_analyzed_assets(tmp_path, asset_without_figure(source))
+
+    trimmed = {"asset_id": "img_aaaaaaaaaaaa", "source_path": str(source)}
+    spec = build_still_spec(shot_dict(generation_mode="STILL"), trimmed, "Narration.")
+    assert spec["character_reference_paths"] == []
