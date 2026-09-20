@@ -36,7 +36,8 @@ export type TimelineShot = {
   primary_subtitle_cue_ids: string[];
   fade_in_frames: number;
   fade_out_frames: number;
-  // Null for VEO shots (Ken-Burns motion only ever applies to stills).
+  // Present on every shot so a video shot can be demoted back to a still;
+  // ignored when `type` is "video". Null only in legacy timelines.
   still_motion: TimelineStillMotion | null;
 };
 

@@ -1,0 +1,5 @@
+{
+  "enabledPlugins": {
+    "claude-usage-statusline@claude-usage-statusline": true
+  }
+}

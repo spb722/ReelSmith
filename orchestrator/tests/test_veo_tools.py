@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -70,6 +71,7 @@ def test_response_inline_bytes_materialize_deterministic_mp4_and_dump():
         project_id="project",
         attempt=1,
         cost_usd=1.2,
+        clip_duration_seconds=8,
     )
 
     assert outcome.status == "SUCCESS"
@@ -99,7 +101,8 @@ def test_result_uri_is_downloaded_and_kept_as_provenance():
         attempt=1,
         cost_usd=1.2,
         downloader=download,
-    )
+            clip_duration_seconds=8,
+)
 
     assert calls == [("gs://bucket/object.mp4", "project")]
     assert outcome.result.gcs_uri == "gs://bucket/object.mp4"
@@ -137,6 +140,7 @@ def test_completed_failures_are_structured_and_preserve_full_operation(operation
         project_id="project",
         attempt=2,
         cost_usd=1.2,
+        clip_duration_seconds=8,
     )
 
     assert outcome.status == "FAILURE"
@@ -338,3 +342,44 @@ def test_tool_images_use_mcp_image_content_shape():
         "data": base64.b64encode(b"jpg").decode("ascii"),
         "mimeType": "image/jpeg",
     }
+
+
+@pytest.mark.parametrize("shot_seconds,expected", [
+    # 4.02 still takes the 4s clip: CLIP_DURATION_EPSILON absorbs a sub-frame
+    # overshoot rather than paying for the next size up.
+    (3.0, 4), (4.0, 4), (4.02, 4), (4.3, 6), (5.48, 6), (5.96, 6), (6.0, 6), (7.64, 8), (8.0, 8),
+])
+def test_select_clip_duration_picks_the_shortest_clip_that_covers_the_shot(shot_seconds, expected):
+    """A 5.48s shot should not pay for 8 seconds of generated video."""
+    assert veo_tools.select_clip_duration_seconds(shot_seconds, 8) == expected
+
+
+def test_select_clip_duration_refuses_a_shot_longer_than_any_clip():
+    """Veo makes one fixed-length clip and this pipeline never extends,
+    stretches, or splits one across a shot, so such a shot cannot be video."""
+    with pytest.raises(ValueError, match="longer than the longest available"):
+        veo_tools.select_clip_duration_seconds(9.8, 8)
+
+
+def test_preview_positions_scale_with_the_real_clip_length(tmp_path, monkeypatch):
+    """QA frames were sampled at a hardcoded 0.5/2.5/5.5s, which falls outside a
+    shorter clip. They now track the clip's own duration, and still land on the
+    original positions for an 8s clip."""
+    calls: list[str] = []
+
+    def fake_run(args, **kwargs):
+        calls.append(args[args.index("-ss") + 1])
+        Path(args[-1]).write_bytes(b"jpeg")
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(veo_tools.subprocess, "run", fake_run)
+    video = tmp_path / "clip.mp4"
+    video.write_bytes(b"mp4")
+
+    veo_tools.extract_video_previews(video, 1, 8)
+    assert calls == ["0.5", "2.5", "5.5"]
+
+    calls.clear()
+    veo_tools.extract_video_previews(video, 1, 6)
+    assert calls == ["0.375", "1.875", "4.125"]

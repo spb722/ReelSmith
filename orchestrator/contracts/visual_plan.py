@@ -37,7 +37,10 @@ REQUIRED_SCORE_DIMENSIONS = (
 
 # AD-4: generation_mode may be VEO only for these visual_treatment values;
 # every other treatment must be STILL.
-VEO_ELIGIBLE_TREATMENTS = frozenset({"AI_VIDEO_CANDIDATE", "MIXED"})
+# How many shots `visual_agent` must nominate for video. Deliberately larger
+# than the orchestrator's own MAX_VEO_SHOTS cap so there are spare candidates
+# once the ones too long for a single Veo clip are dropped.
+MIN_VIDEO_NOMINATIONS = 4
 
 
 def _scene_content_fingerprint(scene: Scene) -> str:
@@ -67,7 +70,12 @@ class StillMotion(ContractModel):
 
 class Shot(ContractModel):
     sequence: int
-    generation_mode: Literal["STILL", "VEO"]
+    # `SkipJsonSchema`, for the same reason as `start_seconds` below: the mode
+    # depends on the shot's real spoken duration, which does not exist until
+    # the voice stage has run, so `visual_agent` cannot answer it. The agent
+    # instead nominates candidates (`video_candidate_rank`) and the
+    # orchestrator promotes the ones that fit a single Veo clip (AD-15).
+    generation_mode: SkipJsonSchema[Literal["STILL", "VEO"]] = "STILL"
     # Reused verbatim from visual_director.py's RESPONSE_SCHEMA -- matches
     # Scene.suggested_visual_treatment exactly (Code Map).
     visual_treatment: Literal[
@@ -80,6 +88,12 @@ class Shot(ContractModel):
     motion_plan: Annotated[str, Field(min_length=1)]
     text_overlay: str
     source_support: Annotated[str, Field(min_length=1)]
+    # Visible to `visual_agent`: its ranked judgement of which beats gain most
+    # from real motion (1 = most deserving), and what that motion should be.
+    # A nomination is not a promise -- the orchestrator promotes only the
+    # top-ranked nominations whose real duration fits one Veo clip.
+    video_candidate_rank: Annotated[int, Field(ge=1)] | None = None
+    video_motion_intent: str = ""
     # AD-7 content-staleness snapshot. `SkipJsonSchema` keeps this out of the
     # schema shown to `visual_agent` entirely, so a freshly generated shot
     # always parses with the "" default (never a stray agent-supplied
@@ -106,6 +120,14 @@ class Shot(ContractModel):
     fade_in_frames: Annotated[int, Field(ge=0)] = 0
     fade_out_frames: Annotated[int, Field(ge=0)] = 0
     still_motion: StillMotion | None = None
+    # Set by the orchestrator once it has judged this shot's nomination
+    # against its real duration. It marks the decision as *made*, not as
+    # accepted -- a shot that was considered and left a still is still
+    # decided. Without it, a plan regenerated while an older one is still on
+    # disk inherits that file's timing, the backfill decides it has nothing to
+    # do, and promotion would silently never run, quietly returning the reel
+    # to all-stills. `SkipJsonSchema`: orchestrator state, never agent output.
+    video_promotion_decided: SkipJsonSchema[bool] = False
 
 
 class QualityReview(ContractModel):
@@ -154,41 +176,64 @@ class VisualPlanContract(ContractModel):
         return self
 
     @model_validator(mode="after")
-    def generation_mode_matches_visual_treatment(self) -> "VisualPlanContract":
+    def veo_requires_video_nomination(self) -> "VisualPlanContract":
+        """A shot may only be promoted to VEO if `visual_agent` nominated it.
+
+        Replaces the older `visual_treatment`-based gate: treatment described
+        how an asset should be handled, not whether the beat wanted motion, and
+        it excluded USE_EXISTING_ART shots that are often the best video
+        candidates. The nomination is the mode's provenance (AD-15).
+        """
         invalid = [
             shot.sequence for shot in self.shots
-            if shot.generation_mode == "VEO" and shot.visual_treatment not in VEO_ELIGIBLE_TREATMENTS
+            if shot.generation_mode == "VEO" and shot.video_candidate_rank is None
         ]
         if invalid:
             raise ValueError(
-                "generation_mode VEO requires visual_treatment AI_VIDEO_CANDIDATE or MIXED; "
+                "generation_mode VEO requires a video_candidate_rank from visual_agent; "
                 f"violated by shot sequence(s): {invalid}"
             )
         return self
 
     @model_validator(mode="after")
-    def still_motion_forbidden_for_veo_shots(self) -> "VisualPlanContract":
-        """Ken-Burns motion applies to stills only: VEO shots must not carry
-        `still_motion`; STILL shots must carry a valid `StillMotion` once
-        `visual_agent` output is expected (Epic 3.1 / Decision B).
+    def video_nominations_are_ranked(self) -> "VisualPlanContract":
+        """Nominations must be a contiguous 1..k ranking over k distinct shots.
+
+        `k` has a floor so the plan always offers the orchestrator more
+        candidates than it can use: some nominations are dropped for being
+        longer than one Veo clip, and a plan that nominated only one shot would
+        leave a reel with no motion at all. Enforced here rather than in prompt
+        text because prompt wording alone previously produced zero video shots.
         """
-        veo_with_motion = [
-            shot.sequence for shot in self.shots
-            if shot.generation_mode == "VEO" and shot.still_motion is not None
-        ]
-        if veo_with_motion:
+        ranks = [shot.video_candidate_rank for shot in self.shots if shot.video_candidate_rank is not None]
+        required = min(MIN_VIDEO_NOMINATIONS, len(self.shots))
+        if len(ranks) < required:
             raise ValueError(
-                "generation_mode VEO must not carry still_motion (Ken-Burns motion is "
-                f"stills-only); violated by shot sequence(s): {veo_with_motion}"
+                f"At least {required} shots must carry a video_candidate_rank (got {len(ranks)}); "
+                "rank the beats that gain most from real motion, best first"
             )
-        still_without_motion = [
-            shot.sequence for shot in self.shots
-            if shot.generation_mode == "STILL" and shot.still_motion is None
-        ]
-        if still_without_motion:
+        if sorted(ranks) != list(range(1, len(ranks) + 1)):
             raise ValueError(
-                "generation_mode STILL requires still_motion (Ken-Burns data); "
-                f"missing for shot sequence(s): {still_without_motion}"
+                f"video_candidate_rank values must be a contiguous 1..{len(ranks)} ranking with no "
+                f"duplicates; got {sorted(ranks)}"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def every_shot_has_still_motion(self) -> "VisualPlanContract":
+        """Every shot carries `still_motion`, whatever its mode.
+
+        A shot's mode is decided after this contract is written, and a
+        nominated shot can still be demoted (too long for one Veo clip, or the
+        budget ran out) -- so the Ken-Burns fallback has to be there already.
+        The renderer branches on the asset's own type and simply ignores
+        `still_motion` on a video shot, so carrying it costs nothing.
+        """
+        missing = [shot.sequence for shot in self.shots if shot.still_motion is None]
+        if missing:
+            raise ValueError(
+                "every shot requires still_motion (Ken-Burns data), so a video shot can fall "
+                f"back to a still; missing for shot sequence(s): {missing}"
             )
         return self
 

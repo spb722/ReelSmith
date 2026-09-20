@@ -24,12 +24,21 @@ class SettingsError(Exception):
 DEFAULT_PROJECT_ID = "gen-lang-client-0240752803"
 DEFAULT_LOCATION = "global"
 DEFAULT_GCS_BUCKET_URI = "gs://sachin-kayaking-video-test/book_reels/veo/"
-DEFAULT_MAX_BUDGET_USD = 5.0
+# Raised from 5.0 when reels began planning 2-3 real Veo shots: each one
+# reserves image_call_cost_usd + veo_call_cost_usd (~$1.24) of headroom before
+# it may start, which a $5 ceiling could not cover alongside the Claude stages.
+DEFAULT_MAX_BUDGET_USD = 15.0
 DEFAULT_VEO_MODEL = "veo-3.1-fast-generate-001"
 DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
 DEFAULT_IMAGE_MODEL = "gemini-3.1-flash-image"
 DEFAULT_VEO_RESOLUTION = "720p"
 DEFAULT_VEO_DURATION_SECONDS = 8
+# The clip lengths Veo accepts, shortest first. A shot only becomes a video
+# shot if it fits inside the longest of these, and it is generated at the
+# shortest one that covers it rather than always paying for the maximum.
+# Configuration, not model knowledge (same framing as the cost estimates
+# below) -- narrow it to (8,) if a model rejects the shorter values.
+VEO_ALLOWED_DURATION_SECONDS = (4, 6, 8)
 DEFAULT_VEO_POLL_SECONDS = 15.0
 DEFAULT_VEO_MAX_POLL_SECONDS = 900.0
 DEFAULT_MAX_VEO_ATTEMPTS = 3

@@ -356,3 +356,40 @@ def test_generate_still_image_writes_still_and_returns_contract():
     assert result.local_image_path == "generated/stills/shot_01.png"
     assert result.approved is False
     assert result.cost_usd == 0.04
+
+
+# -- no-text override -----------------------------------------------------
+
+# The real shot 6 composition that caused Gemini to burn the closing narration
+# into the seed plate twice before the QA loop got a clean one.
+OVERLAY_COMPOSITION = (
+    "Open on the same story_art_region as the previous shot, framed slightly wider, "
+    "then settle the closing narration as text_overlay layered over the warm-lit scene."
+)
+
+
+@pytest.mark.parametrize("builder,mode", [
+    (build_seed_spec, "VEO"),
+    (build_still_spec, "STILL"),
+])
+def test_image_prompt_forbids_text_after_a_composition_that_asks_for_it(builder, mode):
+    """A composition describing post-production text is fed almost verbatim to
+    an image generator, which draws the words into the plate -- where they
+    cannot be timed or removed, and smear once the shot moves. The overriding
+    no-text rule must come after the descriptions, not before them.
+    """
+    source = Path("source_images/a.png")
+    _write_source_image(source)
+    shot = shot_dict(
+        generation_mode=mode,
+        visual_treatment="AI_VIDEO_CANDIDATE" if mode == "VEO" else "USE_EXISTING_ART",
+        frame_composition=OVERLAY_COMPOSITION,
+        text_overlay="Happiness isn't a finish line",
+    )
+    prompt = builder(shot, asset_for(source), "Happiness isn't a finish line.")["prompt"]
+
+    assert "FINAL RULE" in prompt
+    # The override has to be the last word on the subject.
+    assert prompt.index("FINAL RULE") > prompt.index("text_overlay layered over")
+    assert prompt.index("FINAL RULE") > prompt.index("Narration context")
+    assert "render NO text of any kind" in prompt

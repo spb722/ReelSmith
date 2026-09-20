@@ -69,7 +69,6 @@ from orchestrator.tools.deterministic_tools import (
     ASSETS_FILE,
     DEFAULT_REMOTION_RENDER_OUTPUT,
     ImpactPhraseNotFoundError,
-    REMOTION_PUBLIC_DIR,
     build_subtitle_cues,
     extract_word_timing,
     ingest,
@@ -79,12 +78,14 @@ from orchestrator.tools.deterministic_tools import (
     tokenize,
 )
 from orchestrator.tools.gemini_tools import NARRATION_WAV, generate_narration_audio
+from orchestrator.tools.veo_tools import select_clip_duration_seconds
 from orchestrator.tools.timeline_converter import build_timeline_data
 
 ANALYZED_ASSETS_FILE = Path("metadata/analyzed_assets.json")
 FINAL_STORY_PLAN_FILE = Path("metadata/final_story_plan.json")
 VISUAL_PLAN_FILE = Path("metadata/visual_plan.json")
 SUBTITLE_CUES_FILE = Path("metadata/subtitle_cues.json")
+TIMELINE_FILE = Path("metadata/timeline.json")
 MAX_ASSET_ANALYST_ATTEMPTS = 4
 MAX_STORY_AGENT_ATTEMPTS = 4
 MAX_VISUAL_AGENT_ATTEMPTS = 4
@@ -96,6 +97,13 @@ MAX_VOICE_AGENT_ATTEMPTS = 3
 # a new Settings field, since settings.py's existing image-cost fields are
 # the only stills-specific configuration this story needs (Code Map).
 MAX_STILLS_ATTEMPTS = 3
+# How many shots per reel may become real Veo video. `visual_agent` nominates
+# more than this (MIN_VIDEO_NOMINATIONS) so there are spares once the shots too
+# long for a single clip are dropped.
+MAX_VEO_SHOTS = 3
+# Advisory only: falling short is logged loudly but never halts a run. A reel
+# whose beats are all long legitimately ends up with fewer video shots.
+TARGET_MIN_VEO_SHOTS = 2
 
 
 def _halt(
@@ -183,6 +191,7 @@ async def run_bounded_agent_stage(
         count += 1
         manifest.iteration_counts[stage_id] = count
         save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+        print(f"{stage_id}: starting attempt {count}/{max_attempts} (budget remaining ${settings.max_budget_usd - manifest.budget_spent_usd:.4f})")
         try:
             result = await call_agent(
                 feedback, previous_output, settings.max_budget_usd - manifest.budget_spent_usd
@@ -345,61 +354,164 @@ def _merge_backfilled_shot_timing(contract: VisualPlanContract) -> None:
             shot.still_motion = StillMotion.model_validate(timing["still_motion"])
 
 
-def _backfill_visual_plan_shot_timing_from_cues() -> None:
+def _close_inter_shot_timing_gaps(shots: Sequence) -> None:
+    """Make consecutive shots contiguous by absorbing silence into the previous shot.
+
+    Cue-based backfill often leaves a short pause between one scene's last word
+    and the next scene's first word. Remotion's timeline requires shots to butt
+    together with no gap/overlap. Extending shot N's end_seconds to shot N+1's
+    start_seconds holds the previous still/clip through that pause. Purely
+    deterministic -- no agent.
+    """
+    for index in range(len(shots) - 1):
+        current = shots[index]
+        following = shots[index + 1]
+        if following.start_seconds < current.end_seconds - 1e-6:
+            raise ValueError(
+                f"Shot {following.sequence} overlaps shot {current.sequence}: "
+                f"previous end {current.end_seconds}, this start {following.start_seconds}."
+            )
+        if following.start_seconds > current.end_seconds + 1e-6:
+            current.end_seconds = following.start_seconds
+
+
+def _backfill_visual_plan_shot_timing_from_cues(settings: Settings) -> None:
     """After `voice_agent`, assign real per-shot timing/cue linkage from
-    subtitle cues (1:1 shots/scenes). Leaves shots that already carry timing.
+    subtitle cues (1:1 shots/scenes). Leaves shots that already carry timing,
+    then closes inter-shot gaps so the plan is Remotion-contiguous, then judges
+    this plan's video nominations now that real durations exist.
     """
     visual_plan = VisualPlanContract.model_validate_json(VISUAL_PLAN_FILE.read_text(encoding="utf-8"))
-    if not any(shot.start_seconds == 0.0 and shot.end_seconds == 0.0 for shot in visual_plan.shots):
-        return
-
-    story_plan = FinalStoryPlanContract.model_validate_json(
-        FINAL_STORY_PLAN_FILE.read_text(encoding="utf-8")
+    needs_cue_map = any(
+        shot.start_seconds == 0.0 and shot.end_seconds == 0.0 for shot in visual_plan.shots
     )
-    subtitle_cues = SubtitleCuesContract.model_validate_json(
-        SUBTITLE_CUES_FILE.read_text(encoding="utf-8")
-    )
-    if len(story_plan.scenes) != len(visual_plan.shots):
-        raise ValueError(
-            "Cannot backfill shot timing: scene count does not match shot count."
+    # Tracked separately from `needs_cue_map`: a regenerated plan can inherit
+    # the previous file's timing (`_merge_backfilled_shot_timing`) and so need
+    # no cue mapping, while still never having had its own nominations judged.
+    needs_promotion = not all(shot.video_promotion_decided for shot in visual_plan.shots)
+    if needs_cue_map:
+        story_plan = FinalStoryPlanContract.model_validate_json(
+            FINAL_STORY_PLAN_FILE.read_text(encoding="utf-8")
         )
-
-    cues = subtitle_cues.cues
-    cue_cursor = 0
-    for scene, shot in zip(story_plan.scenes, visual_plan.shots):
-        if shot.sequence != scene.sequence:
+        subtitle_cues = SubtitleCuesContract.model_validate_json(
+            SUBTITLE_CUES_FILE.read_text(encoding="utf-8")
+        )
+        if len(story_plan.scenes) != len(visual_plan.shots):
             raise ValueError(
-                f"Shot/scene sequence mismatch at {shot.sequence} vs {scene.sequence}"
+                "Cannot backfill shot timing: scene count does not match shot count."
             )
-        if not (shot.start_seconds == 0.0 and shot.end_seconds == 0.0):
-            continue
 
-        target_words = len(tokenize(scene.narration))
-        assigned: list = []
-        words_covered = 0
-        while cue_cursor < len(cues) and words_covered < target_words:
-            cue = cues[cue_cursor]
-            assigned.append(cue)
-            words_covered += cue.word_count
-            cue_cursor += 1
-        if not assigned:
-            raise ValueError(f"Shot {shot.sequence} has no subtitle cues to map")
-        shot.start_seconds = assigned[0].start_seconds
-        shot.end_seconds = assigned[-1].end_seconds
-        shot.primary_subtitle_cue_ids = [cue.cue_id for cue in assigned]
+        cues = subtitle_cues.cues
+        cue_cursor = 0
+        for scene, shot in zip(story_plan.scenes, visual_plan.shots):
+            if shot.sequence != scene.sequence:
+                raise ValueError(
+                    f"Shot/scene sequence mismatch at {shot.sequence} vs {scene.sequence}"
+                )
+            if not (shot.start_seconds == 0.0 and shot.end_seconds == 0.0):
+                continue
 
-    if cue_cursor != len(cues):
-        raise ValueError(
-            "Subtitle cue coverage does not match scene-aligned shots after backfill."
+            target_words = len(tokenize(scene.narration))
+            assigned: list = []
+            words_covered = 0
+            while cue_cursor < len(cues) and words_covered < target_words:
+                cue = cues[cue_cursor]
+                assigned.append(cue)
+                words_covered += cue.word_count
+                cue_cursor += 1
+            if not assigned:
+                raise ValueError(f"Shot {shot.sequence} has no subtitle cues to map")
+            shot.start_seconds = assigned[0].start_seconds
+            shot.end_seconds = assigned[-1].end_seconds
+            shot.primary_subtitle_cue_ids = [cue.cue_id for cue in assigned]
+
+        if cue_cursor != len(cues):
+            raise ValueError(
+                "Subtitle cue coverage does not match scene-aligned shots after backfill."
+            )
+
+        # Close gaps only on freshly mapped timing so already-approved still/veo
+        # fingerprints (which embedded the prior end_seconds) stay resume-valid.
+        _close_inter_shot_timing_gaps(visual_plan.shots)
+        _atomic_write_json(VISUAL_PLAN_FILE, visual_plan.model_dump(mode="json"))
+
+    if needs_promotion:
+        # Real durations exist now, so nominations can finally be judged. Runs
+        # exactly once per plan, and always before any `shot_fingerprint` is
+        # taken, so it never invalidates an already-approved asset on resume.
+        visual_plan = VisualPlanContract.model_validate_json(
+            VISUAL_PLAN_FILE.read_text(encoding="utf-8")
         )
+        print("=== video promotion (nominations -> VEO) ===")
+        _promote_video_candidates(visual_plan, settings)
+        _atomic_write_json(VISUAL_PLAN_FILE, visual_plan.model_dump(mode="json"))
 
+
+def _promote_video_candidates(visual_plan: VisualPlanContract, settings: Settings) -> list[int]:
+    """Turn `visual_agent`'s ranked nominations into real VEO-mode shots.
+
+    Purely mechanical (AD-15): it never re-ranks and never nominates, it only
+    drops nominations that cannot physically be generated and caps how many are
+    taken up. Runs here, immediately after cue-derived timing lands, because
+    this is the first moment a shot's real spoken duration exists -- and still
+    before any `shot_fingerprint` is taken, so promotion never invalidates an
+    already-approved asset.
+    """
+    nominated = sorted(
+        (shot for shot in visual_plan.shots if shot.video_candidate_rank is not None),
+        key=lambda shot: shot.video_candidate_rank,
+    )
+    promoted: list[int] = []
+    for shot in nominated:
+        if len(promoted) >= MAX_VEO_SHOTS:
+            print(f"  shot {shot.sequence}: not promoted (already at the {MAX_VEO_SHOTS}-video cap)")
+            continue
+        duration = shot.end_seconds - shot.start_seconds
+        try:
+            clip_seconds = select_clip_duration_seconds(duration, settings.veo_duration_seconds)
+        except ValueError as exc:
+            print(f"  shot {shot.sequence}: not promoted ({exc})")
+            continue
+        shot.generation_mode = "VEO"
+        promoted.append(shot.sequence)
+        print(f"  shot {shot.sequence}: promoted to VEO ({duration:.2f}s -> {clip_seconds}s clip)")
+
+    for shot in visual_plan.shots:
+        shot.video_promotion_decided = True
+
+    if not nominated:
+        print("video promotion: visual plan carries no video nominations")
+    elif len(promoted) < TARGET_MIN_VEO_SHOTS:
+        print(
+            f"video promotion: only {len(promoted)} of {len(nominated)} nominated shot(s) fit inside "
+            f"a {settings.veo_duration_seconds}s clip (wanted {TARGET_MIN_VEO_SHOTS}); "
+            "continuing with the rest as stills",
+            file=sys.stderr,
+        )
+    return promoted
+
+
+def _demote_veo_shot_to_still(sequence: int, reason: str) -> None:
+    """Send one not-yet-generated VEO shot back to STILL, in the plan on disk.
+
+    Safe because the shot has no production-asset entry yet, so no fingerprint
+    stale-check can trip, and every shot already carries `still_motion`.
+    """
+    visual_plan = VisualPlanContract.model_validate_json(
+        VISUAL_PLAN_FILE.read_text(encoding="utf-8")
+    )
+    for shot in visual_plan.shots:
+        if shot.sequence == sequence:
+            shot.generation_mode = "STILL"
+            break
     _atomic_write_json(VISUAL_PLAN_FILE, visual_plan.model_dump(mode="json"))
+    print(f"veo_agent: shot {sequence} demoted to STILL — {reason}", file=sys.stderr)
 
 
-def _voice_shot_timing_backfill_or_halt() -> int | None:
+def _voice_shot_timing_backfill_or_halt(settings: Settings) -> int | None:
     """Run cue→shot timing backfill; return a halt exit code on failure."""
     try:
-        _backfill_visual_plan_shot_timing_from_cues()
+        _backfill_visual_plan_shot_timing_from_cues(settings)
     except (ValueError, OSError) as exc:
         return _halt(
             "voice_agent",
@@ -511,6 +623,7 @@ async def run_voice_pipeline(
             message=budget_failure.reason or "Budget exhausted before the TTS call", start=start,
         )
 
+    print("voice_agent: step 1/3 TTS — generating narration audio…")
     try:
         tts_response = await generate_narration_audio.handler({
             "narration_script": narration_script,
@@ -526,6 +639,10 @@ async def run_voice_pipeline(
 
     tts_payload = json.loads(tts_response["content"][0]["text"])
     audio_duration_seconds = float(tts_payload["duration_seconds"])
+    print(
+        f"voice_agent: step 1/3 TTS done — {tts_payload['audio_path']} "
+        f"({audio_duration_seconds:.2f}s)"
+    )
     # Real Gemini TTS per-unit pricing -- settings.py's new cost-rate
     # constants (Code Map). Input-token cost is based on the actual prompt
     # text Gemini receives (build_tts_prompt's fixed instructional preamble
@@ -545,6 +662,7 @@ async def run_voice_pipeline(
 
     stt_cost = 0.0
     try:
+        print("voice_agent: step 2/3 STT — aligning word timings (splits audio >55s)…")
         stt_response = await extract_word_timing.handler({
             "audio_path": tts_payload["audio_path"],
             "narration_script": narration_script,
@@ -552,7 +670,13 @@ async def run_voice_pipeline(
         })
         stt_payload = json.loads(stt_response["content"][0]["text"])
         stt_cost = round(audio_duration_seconds * STT_COST_PER_SECOND_USD, 6)
+        print(
+            f"voice_agent: step 2/3 STT done — "
+            f"exact_match_ratio={stt_payload['alignment_stats']['exact_match_ratio']:.3f}, "
+            f"words={len(stt_payload['words'])}"
+        )
 
+        print("voice_agent: step 3/3 subtitles — building cue segments…")
         dp_response = await build_subtitle_cues.handler({
             "word_timing": stt_payload,
             "narration_script": narration_script,
@@ -561,6 +685,7 @@ async def run_voice_pipeline(
             "viewer_reflection": story_plan.story_arc.viewer_reflection,
         })
         dp_payload = json.loads(dp_response["content"][0]["text"])
+        print(f"voice_agent: step 3/3 subtitles done — {dp_payload['cue_count']} cues")
     except ImpactPhraseNotFoundError as exc:
         # AD-12: a text-authoring mismatch, not a transient/alignment
         # failure -- no amount of audio regeneration can ever fix it.
@@ -583,17 +708,14 @@ async def run_voice_pipeline(
         "produced_by": "voice_agent",
         "source_narration_script": narration_script,
         "alignment_ratio": dp_payload["alignment_ratio"],
-        "cues": [
-            {
-                "cue_id": cue["cue_id"],
-                "start_seconds": cue["start_seconds"],
-                "end_seconds": cue["end_seconds"],
-                "word_count": cue["word_count"],
-                "text": cue["text"],
-                "words": cue["words"],
-            }
-            for cue in dp_payload["cues"]
-        ],
+        # Pass each cue through whole rather than re-projecting named keys.
+        # `SubtitleCuesContract.Cue` sets `extra="ignore"`, so the fields it
+        # doesn't model (duration_seconds, start/end_word_index,
+        # duration_warning) are still dropped at validation -- but a field it
+        # *does* model can no longer be lost by being forgotten here, which is
+        # exactly how every cue's `style_hint` silently became NORMAL and made
+        # the IMPACT/EMPHASIS/REFLECTION render paths unreachable.
+        "cues": dp_payload["cues"],
     }
 
     return _voice_pipeline_result(
@@ -635,7 +757,7 @@ async def run_voice_stage(settings: Settings, manifest: RunManifest) -> int:
 
     if _voice_stage_skip_is_valid(story_plan):
         print(f"voice_agent skipped: validated {SUBTITLE_CUES_FILE}")
-        backfill_failure = _voice_shot_timing_backfill_or_halt()
+        backfill_failure = _voice_shot_timing_backfill_or_halt(settings)
         return backfill_failure if backfill_failure is not None else 0
 
     async def call_agent(feedback: str | None, previous_output: object, remaining_budget: float) -> ResultMessage:
@@ -659,7 +781,7 @@ async def run_voice_stage(settings: Settings, manifest: RunManifest) -> int:
     )
     if result != 0:
         return result
-    backfill_failure = _voice_shot_timing_backfill_or_halt()
+    backfill_failure = _voice_shot_timing_backfill_or_halt(settings)
     return backfill_failure if backfill_failure is not None else 0
 
 
@@ -677,6 +799,56 @@ def _veo_settings_payload(settings: Settings) -> dict:
         "image_call_cost_usd": settings.image_call_cost_usd,
         "veo_call_cost_usd": settings.veo_call_cost_usd,
     }
+
+
+def _stamp_still_outcome_fingerprint(
+    outcome: StillOutcomeContract,
+    *,
+    shot_sequence: int,
+    expected_fingerprint: str,
+) -> StillOutcomeContract:
+    """Replace agent-copied fingerprints with the orchestrator's authoritative hash.
+
+    Sequence is the hard binding to the requested shot. Fingerprints are tool/
+    provenance metadata that Claude often retypes incorrectly into structured
+    output; trusting them as a gate discards otherwise-valid paid stills.
+    """
+
+    if outcome.shot_sequence != shot_sequence:
+        raise ValueError("Stills agent outcome does not match the requested source shot")
+    updates: dict = {"shot_fingerprint": expected_fingerprint}
+    if outcome.result is not None:
+        updates["result"] = outcome.result.model_copy(
+            update={"shot_fingerprint": expected_fingerprint}
+        )
+    if outcome.failure is not None:
+        updates["failure"] = outcome.failure.model_copy(
+            update={"shot_fingerprint": expected_fingerprint}
+        )
+    return outcome.model_copy(update=updates)
+
+
+def _stamp_veo_outcome_fingerprint(
+    outcome: VeoOutcomeContract,
+    *,
+    shot_sequence: int,
+    expected_fingerprint: str,
+) -> VeoOutcomeContract:
+    """Same authoritative stamp as stills; also rewrites nested seed fingerprints."""
+
+    if outcome.shot_sequence != shot_sequence:
+        raise ValueError("Veo agent outcome does not match the requested source shot")
+    updates: dict = {"shot_fingerprint": expected_fingerprint}
+    if outcome.result is not None:
+        seed = outcome.result.seed.model_copy(update={"shot_fingerprint": expected_fingerprint})
+        updates["result"] = outcome.result.model_copy(
+            update={"shot_fingerprint": expected_fingerprint, "seed": seed}
+        )
+    if outcome.failure is not None:
+        updates["failure"] = outcome.failure.model_copy(
+            update={"shot_fingerprint": expected_fingerprint}
+        )
+    return outcome.model_copy(update=updates)
 
 
 async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
@@ -781,14 +953,19 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
         while count < settings.max_veo_attempts:
             remaining_budget = settings.max_budget_usd - manifest.budget_spent_usd
             if remaining_budget <= reserved_external_cost:
-                return _halt(
-                    "veo_agent",
-                    "Budget",
-                    f"Insufficient budget for shot {shot.sequence}: ${remaining_budget:.6f} remains, "
-                    f"${reserved_external_cost:.6f} must be reserved before paid image/Veo calls",
-                    attempt_count=count,
-                    partial_artifact_paths=attempt_paths,
+                # Not enough left for this clip. Running out of budget is a
+                # resource fact, not a defect in the shot, so the shot falls
+                # back to a still rather than halting the whole reel -- it
+                # still has `still_motion`, and `run_stills_stage` re-reads the
+                # plan from disk and picks it up. Retry-ceiling and
+                # non-retryable Veo failures still halt: those signal a real
+                # seed/QA problem worth a human look.
+                _demote_veo_shot_to_still(
+                    shot.sequence,
+                    f"${remaining_budget:.4f} remains, ${reserved_external_cost:.4f} must be "
+                    "reserved before paid image/Veo calls",
                 )
+                break
             count += 1
             manifest.iteration_counts[stage_id] = count
             save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
@@ -844,8 +1021,11 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
                     )
                 outcome = VeoOutcomeContract.model_validate(agent_result.structured_output)
                 expected_fingerprint = shot_fingerprint(shot)
-                if outcome.shot_sequence != shot.sequence or outcome.shot_fingerprint != expected_fingerprint:
-                    raise ValueError("Veo agent outcome does not match the requested source shot")
+                outcome = _stamp_veo_outcome_fingerprint(
+                    outcome,
+                    shot_sequence=shot.sequence,
+                    expected_fingerprint=expected_fingerprint,
+                )
                 if outcome.status == "SUCCESS" and outcome.result.seed.source_asset_id not in shot.source_asset_ids:
                     raise ValueError("Veo agent outcome seed source asset is not cited by the requested shot")
                 if outcome.cost_usd > reserved_external_cost + 1e-9:
@@ -855,6 +1035,18 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
                 # prove which external paid calls occurred. Charge the reserved
                 # ceiling conservatively and halt instead of retrying blindly.
                 manifest.budget_spent_usd += claude_cost + reserved_external_cost
+                attempt_path = RUN_STATE_DIR / f"veo_agent_shot_{shot.sequence}_attempt_{count}.json"
+                _atomic_write_json(attempt_path, {
+                    "status": "INVALID_OUTCOME",
+                    "error": str(exc),
+                    "structured_output": agent_result.structured_output,
+                    "result": agent_result.result,
+                    "subtype": agent_result.subtype,
+                    "errors": agent_result.errors,
+                    "claude_cost_usd": claude_cost,
+                    "charged_paid_tool_cost_usd": reserved_external_cost,
+                })
+                attempt_paths.append(str(attempt_path))
                 save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
                 return _halt(
                     "veo_agent",
@@ -1116,8 +1308,11 @@ async def run_stills_stage(settings: Settings, manifest: RunManifest) -> int:
                     )
                 outcome = StillOutcomeContract.model_validate(agent_result.structured_output)
                 expected_fingerprint = shot_fingerprint(shot)
-                if outcome.shot_sequence != shot.sequence or outcome.shot_fingerprint != expected_fingerprint:
-                    raise ValueError("Stills agent outcome does not match the requested source shot")
+                outcome = _stamp_still_outcome_fingerprint(
+                    outcome,
+                    shot_sequence=shot.sequence,
+                    expected_fingerprint=expected_fingerprint,
+                )
                 if outcome.status == "SUCCESS" and outcome.result.source_asset_id not in shot.source_asset_ids:
                     raise ValueError("Stills agent outcome source asset is not cited by the requested shot")
                 if outcome.cost_usd > reserved_external_cost + 1e-9:
@@ -1127,6 +1322,18 @@ async def run_stills_stage(settings: Settings, manifest: RunManifest) -> int:
                 # prove which external paid calls occurred. Charge the reserved
                 # ceiling conservatively and halt instead of retrying blindly.
                 manifest.budget_spent_usd += claude_cost + reserved_external_cost
+                attempt_path = RUN_STATE_DIR / f"stills_agent_shot_{shot.sequence}_attempt_{count}.json"
+                _atomic_write_json(attempt_path, {
+                    "status": "INVALID_OUTCOME",
+                    "error": str(exc),
+                    "structured_output": agent_result.structured_output,
+                    "result": agent_result.result,
+                    "subtype": agent_result.subtype,
+                    "errors": agent_result.errors,
+                    "claude_cost_usd": claude_cost,
+                    "charged_paid_tool_cost_usd": reserved_external_cost,
+                })
+                attempt_paths.append(str(attempt_path))
                 save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
                 return _halt(
                     "stills_agent",
@@ -1265,11 +1472,14 @@ async def run_delivery_stage(settings: Settings, manifest: RunManifest) -> int:
         )
 
     try:
+        # Cue pauses may still sit on disk from older backfills; absorb them in
+        # memory for timeline.json without rewriting visual_plan fingerprints.
+        _close_inter_shot_timing_gaps(visual_plan.shots)
         timeline = build_timeline_data(visual_plan, subtitle_cues, shot_assets_public)
     except ValueError as exc:
         return _halt("delivery", "TimelineConverter", str(exc))
 
-    timeline_path = REMOTION_PUBLIC_DIR / "data" / "timeline.json"
+    timeline_path = TIMELINE_FILE
     timeline_path.parent.mkdir(parents=True, exist_ok=True)
     _atomic_write_json(timeline_path, timeline)
 
@@ -1339,24 +1549,31 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         )
 
     print(f"Preflight passed for source images dir: {args.source_images_dir}.")
+    print("=== stage: screenshot understanding (asset_analyst) ===")
     screenshot_result = asyncio.run(run_screenshot_stage(args.source_images_dir, settings, manifest))
     if screenshot_result != 0:
         return screenshot_result
+    print("=== stage: narration (story_agent) ===")
     narration_result = asyncio.run(run_narration_stage(settings, manifest))
     if narration_result != 0:
         return narration_result
+    print("=== stage: visual plan (visual_agent) ===")
     visual_result = asyncio.run(run_visual_stage(settings, manifest))
     if visual_result != 0:
         return visual_result
+    print("=== stage: voice (TTS → STT → subtitles) ===")
     voice_result = asyncio.run(run_voice_stage(settings, manifest))
     if voice_result != 0:
         return voice_result
+    print("=== stage: veo generation ===")
     veo_result = asyncio.run(run_veo_stage(settings, manifest))
     if veo_result != 0:
         return veo_result
+    print("=== stage: stills generation ===")
     stills_result = asyncio.run(run_stills_stage(settings, manifest))
     if stills_result != 0:
         return stills_result
+    print("=== stage: delivery (timeline → remotion sync → render) ===")
     return asyncio.run(run_delivery_stage(settings, manifest))
 
 

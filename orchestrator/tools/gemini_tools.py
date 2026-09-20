@@ -255,7 +255,13 @@ def build_seed_spec(shot: dict, asset: dict, subtitle_text: str) -> dict:
         f"Source support: {validated_shot.source_support}. "
         f"Source visual description: {visual.get('description', '')}. "
         f"Source art description: {production.get('story_art_description', '')}. "
-        f"Narration context: {subtitle_text.strip()}."
+        f"Narration context (for mood and meaning only, never to be written into the image): "
+        f"{subtitle_text.strip()}. "
+        "FINAL RULE, overriding anything above: render NO text of any kind -- no words, "
+        "letters, captions, titles, quotes, signage, or handwriting, anywhere in the frame. "
+        "If any description above mentions a text overlay, on-screen wording, or a line that "
+        "fades in, that belongs to a later compositing step, not to this image -- produce the "
+        "clean plate without it."
     )
     return {
         "shot_sequence": validated_shot.sequence,
@@ -372,7 +378,13 @@ def build_still_spec(shot: dict, asset: dict, subtitle_text: str) -> dict:
         f"Source support: {validated_shot.source_support}. "
         f"Source visual description: {visual.get('description', '')}. "
         f"Source art description: {production.get('story_art_description', '')}. "
-        f"Narration context: {subtitle_text.strip()}."
+        f"Narration context (for mood and meaning only, never to be written into the image): "
+        f"{subtitle_text.strip()}. "
+        "FINAL RULE, overriding anything above: render NO text of any kind -- no words, "
+        "letters, captions, titles, quotes, signage, or handwriting, anywhere in the frame. "
+        "If any description above mentions a text overlay, on-screen wording, or a line that "
+        "fades in, that belongs to a later compositing step, not to this image -- produce the "
+        "clean plate without it."
     )
     return {
         "shot_sequence": validated_shot.sequence,

@@ -47,6 +47,27 @@ def _count_words(text: str) -> int:
     return len(re.findall(r"\b[\w’'-]+\b", text, flags=re.UNICODE))
 
 
+def _canonical_words(text: str) -> list[str]:
+    """Word tokens for impact↔narration matching -- mirrors subtitle
+    `normalize_cue_word` / `find_phrase_range` (casefold, strip punctuation).
+    """
+    return [
+        re.sub(r"[^\w]+", "", token.replace("’", "'").replace("‘", "'").lower(), flags=re.UNICODE)
+        for token in re.findall(r"\b[\w’'-]+\b", text, flags=re.UNICODE)
+        if re.sub(r"[^\w]+", "", token.replace("’", "'").replace("‘", "'"), flags=re.UNICODE)
+    ]
+
+
+def _contiguous_phrase_in(haystack: list[str], needle: list[str]) -> bool:
+    if not needle:
+        return False
+    size = len(needle)
+    for start in range(0, len(haystack) - size + 1):
+        if haystack[start:start + size] == needle:
+            return True
+    return False
+
+
 class VoiceDirection(ContractModel):
     persona: str
     tone: list[str]
@@ -169,6 +190,30 @@ class FinalStoryPlanContract(ContractModel):
         joined = " ".join(scene.narration.strip() for scene in self.scenes)
         if normalize_text(joined) != normalize_text(self.narration_script):
             raise ValueError("Concatenated scene narration must reconstruct narration_script exactly.")
+        return self
+
+    @model_validator(mode="after")
+    def impact_text_must_appear_in_narration(self) -> "FinalStoryPlanContract":
+        """AD-12 early gate: every non-empty impact_text must be an exact
+        contiguous word sequence inside narration_script (same rule the
+        subtitle builder later enforces). Empty impact_text is allowed.
+        Failures become story_agent validation feedback and retry.
+        """
+        narration_words = _canonical_words(self.narration_script)
+        bad: list[str] = []
+        for scene in self.scenes:
+            phrase = (scene.impact_text or "").strip()
+            if not phrase:
+                continue
+            phrase_words = _canonical_words(phrase)
+            if not phrase_words or not _contiguous_phrase_in(narration_words, phrase_words):
+                bad.append(f"scene {scene.sequence} impact_text {phrase!r}")
+        if bad:
+            raise ValueError(
+                "Each non-empty impact_text must appear verbatim (same words, "
+                "same order) inside narration_script. Copy a short phrase from "
+                "the narration; do not paraphrase. Violations: " + "; ".join(bad)
+            )
         return self
 
     @model_validator(mode="after")

@@ -131,11 +131,11 @@ flowchart LR
 - **Prevents:** re-spending on Gemini/Veo/TTS calls that already produced a validated result, every time a later stage is the one that hard-halts; and a resume pointer silently drifting out of sync with what's actually been validated
 - **Rule:** Every stage's validated contract output is durably persisted (with the SDK `session_id`) as soon as it passes AD-4. Re-invoking a halted run scans `orchestrator/contracts/` for the newest validated record per stage — the resume point is **derived** from these records, never tracked as a separate counter that could fall out of sync with them — plus the persisted `session_id`, and continues from the first stage lacking a valid record. It never re-runs an already-validated stage. `[ADOPTED]`
 
-### AD-15 — visual_agent's shot-mode assignment is binding and exclusive
+### AD-15 — visual_agent owns shot-mode *intent*; the orchestrator alone applies mechanical feasibility
 
-- **Binds:** `visual_agent.py`, `veo_agent.py`, `stills_agent.py`
-- **Prevents:** two generation agents disagreeing about who has final say over one shot's still-vs-Veo mode after a QA failure — one hard-halting on it, the other silently picking it up
-- **Rule:** `visual_agent` alone assigns each shot's mode (still or Veo) in the visual-plan contract. `veo_agent`/`stills_agent` only ever generate for shots assigned to them; AD-6's hard-halt applies to the originally assigned mode. Any change to a shot's mode is a write back into the same visual-plan contract by `visual_agent`, never a unilateral decision by a generation agent.
+- **Binds:** `visual_agent.py`, `run.py`, `veo_agent.py`, `stills_agent.py`
+- **Prevents:** two generation agents disagreeing about who has final say over one shot's still-vs-Veo mode after a QA failure — one hard-halting on it, the other silently picking it up; *and* a creative planner being forced to decide a question it provably cannot answer, because real per-shot durations do not exist until the voice stage has run
+- **Rule:** `visual_agent` alone makes the creative call about which beats deserve real motion, and expresses it as a ranked, non-binding nomination (`video_candidate_rank`, `video_motion_intent`) on each shot of the visual-plan contract. It never writes `generation_mode`; that field is not in its output schema. The orchestrator (`run.py`), and only the orchestrator, converts nominations into `generation_mode`, in one deterministic step immediately after cue-derived shot timing is backfilled, applying exactly three mechanical constraints and no judgment: (a) the shot's real duration must fit inside a single Veo clip at the configured maximum clip length — no extension, stretching, or splitting across clips is permitted; (b) at most `MAX_VEO_SHOTS` shots are promoted, highest-ranked first; (c) a promoted shot is demoted back to `STILL` if the run's remaining budget cannot cover its generation. Falling short of the video-shot target is logged and the run continues; it is never a halt. `veo_agent`/`stills_agent` still generate only for the mode they were handed and may never change it; AD-6's hard-halt still applies to that assigned mode, and to Veo retry-ceiling and non-retryable failures, which signal a real seed/QA defect rather than a resource limit. Every shot carries `still_motion` at all times so promotion and demotion are lossless and reversible; the renderer ignores it on a video shot. `[AMENDED 2026-09-19 — the original rule required visual_agent to assign generation_mode directly; that proved unsatisfiable, because the planner runs before any real shot duration exists, and in practice produced reels with no video at all.]`
 
 ## Consistency Conventions
 
@@ -163,7 +163,7 @@ orchestrator/
   agents/
     asset_analyst.py        # AgentDefinition: screenshot/image understanding (Claude's own vision, no Gemini call)
     story_agent.py          # AgentDefinition: narration write + self-review + revise loop
-    visual_agent.py         # AgentDefinition: shot/visual planning incl. exclusive shot-mode assignment (AD-15)
+    visual_agent.py         # AgentDefinition: shot/visual planning incl. ranked video nominations (AD-15)
     veo_agent.py            # AgentDefinition: seed prep + Veo generation + QA/retry
     stills_agent.py         # AgentDefinition: Remotion-still generation + QA/retry
     voice_agent.py          # AgentDefinition: TTS + word-timing + subtitle QA (mechanical gate, AD-4)

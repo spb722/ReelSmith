@@ -38,12 +38,12 @@ RENDERER MOTION AND FADES (every shot)
   at 30fps (non-negative integers). Choose values that fit the edit rhythm for
   this shot and its neighbors -- vary them intentionally across shots; never
   use a fixed ladder keyed only on shot number.
-- For generation_mode STILL only: set still_motion to Ken-Burns parameters
-  (scale_from, scale_to, optional translate_x/y from/to, optional easing one
-  of linear/ease/easeOut) that match motion_plan and frame_composition --
-  intentional per shot, grounded in the cited assets' suggested_motion when
-  present.
-- For generation_mode VEO: set still_motion to null (video carries motion).
+- Every shot needs still_motion: Ken-Burns parameters (scale_from, scale_to,
+  optional translate_x/y from/to, optional easing one of linear/ease/easeOut)
+  that match motion_plan and frame_composition -- intentional per shot,
+  grounded in the cited assets' suggested_motion when present. Set it even on
+  a shot you nominate for video: a nomination may not be taken up, and the
+  shot then falls back to this motion.
 
 PLANNING EACH SHOT
 - source_asset_ids must be non-empty and a subset of that scene's own
@@ -52,19 +52,42 @@ PLANNING EACH SHOT
   USE_EXISTING_ART, CROP_AND_RECOMPOSE, SUBTLE_ANIMATION, TEXT_LED,
   AI_VIDEO_CANDIDATE, MIXED -- normally inherited from the scene's own
   suggested_visual_treatment unless the source analyses justify changing it.
-- generation_mode is the simple STILL/VEO switch the later generation stage
-  keys off directly. It must be VEO only when visual_treatment is
-  AI_VIDEO_CANDIDATE or MIXED; every other treatment must be STILL. Use VEO
-  sparingly -- only when the cited assets truly cannot carry the beat.
+- You do not choose which shots become real video. Nominate instead (see
+  VIDEO NOMINATIONS below); a later deterministic step picks the winners using
+  real spoken shot durations, which do not exist yet at this stage.
 - Ground frame_composition and motion_plan in the cited assets' own
   production metadata (story_art_region, ui_regions, recommended_crop_strategy,
   suggested_motion, vertical_video_suitability) -- describe concretely what
   part of the asset is framed and how it moves or is cropped.
 - shot_goal states the narrative purpose of this shot in the edit.
 - text_overlay is optional on-screen text beyond the narration itself; use
-  an empty string when none is needed.
+  an empty string when none is needed. It is composited by the renderer much
+  later, never drawn into the generated artwork.
+- CRITICAL: frame_composition and motion_plan describe the PICTURE ONLY --
+  what is in frame and how the camera or subject moves. They are fed almost
+  verbatim to an image generator, which will literally draw whatever they
+  describe. Never mention text, captions, titles, quotes, wording, a line
+  that fades in, or text_overlay in either field: the generator paints those
+  words into the image, where they cannot be moved, timed, or removed, and
+  they smear when the shot moves. Describe the clean plate and leave space
+  for text instead.
 - source_support explains, in your own words, how the cited assets ground
   this shot's visual choices.
+
+VIDEO NOMINATIONS
+- Rank at least four shots (or every shot, if the reel has fewer) by how much
+  they would gain from real generated video rather than a moving still. Set
+  video_candidate_rank = 1 on the strongest candidate, 2 on the next, and so
+  on with no gaps and no repeats. Leave it null on the rest.
+- Rank by what motion would add to the storytelling: a beat where something
+  physically happens, where atmosphere carries the emotion, or where a static
+  frame would feel inert. A beat that is already well served by its
+  illustration ranks lower.
+- On every nominated shot, set video_motion_intent to the specific motion you
+  would want if that shot became video -- what moves, how much, and why it
+  serves the beat. Leave it empty on shots you did not nominate.
+- Generated clips are short, so favour beats whose narration is brief and
+  punchy; a long, discursive beat is unlikely to be taken up.
 
 OVERALL STYLE
 - overall_visual_style is one coherent style/tone statement spanning every
@@ -88,8 +111,9 @@ Judge especially:
   frame_composition, motion_plan, or source_support would assert an
   uncertain visual detail as fact, either make that detail source-safely
   generic or stop citing it.
-- GENERATION MODE APPROPRIATENESS: VEO is assigned only where the treatment
-  and narrative beat genuinely call for it, never as a default.
+- GENERATION MODE APPROPRIATENESS: the video nominations, and their order,
+  are the beats that genuinely gain most from real motion -- and every shot
+  still carries usable still_motion in case its nomination is not taken up.
 - VISUAL COHERENCE: shots read as one consistent visual style, not a
   disjointed patchwork.
 - NARRATIVE ALIGNMENT: each shot's visual direction actually serves its

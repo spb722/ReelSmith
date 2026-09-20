@@ -20,7 +20,7 @@ from orchestrator.contracts.veo import (
     sha256_file,
     shot_fingerprint,
 )
-from orchestrator.contracts.visual_plan import QualityReview, Shot, VisualPlanContract
+from orchestrator.contracts.visual_plan import QualityReview, Shot, StillMotion, VisualPlanContract
 from orchestrator.tests.test_preflight import make_settings
 
 
@@ -40,6 +40,9 @@ def _shot() -> Shot:
         motion_plan="Use quiet motion.",
         text_overlay="",
         source_support="Directly supported.",
+        still_motion=StillMotion(scale_from=1.0, scale_to=1.06),
+        video_candidate_rank=1,
+        video_motion_intent="Slow drift across the frame.",
     )
 
 

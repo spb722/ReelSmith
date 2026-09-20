@@ -27,6 +27,8 @@ The primary rule for future agents is:
 
 The current project contains several stages that are intentionally deterministic. Do not replace those with free-form LLM behavior without a concrete reason.
 
+**Related live-run fix note (Sep 2026):** end-to-end orchestrator failures and fixes after Story 3.1 — fingerprint stamp, inter-shot gap fill, timeline SameFileError, STT chunking — are summarized in [`docs/book_reels_live_run_fixes_2026-09.md`](book_reels_live_run_fixes_2026-09.md).
+
 
 ---
 

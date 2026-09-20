@@ -107,6 +107,33 @@ def test_scene_narration_reconstruction_mismatch_rejected():
         FinalStoryPlanContract.model_validate(data)
 
 
+def test_impact_text_verbatim_in_narration_accepted():
+    data = base_contract()
+    # First scene narration is "word0 word1 ... word19"
+    data["scenes"][0]["impact_text"] = "word0 word1 word2"
+    FinalStoryPlanContract.model_validate(data)
+
+
+def test_impact_text_paraphrase_rejected():
+    data = base_contract()
+    data["scenes"][0]["impact_text"] = "a slogan not spoken anywhere"
+    with pytest.raises(ValidationError, match="impact_text must appear verbatim"):
+        FinalStoryPlanContract.model_validate(data)
+
+
+def test_impact_text_reordered_words_rejected():
+    data = base_contract()
+    data["scenes"][0]["impact_text"] = "word2 word1 word0"
+    with pytest.raises(ValidationError, match="impact_text must appear verbatim"):
+        FinalStoryPlanContract.model_validate(data)
+
+
+def test_empty_impact_text_still_allowed():
+    data = base_contract()
+    assert data["scenes"][0]["impact_text"] == ""
+    FinalStoryPlanContract.model_validate(data)
+
+
 def test_validate_sources_accepts_known_ids():
     contract = FinalStoryPlanContract.model_validate(base_contract())
     contract.validate_sources({"img_aaaaaaaaaaaa", "img_bbbbbbbbbbbb"})

@@ -76,6 +76,8 @@ def visual_plan_for() -> dict:
             "fade_in_frames": 6,
             "fade_out_frames": 4,
             "still_motion": {"scale_from": 1.0, "scale_to": 1.06, "easing": "ease"},
+            "video_candidate_rank": 1,
+            "video_motion_intent": "Slow drift across the frame.",
         }],
         "quality_review": {
             "verdict": "APPROVE", "ready_for_generation": True, "confidence": 0.9,
@@ -295,6 +297,28 @@ def test_fresh_run_runs_tools_in_sequence_and_persists_validated_contract(stage,
     visual_plan = json.loads(run.VISUAL_PLAN_FILE.read_text())
     assert visual_plan["shots"][0]["end_seconds"] > 0.0
     assert visual_plan["shots"][0]["primary_subtitle_cue_ids"]
+
+
+def test_non_normal_style_hints_survive_into_the_persisted_contract(stage, monkeypatch):
+    """`build_cues` derives each cue's style_hint and `Subtitles.tsx` selects
+    its rendering variant from it. The projection in `run_voice_pipeline` used
+    to omit the key entirely, so every persisted cue silently fell back to the
+    `NORMAL` default and the IMPACT/EMPHASIS/REFLECTION render paths were
+    unreachable for every reel.
+    """
+    source = stage
+    dp_payload = json.loads(dp_ok_payload()["content"][0]["text"])
+    dp_payload["cues"][0]["style_hint"] = "IMPACT"
+    dp_payload["cues"][1]["style_hint"] = "EMPHASIS"
+    dp_payload["cues"][-1]["style_hint"] = "REFLECTION"
+    mock_tools(monkeypatch, dp=[tts_content(json.dumps(dp_payload))])
+
+    assert run.main([str(source)]) == 0
+
+    contract = SubtitleCuesContract.model_validate_json(run.SUBTITLE_CUES_FILE.read_text())
+    assert contract.cues[0].style_hint == "IMPACT"
+    assert contract.cues[1].style_hint == "EMPHASIS"
+    assert contract.cues[-1].style_hint == "REFLECTION"
 
 
 def persisted_subtitle_cues_payload() -> dict:

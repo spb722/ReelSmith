@@ -8,7 +8,7 @@ import json
 import subprocess
 import time
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Sequence
 
 from claude_agent_sdk import create_sdk_mcp_server, tool
 from google import genai
@@ -24,12 +24,16 @@ from orchestrator.contracts.veo import (
     shot_fingerprint,
 )
 from orchestrator.contracts.visual_plan import Shot
+from orchestrator.settings import VEO_ALLOWED_DURATION_SECONDS
 from orchestrator.state.run_manifest import _atomic_write_json
 
 
 VEO_OUTPUT_DIR = Path("generated/veo")
 VEO_PREVIEW_DIR = VEO_OUTPUT_DIR / "previews"
 VEO_OPERATION_DIR = Path("metadata/veo_operations")
+# Tolerance when matching a shot's fractional duration against the integer
+# clip lengths Veo offers, so a 6.001s shot still takes a 6s clip.
+CLIP_DURATION_EPSILON = 0.05
 
 
 def _get(obj: Any, *keys: str, default: Any = None) -> Any:
@@ -182,12 +186,42 @@ def materialize_video_output(
     raise ValueError("No usable Veo video output: " + "; ".join(errors or ["no generated_videos entries"]))
 
 
-def extract_video_previews(video_path: Path, shot_sequence: int) -> list[str]:
+# Fractions of the clip's own length at which QA preview frames are taken.
+# They reproduce the original hardcoded 0.5/2.5/5.5s exactly for an 8s clip,
+# while staying inside a shorter one.
+PREVIEW_POSITION_FRACTIONS = (1 / 16, 5 / 16, 11 / 16)
+
+
+def select_clip_duration_seconds(
+    shot_duration_seconds: float,
+    max_duration_seconds: int,
+    allowed: Sequence[int] = VEO_ALLOWED_DURATION_SECONDS,
+) -> int:
+    """Shortest allowed Veo clip length that still covers the whole shot.
+
+    Raises `ValueError` when the shot is longer than any allowed length -- Veo
+    produces one fixed-length clip and this pipeline never extends, stretches,
+    or splits one across a shot, so such a shot cannot be a video shot at all.
+    """
+    candidates = sorted(value for value in allowed if value <= max_duration_seconds)
+    for duration in candidates:
+        if duration + CLIP_DURATION_EPSILON >= shot_duration_seconds:
+            return duration
+    raise ValueError(
+        f"Shot is {shot_duration_seconds:.2f}s, longer than the longest available Veo clip "
+        f"({max(candidates) if candidates else max_duration_seconds}s)"
+    )
+
+
+def extract_video_previews(
+    video_path: Path, shot_sequence: int, clip_duration_seconds: float,
+) -> list[str]:
     """Extract three deterministic JPEGs for semantic clip QA."""
 
     VEO_PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
     paths: list[str] = []
-    for index, position in enumerate((0.5, 2.5, 5.5), start=1):
+    positions = tuple(round(clip_duration_seconds * f, 3) for f in PREVIEW_POSITION_FRACTIONS)
+    for index, position in enumerate(positions, start=1):
         output = VEO_PREVIEW_DIR / f"shot_{shot_sequence:02d}_{index:02d}.jpg"
         output.unlink(missing_ok=True)
         completed = subprocess.run(
@@ -270,6 +304,7 @@ def inspect_completed_operation(
     project_id: str,
     attempt: int,
     cost_usd: float,
+    clip_duration_seconds: float,
     downloader: Callable[[str, Path, str], None] = _download_gcs,
 ) -> VeoOutcomeContract:
     """Preserve and inspect both supported SDK roots, returning no bare errors."""
@@ -326,7 +361,7 @@ def inspect_completed_operation(
         )
 
     try:
-        previews = extract_video_previews(local_path, shot.sequence)
+        previews = extract_video_previews(local_path, shot.sequence, clip_duration_seconds)
     except Exception as exc:
         return _failure(
             shot=shot,
@@ -395,6 +430,24 @@ def run_veo_generation(
             cost_usd=0.0,
         )
 
+    # `duration_seconds` is the configured ceiling; the clip is generated at
+    # the shortest allowed length that still covers this shot, so a 5s shot
+    # doesn't pay for 8s of video. A shot longer than the ceiling never
+    # reaches here -- `_promote_video_candidates` refuses to promote it.
+    try:
+        clip_duration_seconds = select_clip_duration_seconds(
+            shot.end_seconds - shot.start_seconds, duration_seconds,
+        )
+    except ValueError as exc:
+        return _failure(
+            shot=shot,
+            attempt=attempt,
+            code="UNSAFE_SEED",
+            reason=str(exc),
+            retryable=False,
+            cost_usd=0.0,
+        )
+
     prompt, negative_prompt = build_video_prompt(shot, seed, correction)
     try:
         image = types.Image.from_file(location=seed.local_path)
@@ -403,7 +456,7 @@ def run_veo_generation(
             source=types.GenerateVideosSource(prompt=prompt, image=image),
             config=types.GenerateVideosConfig(
                 number_of_videos=1,
-                duration_seconds=duration_seconds,
+                duration_seconds=clip_duration_seconds,
                 aspect_ratio="9:16",
                 resolution=resolution,
                 output_gcs_uri=gcs_output_uri,
@@ -464,6 +517,7 @@ def run_veo_generation(
         project_id=project_id,
         attempt=attempt,
         cost_usd=cost_usd,
+        clip_duration_seconds=clip_duration_seconds,
     )
 
 

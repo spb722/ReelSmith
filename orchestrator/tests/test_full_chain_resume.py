@@ -143,6 +143,8 @@ def visual_plan_for(asset_id: str) -> dict:
             "fade_in_frames": 6,
             "fade_out_frames": 4,
             "still_motion": {"scale_from": 1.0, "scale_to": 1.06, "easing": "ease"},
+            "video_candidate_rank": 1,
+            "video_motion_intent": "Slow drift across the frame.",
         }],
         "quality_review": {
             "verdict": "APPROVE", "ready_for_generation": True, "confidence": 0.9,
@@ -318,14 +320,16 @@ def test_fully_valid_chain_makes_zero_new_calls_anywhere(chain, monkeypatch):
     must not re-run any stage.
     """
     source, asset_id = chain
-    # Fully complete = timing already backfilled too; otherwise voice skip
-    # would still rewrite visual_plan.json via shot-timing backfill.
+    # Fully complete = timing already backfilled and video nominations already
+    # judged; otherwise voice skip would still rewrite visual_plan.json via the
+    # shot-timing backfill or the promotion step.
     cues = subtitle_cues_for()
     plan = visual_plan_for(asset_id)
     cue = cues["cues"][0]
     plan["shots"][0]["start_seconds"] = cue["start_seconds"]
     plan["shots"][0]["end_seconds"] = cue["end_seconds"]
     plan["shots"][0]["primary_subtitle_cue_ids"] = [cue["cue_id"]]
+    plan["shots"][0]["video_promotion_decided"] = True
     run.VISUAL_PLAN_FILE.write_text(json.dumps(plan), encoding="utf-8")
     create_audio_file()
     run.SUBTITLE_CUES_FILE.write_text(json.dumps(cues), encoding="utf-8")
@@ -475,7 +479,9 @@ def veo_visual_plan_for(asset_id: str, *, count: int = 1) -> VisualPlanContract:
             "source_support": "Directly grounded in the source.",
             "fade_in_frames": 6,
             "fade_out_frames": 6,
-            "still_motion": None,
+            "still_motion": {"scale_from": 1.0, "scale_to": 1.06, "easing": "ease"},
+            "video_candidate_rank": sequence,
+            "video_motion_intent": "Slow drift across the frame.",
         })
     return VisualPlanContract.model_validate(data)
 
@@ -627,7 +633,12 @@ def test_veo_stage_generates_only_veo_mode_and_never_changes_plan(chain, monkeyp
     assert run.VISUAL_PLAN_FILE.read_bytes() == original_plan
 
 
-def test_veo_budget_gate_halts_before_any_agent_or_paid_call(chain, monkeypatch):
+def test_veo_budget_gate_demotes_to_still_before_any_agent_or_paid_call(chain, monkeypatch):
+    """Running out of budget is a resource fact, not a defect in the shot, so
+    the shot falls back to a still and the reel still finishes. The gate still
+    runs before the agent or either paid tool. Retry-ceiling and non-retryable
+    Veo failures do still halt -- those signal a real seed/QA problem.
+    """
     source, asset_id = chain
     visual_plan = veo_visual_plan_for(asset_id)
     run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
@@ -638,8 +649,14 @@ def test_veo_budget_gate_halts_before_any_agent_or_paid_call(chain, monkeypatch)
 
     monkeypatch.setattr(run, "generate_veo_asset", refuse_agent)
     manifest = load_run_manifest(run.RUN_STATE_DIR)
-    assert asyncio.run(run.run_veo_stage(make_settings(max_budget_usd=1.0), manifest)) == 1
+    assert asyncio.run(run.run_veo_stage(make_settings(max_budget_usd=1.0), manifest)) == 0
     assert not run.PRODUCTION_ASSETS_FILE.exists()
+
+    # The plan on disk now routes that shot to the stills stage instead, and it
+    # still carries the Ken-Burns motion that fallback needs.
+    demoted = VisualPlanContract.model_validate_json(run.VISUAL_PLAN_FILE.read_text())
+    assert [shot.generation_mode for shot in demoted.shots] == ["STILL"]
+    assert demoted.shots[0].still_motion is not None
 
 
 def test_retryable_veo_failure_retries_with_correction_then_upserts(chain, monkeypatch):
@@ -801,6 +818,8 @@ def still_visual_plan_for(asset_id: str, *, count: int = 1) -> VisualPlanContrac
             "fade_in_frames": 6,
             "fade_out_frames": 4,
             "still_motion": {"scale_from": 1.0, "scale_to": 1.06, "easing": "ease"},
+            "video_candidate_rank": sequence,
+            "video_motion_intent": "Slow drift across the frame.",
         })
     return VisualPlanContract.model_validate(data)
 
@@ -901,7 +920,6 @@ def test_stills_stage_generates_only_still_mode_and_never_changes_plan(chain, mo
     plan_data = still_visual_plan_for(asset_id, count=2).model_dump(mode="json")
     plan_data["shots"][1]["generation_mode"] = "VEO"
     plan_data["shots"][1]["visual_treatment"] = "AI_VIDEO_CANDIDATE"
-    plan_data["shots"][1]["still_motion"] = None
     visual_plan = VisualPlanContract.model_validate(plan_data)
     run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
     run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
@@ -958,16 +976,41 @@ def test_stills_agent_no_usable_cost_halts(chain, monkeypatch):
     assert not run.PRODUCTION_ASSETS_FILE.exists()
 
 
-def test_stills_agent_outcome_mismatched_shot_halts(chain, monkeypatch):
+def test_stills_agent_wrong_fingerprint_is_stamped_from_requested_shot(chain, monkeypatch):
+    """Agent-retyped fingerprints must not discard an otherwise-valid still."""
     source, asset_id = chain
     visual_plan = still_visual_plan_for(asset_id)
     run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
     run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+    shot = visual_plan.shots[0]
+    expected_fp = shot_fingerprint(shot)
 
     async def agent(**kwargs):
-        outcome = approved_still_outcome_for(visual_plan.shots[0]).model_dump(mode="json")
+        outcome = approved_still_outcome_for(shot).model_dump(mode="json")
         outcome["shot_fingerprint"] = "0" * 64
         outcome["result"]["shot_fingerprint"] = "0" * 64
+        return sdk_result(outcome, cost=0.1)
+
+    monkeypatch.setattr(run, "generate_still_asset", agent)
+    assert asyncio.run(run.run_stills_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 0
+    assets = json.loads(run.PRODUCTION_ASSETS_FILE.read_text(encoding="utf-8"))
+    entry = assets["shots"]["1"]
+    assert entry["shot_fingerprint"] == expected_fp
+    attempt = json.loads(
+        (run.RUN_STATE_DIR / "stills_agent_shot_1_attempt_1.json").read_text(encoding="utf-8")
+    )
+    assert attempt["structured_output"]["shot_fingerprint"] == expected_fp
+
+
+def test_stills_agent_wrong_sequence_halts_and_persists_invalid_outcome(chain, monkeypatch):
+    source, asset_id = chain
+    visual_plan = still_visual_plan_for(asset_id, count=2)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+
+    async def agent(**kwargs):
+        # Agent returns shot 2's approved still while the stage requested shot 1.
+        outcome = approved_still_outcome_for(visual_plan.shots[1]).model_dump(mode="json")
         return sdk_result(outcome, cost=0.1)
 
     monkeypatch.setattr(run, "generate_still_asset", agent)
@@ -975,7 +1018,13 @@ def test_stills_agent_outcome_mismatched_shot_halts(chain, monkeypatch):
     reports = sorted(run.RUN_STATE_DIR.glob("failure_stills_agent_*.json"))
     assert reports
     report = json.loads(reports[-1].read_text(encoding="utf-8"))
-    assert "Invalid stills agent outcome" in report["reason"]
+    assert "does not match the requested source shot" in report["reason"]
+    attempt_path = run.RUN_STATE_DIR / "stills_agent_shot_1_attempt_1.json"
+    assert attempt_path.is_file()
+    attempt = json.loads(attempt_path.read_text(encoding="utf-8"))
+    assert attempt["status"] == "INVALID_OUTCOME"
+    assert attempt["structured_output"]["shot_sequence"] == 2
+    assert not run.PRODUCTION_ASSETS_FILE.exists()
 
 
 def test_stills_agent_cost_above_ceiling_halts(chain, monkeypatch):
@@ -995,7 +1044,10 @@ def test_stills_agent_cost_above_ceiling_halts(chain, monkeypatch):
     assert reports
     report = json.loads(reports[-1].read_text(encoding="utf-8"))
     assert "Invalid stills agent outcome" in report["reason"]
-
+    attempt = json.loads(
+        (run.RUN_STATE_DIR / "stills_agent_shot_1_attempt_1.json").read_text(encoding="utf-8")
+    )
+    assert attempt["status"] == "INVALID_OUTCOME"
 
 def test_stills_agent_outcome_source_asset_not_cited_halts(chain, monkeypatch):
     source, asset_id = chain
@@ -1148,7 +1200,9 @@ def test_veo_and_stills_stages_together_cover_every_shot_exactly_once(chain, mon
                 "source_support": "Directly grounded in the source.",
                 "fade_in_frames": 6,
                 "fade_out_frames": 6,
-                "still_motion": None,
+                "still_motion": {"scale_from": 1.0, "scale_to": 1.06, "easing": "ease"},
+                "video_candidate_rank": 1,
+                "video_motion_intent": "Slow drift across the frame.",
             },
             {
                 "sequence": 2,
@@ -1163,6 +1217,8 @@ def test_veo_and_stills_stages_together_cover_every_shot_exactly_once(chain, mon
                 "fade_in_frames": 6,
                 "fade_out_frames": 4,
                 "still_motion": {"scale_from": 1.0, "scale_to": 1.06, "easing": "ease"},
+                "video_candidate_rank": 2,
+                "video_motion_intent": "Slow drift across the frame.",
             },
         ],
         "quality_review": {
@@ -1196,3 +1252,116 @@ def test_veo_and_stills_stages_together_cover_every_shot_exactly_once(chain, mon
     assert set(production.shots) == {"1", "2"}
     assert production.shots["1"].generation_mode == "VEO"
     assert production.shots["2"].generation_mode == "STILL"
+
+
+# ============================================================
+# Video promotion: visual_agent nominates, the orchestrator decides which
+# nominations physically fit a single Veo clip (AD-15).
+# ============================================================
+
+def _promotion_plan(asset_id: str, durations: list[float], ranks: list[int | None]):
+    """A still plan with real timing, so nominations can be judged."""
+    plan = still_visual_plan_for(asset_id, count=len(durations))
+    start = 0.0
+    for shot, duration, rank in zip(plan.shots, durations, ranks):
+        shot.start_seconds = round(start, 2)
+        shot.end_seconds = round(start + duration, 2)
+        shot.video_candidate_rank = rank
+        start += duration
+    return plan
+
+
+def test_promotion_takes_the_best_nominations_that_fit_one_clip():
+    """The real reel's six durations: only 7.64s, 5.48s and 5.96s fit inside an
+    8s clip, so those are the shots that become video."""
+    plan = _promotion_plan(
+        "img_aaaaaaaaaaaa",
+        [7.64, 11.48, 12.88, 9.80, 5.48, 5.96],
+        [1, 2, 3, 4, 5, 6],
+    )
+    promoted = run._promote_video_candidates(plan, make_settings())
+    assert promoted == [1, 5, 6]
+    assert [shot.generation_mode for shot in plan.shots] == [
+        "VEO", "STILL", "STILL", "STILL", "VEO", "VEO",
+    ]
+
+
+def test_promotion_never_exceeds_the_video_cap():
+    plan = _promotion_plan(
+        "img_aaaaaaaaaaaa", [5.0] * 6, [1, 2, 3, 4, 5, 6],
+    )
+    promoted = run._promote_video_candidates(plan, make_settings())
+    assert promoted == [1, 2, 3]
+    assert len(promoted) == run.MAX_VEO_SHOTS
+
+
+def test_promotion_follows_rank_not_shot_order():
+    plan = _promotion_plan(
+        "img_aaaaaaaaaaaa", [5.0] * 4, [4, 3, 2, 1],
+    )
+    promoted = run._promote_video_candidates(plan, make_settings())
+    assert promoted == [4, 3, 2]
+
+
+def test_promotion_degrades_when_too_few_shots_fit_rather_than_halting():
+    """A reel whose beats are nearly all long legitimately ends up with fewer
+    video shots -- it must still produce a video."""
+    plan = _promotion_plan(
+        "img_aaaaaaaaaaaa", [11.0, 12.0, 13.0, 5.0], [1, 2, 3, 4],
+    )
+    promoted = run._promote_video_candidates(plan, make_settings())
+    assert promoted == [4]
+    assert [shot.generation_mode for shot in plan.shots] == ["STILL", "STILL", "STILL", "VEO"]
+
+
+def test_promotion_with_no_shot_short_enough_leaves_an_all_still_reel():
+    plan = _promotion_plan("img_aaaaaaaaaaaa", [11.0, 12.0, 13.0, 14.0], [1, 2, 3, 4])
+    promoted = run._promote_video_candidates(plan, make_settings())
+    assert promoted == []
+    assert all(shot.generation_mode == "STILL" for shot in plan.shots)
+
+
+def test_promotion_still_runs_when_a_regenerated_plan_inherited_its_timing(chain, monkeypatch):
+    """A regenerated plan can inherit the previous file's timing, so it needs no
+    cue mapping -- but its own nominations have still never been judged. Keying
+    promotion off the cue-mapping branch alone would silently skip it and
+    quietly return the reel to all-stills.
+    """
+    source, asset_id = chain
+    cues = subtitle_cues_for()
+    plan = visual_plan_for(asset_id)
+    cue = cues["cues"][0]
+    plan["shots"][0]["start_seconds"] = 0.0
+    plan["shots"][0]["end_seconds"] = 5.0  # short enough to fit one clip
+    plan["shots"][0]["primary_subtitle_cue_ids"] = [cue["cue_id"]]
+    # Timing present, but never judged -- exactly the inherited-timing case.
+    plan["shots"][0]["video_promotion_decided"] = False
+    run.VISUAL_PLAN_FILE.write_text(json.dumps(plan), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(cues), encoding="utf-8")
+
+    run._backfill_visual_plan_shot_timing_from_cues(make_settings())
+
+    judged = VisualPlanContract.model_validate_json(run.VISUAL_PLAN_FILE.read_text())
+    assert all(shot.video_promotion_decided for shot in judged.shots)
+    assert judged.shots[0].generation_mode == "VEO"
+
+
+def test_promotion_is_not_redone_once_decided(chain, monkeypatch):
+    """A shot deliberately left (or demoted to) STILL must stay that way across
+    resumes, or an already-approved still's fingerprint would churn."""
+    source, asset_id = chain
+    cues = subtitle_cues_for()
+    plan = visual_plan_for(asset_id)
+    cue = cues["cues"][0]
+    plan["shots"][0]["start_seconds"] = cue["start_seconds"]
+    plan["shots"][0]["end_seconds"] = cue["end_seconds"]
+    plan["shots"][0]["primary_subtitle_cue_ids"] = [cue["cue_id"]]
+    plan["shots"][0]["video_promotion_decided"] = True
+    plan["shots"][0]["generation_mode"] = "STILL"
+    run.VISUAL_PLAN_FILE.write_text(json.dumps(plan), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(cues), encoding="utf-8")
+
+    run._backfill_visual_plan_shot_timing_from_cues(make_settings())
+
+    unchanged = VisualPlanContract.model_validate_json(run.VISUAL_PLAN_FILE.read_text())
+    assert unchanged.shots[0].generation_mode == "STILL"

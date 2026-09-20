@@ -6,7 +6,12 @@ import pytest
 from pydantic import ValidationError
 
 from orchestrator.contracts.final_story_plan import FinalStoryPlanContract
-from orchestrator.contracts.visual_plan import StillMotion, VisualPlanContract, _scene_content_fingerprint
+from orchestrator.contracts.visual_plan import (
+    MIN_VIDEO_NOMINATIONS,
+    StillMotion,
+    VisualPlanContract,
+    _scene_content_fingerprint,
+)
 
 ASSET_IDS = ["img_aaaaaaaaaaaa", "img_bbbbbbbbbbbb", "img_cccccccccccc"]
 
@@ -92,15 +97,23 @@ def shot_for(
         "fade_in_frames": 6,
         "fade_out_frames": 4,
     }
-    if generation_mode == "STILL":
-        shot["still_motion"] = {"scale_from": 1.0, "scale_to": 1.06, "easing": "ease"}
-    else:
-        shot["still_motion"] = None
+    # Every shot carries still_motion now, whatever its mode, so a video shot
+    # can be demoted back to a still without losing its fallback.
+    shot["still_motion"] = {"scale_from": 1.0, "scale_to": 1.06, "easing": "ease"}
+    if generation_mode == "VEO":
+        # A VEO shot must trace back to a visual_agent nomination.
+        shot["video_candidate_rank"] = 1
+        shot["video_motion_intent"] = "Slow drift across the frame."
     return shot
 
 
 def base_contract(asset_ids: list[str] = ASSET_IDS) -> dict:
     shots = [shot_for(index + 1, asset_id) for index, asset_id in enumerate(asset_ids)]
+    # visual_agent must nominate min(MIN_VIDEO_NOMINATIONS, len(shots)) shots,
+    # ranked 1..k with no gaps.
+    for rank, shot in enumerate(shots[:MIN_VIDEO_NOMINATIONS], start=1):
+        shot["video_candidate_rank"] = rank
+        shot["video_motion_intent"] = "Slow drift across the frame."
     return {
         "produced_by": "visual_agent",
         "overall_visual_style": "Reflective, calm, textured halftone illustrations.",
@@ -126,20 +139,54 @@ def test_shot_sequence_gap_rejected():
         VisualPlanContract.model_validate(data)
 
 
-def test_veo_requires_eligible_treatment_rejected():
+def test_veo_without_a_video_nomination_rejected():
+    """A shot's mode must trace back to visual_agent's own judgement: only a
+    nominated shot may be promoted to VEO (AD-15)."""
     data = base_contract()
-    data["shots"][0]["generation_mode"] = "VEO"  # visual_treatment stays USE_EXISTING_ART
-    with pytest.raises(ValidationError, match="VEO"):
+    data["shots"][0]["generation_mode"] = "VEO"
+    data["shots"][0]["video_candidate_rank"] = None
+    data["shots"][0]["video_motion_intent"] = ""
+    with pytest.raises(ValidationError, match="video_candidate_rank"):
         VisualPlanContract.model_validate(data)
 
 
-@pytest.mark.parametrize("treatment", ["AI_VIDEO_CANDIDATE", "MIXED"])
-def test_veo_allowed_with_eligible_treatment(treatment):
+@pytest.mark.parametrize("treatment", [
+    "USE_EXISTING_ART", "CROP_AND_RECOMPOSE", "SUBTLE_ANIMATION",
+    "TEXT_LED", "AI_VIDEO_CANDIDATE", "MIXED",
+])
+def test_veo_allowed_with_any_treatment_when_nominated(treatment):
+    """`visual_treatment` no longer gates video. It describes how the source
+    art is handled, not whether the beat wants motion -- and the old gate
+    excluded USE_EXISTING_ART shots, which are often the best candidates."""
     data = base_contract()
     data["shots"][0]["generation_mode"] = "VEO"
     data["shots"][0]["visual_treatment"] = treatment
-    data["shots"][0]["still_motion"] = None
-    VisualPlanContract.model_validate(data)
+    contract = VisualPlanContract.model_validate(data)
+    assert contract.shots[0].generation_mode == "VEO"
+
+
+def test_too_few_video_nominations_rejected():
+    """Prompt wording alone previously produced zero video shots; the floor is
+    enforced mechanically so the retry loop gets real feedback."""
+    data = base_contract()
+    for shot in data["shots"]:
+        shot["video_candidate_rank"] = None
+    with pytest.raises(ValidationError, match="video_candidate_rank"):
+        VisualPlanContract.model_validate(data)
+
+
+def test_duplicate_video_nomination_rank_rejected():
+    data = base_contract()
+    data["shots"][1]["video_candidate_rank"] = data["shots"][0]["video_candidate_rank"]
+    with pytest.raises(ValidationError, match="contiguous"):
+        VisualPlanContract.model_validate(data)
+
+
+def test_non_contiguous_video_nomination_ranks_rejected():
+    data = base_contract()
+    data["shots"][-1]["video_candidate_rank"] = 9
+    with pytest.raises(ValidationError, match="contiguous"):
+        VisualPlanContract.model_validate(data)
 
 
 def test_shot_renderer_fields_default_when_absent():
@@ -194,22 +241,22 @@ def test_still_motion_rejects_invalid_easing_literal():
         VisualPlanContract.model_validate(data)
 
 
-def test_still_motion_forbidden_for_veo_shot_rejected():
+def test_veo_shot_keeps_still_motion():
+    """A video shot keeps its Ken-Burns fallback: it may still be demoted to a
+    still if the budget runs out, and the renderer ignores the field for a
+    video asset anyway."""
     data = base_contract()
     data["shots"][0]["generation_mode"] = "VEO"
-    data["shots"][0]["visual_treatment"] = "AI_VIDEO_CANDIDATE"
-    data["shots"][0]["still_motion"] = {"scale_from": 1.0, "scale_to": 1.07}
+    contract = VisualPlanContract.model_validate(data)
+    assert contract.shots[0].still_motion is not None
+
+
+def test_veo_shot_without_still_motion_rejected():
+    data = base_contract()
+    data["shots"][0]["generation_mode"] = "VEO"
+    data["shots"][0]["still_motion"] = None
     with pytest.raises(ValidationError, match="still_motion"):
         VisualPlanContract.model_validate(data)
-
-
-def test_veo_shot_without_still_motion_allowed():
-    data = base_contract()
-    data["shots"][0]["generation_mode"] = "VEO"
-    data["shots"][0]["visual_treatment"] = "AI_VIDEO_CANDIDATE"
-    data["shots"][0]["still_motion"] = None
-    contract = VisualPlanContract.model_validate(data)
-    assert contract.shots[0].still_motion is None
 
 
 @pytest.mark.parametrize("treatment", [

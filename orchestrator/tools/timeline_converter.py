@@ -18,8 +18,10 @@ emitted here.
 
 Story 2.2 additionally passes each shot's `fade_in_frames`/`fade_out_frames`/
 `still_motion` through unchanged (same additive `Shot` fields, Code Map) --
-the renderer, not this converter, decides what a null `still_motion` (VEO
-shots) means.
+the renderer, not this converter, decides what `still_motion` means. Every
+shot carries it now, whatever its mode, so a video shot can be demoted back to
+a still; the renderer branches on the asset's own type and ignores it for a
+video shot.
 """
 
 from __future__ import annotations
@@ -110,8 +112,8 @@ def build_timeline_data(
             "end_seconds": shot.end_seconds,
             "primary_subtitle_cue_ids": list(shot.primary_subtitle_cue_ids),
             # Story 2.2: additive per-shot renderer fields, traceable 1:1 to
-            # VisualPlanContract.Shot (Code Map) -- null still_motion for VEO
-            # shots passes through as-is, the renderer decides what that means.
+            # VisualPlanContract.Shot (Code Map). Every shot carries
+            # still_motion; the renderer ignores it for a video shot.
             "fade_in_frames": shot.fade_in_frames,
             "fade_out_frames": shot.fade_out_frames,
             "still_motion": shot.still_motion.model_dump(exclude_none=True) if shot.still_motion else None,

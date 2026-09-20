@@ -140,10 +140,11 @@ def shot_for(
         "fade_in_frames": 6,
         "fade_out_frames": 4,
     }
-    if generation_mode == "STILL":
-        shot["still_motion"] = {"scale_from": 1.0, "scale_to": 1.06, "easing": "ease"}
-    else:
-        shot["still_motion"] = None
+    # Every shot keeps still_motion whatever its mode, so a nominated shot can
+    # be demoted back to a still without losing its fallback.
+    shot["still_motion"] = {"scale_from": 1.0, "scale_to": 1.06, "easing": "ease"}
+    shot["video_candidate_rank"] = sequence
+    shot["video_motion_intent"] = "Slow drift across the frame."
     return shot
 
 
@@ -280,13 +281,14 @@ def test_fresh_run_writes_via_scoped_agent_and_persists(stage, monkeypatch):
     assert manifest.iteration_counts == {"visual_agent": 1}
 
 
-def test_failed_generation_mode_consistency_self_corrects_with_feedback_and_remaining_budget(stage, monkeypatch):
+def test_failed_video_nomination_ranking_self_corrects_with_feedback_and_remaining_budget(stage, monkeypatch):
     source, asset_ids, output = stage
     bad = copy.deepcopy(output)
-    bad["shots"][0]["generation_mode"] = "VEO"  # visual_treatment stays USE_EXISTING_ART: invalid (AD-4)
+    # Duplicate rank: nominations must be a contiguous 1..k ranking.
+    bad["shots"][1]["video_candidate_rank"] = bad["shots"][0]["video_candidate_rank"]
     calls = mock_query(monkeypatch, [sdk_result(bad, cost=1.5), sdk_result(output, cost=0.5)])
     assert run.main([str(source)]) == 0
-    assert "VEO" in calls[1][0]
+    assert "video_candidate_rank" in calls[1][0]
     assert "Previous output" in calls[1][0]
     assert calls[1][1].max_budget_usd == 8.5
     manifest = load_run_manifest(run.RUN_STATE_DIR)

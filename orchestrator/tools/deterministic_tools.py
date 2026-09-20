@@ -17,11 +17,13 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import io
 import json
 import math
 import re
 import shutil
 import subprocess
+import wave
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -108,6 +110,10 @@ async def ingest(args: dict) -> dict:
 STT_REGION = "us"
 STT_MODEL = "chirp_3"
 STT_LANGUAGE_CODE = "en-US"
+# Google STT V2 sync recognize rejects audio longer than 60s. Stay under that
+# with margin; longer WAVs are split into chunks, transcribed separately, then
+# timings are offset and concatenated before alignment.
+STT_MAX_CHUNK_SECONDS = 55.0
 
 # We expect very high agreement because the audio was generated directly
 # from the locked narration. Ported verbatim -- not re-tuned.
@@ -132,6 +138,83 @@ def parse_offset(value: str | None) -> float:
     if value.endswith("s"):
         value = value[:-1]
     return float(value or 0.0)
+
+
+def wav_duration_seconds(audio_path: Path) -> float:
+    with wave.open(str(audio_path), "rb") as handle:
+        return handle.getnframes() / float(handle.getframerate())
+
+
+def _wav_chunk_payloads(audio_path: Path, max_chunk_seconds: float) -> list[tuple[bytes, float]]:
+    """Split a PCM WAV into complete WAV blobs, each <= max_chunk_seconds.
+
+    Returns (wav_bytes, start_offset_seconds) pairs so STT word times from
+    later chunks can be shifted onto the full-timeline clock.
+    """
+    with wave.open(str(audio_path), "rb") as handle:
+        params = handle.getparams()
+        frame_rate = handle.getframerate()
+        sample_width = handle.getsampwidth()
+        channels = handle.getnchannels()
+        total_frames = handle.getnframes()
+        pcm = handle.readframes(total_frames)
+
+    if frame_rate <= 0 or sample_width <= 0 or channels <= 0:
+        raise RuntimeError(f"Invalid WAV parameters in {audio_path}")
+
+    max_frames = max(1, int(max_chunk_seconds * frame_rate))
+    frame_bytes = sample_width * channels
+    chunks: list[tuple[bytes, float]] = []
+    frame_cursor = 0
+    while frame_cursor < total_frames:
+        frames_this = min(max_frames, total_frames - frame_cursor)
+        byte_start = frame_cursor * frame_bytes
+        byte_end = (frame_cursor + frames_this) * frame_bytes
+        pcm_slice = pcm[byte_start:byte_end]
+        buf = io.BytesIO()
+        with wave.open(buf, "wb") as out:
+            out.setnchannels(channels)
+            out.setsampwidth(sample_width)
+            out.setframerate(frame_rate)
+            out.writeframes(pcm_slice)
+        chunks.append((buf.getvalue(), frame_cursor / float(frame_rate)))
+        frame_cursor += frames_this
+    return chunks
+
+
+def transcribe_audio_path_with_word_offsets(audio_path: Path, project_id: str) -> tuple[str, list[dict]]:
+    """Transcribe a WAV, splitting into <=55s chunks when needed for STT's 60s cap.
+
+    Chunk word timings are offset by each chunk's start so the merged list is
+    on the full-audio timeline. The original WAV file is left unchanged.
+    """
+    duration = wav_duration_seconds(audio_path)
+    chunks = _wav_chunk_payloads(audio_path, STT_MAX_CHUNK_SECONDS)
+    print(
+        f"STT: {audio_path} duration={duration:.2f}s -> {len(chunks)} chunk(s) "
+        f"(max {STT_MAX_CHUNK_SECONDS:.0f}s each)"
+    )
+
+    transcript_parts: list[str] = []
+    recognized_words: list[dict] = []
+    for index, (chunk_bytes, start_offset) in enumerate(chunks, start=1):
+        print(
+            f"STT: chunk {index}/{len(chunks)} "
+            f"start={start_offset:.2f}s bytes={len(chunk_bytes)}"
+        )
+        raw = transcribe_with_word_offsets(chunk_bytes, project_id)
+        transcript, words = extract_recognition(raw)
+        if transcript:
+            transcript_parts.append(transcript)
+        for item in words:
+            recognized_words.append({
+                "word": item["word"],
+                "start_seconds": round(item["start_seconds"] + start_offset, 3),
+                "end_seconds": round(item["end_seconds"] + start_offset, 3),
+            })
+        print(f"STT: chunk {index}/{len(chunks)} -> {len(words)} words")
+
+    return " ".join(transcript_parts).strip(), recognized_words
 
 
 def transcribe_with_word_offsets(audio_bytes: bytes, project_id: str) -> dict:
@@ -311,14 +394,17 @@ def align_words(canonical_words: list[str], recognized_words: list[dict]) -> tup
     {"audio_path": str, "narration_script": str, "project_id": str},
 )
 async def extract_word_timing(args: dict) -> dict:
-    audio_bytes = Path(args["audio_path"]).read_bytes()
+    audio_path = Path(args["audio_path"])
     narration = args["narration_script"].strip()
     if not narration:
         raise ValueError("narration_script must not be empty")
+    if not audio_path.is_file():
+        raise FileNotFoundError(f"Audio not found: {audio_path.resolve()}")
 
     canonical_words = tokenize(narration)
-    raw_response = transcribe_with_word_offsets(audio_bytes, args["project_id"])
-    recognized_transcript, recognized_words = extract_recognition(raw_response)
+    recognized_transcript, recognized_words = transcribe_audio_path_with_word_offsets(
+        audio_path, args["project_id"],
+    )
     if not recognized_words:
         raise RuntimeError("Speech-to-Text returned no word timestamps.")
 
@@ -376,15 +462,20 @@ STRONG_PAUSE_SECONDS = 0.55
 # one reel's narration.
 
 
-def derive_impact_phrase(scenes: list[dict]) -> str | None:
-    """The first scene's non-empty `impact_text`, or None if no scene
-    declares one -- the IMPACT-cue requirement becomes optional in that case.
+def derive_impact_phrases(scenes: list[dict]) -> list[str]:
+    """Every scene's non-empty `impact_text`, de-duplicated in scene order.
+
+    Each one is a phrase the story agent deliberately marked as a line worth
+    landing on screen, so each earns the IMPACT treatment -- not just the
+    first. Empty when no scene declares one, in which case the IMPACT-cue
+    requirement becomes optional.
     """
+    phrases: list[str] = []
     for scene in scenes:
         text = (scene.get("impact_text") or "").strip()
-        if text:
-            return text
-    return None
+        if text and not any(normalize_cue_word(text) == normalize_cue_word(seen) for seen in phrases):
+            phrases.append(text)
+    return phrases
 
 
 def derive_protected_phrases(scenes: list[dict]) -> list[str]:
@@ -513,11 +604,34 @@ def sentence_boundary_indices(narration: str, spans: list[dict]) -> set[int]:
     return boundaries
 
 
-def build_mandatory_boundaries(narration: str, spans: list[dict], impact_phrase: str | None) -> set[int]:
+def resolve_impact_ranges(spans: list[dict], impact_phrases: list[str]) -> list[tuple[int, int]]:
+    """Locate each impact phrase in the narration, dropping any that cannot be
+    given a cue of its own.
+
+    A phrase is dropped when it does not appear in the narration at all, or
+    when it overlaps a phrase already accepted (`find_phrase_range` only ever
+    reports a phrase's first occurrence, so two phrases can resolve onto the
+    same words). Dropping rather than raising keeps one awkward phrase from
+    failing a whole run -- it simply renders as an ordinary cue, and
+    `derive_protected_phrases` still discourages a break inside it.
+    """
+    accepted: list[tuple[int, int]] = []
+    for phrase in impact_phrases:
+        found = find_phrase_range(spans, phrase)
+        if found is None:
+            continue
+        start, end = found
+        if any(start <= other_end and other_start <= end for other_start, other_end in accepted):
+            continue
+        accepted.append(found)
+    return sorted(accepted)
+
+
+def build_mandatory_boundaries(
+    narration: str, spans: list[dict], impact_ranges: list[tuple[int, int]],
+) -> set[int]:
     mandatory = sentence_boundary_indices(narration, spans)
-    impact = find_phrase_range(spans, impact_phrase) if impact_phrase else None
-    if impact is not None:
-        start, end = impact
+    for start, end in impact_ranges:
         if start > 1:
             mandatory.add(start - 1)
         mandatory.add(end)
@@ -635,9 +749,10 @@ def segment_block(
 
 
 def build_ranges(
-    narration: str, spans: list[dict], impact_phrase: str | None, protected_phrases: list[str],
+    narration: str, spans: list[dict], impact_ranges: list[tuple[int, int]],
+    protected_phrases: list[str],
 ) -> list[tuple[int, int]]:
-    mandatory = sorted(build_mandatory_boundaries(narration, spans, impact_phrase))
+    mandatory = sorted(build_mandatory_boundaries(narration, spans, impact_ranges))
     protected = protected_internal_boundaries(spans, protected_phrases)
 
     ranges: list[tuple[int, int]] = []
@@ -662,19 +777,29 @@ def build_ranges(
     if expected != len(spans) + 1:
         raise RuntimeError("Subtitle coverage does not reach final narration word.")
 
-    impact = find_phrase_range(spans, impact_phrase) if impact_phrase else None
-    if impact is not None and impact not in ranges:
-        raise RuntimeError(f"{impact_phrase!r} was not isolated as its own cue.")
+    # An impact phrase longer than MAX_WORDS_PER_CUE cannot be one cue, so
+    # require only that the phrase starts and ends on a cue boundary -- it may
+    # tile across consecutive cues, which all then render as IMPACT.
+    cut_points = {end for _, end in ranges}
+    starts = {start for start, _ in ranges}
+    unaligned = [
+        (start, end) for start, end in impact_ranges
+        if start not in starts or end not in cut_points
+    ]
+    if unaligned:
+        raise RuntimeError(
+            f"Impact phrase(s) at word range(s) {unaligned} do not align to cue boundaries."
+        )
 
     return ranges
 
 
 def determine_style(
     cue_range: tuple[int, int], spans: list[dict], voice_direction: dict,
-    impact_phrase: str | None, reflection_phrase: str | None,
+    impact_ranges: list[tuple[int, int]], reflection_phrase: str | None,
 ) -> str:
-    impact = find_phrase_range(spans, impact_phrase) if impact_phrase else None
-    if impact is not None and cue_range == impact:
+    cue_start, cue_end = cue_range
+    if any(start <= cue_start and cue_end <= end for start, end in impact_ranges):
         return "IMPACT"
 
     reflection = find_phrase_range(spans, reflection_phrase) if reflection_phrase else None
@@ -687,7 +812,6 @@ def determine_style(
         if found is not None:
             emphasis_ranges.append(found)
 
-    cue_start, cue_end = cue_range
     for start, end in emphasis_ranges:
         overlap = max(0, min(cue_end, end) - max(cue_start, start) + 1)
         phrase_size = end - start + 1
@@ -699,7 +823,7 @@ def determine_style(
 
 def build_cues(
     narration: str, spans: list[dict], ranges: list[tuple[int, int]], voice_direction: dict,
-    impact_phrase: str | None, reflection_phrase: str | None,
+    impact_ranges: list[tuple[int, int]], reflection_phrase: str | None,
 ) -> list[dict]:
     cues = []
     for cue_number, (start_index, end_index) in enumerate(ranges, start=1):
@@ -720,7 +844,7 @@ def build_cues(
 
         text = text_for_range(narration, spans, start_index, end_index)
         cue_range = (start_index, end_index)
-        style = determine_style(cue_range, spans, voice_direction, impact_phrase, reflection_phrase)
+        style = determine_style(cue_range, spans, voice_direction, impact_ranges, reflection_phrase)
 
         nested_words = [
             {
@@ -750,7 +874,9 @@ def build_cues(
     return cues
 
 
-def validate_rendered_text(cues: list[dict], impact_phrase: str | None) -> None:
+def validate_rendered_text(
+    cues: list[dict], impact_phrases: list[str], impact_ranges: list[tuple[int, int]],
+) -> None:
     for cue in cues:
         text = cue["text"]
         if text.startswith(("' ", '" ')):
@@ -758,17 +884,41 @@ def validate_rendered_text(cues: list[dict], impact_phrase: str | None) -> None:
                 f"Subtitle text contains a stray leading quote: {cue['cue_id']} {text!r}"
             )
 
-    if impact_phrase is None:
+    if not impact_phrases:
         # No scene declared a non-empty impact_text this run -- the
-        # IMPACT-cue requirement is conditional on one existing.
+        # IMPACT-cue requirement is conditional on at least one existing.
         return
 
-    impact = next((cue for cue in cues if cue["style_hint"] == "IMPACT"), None)
-    if impact is None:
+    impact_cues = [cue for cue in cues if cue["style_hint"] == "IMPACT"]
+    if not impact_cues:
         raise RuntimeError("No IMPACT subtitle cue was generated.")
 
-    if normalize_cue_word(" ".join(word["word"] for word in impact["words"])) != normalize_cue_word(impact_phrase):
-        raise RuntimeError(f"The IMPACT cue does not contain exactly {impact_phrase!r}.")
+    # A phrase longer than MAX_WORDS_PER_CUE tiles across consecutive cues, so
+    # check each resolved range as a group rather than cue by cue. Phrases
+    # `resolve_impact_ranges` dropped (absent or overlapping an earlier one)
+    # have no range here, which is the intended degradation.
+    covered: set[str] = set()
+    for start, end in impact_ranges:
+        group = [
+            cue for cue in impact_cues
+            if start <= cue["start_word_index"] and cue["end_word_index"] <= end
+        ]
+        rendered = normalize_cue_word(
+            " ".join(word["word"] for cue in group for word in cue["words"])
+        )
+        expected = next(
+            (phrase for phrase in impact_phrases if normalize_cue_word(phrase) == rendered), None,
+        )
+        if expected is None:
+            raise RuntimeError(
+                f"IMPACT cues covering word range ({start}, {end}) do not reproduce any "
+                f"declared impact_text: {' '.join(cue['text'] for cue in group)!r}"
+            )
+        covered.update(cue["cue_id"] for cue in group)
+
+    stray = [cue["cue_id"] for cue in impact_cues if cue["cue_id"] not in covered]
+    if stray:
+        raise RuntimeError(f"IMPACT style applied outside any impact phrase: {stray}")
 
 
 @tool(
@@ -794,23 +944,26 @@ async def build_subtitle_cues(args: dict) -> dict:
     if re.sub(r"\s+", " ", timing_narration) != re.sub(r"\s+", " ", narration):
         raise RuntimeError("word_timing and narration_script contain different narration.")
 
-    impact_phrase = derive_impact_phrase(scenes)
+    impact_phrases = derive_impact_phrases(scenes)
     protected_phrases = derive_protected_phrases(scenes)
 
     spans = build_word_spans(narration, word_timing["words"])
 
-    if impact_phrase is not None and find_phrase_range(spans, impact_phrase) is None:
+    missing = [phrase for phrase in impact_phrases if find_phrase_range(spans, phrase) is None]
+    if missing:
         # AD-12: a declared impact_text that doesn't appear anywhere in the
         # narration is a text-authoring mismatch, not an alignment-quality
         # issue -- distinct from the generic RuntimeErrors below so the
         # caller can treat it as non-recoverable rather than retry it.
         raise ImpactPhraseNotFoundError(
-            f"impact_text {impact_phrase!r} does not appear anywhere in the narration."
+            f"impact_text {missing[0]!r} does not appear anywhere in the narration."
         )
 
-    ranges = build_ranges(narration, spans, impact_phrase, protected_phrases)
-    cues = build_cues(narration, spans, ranges, voice_direction, impact_phrase, reflection_phrase)
-    validate_rendered_text(cues, impact_phrase)
+    impact_ranges = resolve_impact_ranges(spans, impact_phrases)
+
+    ranges = build_ranges(narration, spans, impact_ranges, protected_phrases)
+    cues = build_cues(narration, spans, ranges, voice_direction, impact_ranges, reflection_phrase)
+    validate_rendered_text(cues, impact_phrases, impact_ranges)
 
     payload = {
         "alignment_ratio": alignment_ratio,
@@ -842,7 +995,8 @@ def public_relative_path_for_production_asset(local_path: str, shot_sequence: in
 def _copy_into_public(source: Path, public_relative: str) -> str:
     destination = REMOTION_PUBLIC_DIR / public_relative
     destination.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(source, destination)
+    if source.resolve() != destination.resolve():
+        shutil.copy2(source, destination)
     return public_relative
 
 

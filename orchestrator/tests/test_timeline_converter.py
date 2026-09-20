@@ -283,6 +283,10 @@ def test_visual_plan_without_backfilled_fields_still_parses_with_defaults():
         del shot["fade_in_frames"]
         del shot["fade_out_frames"]
         shot["still_motion"] = {"scale_from": 1.0, "scale_to": 1.07, "easing": "linear"}
+        # Nominations are agent-supplied and unrelated to the backfilled
+        # renderer fields this test strips.
+        shot["video_candidate_rank"] = shot["sequence"]
+        shot["video_motion_intent"] = "Slow drift across the frame."
 
     contract = VisualPlanContract.model_validate(data)
     assert all(shot.start_seconds == 0.0 for shot in contract.shots)

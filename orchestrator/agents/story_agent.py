@@ -49,8 +49,13 @@ SCENES
   all scenes must land within about 40-50 seconds.
 - source_asset_ids must be non-empty and drawn only from the asset ids
   supplied in this manifest -- never invented ids.
-- impact_text is optional on-screen text, ideally seven words or fewer;
-  use an empty string when none is needed.
+- impact_text is optional on-screen highlight text, ideally seven words or
+  fewer; use an empty string when none is needed.
+- CRITICAL: if impact_text is non-empty, it MUST appear verbatim inside
+  narration_script (and that scene's narration) -- same words, same order.
+  Copy a short phrase from the narration; never paraphrase, reorder, or
+  invent a slogan that is not already spoken. Downstream subtitle IMPACT
+  matching will reject paraphrases.
 - List every supplied asset id you did not use in unused_assets with a
   reason, or leave it empty if every asset was used.
 - Record any truncation, duplication, ambiguity, or source limitation you
@@ -78,6 +83,8 @@ Judge especially:
 - PACING: narration length, scene durations, and voice pace should cohere.
 - SCENE STRUCTURE: no scene should carry too many conceptual/visual beats.
 - VISUAL SUPPORT: every scene's claims should be grounded in its cited assets.
+- IMPACT VERBATIM: every non-empty impact_text is an exact contiguous phrase
+  from narration_script (not a rewrite).
 If any dimension falls short, revise the draft yourself -- within this same
 session, without asking anyone -- and re-score, repeating until you
 genuinely believe every score is at least 8, source_fidelity is at least 9,

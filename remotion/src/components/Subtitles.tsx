@@ -9,11 +9,24 @@ import {
   useDelayRender,
   useVideoConfig,
 } from "remotion";
+import { loadFont } from "@remotion/google-fonts/Inter";
 import { ImpactTypography } from "./ImpactTypography";
+
+// Inter: designed for screen legibility at small optical sizes, and it carries
+// the 500/600/700 weights VARIANTS already asks for. Loaded rather than left to
+// a system font stack so every render host produces identical glyphs.
+const { fontFamily } = loadFont("normal", { weights: ["500", "600", "700"], subsets: ["latin"] });
 
 // Style hints as authored in public/data/subtitle_cues.json. Do not add
 // labels here that are not present in the source file.
 type StyleHint = "NORMAL" | "IMPACT" | "EMPHASIS" | "REFLECTION";
+
+type SubtitleWord = {
+  index: number;
+  word: string;
+  start_seconds: number;
+  end_seconds: number;
+};
 
 type SubtitleCue = {
   cue_id: string;
@@ -21,6 +34,9 @@ type SubtitleCue = {
   end_seconds: number;
   text: string;
   style_hint: StyleHint;
+  // Per-word timings the orchestrator already derives from speech alignment;
+  // IMPACT cues use them to light each word as it is spoken.
+  words: SubtitleWord[];
 };
 
 type SubtitleCuesFile = {
@@ -113,7 +129,7 @@ const SubtitleCard: React.FC<{ text: string; styleHint: StyleHint }> = ({ text, 
           transform: `translateY(${translateY}px) scale(${scale})`,
           maxWidth: "85%",
           textAlign: "center",
-          fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+          fontFamily,
           color: "rgba(255, 255, 255, 0.96)",
           textShadow: "0 2px 10px rgba(0, 0, 0, 0.6)",
           lineHeight: 1.3,
@@ -167,7 +183,16 @@ export const Subtitles: React.FC = () => {
             {cue.style_hint === "IMPACT" ? (
               // Impact cues get the special large reveal instead of the
               // ordinary subtitle card, so the phrase is not shown twice.
-              <ImpactTypography text={cue.text} durationInFrames={durationInFrames} />
+              // Word times are converted to Sequence-relative frames here, so
+              // ImpactTypography needs no knowledge of absolute reel time.
+              <ImpactTypography
+                words={cue.words.map((word) => ({
+                  text: word.word,
+                  fromFrame: toFrame(word.start_seconds, fps) - startFrame,
+                  toFrame: toFrame(word.end_seconds, fps) - startFrame,
+                }))}
+                durationInFrames={durationInFrames}
+              />
             ) : (
               <SubtitleCard text={cue.text} styleHint={cue.style_hint} />
             )}
