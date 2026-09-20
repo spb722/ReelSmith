@@ -807,6 +807,28 @@ def generate_still_image(
     return result, model_text
 
 
+def _model_text_block(model_text: str) -> list[dict]:
+    """The model's own commentary, kept OUT of the contract payload.
+
+    It used to be stuffed into the payload as "model_text_response". The agent
+    copies that payload into its outcome contract, which is extra="forbid", so
+    any key the contract does not declare is a validation failure waiting for
+    the run where the agent copies it verbatim -- which is exactly how a
+    QA-approved seed was thrown away over an empty string.
+    """
+
+    text = (model_text or "").strip()
+    if not text:
+        return []
+    return [{
+        "type": "text",
+        "text": (
+            "The image model returned this commentary alongside the image. It is "
+            f"context only -- never copy it into your outcome contract: {text[:600]}"
+        ),
+    }]
+
+
 def _ladder_outcome_block(spec: dict) -> list[dict]:
     """Tell the QA agent which prompt rung actually produced this image.
 
@@ -814,6 +836,13 @@ def _ladder_outcome_block(spec: dict) -> list[dict]:
     refused permission to draw, burning its whole retry ceiling on something no
     retry can change.
     """
+
+    # Say nothing when no character was ever configured -- otherwise a shot that
+    # simply has no character to apply is reported as one the model refused,
+    # which is false and would teach the agent to expect a downgrade.
+    ladder = spec.get("prompt_ladder") or []
+    if len(ladder) < 2:
+        return []
 
     note = describe_ladder_outcome({"level": spec.get("used_prompt_level", 0)})
     return [{"type": "text", "text": note}] if note else []
@@ -907,14 +936,16 @@ async def generate_veo_seed(args: dict) -> dict:
             ]
         }
 
+    # The payload is exactly the contract shape -- nothing extra for the agent
+    # to copy through into an extra="forbid" model.
     payload = seed.model_dump(mode="json")
-    payload["model_text_response"] = model_text
     return {
         "content": [
             {"type": "text", "text": json.dumps(payload, ensure_ascii=False)},
             _image_content(Path(seed.local_path)),
             *_ladder_outcome_block(spec),
             *_character_reference_blocks(spec),
+            *_model_text_block(model_text),
         ]
     }
 
@@ -973,14 +1004,16 @@ async def generate_still(args: dict) -> dict:
             ]
         }
 
+    # The payload is exactly the contract shape -- nothing extra for the agent
+    # to copy through into an extra="forbid" model.
     payload = result.model_dump(mode="json")
-    payload["model_text_response"] = model_text
     return {
         "content": [
             {"type": "text", "text": json.dumps(payload, ensure_ascii=False)},
             _image_content(Path(result.local_image_path)),
             *_ladder_outcome_block(spec),
             *_character_reference_blocks(spec),
+            *_model_text_block(model_text),
         ]
     }
 

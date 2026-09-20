@@ -1046,3 +1046,98 @@ def test_a_downgraded_rung_tells_the_qa_agent_not_to_expect_a_face(tmp_path, mon
 
     labels = " ".join(b["text"] for b in result["content"] if b["type"] == "text")
     assert "do NOT reject this image for a face that is turned away" in labels
+
+
+def test_tool_payload_is_exactly_the_contract_shape(tmp_path, monkeypatch):
+    """Nothing in the payload may be a key the outcome contract forbids.
+
+    A QA-approved seed was thrown away three times because the payload carried
+    "model_text_response" -- an empty string -- and the agent copied it into
+    VeoSeedContract, which is extra="forbid".
+    """
+    import asyncio
+
+    from orchestrator.contracts.stills import StillResultContract
+    from orchestrator.tools import gemini_tools
+
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    response = FakeResponse([
+        FakeCandidate(FakeContent([
+            FakePart(text="Here is your image."),
+            FakePart(inline_data=FakeInlineData(_png_bytes())),
+        ]))
+    ])
+    monkeypatch.setattr(gemini_tools.genai, "Client", lambda **_: FakeGeminiClient(response))
+
+    result = asyncio.run(
+        gemini_tools.generate_still.handler({
+            "shot": shot_dict(generation_mode="STILL"),
+            "asset": asset_for(source),
+            "subtitle_text": "N.",
+            "project_id": "p", "location": "global",
+            "image_model": "m", "cost_usd": 0.04,
+        })
+    )
+
+    payload = json.loads(result["content"][0]["text"])
+    # the whole payload must validate as-is, with no key stripped first
+    StillResultContract.model_validate(payload)
+
+    # the commentary still reaches the agent, just not inside the payload
+    labels = " ".join(b["text"] for b in result["content"] if b["type"] == "text")
+    assert "Here is your image." in labels
+    assert "never copy it into your outcome contract" in labels
+
+
+def test_empty_model_commentary_adds_no_block(tmp_path, monkeypatch):
+    import asyncio
+
+    from orchestrator.tools import gemini_tools
+
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    response = FakeResponse(
+        [FakeCandidate(FakeContent([FakePart(inline_data=FakeInlineData(_png_bytes()))]))]
+    )
+    monkeypatch.setattr(gemini_tools.genai, "Client", lambda **_: FakeGeminiClient(response))
+
+    result = asyncio.run(
+        gemini_tools.generate_still.handler({
+            "shot": shot_dict(generation_mode="STILL"),
+            "asset": asset_for(source),
+            "subtitle_text": "N.",
+            "project_id": "p", "location": "global",
+            "image_model": "m", "cost_usd": 0.04,
+        })
+    )
+
+    assert len(result["content"]) == 2   # payload + the image, nothing else
+
+
+def test_no_downgrade_note_when_no_character_was_ever_configured(tmp_path, monkeypatch):
+    """A shot with no character to apply must not be reported as one the model
+    refused -- that is false, and would teach the agent to expect a downgrade."""
+    import asyncio
+
+    from orchestrator.tools import gemini_tools
+
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    response = FakeResponse(
+        [FakeCandidate(FakeContent([FakePart(inline_data=FakeInlineData(_png_bytes()))]))]
+    )
+    monkeypatch.setattr(gemini_tools.genai, "Client", lambda **_: FakeGeminiClient(response))
+
+    result = asyncio.run(
+        gemini_tools.generate_still.handler({
+            "shot": shot_dict(generation_mode="STILL"),
+            "asset": asset_with_figure(source),
+            "subtitle_text": "N.",
+            "project_id": "p", "location": "global",
+            "image_model": "m", "cost_usd": 0.04,
+        })
+    )
+
+    labels = " ".join(b["text"] for b in result["content"] if b["type"] == "text")
+    assert "refused every wording" not in labels
