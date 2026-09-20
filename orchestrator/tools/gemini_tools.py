@@ -21,6 +21,7 @@ from typing import Sequence
 
 from claude_agent_sdk import create_sdk_mcp_server, tool
 from google import genai
+from google.genai import errors as genai_errors
 from google.genai import types
 from PIL import Image
 
@@ -44,9 +45,18 @@ SAMPLE_WIDTH = 2  # 16-bit PCM
 VEO_SEED_DIR = Path("generated/veo_seeds")
 
 # An image-edit call that comes back with text and no image is usually
-# transient -- the identical request succeeds on a retry.
+# transient -- the identical request succeeds on a retry. A *blocked*
+# response is not: retrying a safety refusal only spends quota to be
+# refused again, which is exactly how a live run drained its image quota.
 EMPTY_IMAGE_MAX_ATTEMPTS = 3
 EMPTY_IMAGE_RETRY_SECONDS = 2.0
+# Minimum wall-clock gap between image-model calls, process-wide. The
+# agent loop plus internal retries can otherwise burst a dozen calls in a
+# few seconds and trip the per-minute quota.
+GEMINI_IMAGE_MIN_INTERVAL_SECONDS = 5.0
+# 429 means slow down, not give up, so it gets its own longer backoff.
+QUOTA_RETRY_SECONDS = (15.0, 45.0)
+_last_image_call_monotonic = 0.0
 
 
 def count_words(text: str) -> int:
@@ -425,6 +435,26 @@ def describe_empty_image_response(response, model_text: str) -> str:
     return " ".join(details)
 
 
+def _pace_image_call() -> None:
+    """Keep at least `GEMINI_IMAGE_MIN_INTERVAL_SECONDS` between image calls."""
+
+    global _last_image_call_monotonic
+    if _last_image_call_monotonic:
+        elapsed = time.monotonic() - _last_image_call_monotonic
+        remaining = GEMINI_IMAGE_MIN_INTERVAL_SECONDS - elapsed
+        if remaining > 0:
+            time.sleep(remaining)
+    _last_image_call_monotonic = time.monotonic()
+
+
+def blocked_reason(response) -> str:
+    """The safety/policy block reason on a response, or "" when not blocked."""
+
+    feedback = getattr(response, "prompt_feedback", None)
+    reason = getattr(feedback, "block_reason", None) if feedback is not None else None
+    return str(reason) if reason else ""
+
+
 def run_gemini_image_edit(
     client: genai.Client,
     *,
@@ -452,27 +482,42 @@ def run_gemini_image_edit(
         if not reference_path.is_file():
             raise FileNotFoundError(f"Reference image does not exist: {reference_path}")
         reference_images.append(Image.open(reference_path).convert("RGB"))
-    # The image model intermittently answers with text and no image for a
-    # request it satisfies on an identical retry. Absorbing that here costs one
-    # cheap image call; letting it reach the agent costs a whole Claude attempt
-    # out of a ceiling of three, which is how a transient null previously
-    # halted a run.
+    # Three distinct outcomes, three different responses:
+    #   blocked  -> refusal, the answer will not change, fail now
+    #   429      -> slow down and try again, with a long backoff
+    #   no image -> transient null, retry quickly
     diagnosis = ""
     for attempt in range(1, max_attempts + 1):
-        response = client.models.generate_content(
-            model=model,
-            contents=[source_image, *reference_images, prompt],
-            config=types.GenerateContentConfig(
-                response_modalities=[types.Modality.TEXT, types.Modality.IMAGE],
-            ),
-        )
+        _pace_image_call()
+        try:
+            response = client.models.generate_content(
+                model=model,
+                contents=[source_image, *reference_images, prompt],
+                config=types.GenerateContentConfig(
+                    response_modalities=[types.Modality.TEXT, types.Modality.IMAGE],
+                ),
+            )
+        except genai_errors.APIError as exc:
+            if getattr(exc, "code", None) != 429 or attempt == max_attempts:
+                raise
+            backoff = QUOTA_RETRY_SECONDS[min(attempt, len(QUOTA_RETRY_SECONDS)) - 1]
+            time.sleep(backoff)
+            continue
+
         generated_image, model_text = extract_generated_image(response)
         if generated_image is not None:
             return generated_image, model_text
+
         # The model's own text is the only thing that distinguishes a refusal
         # (safety, likeness, policy) from a transient empty response, so it
         # must reach the failure report rather than being discarded here.
         diagnosis = describe_empty_image_response(response, model_text)
+        blocked = blocked_reason(response)
+        if blocked:
+            raise RuntimeError(
+                "Gemini image edit refused this request and will keep refusing it, "
+                f"so it was not retried. {diagnosis}"
+            )
         if attempt < max_attempts:
             time.sleep(EMPTY_IMAGE_RETRY_SECONDS * attempt)
 

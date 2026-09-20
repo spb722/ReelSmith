@@ -51,11 +51,14 @@ def working_directory(tmp_path, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def no_empty_image_backoff(monkeypatch):
-    """Keep the empty-response retry loop instant under test."""
+def no_image_call_delays(monkeypatch):
+    """Strip every real-time delay from the image-call path under test."""
     from orchestrator.tools import gemini_tools
 
     monkeypatch.setattr(gemini_tools, "EMPTY_IMAGE_RETRY_SECONDS", 0.0)
+    monkeypatch.setattr(gemini_tools, "GEMINI_IMAGE_MIN_INTERVAL_SECONDS", 0.0)
+    monkeypatch.setattr(gemini_tools, "QUOTA_RETRY_SECONDS", (0.0, 0.0))
+    monkeypatch.setattr(gemini_tools, "_last_image_call_monotonic", 0.0)
 
 
 def _write_source_image(path: Path) -> None:
@@ -690,3 +693,95 @@ def test_persistent_empty_image_response_reports_the_model_text(tmp_path):
     with pytest.raises(RuntimeError, match="after 3 attempts"):
         run_gemini_image_edit(client, source_image_path=source, prompt="p", model="m")
     assert len(client.models.calls) == 3
+
+
+class BlockedFeedback:
+    def __init__(self, reason):
+        self.block_reason = reason
+
+
+class BlockedResponse(FakeResponse):
+    def __init__(self, reason="OTHER"):
+        super().__init__([])
+        self.prompt_feedback = BlockedFeedback(reason)
+
+
+def test_a_blocked_request_fails_immediately_without_burning_quota(tmp_path):
+    from orchestrator.tools.gemini_tools import run_gemini_image_edit
+
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    client = FakeGeminiClient(BlockedResponse("OTHER"))
+
+    with pytest.raises(RuntimeError, match="will keep refusing"):
+        run_gemini_image_edit(client, source_image_path=source, prompt="p", model="m")
+    # one call, not three: a refusal is not retried
+    assert len(client.models.calls) == 1
+
+
+class QuotaThenSuccessModels(FakeModels):
+    def __init__(self, failures: int, response):
+        super().__init__(response)
+        self.failures = failures
+
+    def generate_content(self, **kwargs):
+        from google.genai import errors as genai_errors
+
+        self.calls.append(kwargs)
+        if len(self.calls) <= self.failures:
+            raise genai_errors.ClientError(
+                429, {"error": {"code": 429, "status": "RESOURCE_EXHAUSTED"}}
+            )
+        return self.response
+
+
+def test_quota_errors_are_retried_with_backoff(tmp_path):
+    from orchestrator.tools.gemini_tools import run_gemini_image_edit
+
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    good = FakeResponse(
+        [FakeCandidate(FakeContent([FakePart(inline_data=FakeInlineData(_png_bytes()))]))]
+    )
+    client = FakeGeminiClient()
+    client.models = QuotaThenSuccessModels(2, good)
+
+    image, _ = run_gemini_image_edit(client, source_image_path=source, prompt="p", model="m")
+    assert image is not None
+    assert len(client.models.calls) == 3
+
+
+def test_persistent_quota_errors_surface_to_the_caller(tmp_path):
+    from google.genai import errors as genai_errors
+
+    from orchestrator.tools.gemini_tools import run_gemini_image_edit
+
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    client = FakeGeminiClient()
+    client.models = QuotaThenSuccessModels(99, None)
+
+    with pytest.raises(genai_errors.APIError):
+        run_gemini_image_edit(client, source_image_path=source, prompt="p", model="m")
+
+
+def test_image_calls_are_paced_apart(tmp_path, monkeypatch):
+    from orchestrator.tools import gemini_tools
+
+    slept: list[float] = []
+    monkeypatch.setattr(gemini_tools, "GEMINI_IMAGE_MIN_INTERVAL_SECONDS", 5.0)
+    monkeypatch.setattr(gemini_tools, "_last_image_call_monotonic", 0.0)
+    monkeypatch.setattr(gemini_tools.time, "sleep", lambda s: slept.append(s))
+
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    good = FakeResponse(
+        [FakeCandidate(FakeContent([FakePart(inline_data=FakeInlineData(_png_bytes()))]))]
+    )
+    client = FakeGeminiClient(good)
+
+    gemini_tools.run_gemini_image_edit(client, source_image_path=source, prompt="p", model="m")
+    gemini_tools.run_gemini_image_edit(client, source_image_path=source, prompt="p", model="m")
+
+    # the second call waits out the remainder of the 5s window
+    assert slept and 0 < slept[0] <= 5.0
