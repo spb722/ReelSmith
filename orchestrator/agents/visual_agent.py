@@ -11,6 +11,7 @@ from pathlib import Path
 from claude_agent_sdk import AgentDefinition, ClaudeAgentOptions, ResultMessage, query
 
 from orchestrator.contracts.visual_plan import VisualPlanContract
+from orchestrator.settings import load_settings
 
 
 visual_agent = AgentDefinition(
@@ -167,6 +168,7 @@ async def plan_visuals(
         prompt += "\nPrevious attempt failed validation. Correct these errors:\n" + feedback
         prompt += "\nPrevious output:\n" + json.dumps(previous_output, ensure_ascii=False)
     options = ClaudeAgentOptions(
+        model=load_settings().claude_model,
         system_prompt=visual_agent.prompt,
         tools=visual_agent.tools,
         allowed_tools=visual_agent.tools,

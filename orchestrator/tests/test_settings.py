@@ -172,3 +172,13 @@ def test_empty_character_reference_path_disables_rather_than_raising(monkeypatch
     settings = load_settings()
     assert settings.character_reference_path == ""
     assert settings.character_face_reference_path == ""
+
+
+def test_claude_model_defaults_to_opus_and_is_env_overridable(monkeypatch):
+    """Pinned on purpose: left unset the Agent SDK picks its own default, so a
+    reel's cost and quality would move without any change to this repo."""
+    monkeypatch.delenv("CLAUDE_MODEL", raising=False)
+    assert load_settings().claude_model == "claude-opus-5"
+
+    monkeypatch.setenv("CLAUDE_MODEL", "claude-sonnet-5")
+    assert load_settings().claude_model == "claude-sonnet-5"

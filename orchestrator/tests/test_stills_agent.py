@@ -100,3 +100,20 @@ def test_prompt_requires_the_still_to_match_the_character_reference():
     assert "character reference" in prompt
     assert "NOT under QA" in prompt
     assert "never reject it for a missing character" in prompt
+
+
+def test_every_agent_pins_the_configured_claude_model(monkeypatch):
+    """No agent may fall back to the SDK's own default."""
+    import inspect
+
+    from orchestrator.agents import (
+        asset_analyst,
+        stills_agent as stills_mod,
+        story_agent as story_mod,
+        veo_agent as veo_mod,
+        visual_agent as visual_mod,
+    )
+
+    for module in (asset_analyst, stills_mod, story_mod, veo_mod, visual_mod):
+        source = inspect.getsource(module)
+        assert "model=load_settings().claude_model" in source, module.__name__

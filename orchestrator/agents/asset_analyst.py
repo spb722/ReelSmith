@@ -8,6 +8,7 @@ from pathlib import Path
 from claude_agent_sdk import AgentDefinition, ClaudeAgentOptions, ResultMessage, query
 
 from orchestrator.contracts.analyzed_assets import AnalyzedAssetsContract
+from orchestrator.settings import load_settings
 
 
 asset_analyst = AgentDefinition(
@@ -60,6 +61,7 @@ async def analyze_assets(
         prompt += "\nPrevious attempt failed validation. Correct these errors:\n" + feedback
         prompt += "\nPrevious output:\n" + json.dumps(previous_output, ensure_ascii=False)
     options = ClaudeAgentOptions(
+        model=load_settings().claude_model,
         system_prompt=asset_analyst.prompt,
         tools=asset_analyst.tools,
         allowed_tools=asset_analyst.tools,

@@ -10,6 +10,7 @@ from pathlib import Path
 from claude_agent_sdk import AgentDefinition, ClaudeAgentOptions, ResultMessage, query
 
 from orchestrator.contracts.final_story_plan import FinalStoryPlanContract
+from orchestrator.settings import load_settings
 
 
 story_agent = AgentDefinition(
@@ -128,6 +129,7 @@ async def write_story(
         prompt += "\nPrevious attempt failed validation. Correct these errors:\n" + feedback
         prompt += "\nPrevious output:\n" + json.dumps(previous_output, ensure_ascii=False)
     options = ClaudeAgentOptions(
+        model=load_settings().claude_model,
         system_prompt=story_agent.prompt,
         tools=story_agent.tools,
         allowed_tools=story_agent.tools,

@@ -9,6 +9,7 @@ from claude_agent_sdk import AgentDefinition, ClaudeAgentOptions, ResultMessage,
 
 from orchestrator.contracts.stills import StillOutcomeContract
 from orchestrator.tools.gemini_tools import gemini_server
+from orchestrator.settings import load_settings
 
 
 TOOLS = ["mcp__gemini__generate_still"]
@@ -90,6 +91,7 @@ async def generate_still_asset(
         prompt += "\nPrevious attempt outcome; correct only its QA/failure reason:\n"
         prompt += json.dumps(previous_outcome, ensure_ascii=False)
     options = ClaudeAgentOptions(
+        model=load_settings().claude_model,
         system_prompt=stills_agent.prompt,
         tools=stills_agent.tools,
         allowed_tools=stills_agent.tools,
