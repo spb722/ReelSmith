@@ -762,7 +762,11 @@ def describe_ladder_outcome(rung: dict) -> str:
     """One line for the QA agent explaining which rung produced the image."""
 
     return {
-        0: "Character reference applied with a recognisable face, as planned.",
+        0: (
+            "The image model ACCEPTED the wording that asks for a recognisable face. "
+            "That says only that the request was not refused -- it is not a claim about "
+            "what was actually drawn. Judge the face from the image itself."
+        ),
         1: (
             "The image model refused the recognisable-face wording for this scene, so the "
             "character was applied keeping the source figure's own pose and head direction. "

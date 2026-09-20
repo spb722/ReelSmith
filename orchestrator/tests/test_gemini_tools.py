@@ -1141,3 +1141,15 @@ def test_no_downgrade_note_when_no_character_was_ever_configured(tmp_path, monke
 
     labels = " ".join(b["text"] for b in result["content"] if b["type"] == "text")
     assert "refused every wording" not in labels
+
+
+def test_level_zero_note_claims_acceptance_not_a_rendered_face():
+    """The code knows only that the request was not refused. Claiming a face was
+    applied made a QA agent call the tool's own report unreliable -- correctly,
+    since the render was a silhouette."""
+    from orchestrator.tools.gemini_tools import describe_ladder_outcome
+
+    note = describe_ladder_outcome({"level": 0})
+    assert "ACCEPTED the wording" in note
+    assert "not a claim about what was actually drawn" in note
+    assert "applied with a recognisable face" not in note
