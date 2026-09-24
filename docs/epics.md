@@ -1,420 +1,544 @@
 ---
 stepsCompleted: [1, 2, 3, 4]
-inputDocuments: ['docs/architecture/architecture-book_reels-2026-09-15/ARCHITECTURE-SPINE.md', 'docs/book_reels_architecture.md', 'docs/book_reels_manual_interventions_and_automation_map.md', 'docs/book_reels_troubleshooting_agent_playbook.md', 'AGENTS.md']
+inputDocuments: ['docs/architecture/architecture-book_reels-2026-09-15/ARCHITECTURE-SPINE.md', 'docs/book_reels_architecture.md', 'docs/book_reels_manual_interventions_and_automation_map.md', 'docs/book_reels_troubleshooting_agent_playbook.md', 'docs/vendor-limit-fix.md', 'docs/architecture/agent-sdk-target.html', 'AGENTS.md']
 ---
 
-# book_reels — Claude Agent SDK Orchestration — Epic Breakdown
+# book_reels — Claude Agent SDK Multi-Agent Design — Epic Breakdown
 
 ## Overview
 
-This document decomposes `docs/architecture/architecture-book_reels-2026-09-15/ARCHITECTURE-SPINE.md` (no PRD exists for this project; the architecture spine and the existing pipeline docs are the requirements source) into implementable epics and stories for the new Claude Agent SDK orchestration layer over the existing book_reels pipeline.
+This document breaks the move of book_reels to a proper Claude Agent SDK multi-agent design into one epic and its stories. There is no PRD. The requirements come from the design decisions agreed on 2026-09-24 (target diagram: `docs/architecture/agent-sdk-target.html`), constrained by the existing architecture spine (`ARCHITECTURE-SPINE.md`, AD-1..AD-15), which Epics 1–3 already implemented. Epics 1–3 are complete; their breakdown is in git history.
+
+**Design stance:** Python keeps sequencing the pipeline; each LLM stage stays its own `query()` with a JSON-schema contract; agent know-how moves into skills; only independent work runs in parallel; hooks enforce budget and vendor-limit rules; fresh-context critics are added only where they don't break structured output; every run is traced in Langfuse.
 
 ## Requirements Inventory
 
 ### Functional Requirements
 
-FR1: The system ingests 6-10 user-provided screenshots and autonomously produces a finished rendered vertical video, with no manual per-stage execution or verification required.
-FR2: Screenshot/image understanding is performed by Claude agent reasoning, not a Gemini call (AD-1).
-FR3: Reel narration is written, self-reviewed, and revised in a loop by Claude agent reasoning, not proxied through Gemini (AD-1, AD-2 — `story_agent`).
-FR4: The 8-shot visual/shot plan, including each shot's generation mode (still vs. Veo), is produced by Claude agent reasoning (AD-1, AD-2 — `visual_agent`, AD-15).
-FR5: Narration audio (Gemini TTS), word-timing alignment (Google STT/Chirp), and subtitle cues (existing deterministic DP segmentation) are produced via their respective tools; subtitle segmentation is never re-judged by an LLM (AD-1, AD-4).
-FR6: Veo video clips and Gemini-recomposed stills are generated only for the shots `visual_agent` assigned to each mode, and Veo's generation call only ever accepts a recomposed seed image — never a raw source screenshot (AD-9).
-FR7: Every stage's output is validated against a pydantic schema contract before the next stage may consume it (AD-4).
-FR8: For generative/creative outputs specifically, the producing agent performs its own semantic/quality judgment (visual QA, tone-match to narration, duration/length targets) in addition to schema validation before the output counts as approved (AD-4).
-FR9: A stage that fails validation returns control to the producing agent to self-correct and retry, bounded by an iteration ceiling (AD-5).
-FR10: When an agent exhausts its retry ceiling, the run halts at that stage and writes a diagnostic failure report (what failed, what was attempted, partial artifacts, in a shared minimal envelope) to the run's output location — no substitution, no live prompt (AD-6).
-FR11: The orchestrator verifies Google Cloud ADC/Vertex auth and required GCS bucket access before executing the first stage of any invocation, fresh or resumed (AD-13).
-FR12: A halted run, when re-invoked, resumes from the last stage with a validated persisted contract rather than restarting from the raw screenshots (AD-14).
-FR13: Per-shot contract/state files are written via keyed upsert (merge by shot id), with the orchestrator as sole writer-of-record — never a full-file overwrite by an individual agent (AD-10).
-FR14: Production asset selection for a shot is read from a single named `ProductionAssetsContract` — never inferred from bucket listing, filename, or recency (AD-11).
-FR15: The Veo tool inspects the full `operation.response`/`operation.result` object and surfaces any RAI-filter rejection reason as a structured `VeoFailureContract` rather than a bare success/fail (AD-12).
-FR16: Validated final assets are synced into `remotion/public/` and the existing Remotion render is triggered to produce the final video (Structural Seed; existing pipeline's final step).
-FR17: The existing 14 root pipeline scripts are refactored into in-process Python tool functions (`@tool` + `create_sdk_mcp_server`) under `orchestrator/tools/`, not invoked as subprocesses (AD-3).
-FR18: Once a human records approval at the final-review checkpoint (or an explicit reject/regenerate signal), that reel's locked artifacts (narration, subtitle cues, shot timing) may not be rewritten by a later run without explicit user direction; before that point, in-run agent self-correction is not a violation (AD-8).
-FR19: The Remotion renderer (`timeline.ts`/`BookReel.tsx`) is data-driven — it consumes `timeline.json` + `subtitle_cues.json` directly and requires zero hand-authored code edits per reel (today a coding agent hand-writes these per reel from pasted prompts; without this, FR1's "no manual per-stage execution" cannot actually be achieved). `timeline.json`'s schema is derived from the orchestrator's existing contracts (visual plan, subtitle cues, production-asset manifest) — never invented independently of them, so Epic 3's integration stays genuinely thin rather than becoming late-discovered adapter work. Video shots structurally enforce `transform: none` — not a fix reapplied per reel, but architecturally impossible to violate (e.g. a shared video-shot component/type that offers no transform prop), since a reapplied fix is exactly how the documented Shot 2 zoom/breathing defect recurred.
+FR1: Each LLM agent's domain know-how (asset analysis, story craft, visual planning, Veo prompting, still prompting, character-likeness ladder, visual QA, house style) lives in `SKILL.md` files with bundled reference files, packaged in one local plugin folder in the repo. The agent definition keeps only its role, tool scope, boundaries and the contract it must return.
+FR2: Each stage's `query()` loads only the skills that agent needs, from an explicit per-agent list. Shared skills (character-likeness, visual-qa, house-style) exist once and are referenced by several agents.
+FR3: Pipeline agents load no developer tooling: not the repo `CLAUDE.md`, not `.claude/skills/` (bmad-*, lossless-teacher), and no user or project settings.
+  - Skills are verified at runtime from the SDK init message's skill/plugin lists.
+  - CLAUDE.md exclusion is guaranteed structurally, by asserting `setting_sources == []` on every pipeline agent's options. The SDK documents that this excludes CLAUDE.md (`claude_agent_sdk/types.py:2225-2227`).
+  - The spike proves it once, with `ClaudeSDKClient.get_context_usage()` (`memoryFiles`); `query()` doesn't expose that.
+FR4: Before any skill migration, a spike on the installed SDK (claude-agent-sdk 0.2.152) records a yes/no answer, with evidence, for each of:
+  (a) plugin skills load while `setting_sources=[]`;
+  (b) `ClaudeAgentOptions.skills=[...]` restricts the skills available to a top-level `query()`, and the exact skill name format (bare or `book-reels:<skill>`);
+  (c) `structured_output` still comes back when the same query also delegates to a subagent through the Agent tool (informational only; no story depends on it);
+  (d) several `query()` calls run concurrently in one process without interfering, including when they share one module-level SDK MCP server instance;
+  (e) a skill's reference files can be read with `Read` limited to the plugin folder under `permission_mode="dontAsk"`, trying `allowed_tools` rules such as `Read(//abs/path/**)`, with and without `add_dirs=[plugin]` (the plugin folder is outside the agent's cwd);
+  (f) the init message's keys that list the loaded skills and plugins, and zero `memoryFiles` from `get_context_usage()` when `setting_sources=[]`;
+  (g) the shape of `tool_response` that a `PostToolUse` hook receives for an in-process SDK MCP tool.
+  Later stories choose their path from this report.
+FR5: After the voice stage and the orchestrator's `generation_mode` assignment (AD-15), Veo shots and still shots are produced concurrently rather than one after another, capped by per-vendor concurrency limits set in config.
+FR6: The orchestrator merges concurrent shot results into `production_assets.json` through its keyed upsert, with merges serialised so no update is lost (AD-10). Run-manifest writes (budget spent, iteration counts) are serialised the same way.
+FR7: Every shot attempt runs inside a reservation drawn from the run budget.
+  - A new setting `CLAUDE_SHOT_ATTEMPT_CAP_USD` (env-overridable) caps Claude spend per shot attempt. Today there is no per-attempt Claude cap: each query gets `max_budget_usd = remaining_budget - reserved_external_cost` (`run.py:1186,1501`), which is nearly the whole run budget.
+  - An attempt's reservation is the Claude cap plus that attempt's external costs. The query's `max_budget_usd` is the Claude cap, never the run's remaining budget.
+  - Actual Claude cost is debited as reported. The exception path charges the attempt's reservation, not `remaining_budget` (`run.py:1199,1510`).
+  - Before launch, Veo shots that can't be reserved are demoted to stills (AD-15(c)). If even the still reservations can't fit, the run halts before any paid call.
+  - Each retry attempt re-acquires its reservation. A retry that can't reserve fails the shot with `budget_exhausted`, which is systemic and resumable. There is no demotion mid-run.
+  - Total spend never exceeds the ceiling, except by the overshoot of a single Claude turn beyond its cap. The CLI checks `--max-budget-usd` between turns, so that overshoot is also possible today. An overshoot that drives the unreserved pool negative is a systemic `budget_exhausted`.
+FR8: A shot failure is classified by scope.
+  - A **shot-specific** failure (likeness refused on every ladder rung, QA or retry ceiling exhausted, a non-retryable seed defect) doesn't stop independent sibling shots. All remaining shots run to completion and are persisted. Then the run halts with **one** AD-6 failure report that lists every failed shot in a new additive `failed_shots` field.
+  - A **systemic** failure (vendor limit, budget exhausted, auth/credentials) stops new shot launches. In-flight shots finish and are persisted. Then the run halts.
+  - In-flight shots are never cancelled, because a submitted Veo operation bills even if polling stops.
+  - A resumed run skips every persisted shot (AD-14).
+FR9: A `PreToolUse` hook bound to each agent query denies a paid MCP tool call made by an agent (the image or Veo tools) when the paid costs it has already allowed in that query, plus this call's cost, would exceed the limit. The limit is the run's remaining budget, and becomes the calling shot's reservation once reservations exist. The denial follows AD-7's halt path. TTS and STT are called directly by the orchestrator (`run.py:651`, `:677`), not inside an agent query, so they keep the existing `_check_budget` gate.
+FR10: A vendor refusal is classified before any attempt or conservative cost is charged. It can arrive by four routes:
+  - a Claude SDK exception (`except` sites `run.py:218,1190,1505`);
+  - a `ResultMessage` with `is_error` (`run.py:239,1225,1536`), classified by `api_error_status` (429 → transient; 401/403 → hard) plus the text of `result`/`errors`. This is how 4 `visual_agent` attempts burned in 6 seconds;
+  - a paid tool's failure contract, returned as normal JSON text by handlers that never raise (`gemini_tools.py:1026-1055,1107-1128`, `veo_tools.py:595-633`) and parsed by a `PostToolUse` hook from `failure.reason`/`failure.code`. `PostToolUseFailure` covers only unexpected handler crashes;
+  - Veo's `SDK_ERROR retryable=True` from submit or poll (`veo_tools.py:503-510`), which today charges the clip cost and consumes an attempt.
 
-**Acceptance** (a one-time regression test against the existing "Backwards Law" reel, proving the new renderer reproduces the approved output — **not** a per-run production gate, since a new reel has no reference to compare against; say so in the test itself so it's never later wired into the live pipeline):
-- Duration, fps, resolution, and frame count match the reference MP4 (52.44s, 30fps, 1573 frames) exactly. Frame count = `floor(duration × fps)` — never round up, since a rounded-up final frame has no audio behind it.
-- Frame comparison at each of the 24 subtitle-cue centres uses perceptual hash (pHash), not exact pixel equality — encoder output isn't bit-reproducible across runs/machines. Cue centre = `floor(midpoint(cue.start, cue.end) × fps)` (e.g. `cue_005` at 9.92–11.65s → midpoint 10.785s → frame 323). Starting threshold: Hamming distance ≤ 5 of 64 bits, flagged for calibration against first real output.
-- Audio is out of scope for frame comparison (`narration.wav` is reused unchanged — no checksum needed), but the render must assert an audio track is present and its duration matches the video's; a silent or truncated render is a cheap-to-catch failure mode.
+  How each class is handled:
+  - **Transient** refusals (HTTP 429, "rate limit") get a bounded in-process backoff retry, at most 3 retries in about 2 minutes, which consumes no attempt. This applies only on paths with no existing retry: the Gemini image path already backs off with `QUOTA_RETRY_SECONDS`.
+  - **Hard** refusals (usage limit, session limit, spend limit, quota, credentials/unauthorized), and transient refusals still failing after backoff, consume no attempt. They are charged the Claude cost reported, plus the configured cost of every paid tool call the `PostToolUse` hook saw succeed in that query. A Veo poll failure after a successful submit is charged the clip cost; only a failed Veo submit is free. The run halts with a failure report marked `reason: vendor_limit` and resumable, and re-invoking the run resumes (AD-14).
+  - The run never waits live for a human or for a limit reset (AD-6).
+FR11: Before the story stage's output is accepted, the draft narration is reviewed by a fresh-context story critic: a separate critic `query()` sequenced by Python (evaluator-optimizer in code), which sees only the draft, the analyzed assets and the story-craft and source-fidelity skills. A REVISE verdict feeds its issues into the story agent's next attempt, within AD-5's ceiling. A subagent-inside-the-query variant is not used, because a Python-sequenced critic guarantees a fresh context and a structured verdict whatever FR4(c) finds.
+FR12: The QA verdict on a generated Veo seed/clip or still comes from a fresh-context visual-QA reviewer, not from the agent that generated the asset. The reviewer is a separate Python-sequenced `query()` using the visual-qa and character-likeness-qa skills.
+  - An asset counts as approved only when both the producer and the reviewer approve.
+  - A reviewer rejection is written into that attempt's record as `structured_output.failure`, with `stage` `seed_qa`, `clip_qa` or `still_qa`, so resume and ladder logic see it.
+  - It is handled like a producer QA failure. For Veo only, a likeness-related `seed_qa` rejection advances the ladder rung, via `_forces_simpler_character_wording` (`run.py:887`) and `SEED_QA_CHARACTER_MARKERS` (`run.py:875`). Stills have no ladder state.
+  - The Veo producer makes the seed and the clip in one session (`veo_agent.py:31-68`), so a reviewer seed rejection arrives after the clip is paid for. This is an accepted, documented cost, because the producer's own seed QA still gates the clip.
+FR13: When Langfuse credentials are present, every run creates one Langfuse trace in the manually created Langfuse Cloud project.
+  - The trace opens right after `start_run` (`run.py:1781`), so it wraps settings, preflight and `run_stages`.
+  - Traces are grouped into a session per project name and run id.
+  - Each stage is a span.
+  - Claude turns capture the system prompt, the input, the output text, tool calls, token usage and cost. The system prompt is added by our own span attribute, because the instrumentation doesn't capture it.
+FR14: Each vendor tool call is a span recording:
+  - the provider (`codex` or `gemini`) and the model;
+  - the final prompt exactly as sent, after the likeness-ladder rung is applied, and the rung itself;
+  - input and output file paths and the GCS URI;
+  - Veo parameters: model, duration, aspect ratio;
+  - any `VeoFailureContract` or RAI result;
+  - the cost charged.
+FR15: Deterministic stages are spans too:
+  - preflight: its result;
+  - TTS: input text, voice and model;
+  - STT: result summary and alignment ratio;
+  - subtitle cues: the count;
+  - delivery: the timeline path, the Remotion render command and the output path.
+FR16: Tracing is configured only by environment variables: `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY` and `LANGFUSE_BASE_URL`. With no keys, tracing is off and the run behaves exactly as it does today.
 
 ### NonFunctional Requirements
 
-NFR1: Every run enforces a configurable per-run budget ceiling via the SDK's `max_budget_usd`; exceeding it halts the run through the same failure-report path as FR10 (AD-7).
-NFR2: Every validate-and-reiterate loop has an explicit, bounded iteration ceiling (default: 4 for a generate→review→revise loop, 3 for a transient-failure retry) — no unbounded loops (AD-5).
-NFR3: The orchestrator and all new agent/tool code run on the existing `kayak-video` conda environment (Python 3.11), satisfying `claude-agent-sdk`'s `>=3.10` requirement, without disrupting the existing environment (AD-3, Stack).
-NFR4: `google-genai` is never upgraded reflexively — a version change requires diagnosing an actual traceback first, per existing `AGENTS.md` policy (Stack).
-NFR5: Failure reports share one minimal common envelope (stage id, failed contract name, attempt count, timestamp, partial-artifact paths) across every agent, so resume (FR12) can read any agent's halt consistently (AD-6).
-NFR6: No orchestrator-level notification/paging occurs on halt — the user checks the failure report asynchronously; this is a deliberate non-requirement, not a gap (Operational Envelope).
+NFR1: Behaviour parity. After the skills migration, a run on an existing project produces contracts that pass validation, and the regression harness passes. Contract schemas change only by adding fields.
+NFR2: Tracing fails open. If Langfuse is down or misconfigured, the run never fails and is never materially slowed. The flush at exit has a bounded timeout.
+NFR3: No secrets in traces: no ADC tokens, API keys or Langfuse keys. No media bytes: no base64 or raw image, video or audio, only paths and URIs. Long text is truncated at a configured limit.
+NFR4: The per-run budget ceiling (AD-7) holds under concurrency, within FR7's single-turn overshoot allowance. For the same set of completed shots, parallelism must not raise the spend of a run compared with running it sequentially.
+NFR5: No test regresses. The baseline on 2026-09-24 is 565 passed, 5 failed, 12 errors, 5 skipped, measured with `/opt/homebrew/anaconda3/envs/kayak-video/bin/python -m pytest orchestrator/tests -q`.
+  - The 12 errors in `test_timeline_converter.py` come from a fixture that reads the working tree's `metadata/` (`KeyError: 'visual_concept'`).
+  - The 5 known failures are 2 in `test_alignment_recovery`, 1 in `test_regression_harness`, 1 in `test_visual_agent` and 1 in `test_voice_agent`.
+  - Each story must leave that set no worse, and add its own unit tests that make no live vendor calls. Tests mock the SDK by monkeypatching the module-level `query` with an async generator yielding `ResultMessage`, as in `orchestrator/tests/test_veo_agent.py:58-71`.
+NFR6: Skill hygiene:
+  - `name` is lowercase with hyphens, at most 64 characters, and doesn't contain "claude" or "anthropic";
+  - `description` is at most 1024 characters and says what the skill does and when to use it;
+  - `SKILL.md` is at most 500 lines;
+  - reference files sit one level deep and are cited from `SKILL.md`.
+NFR7: The determinism boundary is preserved. Preflight, voice (TTS, STT, alignment, subtitle segmentation) and delivery get no skills and no LLM judgment (AD-1, AD-4).
+NFR8: Resume (AD-14), retry ceilings (AD-5) and structured failure inspection (AD-12) keep working unchanged with parallelism, hooks and critics in place.
 
 ### Additional Requirements
 
-- `claude-agent-sdk` (0.2.152) is not yet installed in `kayak-video` — installation is a first implementation step, not assumed present.
-- Per-script duplicated config (`PROJECT_ID`, region, model name) across the 14 existing scripts is centralized into one settings module every tool file reads; ADC auth is threaded through that same module, not re-initialized per tool (Consistency Conventions).
-- Contracts are named `<Artifact>Contract` (e.g. `VeoSeedContract`, `VeoResultContract`, `ProductionAssetsContract`, `VeoFailureContract`) — one pydantic model per artifact shape, evolved by adding fields only, never changing an existing field's type/meaning.
-- One `create_sdk_mcp_server` per `tools/*.py` file, server name = module name, giving predictable `mcp__<server>__<tool>` naming.
-- Orchestrator invocation: `python -m orchestrator.run <source_images_dir>` as a CLI entrypoint inside `kayak-video` (spine `[ASSUMPTION]` — confirm during implementation).
-- No starter/greenfield template applies — this is a brownfield refactor of an existing, working pipeline, not a new scaffold.
-- Explicitly out of scope for this epic breakdown (spine's own Deferred list): multi-reel namespacing, parallel stage execution, the byte-level `remotion/public/` sync format, the failure-report diagnostic payload beyond the minimal envelope, and the fate of the three standalone review/revise debugging scripts (kept as-is, unmigrated).
+- **Spine amendment.** Epic 4 changes or un-defers these spine decisions, so the spine must be amended alongside:
+  - AD-2's diagram says "delegates via Agent tool". In fact each stage is its own top-level `query()`, because CLI `--agent` delegation drops `output_format` (`orchestrator/agents/asset_analyst.py:43-52`).
+  - "Parallel stage execution" moves out of Deferred.
+  - The hooks become AD-7's single enforcement point.
+  - Vendor-limit classification amends AD-5 and AD-6.
+  - New decisions are needed for the skills plugin and for observability.
+- **Constraints the stories must respect:** AD-1, AD-4, AD-5, AD-6 (never wait live, so "pause" means a halt that can be resumed), AD-7, AD-9, AD-10, AD-11, AD-12, AD-13, AD-14 and AD-15, including `MAX_VEO_SHOTS=3` (`orchestrator/run.py:119`).
+- **How the agents are built today:**
+  - Every agent builds `ClaudeAgentOptions` with `setting_sources=[]`, `strict_mcp_config=True`, `permission_mode="dontAsk"`, `output_format` (JSON schema from the pydantic contract), a per-attempt `max_budget_usd`, and a model from `settings.claude_model`.
+  - Tools are in-process SDK MCP servers (`gemini`, `veo`, `deterministic`, `timeline_converter`).
+  - Retries go through `run_bounded_agent_stage` (`orchestrator/run.py:144-257`); the Veo and stills loops run per shot.
+- **Skills need tool access to load their reference files.** The agents that currently have no tools (story, visual) must gain `Skill` and a `Read` limited to the plugin folder. How to scope that is settled by the spike (FR4(e)).
+- **`cover_agent`** (a separate CLI with 3 turns and no tools) keeps its inline prompt. It's out of scope apart from not breaking.
+- **Every vendor call blocks the event loop today.** Tool handlers are `async def`, but underneath they block:
+  - Veo: sync `client.models.generate_videos`, `operations.get` and `time.sleep` polling (`veo_tools.py:487,532,539`);
+  - Gemini image: sync `generate_content` and `time.sleep` (`gemini_tools.py:616,627,646`);
+  - Codex: a blocking `subprocess.run` (`codex_image_tools.py:303`).
+  So `asyncio.gather` alone gives no concurrency. Blocking calls must be offloaded (`asyncio.to_thread`, or the async client).
+- **Shared mutable state:**
+  - `_pace_image_call` mutates the module global `_last_image_call_monotonic` (`gemini_tools.py:503-512`);
+  - `progress._log_file` and `_run_start` are globals;
+  - `enter_project` changes the process-wide cwd (`workspace.py:96-100`).
+  Codex uses an isolated temporary workspace per call (`codex_image_tools.py:266`).
+- **Demotion handoff.** `_demote_veo_shot_to_still` (`run.py:516-530`) rewrites `visual_plan.json` in the middle of the Veo loop (`run.py:1161-1175`), and `run_stills_stage` re-reads the plan from disk. Running the two concurrently breaks this handoff.
+- **The likeness ladder is deterministic code, not prompt text.** It's built by `build_prompt_ladder` (`gemini_tools.py:547-578`), run by `run_image_edit_ladder` (`:799`), and its start rung comes from `_prior_character_rejections` (`run.py:902`). Skills hold only the QA criteria; the ladder stays in code.
+- **Existing 429 retries:** only the Gemini image path backs off (`QUOTA_RETRY_SECONDS`, `gemini_tools.py:616-627`). Veo's `retryable=True` (`veo_tools.py:297+`) is not a retry. It hands the failure back to the orchestrator, which spends an attempt, so FR10 route 4 does apply to Veo `SDK_ERROR`.
+- **Installed SDK 0.2.152:**
+  - `ClaudeAgentOptions` has `skills`, `plugins`, `agents`, `hooks`, `add_dirs`, `setting_sources`, `output_format` and `max_budget_usd`.
+  - `HookEvent` includes `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `SubagentStart`, `SubagentStop`, `Stop` and `PermissionRequest`.
+- **No per-attempt Claude cap exists today.** Shot queries get `max_budget_usd = remaining_budget - reserved_external_cost` (`run.py:1186,1501`). The exception path charges `remaining_budget` (`run.py:1199,1510`). In the bounded stage, a plain exception costs nothing and consumes the attempt (`run.py:218-220`).
+- **`tools` and `allowed_tools` must differ once skills are added.**
+  - `tools` (`--tools`) needs bare `Skill`/`Read`.
+  - Path rules like `Read(//abs/**)` go only in `allowed_tools`.
+  - Don't add bare `Skill` to `allowed_tools`. The SDK deprecates it, and `skills=[...]` already injects `Skill(name)` rules (`subprocess_cli.py:549-555`, `types.py:1962`).
+  - The `plugins` path must be absolute and built from `__file__`, because `enter_project` changes the cwd.
+- **More blocking calls** inside the paid tools: the ffmpeg preview `subprocess.run` (`veo_tools.py:231`) and the GCS `download_to_filename` (`veo_tools.py:145`). `progress.log` is already thread-safe (`progress.py:29,72-77`).
+- **The OpenInference instrumentation won't take effect by default.** `openinference-instrumentation-claude-agent-sdk` (Python, 0.1.18) patches `claude_agent_sdk.query`, but every agent module binds `query` at import time (e.g. `veo_agent.py:8`), before `main()` runs. The instrumentation captures the prompt input, result, tokens, `total_cost_usd` and tool spans (through injected PreToolUse/PostToolUse hooks it merges with ours). It does not capture the system prompt. `LANGFUSE_BASE_URL` is the current env var; `LANGFUSE_HOST` is the legacy one. Langfuse's `flush()` takes no timeout.
+- **The critic must not run inside `validate_contract`.** That callback also runs on the resume-skip path (`run.py:174-176`). The bounded stage charges only `result.total_cost_usd`.
+- **Environment:**
+  - Use the `kayak-video` conda env, invoking its python by absolute path; `conda run` doesn't work here.
+  - There's no `pyproject.toml` or `requirements.txt`. New dependencies (`langfuse>=4,<5`, OpenInference's Claude Agent SDK instrumentation) are installed into the env and documented in `README.md`.
+- **Langfuse setup:**
+  - The Cloud project is created once by hand, in the UI (Option A); no project is auto-created.
+  - The base URL is either `https://cloud.langfuse.com` (EU) or `https://us.cloud.langfuse.com` (US).
+  - Claude turns are traced automatically by OpenInference's `ClaudeAgentSDKInstrumentor` (per Langfuse's Claude Agent SDK integration). Vendor spans and deterministic-stage spans are added by hand with the Langfuse SDK.
 
 ### UX Design Requirements
 
-Not applicable — this is a backend pipeline orchestration project with no user-facing UI change.
+None. This epic has no user interface.
 
 ### FR Coverage Map
 
-FR1: Epic 3 — end-to-end autonomous run, the top-level goal
-FR2: Epic 1 — asset understanding
-FR3: Epic 1 — narration write/review/revise
-FR4: Epic 1 — visual/shot planning
-FR5: Epic 1 — voice, word-timing, subtitle cues
-FR6: Epic 2 — Veo + stills generation
-FR7: Epic 1 — schema validation (kernel)
-FR8: Epic 1 — semantic QA gate (kernel)
-FR9: Epic 1 — bounded retry (kernel)
-FR10: Epic 1 — hard-halt + failure report (kernel)
-FR11: Epic 1 — credential/env preflight (kernel)
-FR12: Epic 1 — resume from last valid stage (kernel)
-FR13: Epic 2 — keyed-upsert, single writer-of-record
-FR14: Epic 2 — ProductionAssetsContract
-FR15: Epic 2 — structured Veo failure inspection
-FR16: Epic 3 — remotion sync + render trigger
-FR17: Epic 1 (pre-production tools) + Epic 2 (visual-generation tools)
-FR18: Epic 3 — locked-artifact/approval boundary
-FR19: Epic 2 — data-driven Remotion renderer, structural transform:none enforcement
+FR1: Epic 4 (Story 4.1) - Agent know-how moves into SKILL.md + reference files in one plugin
+FR2: Epic 4 (Story 4.1) - Per-agent skill lists; shared skills exist once
+FR3: Epic 4 (Story 4.1) - No dev tooling leaks into pipeline agents
+FR4: Epic 4 (Story 4.1) - SDK spike (a)-(g) with a recorded report
+FR5: Epic 4 (Story 4.4) - Veo and still shots run concurrently under per-vendor caps
+FR6: Epic 4 (Stories 4.3, 4.4) - Serialized keyed-upsert merges, manifest writes and budget ledger
+FR7: Epic 4 (Story 4.3) - Per-attempt Claude cap and reservations; pre-launch demotion
+FR8: Epic 4 (Story 4.4) - Shot-specific vs systemic failure handling; one combined report
+FR9: Epic 4 (Stories 4.2, 4.3) - Cumulative PreToolUse budget guard; reservation-scoped in 4.3
+FR10: Epic 4 (Story 4.2) - Vendor-limit classification on all four routes, transient backoff, resumable halt
+FR11: Epic 4 (Story 4.5) - Fresh-context story critic
+FR12: Epic 4 (Story 4.5) - Fresh-context visual-QA reviewer
+FR13: Epic 4 (Story 4.6) - One Langfuse trace per run with Claude turn capture
+FR14: Epic 4 (Story 4.6) - Vendor tool spans (provider, final prompt, rung, paths, cost)
+FR15: Epic 4 (Story 4.6) - Deterministic stage spans
+FR16: Epic 4 (Story 4.6) - Env-var-only configuration; off without keys
 
 ## Epic List
 
-### Epic 1: Foundational Orchestrator Kernel + Autonomous Pre-Production
-Screenshots go in; a validated narration, visual/shot plan, voice track, word-timing, and subtitle cues come out — with no manual review loop. This epic builds the orchestrator kernel every later stage reuses: contract validation, bounded retry, hard-halt + failure report, budget enforcement, credential preflight, and resume-from-last-valid-stage. It's proven here on the cheap, low-risk stages (Gemini text/TTS/STT) before the expensive stage touches it.
-**FRs covered:** FR2, FR3, FR4, FR5, FR7, FR8, FR9, FR10, FR11, FR12, FR17 (asset_analyst/story_agent/visual_agent/voice_agent tools)
-**NFRs covered:** NFR1, NFR2, NFR3, NFR4, NFR5, NFR6
-**Implementation notes:** `claude-agent-sdk` install, config centralization, contract/tool naming conventions, and the CLI-invocation assumption all land here, since this is where `orchestrator/run.py`, `contracts/`, and `state/` are created.
+### Epic 4: Book Reels runs as a skill-based, parallel, guarded and observable Claude Agent SDK pipeline
 
-### Epic 2: Autonomous Visual Asset Generation & Data-Driven Rendering
-This epic starts with the regression harness, not the renderer rewrite: reconstruct `timeline.json` for the existing reference reel and build the runnable pass/fail check first, so the renderer rewrite that follows has a real signal from minute one instead of a promise made after the fact. That harness is also where `timeline.json`'s schema gets frozen — derived from Epic 1's `VisualPlanContract`/`SubtitleCuesContract`, never invented independently, so Epic 3 stays a genuine integration rather than late adapter-writing. Once the renderer rewrite makes that harness pass and structurally forecloses the transform-on-video-shot defect, Veo clips and Remotion stills get generated and QA'd autonomously, given Epic 1's validated visual plan — including the specific fixes for this pipeline's worst documented failure history (raw-screenshot leakage, per-shot overwrite races, ambiguous production-vs-test assets, opaque Veo failures).
-**FRs covered:** FR19 (regression harness + data-driven renderer, structural `transform:none` — sequenced first), then FR6, FR13, FR14, FR15, FR17 (veo_agent/stills_agent tools)
+A reel runs end to end with each agent's know-how in maintainable skills, shots produced in parallel inside an unbreakable budget, vendor limits stopping cleanly without burning attempts, generated work checked by a fresh reviewer, and every step — prompt, output, vendor call, provider — visible in Langfuse.
+**FRs covered:** FR1, FR2, FR3, FR4, FR5, FR6, FR7, FR8, FR9, FR10, FR11, FR12, FR13, FR14, FR15, FR16
 
-### Epic 3: Full Autonomous Run & Delivery
-The complete chain runs unattended from raw screenshots to a finished, rendered video — assets sync into `remotion/public/`, the now-data-driven render triggers, and the locked-artifact/approval boundary (a reel's artifacts lock only once you've actually reviewed and approved it) is enforced for real. Stays a thin integration epic: it wires Epic 1 and Epic 2's already-validated capabilities together end-to-end rather than building new generation logic.
-**FRs covered:** FR1, FR16, FR18
+Story order (each depends only on earlier ones): 4.1 Skills plugin + SDK spike → 4.2 Guard hooks → 4.3 Concurrency-safe shot plumbing + per-attempt reservations (still sequential) → 4.4 Concurrent shot launch + failure scoping → 4.5 Critic / visual-QA reviewer → 4.6 Langfuse tracing.
 
-## Epic 1: Foundational Orchestrator Kernel + Autonomous Pre-Production
+## Epic 4: Book Reels runs as a skill-based, parallel, guarded and observable Claude Agent SDK pipeline
 
-Screenshots go in; a validated narration, visual/shot plan, voice track, word-timing, and subtitle cues come out — with no manual review loop. Builds the orchestrator kernel every later stage reuses, proven on the cheap, low-risk stages before Veo touches it.
+A reel runs end to end with each agent's know-how in maintainable skills, shots produced in parallel inside a reserved budget, vendor limits stopping cleanly without burning attempts, generated work checked by a fresh reviewer, and every step — prompt, output, vendor call, provider — visible in Langfuse. Python keeps sequencing the pipeline; every LLM stage stays its own `query()` with an `output_format` contract (AD-2 as practised, AD-4).
 
-### Story 1.1: Orchestrator Scaffold, Credential Preflight & Budget Ceiling
+### Story 4.1: Agent Know-How as Skills in a Pipeline Plugin (with SDK Spike)
 
-As a book_reels operator,
-I want the orchestrator to verify credentials and enforce a budget ceiling before any stage runs,
-So that an autonomous run never wastes API spend on a broken environment or runs away in cost with nobody watching.
+As a book_reels maintainer,
+I want each agent's domain know-how moved out of inline Python strings into skills packaged in one pipeline plugin, loaded per agent,
+So that rules shared between agents exist once, prompts are maintainable, and pipeline agents never pick up developer tooling.
 
 **Acceptance Criteria:**
 
-**Given** a `kayak-video` conda environment with `claude-agent-sdk` and a centralized settings module installed
-**When** `orchestrator/run.py` is invoked via `python -m orchestrator.run <source_images_dir>` with Google Cloud ADC not configured
-**Then** the preflight check fails immediately with a diagnostic failure report
-**And** no Gemini/Veo/STT API call is made
+**Given** the installed `claude-agent-sdk` 0.2.152 in the `kayak-video` env (`/opt/homebrew/anaconda3/envs/kayak-video/bin/python`)
+**When** the spike runs (a throwaway script, no production code changes, only small Claude calls against a minimal test plugin)
+**Then** `docs/implementation-artifacts/spike-4-1-sdk-skills.md` records yes/no, with evidence (init-message excerpts, exception text, `get_context_usage()` output), for each of FR4 (a)–(g)
+**And** if (a) is "no", the report records which proven fallback the story uses (skills folder via `add_dirs` with only the `"project"` source, or a dedicated `cwd`); if (e) finds no working `Read` restriction, the fallback is a `PreToolUse` path check that denies `Read` outside the plugin folder
 
-**Given** ADC is valid but the configured GCS bucket is inaccessible
-**When** preflight runs
-**Then** it fails the same way, before stage 1 begins
+**Given** the spike results
+**When** the plugin is created at `orchestrator/skills_plugin/` (with `.claude-plugin/plugin.json`, plugin name `book-reels`)
+**Then** it contains exactly these skills, each a `SKILL.md` with reference files one level deep:
+  - `asset-analysis`, from `agents/asset_analyst.py:18-35`;
+  - `story-craft`, from `agents/story_agent.py:20-107`: voice, hook, 90–115 words, scenes with verbatim impact_text, and the 9-dimension self-review rubric;
+  - `visual-planning`, from `agents/visual_agent.py:21-142`: shots are scenes, planning each shot, video nominations, overall style, and the 5-dimension self-review;
+  - `source-fidelity`: the fidelity and uncertainty rules repeated across story and visual;
+  - `veo-production`, from `agents/veo_agent.py:23-86` minus the shared QA blocks;
+  - `still-production`, from `agents/stills_agent.py:22-70` minus the shared QA blocks;
+  - `visual-qa`: the shared reject list (app UI, visible text, extra or duplicate subjects, photorealistic drift);
+  - `character-likeness-qa`: the ~16-line block duplicated in `veo_agent.py:45-65` and `stills_agent.py:42-60`
+**And** a unit test parses every `SKILL.md` frontmatter and checks NFR6: the name format, a description of at most 1024 characters stating what and when, and a `SKILL.md` of at most 500 lines
+**And** the likeness prompt ladder (`build_prompt_ladder`, `gemini_tools.py:547-578`) stays in code; skills carry QA criteria only
 
-**Given** a run is configured with a budget ceiling (`max_budget_usd`) that is already exhausted
-**When** the orchestrator attempts to start
-**Then** it halts via the same failure-report path as an exhausted-budget mid-run halt, before any paid tool call executes
+**Given** each agent module
+**When** its `ClaudeAgentOptions` is built (`asset_analyst.py:64`, `story_agent.py:132`, `visual_agent.py:171`, `veo_agent.py:113`, `stills_agent.py:97`)
+**Then** the inline prompt shrinks to its role, boundaries and the contract it must return, plus an instruction to use its skills
+**And** `plugins` points at the plugin through an absolute path built from `__file__`, since `enter_project` changes the cwd (`workspace.py:96-100`)
+**And** `skills` lists only that agent's skills, in the name format the spike proved:
 
-**Given** valid credentials, bucket access, and remaining budget
-**When** preflight runs
-**Then** it passes and stage 1 is allowed to begin
+  | Agent | Skills |
+  |---|---|
+  | asset_analyst | asset-analysis |
+  | story_agent | story-craft, source-fidelity |
+  | visual_agent | visual-planning, source-fidelity |
+  | veo_agent | veo-production, visual-qa, character-likeness-qa |
+  | stills_agent | still-production, visual-qa, character-likeness-qa |
 
-**Given** the run is re-invoked after a prior halt, not fresh
-**When** preflight runs
-**Then** it still executes before the first stage that will actually run — never skipped because the run isn't literally starting at stage 1 (AD-13)
+**And** `tools` and `allowed_tools` become two separate lists:
+  - `tools` (`--tools`) gains bare `Skill` and `Read`. Story and visual agents, which have no tools today, gain only these. `asset_analyst` keeps its existing `Read`, which it needs for the screenshots, and gains `Skill`.
+  - `allowed_tools` gains the plugin-scoped `Read` rule the spike proved. Bare `Skill` is never added to `allowed_tools`, because `skills=[...]` injects `Skill(name)` rules itself.
+**And** `setting_sources=[]`, `strict_mcp_config=True`, `permission_mode="dontAsk"`, `output_format` and `max_budget_usd` stay unchanged, and `cover_agent` is untouched
 
-**Given** the centralized settings module
-**When** any tool needs `PROJECT_ID`, region, or a model name
-**Then** it reads from that one shared source, never a per-file duplicated literal
+**Given** a pipeline agent query is being built or started
+**When** its options are constructed, and when its init `SystemMessage` arrives
+**Then** the code asserts `setting_sources == []`, which structurally excludes CLAUDE.md (FR3)
+**And** the orchestrator logs the loaded skill and plugin names from the init keys the spike identified, and halts the stage with a failure report if any skill isn't in that agent's list (for example `bmad-*` or `lossless-teacher`)
+**And** if spike (f) shows that the init message lists every discovered skill rather than the filtered set, the check changes: every listed skill must come from the `book-reels` plugin, with none sourced from `.claude/skills`. The per-agent restriction is then proven only by spike result (b).
 
-**Given** any of the 14 existing scripts' logic (Gemini, Veo, STT, or deterministic)
-**When** it is exposed to an agent
-**Then** it is refactored into a plain Python function wrapped with `@tool` + `create_sdk_mcp_server` and invoked in-process — never shelled out to as a subprocess (AD-3, FR17)
+**Given** the migrated agents
+**When** the asset_analyst, story and visual stages run live once on an existing project (a Claude-only run, capped by `MAX_BUDGET_USD`)
+**Then** their outputs validate unchanged against `AnalyzedAssetsContract`, `FinalStoryPlanContract` and `VisualPlanContract` (NFR1), and the run log records the skills each stage loaded
+**And** unit tests assert each agent's options carry exactly its skill list, the absolute plugin path, and the split `tools`/`allowed_tools`, with the suite no worse than the NFR5 baseline
 
-### Story 1.2: Autonomous Screenshot Understanding + Single-Stage Resume
+**Given** the spine
+**When** this story completes
+**Then** `ARCHITECTURE-SPINE.md` gains AD-16: agent know-how lives in skills in one pipeline plugin, loaded per agent, never from `.claude/`
+**And** AD-2's diagram and wording are corrected to "each stage is its own top-level `query()`; the orchestrator sequences stages in code", citing the `asset_analyst.py:43-52` rationale
+
+### Story 4.2: Guard Hooks — Budget Guard and Vendor-Limit Classification
 
 As a book_reels operator,
-I want screenshot understanding to run as a Claude agent with automatic retry, hard-halt, and resume,
-So that I don't have to manually invoke `analyze_assets.py` or manually recover from a failed analysis run.
+I want paid tool calls blocked when the budget can't cover them and vendor refusals recognised as "not the reel's fault",
+So that a run never overspends inside an agent's own loop and a vendor limit never burns attempts or charges money for work that never ran.
 
 **Acceptance Criteria:**
 
-**Given** 6-10 screenshots in `source_images/`
-**When** the orchestrator processes them
-**Then** it first calls the deterministic ingest tool (replacing `ingest_assets.py`: file scan + stable content-hash IDs), then passes that inventory to `asset_analyst`
+**Given** a Veo or stills agent query
+**When** the agent calls a paid MCP tool (`mcp__gemini__generate_veo_seed`, `mcp__gemini__generate_still`, `mcp__veo__generate_veo_clip`)
+**Then** a `PreToolUse` hook bound to that query checks: the paid cost it has already allowed in this query, plus this tool's configured cost (`settings.image_call_cost_usd`, `settings.veo_call_cost_usd`; Codex is `0.0`), against the run's remaining budget (`MAX_BUDGET_USD` minus `RunManifest.budget_spent_usd`)
+**And** when the total wouldn't be covered, the hook denies the call with `hookSpecificOutput.permissionDecision="deny"` and a `permissionDecisionReason`, so an agent can't bypass the check by calling `generate_veo_seed` twice
+**And** a denial is recorded on the hook's closure, and after the query returns the orchestrator halts through `_halt` (`run.py:125-141`) with reason code `budget_exhausted`, never letting the agent's own output mask it (AD-7, FR9)
 
-**Given** that inventory
-**When** `asset_analyst` runs
-**Then** it produces a schema-valid `AnalyzedAssetsContract` using Claude's own vision reasoning directly on the images
-**And** no Gemini "understand" tool call is made (AD-1)
+**Given** `orchestrator/run.py`
+**When** vendor classification is added
+**Then** one classifier, next to `LIKENESS_REJECTION_CODES` (`run.py:856`) and following `docs/vendor-limit-fix.md` §1, takes the error text and an optional HTTP status. It returns:
+  - `transient` for 429 or "rate limit";
+  - `hard` for usage limit, session limit, monthly spend limit, quota, 401/403, or credentials/unauthorized;
+  - `none` otherwise.
+**And** unit tests cover each marker, each status and non-matching text
 
-**Given** the agent's output fails schema validation on an attempt
-**When** it retries
-**Then** it self-corrects up to the configured iteration ceiling (default 4) before the loop ends
+**Given** any of the four vendor-refusal routes in FR10
+**When** a refusal is found
+**Then** each route is classified before charging:
+  - the `except` sites: `run.py:218` (bounded stage), `:1190` (Veo), `:1505` (stills);
+  - the `ResultMessage.is_error` paths: `run.py:239`, `:1225`, `:1536`, using `api_error_status` plus the text of `result` and `errors`;
+  - paid-tool failure contracts: a `PostToolUse` hook parses the JSON text in `tool_response` for `failure.reason` and `failure.code`, in the shape the spike recorded as FR4(g). `PostToolUseFailure` covers only unexpected handler crashes;
+  - Veo `SDK_ERROR`: the reason from submit and poll (`veo_tools.py:503-510`) is classified, and a hard submit failure charges no clip cost.
+**And** a `hard` result gives back the pre-incremented attempt (`manifest.iteration_counts[stage_id]` decremented and saved) and charges no conservative cost. It is charged the Claude cost reported, plus the configured cost of every paid tool call the `PostToolUse` hook saw succeed in this query. A Veo poll failure after a successful submit is charged the clip cost; only a failed Veo submit is free. The run halts with reason code `vendor_limit`, whatever outcome contract the agent returned. This covers the case of 4 `visual_agent` attempts in 6 seconds, and the Codex usage limit that burned 2 of shot 3's 3 attempts.
+**And** a refusal that isn't from a vendor keeps today's behaviour exactly:
+  - a bounded-stage exception costs nothing and consumes the attempt (`run.py:218-220`);
+  - the Veo and stills loops apply their conservative charge (`run.py:1199-1200`, `1510-1511`).
 
-**Given** the iteration ceiling is exhausted without a valid result
-**When** the retry loop ends
-**Then** the run halts at this stage and writes a failure report using the shared minimal envelope (stage id, failed contract name, attempt count, timestamp, partial-artifact paths)
-**And** no substitute asset is produced and no live prompt blocks the run
-**And** no external notification or page is sent — the operator discovers the halt only by checking the failure report whenever they next look (NFR6)
+**Given** a `transient` classification
+**When** it arises on a path with no existing retry (the Gemini image path already backs off with `QUOTA_RETRY_SECONDS`)
+**Then** the orchestrator retries the same attempt at most 3 times with backoff, within about 2 minutes, without consuming an attempt, and escalates to the `hard` path if it still fails
+**And** a transient retry consumes no attempt but is charged the costs it actually incurs, including a redrawn seed, because rerunning a Veo attempt starts a new agent session
+**And** the story's notes record which client paths already retry 429s (Anthropic SDK/CLI, google-genai, Codex CLI), so retries are never doubled
 
-**Given** `asset_analyst` has already produced and persisted a validated `AnalyzedAssetsContract` from a prior invocation
-**When** the orchestrator is invoked again for the same reel
-**Then** `asset_analyst` is not re-invoked and no new vision call is made
-**And** the orchestrator proceeds using the persisted contract
+**Given** any halt
+**When** the failure report is written
+**Then** `FailureReport` (`state/run_manifest.py:172-184`) gains the additive fields `reason_code` (`vendor_limit`, `budget_exhausted`, `retry_ceiling`, `validation`, …) and `resumable: bool` (true for `vendor_limit` and `budget_exhausted`), both with defaults
+**And** for `budget_exhausted`, "resumable" means "resumable after raising `MAX_BUDGET_USD`", because spend accumulates across runs in the manifest. The halt message says so.
+**And** a test proves `FailureReport(**old_dict)` built from a pre-change report dict still validates
+**And** re-invoking after a `vendor_limit` halt resumes from that stage (AD-14), re-runs preflight (AD-13), and never waits live (AD-6)
 
-**Given** no persisted `AnalyzedAssetsContract` exists yet
-**When** the orchestrator is invoked
-**Then** `asset_analyst` runs normally
+**Given** the change
+**When** tests run with a mocked `query`
+**Then** new unit tests cover:
+  - the cumulative budget denial and its halt;
+  - each exception site and each `is_error` path on the hard path;
+  - the tool failure-contract flag;
+  - Veo `SDK_ERROR` classification;
+  - transient backoff escalation;
+  - report back-compat.
+  The suite ends no worse than the NFR5 baseline.
+**And** `ARCHITECTURE-SPINE.md` amends AD-5/AD-6 (a vendor limit consumes no attempt and ends in a resumable halt) and AD-7 (the `PreToolUse` hook is the pre-call enforcement point)
+**And** `docs/vendor-limit-fix.md` is marked as superseded by this story
 
-### Story 1.3: Autonomous Narration Writing, Review & Revision
+### Story 4.3: Concurrency-Safe Shot Plumbing and Per-Attempt Budget Reservations
 
 As a book_reels operator,
-I want the reel's narration to be written, reviewed, and revised automatically,
-So that I no longer have to manually run `story_director.py`, review, revise, and re-review in sequence.
+I want every shot attempt to run inside its own reserved budget and the vendor tools made safe to run side by side, while shots still run one at a time,
+So that parallel production (Story 4.4) can be switched on without any budget hole or shared-state race, and this change is verifiable on its own.
 
 **Acceptance Criteria:**
 
-**Given** a validated `AnalyzedAssetsContract` exists
-**When** `story_agent` runs
-**Then** it writes narration, reviews it, and revises it as needed in one Claude-agent-owned loop
-**And** it never proxies this reasoning through a Gemini text call (AD-1)
-
-**Given** a narration draft fails `story_agent`'s own quality bar
-**When** it iterates
-**Then** it self-corrects up to the configured iteration ceiling before the run halts, reusing Story 1.1/1.2's kernel behavior rather than reimplementing it
-
-**Given** narration passes both schema validation and `story_agent`'s own semantic quality judgment
-**When** it is persisted
-**Then** it is written as a validated `FinalStoryPlanContract`
-**And** schema validity alone is never treated as approval (AD-4)
-
-**Given** the existing standalone `review_story_plan.py`, `revise_story_plan.py`, and `review_revised_story_plan.py` scripts
+**Given** settings
 **When** this story is implemented
-**Then** they are left unmigrated and untouched, per the spine's Deferred decision
+**Then** new env-overridable settings exist:
+  - `CLAUDE_SHOT_ATTEMPT_CAP_USD`;
+  - per-vendor caps: `VEO_CONCURRENCY` (default 3), `GEMINI_IMAGE_CONCURRENCY` (default 2), `CODEX_IMAGE_CONCURRENCY` (default 1).
+**And** each shot attempt's reservation is `CLAUDE_SHOT_ATTEMPT_CAP_USD` plus that attempt's external costs:
+  - a Veo attempt reserves `image_call_cost_usd` + `veo_call_cost_usd`;
+  - a still attempt reserves `image_call_cost_usd`.
+  This matches today's `reserved_external_cost` (`run.py:1121`, `1454`).
+**And** each shot query's `max_budget_usd` becomes the Claude cap, replacing `remaining_budget - reserved_external_cost` (`run.py:1186`, `1501`)
 
-### Story 1.4: Autonomous Visual & Shot-Mode Planning
+**Given** voice timing is backfilled and `_promote_video_candidates` (`run.py:472`) has assigned `generation_mode` (AD-15)
+**When** shot production begins
+**Then** a new production-planning step computes every pending shot's first-attempt reservation before any shot starts
+**And** it demotes the lowest-ranked Veo shots to stills (AD-15(c)) until all reservations fit the remaining budget
+**And** it performs every `visual_plan.json` demotion write at this point, replacing the mid-loop `_demote_veo_shot_to_still` handoff (`run.py:516-530`, `1161-1175`)
+**And** if even the still reservations can't fit, the run halts with `budget_exhausted` before any paid call (AD-7)
+
+**Given** a shot attempt
+**When** it starts, finishes or fails
+**Then** it acquires its reservation from a run-level budget ledger, owned by the orchestrator, before the query starts. Every retry attempt re-acquires its own reservation.
+**And** a retry that can't reserve fails the shot with `budget_exhausted`. That is systemic and resumable, and there is no mid-run demotion.
+**And** the actual Claude cost is debited as reported. A crash is charged the attempt's reservation, never `remaining_budget` (`run.py:1199`, `1510`). Unused reservation is released.
+**And** an overshoot beyond the reservation comes from the unreserved pool, and a negative pool is a systemic `budget_exhausted` (FR7)
+**And** the Story 4.2 `PreToolUse` guard now checks the calling attempt's unspent reservation, not the whole run's remaining budget
+
+**Given** the paid tool handlers `generate_veo_seed`, `generate_still` and `generate_veo_clip`
+**When** they run
+**Then** each handler's whole synchronous body runs through `asyncio.to_thread`, which carries contextvars across. That covers:
+  - Veo `generate_videos`, `operations.get` and `time.sleep` polling (`veo_tools.py:487,532,539`);
+  - the GCS `download_to_filename` (`veo_tools.py:145`);
+  - the ffmpeg preview `subprocess.run` (`veo_tools.py:231`);
+  - Gemini `generate_content` and `time.sleep` (`gemini_tools.py:616,627,646`);
+  - Codex `subprocess.run` (`codex_image_tools.py:303`).
+**And** the per-vendor caps are `threading.Semaphore`s acquired around the vendor call inside the offloaded code
+**And** `_pace_image_call`'s module global (`gemini_tools.py:503-512`) is guarded by a lock, and nothing changes the working directory during production. `progress.log` is already thread-safe (`progress.py:29,72-77`).
+
+**Given** shared writes
+**When** a shot result is upserted, the manifest is saved, or the ledger changes
+**Then** `upsert_production_asset` (`state/production_assets.py:21`), run-manifest saves and ledger updates all go through one orchestrator-owned lock (AD-10: single writer, keyed upsert)
+**And** `manifest.session_id` is documented as last-writer-wins once shots run concurrently
+
+**Given** shots still run sequentially in this story
+**When** the full shot stage runs on mocked tools
+**Then** its behaviour is unchanged apart from the new budget model:
+  - provenance stamping stays as it is (`_stamp_veo_outcome` `run.py:1008`, `_stamp_still_outcome` `:954`);
+  - per-shot retry ceilings stay as they are;
+  - resume still skips persisted shots (AD-14).
+**And** tests prove:
+  - reservation arithmetic;
+  - deterministic pre-launch demotion by rank;
+  - a retry that can't reserve ends in `budget_exhausted`;
+  - crash charging;
+  - the reservation-scoped guard;
+  - handler offloading, shown by the event loop staying responsive while a fake blocking tool sleeps;
+  - lock serialisation of concurrent upserts;
+  - per-vendor semaphore caps never exceeded, tested by calling the offloaded handlers concurrently even though shots are still sequential.
+  The suite ends no worse than the NFR5 baseline.
+**And** `ARCHITECTURE-SPINE.md` amends AD-7 (per-attempt reservations) and AD-15(c): demotion is decided only before launch, and a retry that can't reserve is a `budget_exhausted` halt, not a demotion
+
+### Story 4.4: Concurrent Shot Launch and Failure Scoping
 
 As a book_reels operator,
-I want the 8-shot visual plan and each shot's generation mode to be decided automatically,
-So that I don't have to manually run `visual_director.py` or manually decide which shots need Veo vs. a still.
+I want independent Veo and still shots to run at the same time, with one shot's failure never throwing away the others' work,
+So that a reel finishes much faster and a resumed run redoes only what actually failed.
 
 **Acceptance Criteria:**
 
-**Given** a validated `FinalStoryPlanContract` exists
-**When** `visual_agent` runs
-**Then** it produces a validated `VisualPlanContract` containing the 8-shot plan and an explicit generation mode (still or Veo) assigned to every shot
+**Given** Story 4.3's planning step has fixed each shot's mode and reservation
+**When** production runs
+**Then** one production step replaces the sequential `run_veo_stage` → `run_stills_stage` pair in `run_stages` (`run.py:1823-1851`)
+**And** that step launches the Veo and still shot tasks concurrently with `asyncio`, under a shot-level cap and Story 4.3's per-vendor caps
 
-**Given** `visual_agent`'s mode assignment
-**When** Epic 2's `veo_agent`/`stills_agent` later read it
-**Then** they only ever generate for the mode `visual_agent` assigned; only `visual_agent` may write or change a shot's mode (AD-15)
+**Given** one shot fails
+**When** the failure is shot-specific (likeness refused on every ladder rung, attempt ceiling exhausted, or a non-retryable seed defect, as classified by the existing `LIKENESS_REJECTION_CODES` / `VEO_SEED_ONLY_FAILURE_STAGES` logic)
+**Then** all the other shots continue to completion and are persisted. The run then halts with **one** failure report, whose new additive `failed_shots` field lists every failed shot with its stage and reason. Today, each shot calls `_halt` on its own.
+**And** when the failure is systemic (`vendor_limit`, `budget_exhausted`, auth), no new shots start. Shots already running finish and are persisted, then the run halts. In-flight shots are never cancelled, because a submitted Veo operation bills even if polling stops (FR8).
 
-**Given** `VisualPlanContract` is produced by this story
-**When** it is inspected
-**Then** it contains no Remotion timeline schema and no final asset paths — those don't exist yet at this point in the chain; `visual_plan.json` and `timeline.json` are distinct artifacts owned by different stages
+**Given** a halted parallel run
+**When** it is re-invoked
+**Then** every shot already in `production_assets.json` is skipped (AD-14), and only the failed or unstarted shots run again, with their ladder state (`_prior_character_rejections`, `run.py:902`) intact
 
-### Story 1.5: Autonomous Voice, Word-Timing & Subtitle Cues + Full-Chain Resume
+**Given** the change
+**When** tests run with fake tools that sleep
+**Then** tests prove:
+  - shots overlap in wall-clock time;
+  - the per-vendor and shot-level caps are never exceeded;
+  - concurrent upserts lose no entry;
+  - total charges stay within the FR7 allowance;
+  - shot-specific and systemic failure behaviour;
+  - one combined `failed_shots` report;
+  - a resume redoes only the failed shots.
+  The suite ends no worse than the NFR5 baseline.
+**And** `ARCHITECTURE-SPINE.md` moves "Parallel stage execution" out of Deferred into a new AD-17: independent shots run concurrently under per-attempt reservations and per-vendor caps; the orchestrator's lock serialises AD-10 writes; failure scope decides whether siblings continue
+**And** it amends AD-6 and AD-15 so that a shot-specific hard failure defers the run's halt until sibling shots finish
+
+### Story 4.5: Fresh-Context Critic and Visual-QA Reviewer
 
 As a book_reels operator,
-I want voice generation, word-timing alignment, and subtitle cue segmentation to run automatically and the whole pre-production chain to be resumable,
-So that a failure partway through doesn't force me to re-run, and re-pay for, everything from the screenshots again.
+I want narration and every generated asset judged by a reviewer that didn't produce it,
+So that quality approval isn't the generator grading its own work.
 
 **Acceptance Criteria:**
 
-**Given** validated `FinalStoryPlanContract` and `VisualPlanContract` exist
-**When** `voice_agent` runs
-**Then** it produces narration audio via the existing Gemini TTS tool, word-timing via the existing Google STT/Chirp tool, and subtitle cues via the existing deterministic DP segmentation tool
-**And** the segmentation output is validated only by its own mechanical alignment-ratio gate, never re-judged by an LLM (AD-4's carve-out)
+**Given** `run_bounded_agent_stage` (`run.py:144-257`)
+**When** this story is implemented
+**Then** it gains an optional `review_before_persist` callback. The callback:
+  - runs only after a **fresh** attempt validates, never on the resume-skip path (`run.py:174-176`, where `validate_contract` also runs);
+  - returns APPROVE, or REVISE with feedback;
+  - has its cost added to `manifest.budget_spent_usd`.
 
-**Given** a run halts partway through the pre-production chain, e.g. after Story 1.3's narration succeeds but before Story 1.4's visual plan completes
-**When** the run is re-invoked
-**Then** it does not re-run `asset_analyst` or `story_agent`; it resumes from `visual_agent`, reading the persisted validated contracts for the earlier stages
+**Given** the story agent returns a schema-valid `FinalStoryPlanContract` (its own `QualityReview` is still enforced, `contracts/final_story_plan.py:112-133`)
+**When** `review_before_persist` runs for the story stage
+**Then** Python runs a separate story-critic `query()`:
+  - its own `AgentDefinition` in `orchestrator/agents/`;
+  - skills story-craft and source-fidelity;
+  - tools limited to `Skill` plus the plugin-scoped `Read`, and no write tools;
+  - input: only the draft plan and `analyzed_assets.json`;
+  - output via `output_format`: a new `StoryCritiqueContract` with `verdict: APPROVE | REVISE` and `issues[]`, each giving a dimension, evidence and a fix.
+**And** REVISE feeds the issues into the story agent's next attempt through the existing feedback path, counting toward the AD-5 ceiling. Exhausting the ceiling halts with `retry_ceiling`, and only APPROVE lets the plan persist.
 
-**Given** the full chain (Stories 1.2 through 1.5) has already completed successfully for a reel
-**When** the run is invoked again
-**Then** no pre-production stage re-runs — the orchestrator is ready to proceed to Epic 2
+**Given** a Veo or still producer returns an approved outcome (`approved` and `qa_summary`; `contracts/veo.py:63-64`, `contracts/stills.py:43-59`)
+**When** the orchestrator receives it inside the shot task
+**Then** Python runs a separate visual-QA reviewer `query()`:
+  - skills visual-qa and character-likeness-qa;
+  - `Read` limited to that shot's asset paths and the character reference. For a Veo clip it reviews the preview frames `generated/veo/previews/shot_NN_MM.jpg` and the seed;
+  - output: a new `VisualQAVerdictContract` with `approved`, `failure_stage` (`seed_qa` | `clip_qa` | `still_qa`), `failure_code`, `reasons[]` and `summary`.
+**And** a rejection is written into that attempt's record as `structured_output.failure` with its `stage`, so resume and the ladder logic see it. It follows the producer-QA-failure path for that attempt, and the attempt counts toward the shot's ceiling.
+**And** for Veo only, a likeness-related `seed_qa` rejection advances the ladder rung, via `_forces_simpler_character_wording` (`run.py:887`) and `SEED_QA_CHARACTER_MARKERS` (`run.py:875`). `LIKENESS_REJECTION_CODES` are Veo API codes and aren't used for reviewer verdicts. Stills have no ladder state and simply retry.
+**And** a likeness rejection from the reviewer uses `failure_code` `CHARACTER_LIKENESS`, which matches `SEED_QA_CHARACTER_MARKERS`, so `_prior_character_rejections` (`run.py:902`) sees it on resume
+**And** on Veo, the reviewer runs before `upsert_production_asset`, which changes today's order of success then upsert (`run.py:1276-1292`)
+**And** the story notes record the accepted cost: a reviewer's seed rejection arrives after the clip is already paid for, because the Veo producer makes the seed and the clip in one session (`veo_agent.py:31-68`)
 
-**Given** `voice_agent`'s stage fails validation and exhausts its retry ceiling
-**When** the run halts
-**Then** the failure report uses the same shared minimal envelope as every other agent's halt (NFR5), so resume logic reads it consistently regardless of which stage failed
+**Given** an asset approved by both the producer and the reviewer
+**When** it is upserted
+**Then** `ProductionAsset` (`contracts/production_assets.py:31,40`) still requires `approved: True`, and gains an additive `reviewer_summary` field recorded next to the producer's `qa_summary`
 
-## Epic 2: Autonomous Visual Asset Generation & Data-Driven Rendering
+**Given** critic and reviewer calls cost money
+**When** reservations and budgets are computed
+**Then** new settings exist: `CLAUDE_REVIEWER_CAP_USD`, `REVIEWER_MODEL` and `CRITIC_MODEL`. Both models default to `settings.claude_model`, and all three are env-overridable.
+**And** each shot attempt's reservation (Story 4.3) and each story attempt's budget include one reviewer or critic call at that cap. The reviewer query's `max_budget_usd` is `CLAUDE_REVIEWER_CAP_USD`.
+**And** the story agent's `call_agent` budget (today `settings.max_budget_usd - manifest.budget_spent_usd`, `run.py:216`) becomes the remaining budget minus `CLAUDE_REVIEWER_CAP_USD`. The critic runs only if at least that cap remains, and runs with `max_budget_usd = CLAUDE_REVIEWER_CAP_USD`.
+**And** the story notes state the expected added spend per run: (1 + story retries) × critic cap, plus the number of shot attempts × reviewer cap
 
-Given Epic 1's validated visual plan, Veo clips and Remotion stills get generated and QA'd autonomously. The renderer itself becomes data-driven — proven by a regression harness built first, against the existing reference reel, before the rewrite it verifies.
+**Given** the change
+**When** tests run with a mocked `query`
+**Then** tests cover:
+  - the critic's APPROVE/REVISE loop;
+  - no critic call on the resume-skip path;
+  - critic cost being charged;
+  - reviewer approve and reject;
+  - the Veo rung advance on a reviewer likeness rejection, and none for stills;
+  - the rejection recorded in the attempt file;
+  - the reviewer included in the reservation;
+  - `reviewer_summary` persistence.
+  The suite ends no worse than the NFR5 baseline.
+**And** `ARCHITECTURE-SPINE.md` gains AD-18, refining AD-4: approving generative output requires an independent fresh-context reviewer sequenced in code; the producer's self-QA is necessary but not sufficient
 
-### Story 2.1: timeline.json Converter & Reference Reel Regression Harness
+### Story 4.6: Langfuse Tracing for Every Run
 
 As a book_reels operator,
-I want one deterministic converter that owns `timeline.json`'s shape and a runnable check that proves a data-driven renderer would reproduce the existing approved reel,
-So that the renderer rewrite that follows has a real pass/fail signal from day one, and every later stage that needs a `timeline.json` calls the same conversion instead of re-inventing it.
+I want every run traced in my Langfuse Cloud project — each stage's prompt and output, every vendor call's input, provider and result,
+So that I can see exactly what happened at each step of a run without reading log files.
 
 **Acceptance Criteria:**
 
-**Given** Epic 1 ships `visual_plan.json` and `subtitle_cues.json` with zero knowledge of the renderer or `timeline.json`
-**When** this story builds the `timeline.json` conversion
-**Then** it is a single, deterministic, reusable converter (`visual_plan.json` + `subtitle_cues.json` + a per-shot final asset → `timeline.json`) owned only here — not a one-off script for this regression test, and not logic Epic 3 reinvents later
-**And** its schema is derived directly from `VisualPlanContract`'s and `SubtitleCuesContract`'s existing field shapes, never invented independently
+**Given** a Book Reels project created once in the Langfuse UI, and `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY` and `LANGFUSE_BASE_URL` set (`https://cloud.langfuse.com` for EU or `https://us.cloud.langfuse.com` for US; `LANGFUSE_HOST` is legacy)
+**When** `python -m orchestrator.run --project <name>` runs
+**Then** one trace is created per run. It opens right after `start_run` (`run.py:1781`) and wraps settings, preflight and `run_stages`.
+**And** its session id is `<project>:<run_id>`, where the run id is the `run_<YYYYmmddTHHMMSS>` stamp from `progress.start_run` (`progress.py:32-41`), and it is tagged with the project name
+**And** it is flushed at exit, including on halt and on exception, with a bounded timeout: Langfuse's `flush()` runs in a thread that is joined with a timeout, because `flush()` itself takes none
+**And** with none of those variables set, no tracing code initialises and the run behaves exactly as it does today (FR16)
 
-**Given** the existing "Backwards Law" reel's locked artifacts (`visual_plan.json`, `subtitle_cues.json`, the 8 shot boundaries, and the actual chosen asset per shot, standing in for a `ProductionAssetsContract` that doesn't exist yet at this point in the build)
-**When** the converter runs against this historical data
-**Then** it produces a concrete `timeline.json` for this reel
-**And** every field needed to render the reel (shot list, timing, mode, final asset path, captions) is present
+**Given** OpenInference's `openinference-instrumentation-claude-agent-sdk` (Python; ≥0.1.18) together with `langfuse>=4,<5`
+**When** instrumentation is set up
+**Then** `ClaudeAgentSDKInstrumentor().instrument()` runs **before** `orchestrator.agents` is imported, or the agents call `claude_agent_sdk.query(...)` through the module. Either way the patched function is the one used, because each agent binds `query` at import time today (e.g. `veo_agent.py:8`).
+**And** a test proves Claude turns produce spans. The existing tests still monkeypatch the module-level `query`.
+**And** it is verified that Langfuse's default span-export filter exports the OpenInference instrumentation scope; if it doesn't, a `should_export_span` filter that allows it is configured
+**And** the instrumentor's injected PreToolUse/PostToolUse hooks and Story 4.2's hooks both still fire when merged
 
-**Given** the reconstructed `timeline.json`
-**When** the regression harness runs
-**Then** it checks duration, fps, resolution, and frame count (frame count = `floor(duration × fps)`) against the reference MP4 (52.44s, 30fps, 1573 frames) exactly
-**And** it checks perceptual hash (Hamming distance ≤ 5 of 64 bits, flagged for calibration) at each of the 24 subtitle-cue centres (cue centre = `floor(midpoint(cue.start, cue.end) × fps)`)
+**Given** each stage
+**When** it runs
+**Then** it appears as a span named after the stage: preflight, asset_analyst, story_agent, story_critic, visual_agent, voice, production, delivery
+**And** each Claude `query()` under it shows the user prompt, the output text or `structured_output`, tool calls, token usage and `total_cost_usd`, as captured by the instrumentation
+**And** our own span attributes add the system prompt and the loaded skill names, because the instrumentation doesn't capture them. This is required.
 
-**Given** the harness runs against the current, still hand-authored renderer, before Story 2.2's rewrite
-**When** it evaluates
-**Then** it is expected to fail or be inconclusive — that result is itself proof the harness is wired correctly and measuring something real, not evidence of a bug
+**Given** a vendor tool call inside a shot
+**When** it executes
+**Then** a span under that shot's span records (FR14):
+  - the provider (`codex` or `gemini`) and the model;
+  - the final prompt exactly as sent after the ladder rung, and the rung;
+  - input and output paths, and the GCS URI;
+  - Veo model, duration and aspect ratio;
+  - any `VeoFailureContract` or RAI result;
+  - the cost charged.
+**And** these spans nest under their own shot even with Story 4.4's concurrency and Story 4.3's `asyncio.to_thread` offloading. The shot span is current when that shot's `query()` starts. If tool-handler spans don't inherit it, the shot span's context is propagated explicitly. A test with two concurrent shots proves the nesting.
 
-**Given** the render's audio track
-**When** the harness checks it
-**Then** it asserts an audio track is present and its duration matches the video's, with no pixel/hash comparison of audio content
+**Given** the deterministic stages
+**When** they run
+**Then** spans record (FR15):
+  - the preflight result;
+  - TTS input text, voice and model (`generate_narration_audio`, `run.py:651`);
+  - the STT summary and alignment ratio (`extract_word_timing`, `run.py:677`);
+  - the subtitle cue count;
+  - the timeline path, the Remotion render command and the output path (`render_remotion`, `run.py:1731`).
+**And** a halted run's span carries the failure report's `reason_code`, `resumable` and `failed_shots`
 
-**Given** this harness
-**When** it is invoked
-**Then** it runs as a one-time regression check, explicitly documented as not a per-run production gate — a new reel has no reference to compare against
+**Given** any traced value
+**When** it is exported
+**Then** no secrets are included: no ADC tokens, API keys or Langfuse keys (NFR3)
+**And** media bytes and base64 are replaced by paths or URIs
+**And** text longer than `LANGFUSE_MAX_CHARS` (default 20000) is truncated
+**And** a Langfuse outage, wrong keys or a network error never fails or materially slows a run: every tracing call fails open (NFR2)
 
-**Given** Epic 3 later needs a `timeline.json` for a live, newly-generated reel
-**When** it does so
-**Then** it calls this story's converter with live `VisualPlanContract`/`SubtitleCuesContract`/`ProductionAssetsContract` data — it does not reimplement the conversion
-
-### Story 2.2: Data-Driven Renderer Core + Structural `transform:none` Enforcement
-
-As a book_reels operator,
-I want the Remotion renderer to consume `timeline.json` and `subtitle_cues.json` directly,
-So that I never again need a coding agent to hand-write `timeline.ts`/`BookReel.tsx` per reel.
-
-**Acceptance Criteria:**
-
-**Given** the `timeline.json` schema frozen by Story 2.1
-**When** `timeline.ts`/`BookReel.tsx` is rewritten
-**Then** it consumes `timeline.json` + `subtitle_cues.json` directly and requires zero hand-authored code changes to render a new reel
-
-**Given** the rewritten renderer and Story 2.1's harness
-**When** the harness runs the reconstructed Backwards Law `timeline.json` through the new renderer
-**Then** it passes — the failure/inconclusive verdict from Story 2.1 is now a pass
-
-**Given** a video shot in the new renderer
-**When** any transition or animation is applied to it
-**Then** `transform` is never applied to a video-layer component, enforced structurally (the video-shot component/type offers no transform prop), not by convention or a comment
-
-**Given** a still shot
-**When** it is rendered
-**Then** Ken-Burns/transform effects remain available only for stills, never video shots (existing `AGENTS.md` convention, now structurally preserved)
-
-### Story 2.3: Autonomous Veo Generation, Production Asset Manifest & Structured Failure Inspection
-
-As a book_reels operator,
-I want Veo clip generation to run autonomously with safe asset selection and clear failure diagnosis,
-So that I don't have to manually invoke `generate_veo_clips.py` or manually recover from an opaque Veo failure.
-
-**Acceptance Criteria:**
-
-**Given** a shot assigned Veo mode in `VisualPlanContract`
-**When** `veo_agent` requests generation
-**Then** it only ever supplies a path produced by the seed-recomposition tool under its own contract
-**And** it rejects and fails loud on a `source_images/` path rather than silently substituting one (AD-9)
-
-**Given** a Veo generation call completes
-**When** `veo_agent` inspects the result
-**Then** it checks both `operation.response` and `operation.result`, distinguishes `video.uri` from `video.video_bytes`, and surfaces any RAI-filter rejection reason as a structured `VeoFailureContract` — never a bare success/fail (AD-12)
-
-**Given** `veo_agent` produces a validated result for a shot
-**When** it is recorded
-**Then** it is written into `ProductionAssetsContract` via a keyed upsert (merge by shot id), with the orchestrator as sole writer-of-record — `veo_agent` returns its result to the orchestrator rather than writing the shared file directly (AD-10/AD-11)
-
-**Given** two shots are generated in the same run
-**When** each completes
-**Then** neither shot's entry in `ProductionAssetsContract` is lost or overwritten by the other's write
-
-### Story 2.4: Autonomous Stills Generation
-
-As a book_reels operator,
-I want stills generation for the non-Veo shots to run autonomously,
-So that I don't have to manually invoke `prepare_remotion_stills.py`.
-
-**Acceptance Criteria:**
-
-**Given** a shot assigned still mode in `VisualPlanContract`
-**When** `stills_agent` generates it
-**Then** the validated result is written into the same `ProductionAssetsContract` via the orchestrator's single-writer keyed-upsert path established in Story 2.3 — `stills_agent` does not implement its own write path
-
-**Given** a still fails its own visual QA (e.g. a duplicate-subject defect)
-**When** `stills_agent` iterates
-**Then** it retries up to the configured iteration ceiling before the run halts, reusing Epic 1's kernel behavior
-
-**Given** all shots (Veo and stills) have validated `ProductionAssetsContract` entries
-**When** Epic 2 concludes
-**Then** every shot in the visual plan has exactly one approved production asset recorded
-
-## Epic 3: Full Autonomous Run & Delivery
-
-The complete chain runs unattended from raw screenshots to a finished, rendered video, and a reel's artifacts lock only once a human has actually reviewed and approved it.
-
-### Story 3.1: Full Autonomous Run — Screenshots to Rendered Video
-
-As a book_reels operator,
-I want to provide only the source screenshots and receive a finished rendered video with no manual steps in between,
-So that the entire pipeline I used to run by hand, stage by stage, now runs unattended end to end.
-
-**Acceptance Criteria:**
-
-**Given** 6-10 screenshots from a **second, different book** — not the Backwards Law screenshots, which only re-proves Story 2.1's already-established regression case — and no existing pipeline state for this reel
-**When** I invoke the orchestrator once
-**Then** it runs Epic 1's pre-production chain and then Epic 2's visual asset generation, with no manual per-stage invocation or verification
-
-**Given** this second book's real narration and visual plan
-**When** they are produced
-**Then** the shot count reflects what `visual_agent` actually planned for this book, not a hardcoded 8, and the narration/video duration reflects the real generated audio, not a rounded target — e.g. if this book yields 6 shots and 71 seconds, the pipeline handles it with no code changes
-
-**Given** Epic 1 and Epic 2 have produced validated `VisualPlanContract`, `SubtitleCuesContract`, and a complete `ProductionAssetsContract` for this second book
-**When** the run reaches its final stage
-**Then** it calls Story 2.1's converter with this live data to produce a real `timeline.json` for the reel — it does not reimplement the conversion
-
-**Given** a real `timeline.json` and the final audio/subtitle files
-**When** the run proceeds
-**Then** it syncs the validated final assets into `remotion/public/` and triggers the Remotion render, producing a finished MP4 whose shot count/duration match this book's actual plan, not the Backwards Law reel's
-
-**Given** the run is halted specifically inside Epic 2's Veo generation stage, after some shots' clips have already been produced and recorded in `ProductionAssetsContract`
-**When** the run is re-invoked
-**Then** it does not regenerate the shots already recorded — it resumes only the remaining shots, proving the case that actually saves Veo generation cost, not just an arbitrary earlier-stage halt
-
-**Given** the run completes successfully
-**When** the video is produced
-**Then** the operator has done nothing but supply the screenshots (FR1)
-
-### Story 3.2: Locked-Artifact / Approval Boundary
-
-As a book_reels operator,
-I want a reel's artifacts to become locked only once I've actually reviewed and approved the finished video,
-So that a rendered-but-unreviewed video doesn't block my own next attempt or get treated as if I'd already signed off on it.
-
-**Acceptance Criteria:**
-
-**Given** a video has just finished rendering but no approval has been recorded
-**When** the run is re-invoked
-**Then** AD-14's resume/self-correction rules still apply — this is "before approval," not a locked-artifact scenario, and no explicit user direction is required to revise it
-
-**Given** the operator explicitly records approval of a finished video, or an explicit reject/regenerate signal
-**When** that event is recorded
-**Then** the reel's locked artifacts (narration, subtitle cues, shot timing) become protected — a later run may not rewrite them without explicit user direction
-
-**Given** a locked reel
-**When** a new run is invoked without explicit user direction to revise it
-**Then** the orchestrator refuses to overwrite the locked narration/subtitle cues/shot timing and fails loud rather than silently regenerating them
-
-**Given** an explicit reject/regenerate signal from the operator
-**When** a new run is invoked afterward
-**Then** it is permitted to revise the previously locked artifacts
+**Given** the change
+**When** tests run with an in-memory OpenTelemetry exporter (no network)
+**Then** tests prove:
+  - the span tree shape for a mocked run, from preflight through delivery;
+  - that the instrumentation takes effect;
+  - the system-prompt attribute;
+  - vendor span attributes, including provider and final prompt;
+  - correct nesting across two concurrent shots;
+  - redaction and truncation;
+  - a no-op when keys are absent;
+  - fail-open behaviour when export raises;
+  - the bounded flush.
+  The suite ends no worse than the NFR5 baseline.
+**And** `README.md` documents the three environment variables, creating the Langfuse project and keys once in the UI, and the install command for the new dependencies into the `kayak-video` env
+**And** `ARCHITECTURE-SPINE.md` gains AD-19: observability is opt-in via env, fails open, and never records secrets or media bytes
