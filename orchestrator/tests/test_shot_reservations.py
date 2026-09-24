@@ -24,7 +24,7 @@ import orchestrator.run as run
 from orchestrator.agents._guard import STILL_TOOL, VEO_CLIP_TOOL, VEO_SEED_TOOL
 from orchestrator.contracts.production_assets import ProductionAssetEntry
 from orchestrator.contracts.visual_plan import VisualPlanContract
-from orchestrator.settings import SettingsError, load_settings
+from orchestrator.settings import DEFAULT_CLAUDE_SHOT_ATTEMPT_CAP_USD, SettingsError, load_settings
 from orchestrator.state import production_assets as production_assets_module
 from orchestrator.state.budget_ledger import BudgetLedger, run_ledger
 from orchestrator.state.production_assets import load_production_assets, upsert_production_asset
@@ -49,11 +49,18 @@ from orchestrator.tests.test_gemini_tools import (
     shot_dict,
 )
 from orchestrator.tests.test_guard_hooks import SEED_OK, call_paid, clip_failure, reports, result_message
-from orchestrator.tests.test_preflight import make_settings
+from orchestrator.tests.test_preflight import make_settings as _make_settings
 from orchestrator.tests.test_veo_tools import seed_for, shot_for
 from orchestrator.tools import codex_image_tools, gemini_tools, veo_tools, vendor_limits
 
-CAP = 1.0  # make_settings() default CLAUDE_SHOT_ATTEMPT_CAP_USD
+# Pinned here, not taken from the shipped default, so the arithmetic below
+# doesn't move whenever that default is retuned.
+CAP = 1.0
+
+
+def make_settings(**overrides):
+    return _make_settings(**{"claude_shot_attempt_cap_usd": CAP, **overrides})
+
 VEO_RESERVATION = CAP + 0.04 + 1.2
 STILL_RESERVATION = CAP + 0.04
 
@@ -83,7 +90,8 @@ def test_new_settings_have_defaults_and_env_overrides(monkeypatch):
         monkeypatch.delenv(name, raising=False)
     settings = load_settings()
     assert (settings.claude_shot_attempt_cap_usd, settings.veo_concurrency,
-            settings.gemini_image_concurrency, settings.codex_image_concurrency) == (1.0, 3, 2, 1)
+            settings.gemini_image_concurrency, settings.codex_image_concurrency) == (
+        DEFAULT_CLAUDE_SHOT_ATTEMPT_CAP_USD, 3, 2, 1)
 
     monkeypatch.setenv("CLAUDE_SHOT_ATTEMPT_CAP_USD", "0.75")
     monkeypatch.setenv("VEO_CONCURRENCY", "2")

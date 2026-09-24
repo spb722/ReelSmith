@@ -27,7 +27,9 @@ DEFAULT_GCS_BUCKET_URI = "gs://sachin-kayaking-video-test/book_reels/veo/"
 # Raised from 5.0 when reels began planning 2-3 real Veo shots: each one
 # reserves image_call_cost_usd + veo_call_cost_usd (~$1.24) of headroom before
 # it may start, which a $5 ceiling could not cover alongside the Claude stages.
-DEFAULT_MAX_BUDGET_USD = 15.0
+# Set generously while Epic 4 is tested end to end; tune once Langfuse shows
+# where a real run's money goes.
+DEFAULT_MAX_BUDGET_USD = 40.0
 DEFAULT_VEO_MODEL = "veo-3.1-fast-generate-001"
 DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
 DEFAULT_IMAGE_MODEL = "gemini-3.1-flash-image"
@@ -73,8 +75,9 @@ DEFAULT_IMAGE_CALL_COST_USD = 0.04
 DEFAULT_VEO_CALL_COST_USD = 1.20
 # Story 4.3: the Claude spend one shot attempt may use; it becomes that shot
 # query's `max_budget_usd`. Live Veo and stills attempts have cost $0.18-$0.59
-# of Claude each, so $1.00 leaves headroom without holding most of the run.
-DEFAULT_CLAUDE_SHOT_ATTEMPT_CAP_USD = 1.0
+# of Claude each; $3.00 is deliberately generous until traced runs show the
+# real spread with skills loaded.
+DEFAULT_CLAUDE_SHOT_ATTEMPT_CAP_USD = 3.0
 # How many calls to each vendor may be in flight at once, across every shot.
 DEFAULT_VEO_CONCURRENCY = 3
 DEFAULT_GEMINI_IMAGE_CONCURRENCY = 2
