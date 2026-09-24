@@ -65,6 +65,20 @@ def plugin_read_guard() -> dict:
     return {"PreToolUse": [HookMatcher(matcher="Read", hooks=[_deny_read_outside_plugin])]}
 
 
+def merge_hooks(*hook_maps: dict) -> dict:
+    """One `hooks=` map from several, keeping every matcher of every event.
+
+    The SDK takes a single map, so a second guard must add its matchers next
+    to the Read guard's rather than replace them.
+    """
+
+    merged: dict = {}
+    for hook_map in hook_maps:
+        for event, matchers in hook_map.items():
+            merged.setdefault(event, []).extend(matchers)
+    return merged
+
+
 def assert_isolated(options: ClaudeAgentOptions) -> None:
     """`setting_sources=[]` is what structurally keeps CLAUDE.md and `.claude/` out."""
 

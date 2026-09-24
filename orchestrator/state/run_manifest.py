@@ -178,9 +178,21 @@ class FailureReport:
     attempt_count: int
     timestamp: str
     partial_artifact_paths: list[str] = field(default_factory=list)
+    # Story 4.2, additive with defaults so a pre-change report still builds.
+    # `reason_code` is one of `vendor_limit`, `budget_exhausted`,
+    # `retry_ceiling`, `validation`, ...; `unclassified` marks a halt that
+    # names none of them.
+    reason_code: str = "unclassified"
+    # Re-invoking the run can succeed without changing the reel: after a
+    # vendor limit resets, or after MAX_BUDGET_USD is raised (spend
+    # accumulates across runs in the manifest).
+    resumable: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+RESUMABLE_REASON_CODES = frozenset({"vendor_limit", "budget_exhausted"})
 
 
 def build_failure_report(
@@ -189,6 +201,7 @@ def build_failure_report(
     reason: str,
     attempt_count: int,
     partial_artifact_paths: Optional[list[str]] = None,
+    reason_code: str = "unclassified",
 ) -> FailureReport:
     return FailureReport(
         stage_id=stage_id,
@@ -197,6 +210,8 @@ def build_failure_report(
         attempt_count=attempt_count,
         timestamp=datetime.now(timezone.utc).isoformat(),
         partial_artifact_paths=list(partial_artifact_paths or []),
+        reason_code=reason_code,
+        resumable=reason_code in RESUMABLE_REASON_CODES,
     )
 
 

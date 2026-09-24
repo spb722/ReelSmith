@@ -112,3 +112,15 @@
 - source_spec: `docs/implementation-artifacts/spec-4-1-agent-know-how-skills-pipeline-plugin.md`
   summary: Fail closed when a pipeline agent's stream yields no init `SystemMessage` before its first tool use or result.
   evidence: `check_init_message` (`orchestrator/agents/_skills.py`) runs only when an init message arrives, so a CLI that stopped sending one (or renamed the subtype) would skip the skill-isolation check. `setting_sources == []` is still asserted structurally. Failing closed needs every mocked test stream to yield an init message first.
+- source_spec: `docs/implementation-artifacts/spec-4-2-guard-hooks-budget-guard-vendor-limit-classification.md`
+  summary: No test pins that `transient_retries` resets to 0 after a normal attempt, so each attempt gets its own 3 backoffs.
+  evidence: Deleting the reset at run.py (Veo/stills) passes every test; the halt it would cause is resumable.
+- source_spec: `docs/implementation-artifacts/spec-4-2-guard-hooks-budget-guard-vendor-limit-classification.md`
+  summary: Verify against the real CLI that `PostToolUseFailure` fires for SDK MCP tools and that exact-name hook matchers bind the paid-tool guard.
+  evidence: Every hook test dispatches through a local fake; Story 4.2 allowed no live calls. A small live spike like 4.1 (g) would settle it (unverified, medium).
+- source_spec: `docs/implementation-artifacts/spec-4-2-guard-hooks-budget-guard-vendor-limit-classification.md`
+  summary: Voice-stage TTS/STT budget halts write `reason_code: unclassified`, so they report non-resumable.
+  evidence: Only the bounded, Veo and stills budget halts were tagged in Story 4.2.
+- source_spec: `docs/implementation-artifacts/spec-4-2-guard-hooks-budget-guard-vendor-limit-classification.md`
+  summary: Repeated vendor halts at the same attempt number overwrite `_attempt_K_vendor_limit.json` evidence.
+  evidence: The attempt is given back, so a resumed run halting again reuses the name; a timestamp suffix would keep both.

@@ -8,11 +8,13 @@ from pathlib import Path
 
 from claude_agent_sdk import AgentDefinition, ClaudeAgentOptions, ResultMessage, query
 
+from orchestrator.agents._guard import PaidToolGuard
 from orchestrator.agents._skills import (
     PIPELINE_ENV,
     PLUGIN,
     assert_isolated,
     check_init_message,
+    merge_hooks,
     plugin_read_guard,
     plugin_read_rule,
     qualified,
@@ -64,6 +66,7 @@ async def generate_still_asset(
     max_budget_usd: float,
     correction: str = "",
     previous_outcome: object = None,
+    guard: PaidToolGuard | None = None,
 ) -> ResultMessage:
     payload = {
         "shot": shot,
@@ -85,7 +88,8 @@ async def generate_still_asset(
         skills=SKILLS,
         plugins=[PLUGIN],
         env=dict(PIPELINE_ENV),
-        hooks=plugin_read_guard(),
+        # The Read guard and the paid-tool guard both stay bound.
+        hooks=merge_hooks(plugin_read_guard(), guard.hooks() if guard else {}),
         mcp_servers={"gemini": gemini_server},
         permission_mode="dontAsk",
         setting_sources=[],

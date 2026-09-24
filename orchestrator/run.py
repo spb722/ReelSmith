@@ -21,16 +21,24 @@ import argparse
 import asyncio
 import json
 import math
+import re
 import shutil
 import sys
 import time
 import uuid
+from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Awaitable, Callable, Optional, Sequence
 
 from claude_agent_sdk import ResultMessage
 
+from orchestrator.agents._guard import (
+    STILL_TOOL,
+    VEO_CLIP_TOOL,
+    VEO_SEED_TOOL,
+    PaidToolGuard,
+)
 from orchestrator.agents._skills import SkillIsolationError
 from orchestrator.agents.asset_analyst import analyze_assets
 from orchestrator.agents.stills_agent import generate_still_asset
@@ -123,16 +131,31 @@ MAX_VEO_SHOTS = 3
 TARGET_MIN_VEO_SHOTS = 2
 
 
+# What a resumable halt tells the operator to do next (AD-6: never wait live).
+RESUME_HINTS = {
+    "vendor_limit": "No attempt was counted. Re-run the same command to resume once the vendor limit resets.",
+    "budget_exhausted": (
+        "Resumable after raising MAX_BUDGET_USD: spend accumulates across runs in the "
+        "run manifest, so re-running with the same ceiling stops here again."
+    ),
+}
+
+
 def _halt(
     stage_id: str, failed_contract_name: str, reason: str, *,
     attempt_count: int = 1, partial_artifact_paths: list[str] | None = None,
+    reason_code: str = "unclassified",
 ) -> int:
+    hint = RESUME_HINTS.get(reason_code)
+    if hint:
+        reason = f"{reason} -- {hint}"
     report = build_failure_report(
         stage_id=stage_id,
         failed_contract_name=failed_contract_name,
         reason=reason,
         attempt_count=attempt_count,
         partial_artifact_paths=partial_artifact_paths,
+        reason_code=reason_code,
     )
     path = write_failure_report(report, output_dir=RUN_STATE_DIR)
 
@@ -192,12 +215,22 @@ async def run_bounded_agent_stage(
         partial_paths.append(str(persisted_file))
     partial_paths.extend(str(p) for p in sorted(RUN_STATE_DIR.glob(f"{attempt_file_prefix}_*.json")))
 
-    def halt(reason: str) -> int:
+    def halt(reason: str, reason_code: str = "unclassified") -> int:
         return _halt(
             stage_id, failed_contract_name, reason,
             attempt_count=count if type(count) is int else 0,
             partial_artifact_paths=partial_paths,
+            reason_code=reason_code,
         )
+
+    def vendor_halt(refusal: VendorRefusal) -> int:
+        # Refused, not spent: give the pre-incremented attempt back. The
+        # Claude CLI already retried any 429, so a transient one halts too.
+        nonlocal count
+        count -= 1
+        manifest.iteration_counts[stage_id] = count
+        save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+        return halt(f"Blocked by a vendor limit ({refusal.kind}): {refusal.detail}", "vendor_limit")
 
     if type(count) is not int or count < 0:
         return halt(f"Invalid persisted {stage_id} iteration count")
@@ -205,7 +238,7 @@ async def run_bounded_agent_stage(
     while count < max_attempts:
         budget_failure = _check_budget(settings, manifest.budget_spent_usd)
         if budget_failure:
-            return halt(budget_failure.reason or "Budget exhausted")
+            return halt(budget_failure.reason or "Budget exhausted", "budget_exhausted")
 
         count += 1
         manifest.iteration_counts[stage_id] = count
@@ -221,6 +254,15 @@ async def run_bounded_agent_stage(
             # would only repeat it.
             return halt(str(exc))
         except Exception as exc:
+            refusal = _vendor_refusal(exc=exc)
+            if refusal is not None:
+                attempt_path = RUN_STATE_DIR / f"{attempt_file_prefix}_{count}_vendor_limit.json"
+                _atomic_write_json(attempt_path, {
+                    "status": "VENDOR_LIMIT", "vendor_refusal": refusal.kind,
+                    "error": f"{type(exc).__name__}: {exc}",
+                })
+                partial_paths.append(str(attempt_path))
+                return vendor_halt(refusal)
             feedback = f"Claude attempt failed: {type(exc).__name__}: {exc}"
             previous_output = None
         else:
@@ -230,6 +272,18 @@ async def run_bounded_agent_stage(
             manifest.budget_spent_usd += cost
             manifest.session_id = result.session_id
             save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+            refusal = _vendor_refusal(result=result)
+            if refusal is not None:
+                # Kept apart from `_{count}.json`: the attempt is given back,
+                # so a resumed run writes that name again.
+                attempt_path = RUN_STATE_DIR / f"{attempt_file_prefix}_{count}_vendor_limit.json"
+                _atomic_write_json(attempt_path, {
+                    "status": "VENDOR_LIMIT", "vendor_refusal": refusal.kind,
+                    "result": result.result, "subtype": result.subtype, "errors": result.errors,
+                    "api_error_status": result.api_error_status, "claude_cost_usd": cost,
+                })
+                partial_paths.append(str(attempt_path))
+                return vendor_halt(refusal)
             previous_output = result.structured_output
             attempt_path = RUN_STATE_DIR / f"{attempt_file_prefix}_{count}.json"
             _atomic_write_json(attempt_path, {
@@ -239,7 +293,10 @@ async def run_bounded_agent_stage(
             partial_paths.append(str(attempt_path))
             budget_failure = _check_budget(settings, manifest.budget_spent_usd)
             if budget_failure or result.subtype == "error_max_budget_usd":
-                return halt(budget_failure.reason if budget_failure else "Claude reached its remaining budget limit")
+                return halt(
+                    budget_failure.reason if budget_failure else "Claude reached its remaining budget limit",
+                    "budget_exhausted",
+                )
             try:
                 if result.is_error:
                     raise ValueError(f"Claude failed ({result.subtype}): {result.errors or result.result}")
@@ -259,7 +316,10 @@ async def run_bounded_agent_stage(
 
         log(f"Try {count} of {max_attempts} didn't work: {feedback}", error=True)
 
-    return halt(f"Retry ceiling exhausted: {feedback or f'{max_attempts} attempts already recorded for this run'}")
+    return halt(
+        f"Retry ceiling exhausted: {feedback or f'{max_attempts} attempts already recorded for this run'}",
+        "retry_ceiling",
+    )
 
 
 async def run_screenshot_stage(source_images_dir: Path, settings: Settings, manifest: RunManifest) -> int:
@@ -854,6 +914,87 @@ async def run_voice_stage(settings: Settings, manifest: RunManifest, *, retry_vo
     return halt(f"Retry ceiling exhausted: {feedback}")
 
 
+# Vendor refusals are not reel problems (Story 4.2, FR10; supersedes
+# docs/vendor-limit-fix.md). A refusal means the work never ran, so it must not
+# consume an attempt or draw the conservative charge. `transient` is worth a
+# short backoff; `hard` will not clear before a reset or a human fix, so the run
+# halts resumably. A hard marker wins over a 429, because usage and session
+# limits arrive as 429s too. Keep the markers tight -- never a bare "limit".
+VENDOR_HARD_MARKERS = (
+    "usage limit",    # Codex / ChatGPT ("usage_limit_reached" too, once "_" -> " ")
+    "session limit",  # Claude
+    "spend limit",    # Claude org "monthly spend limit", "service_spend_limit_reached"
+    "quota",
+    "credentials",
+    "unauthorized",
+)
+VENDOR_TRANSIENT_MARKERS = ("rate limit",)
+VENDOR_HARD_HTTP_STATUSES = frozenset({401, 403})
+VENDOR_TRANSIENT_HTTP_STATUSES = frozenset({429})
+# google-genai errors read "<code> <STATUS>. {...}", e.g. "429 RESOURCE_EXHAUSTED".
+_GENAI_STATUS = re.compile(r"\b([45]\d\d) [A-Z][A-Z_]+\b")
+
+
+def classify_vendor_refusal(text: str | None, http_status: int | None = None) -> str:
+    """`transient`, `hard` or `none` for one error's text and optional HTTP status."""
+
+    lowered = (text or "").lower().replace("_", " ")
+    if http_status in VENDOR_HARD_HTTP_STATUSES or any(m in lowered for m in VENDOR_HARD_MARKERS):
+        return "hard"
+    if http_status in VENDOR_TRANSIENT_HTTP_STATUSES or any(m in lowered for m in VENDOR_TRANSIENT_MARKERS):
+        return "transient"
+    return "none"
+
+
+# At most 3 retries of the same attempt, about 2 minutes of waiting in all.
+TRANSIENT_BACKOFF_SECONDS = (10.0, 30.0, 60.0)
+
+
+@dataclass(frozen=True)
+class VendorRefusal:
+    kind: str  # "transient" | "hard"
+    detail: str
+    # The client already backed off before this reached us, so retrying again
+    # would double it: the Claude CLI retries 429/5xx itself, and the Gemini
+    # image path has QUOTA_RETRY_SECONDS. Veo (google-genai with no
+    # retry_options) and Codex (429 retries off for ChatGPT auth) do not.
+    retried_upstream: bool
+
+
+def _vendor_refusal(
+    *, exc: BaseException | None = None, result: ResultMessage | None = None,
+    guard: PaidToolGuard | None = None,
+) -> VendorRefusal | None:
+    """The vendor refusal behind this attempt, from any of FR10's four routes.
+
+    Routes: a Claude SDK exception; a `ResultMessage` with `is_error`; a paid
+    tool's failure contract, which the guard's PostToolUse hook recorded; and
+    Veo's SDK_ERROR, which is one such contract. A hard refusal wins.
+    """
+
+    found: list[VendorRefusal] = []
+    if exc is not None:
+        text = f"{type(exc).__name__}: {exc}"
+        kind = classify_vendor_refusal(text)
+        if kind != "none":
+            found.append(VendorRefusal(kind, f"Claude: {text}", True))
+    if result is not None and result.is_error:
+        text = " ".join([result.result or "", *(result.errors or [])]).strip()
+        kind = classify_vendor_refusal(text, result.api_error_status)
+        if kind != "none":
+            status = f", HTTP {result.api_error_status}" if result.api_error_status else ""
+            found.append(VendorRefusal(kind, f"Claude ({result.subtype}{status}): {text}", True))
+    for failure in guard.failures if guard is not None else []:
+        text = f"{failure.code}: {failure.reason}"
+        match = _GENAI_STATUS.search(failure.reason)
+        kind = classify_vendor_refusal(text, int(match.group(1)) if match else None)
+        if kind != "none":
+            found.append(VendorRefusal(
+                kind, f"{failure.tool_name} ({failure.provider}) {text}", failure.provider == "gemini",
+            ))
+    return next((r for r in found if r.kind == "hard"), found[0] if found else None)
+
+
 # Veo refuses a seed whose person reads as a real, identifiable individual.
 # Two of these are explicit safety codes; an OPERATION_ERROR only counts when
 # the message says the input image itself broke the guidelines, since that
@@ -1048,6 +1189,93 @@ def _stamp_veo_outcome(
     return outcome.model_copy(update=updates)
 
 
+def _charge_guarded_attempt(
+    *, agent: str, sequence: int, count: int, status: str, suffix: str,
+    claude_cost: float, guard: PaidToolGuard, manifest: RunManifest,
+    attempt_paths: list[str], agent_result: ResultMessage | None = None,
+    exc: BaseException | None = None, detail: str = "",
+) -> None:
+    """Charge only what an interrupted attempt really cost, and record it.
+
+    That is the Claude cost reported plus every paid call the guard saw bill;
+    no conservative charge. The record gets its own suffix and no
+    `structured_output`, so the ladder (`_prior_character_rejections`) and a
+    resumed attempt's own `_{count}.json` never collide with it.
+    """
+
+    manifest.budget_spent_usd += claude_cost + guard.billed_usd
+    attempt_path = RUN_STATE_DIR / f"{agent}_shot_{sequence}_attempt_{count}_{suffix}.json"
+    record: dict = {
+        "status": status,
+        "detail": detail,
+        "claude_cost_usd": claude_cost,
+        "charged_paid_tool_cost_usd": guard.billed_usd,
+    }
+    if agent_result is not None:
+        record.update({
+            "agent_output": agent_result.structured_output,
+            "result": agent_result.result,
+            "subtype": agent_result.subtype,
+            "errors": agent_result.errors,
+            "api_error_status": agent_result.api_error_status,
+        })
+    if exc is not None:
+        record["error"] = f"{type(exc).__name__}: {exc}"
+    _atomic_write_json(attempt_path, record)
+    attempt_paths.append(str(attempt_path))
+    save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+
+
+def _reports_success(agent_result: ResultMessage) -> bool:
+    output = agent_result.structured_output
+    return not agent_result.is_error and isinstance(output, dict) and output.get("status") == "SUCCESS"
+
+
+async def _handle_shot_vendor_refusal(
+    refusal: VendorRefusal, *, agent: str, contract_name: str, stage_id: str,
+    sequence: int, count: int, transient_retries: int, claude_cost: float,
+    guard: PaidToolGuard, manifest: RunManifest, attempt_paths: list[str],
+    agent_result: ResultMessage | None = None, exc: BaseException | None = None,
+) -> int | None:
+    """Give the attempt back, then either back off (None: rerun it) or halt.
+
+    Only a transient refusal on a route with no retry of its own is rerun, at
+    most `len(TRANSIENT_BACKOFF_SECONDS)` times. A rerun starts a new agent
+    session, so it pays again for whatever it redraws.
+    """
+
+    retry = (
+        refusal.kind == "transient"
+        and not refusal.retried_upstream
+        and transient_retries < len(TRANSIENT_BACKOFF_SECONDS)
+    )
+    manifest.iteration_counts[stage_id] = count - 1
+    _charge_guarded_attempt(
+        agent=agent, sequence=sequence, count=count,
+        status="TRANSIENT_VENDOR_REFUSAL" if retry else "VENDOR_LIMIT",
+        suffix=f"transient_{transient_retries + 1}" if retry else "vendor_limit",
+        claude_cost=claude_cost, guard=guard, manifest=manifest, attempt_paths=attempt_paths,
+        agent_result=agent_result, exc=exc, detail=f"{refusal.kind}: {refusal.detail}",
+    )
+    if retry:
+        delay = TRANSIENT_BACKOFF_SECONDS[transient_retries]
+        log(
+            f"Shot {sequence}: the vendor asked us to slow down ({refusal.detail}); "
+            f"retrying the same attempt in {delay:.0f}s",
+            error=True, indent=2,
+        )
+        await asyncio.sleep(delay)
+        return None
+    escalated = " (still failing after backoff)" if refusal.kind == "transient" else ""
+    return _halt(
+        agent, contract_name,
+        f"Blocked by a vendor limit ({refusal.kind}{escalated}) on shot {sequence}: {refusal.detail}",
+        attempt_count=count - 1,
+        partial_artifact_paths=attempt_paths,
+        reason_code="vendor_limit",
+    )
+
+
 async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
     """Generate only VEO-mode shots and atomically record approved clips."""
 
@@ -1146,6 +1374,7 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
             return _halt("veo_agent", "RunManifest", f"Invalid iteration count for {stage_id}")
         correction = ""
         previous_outcome: object = None
+        transient_retries = 0
         # Which rung of the seed prompt ladder this shot's next attempt starts
         # on. Only a Veo likeness rejection moves it, and it never moves back.
         # Seeded from the attempts already on disk so a resumed run does not
@@ -1181,6 +1410,12 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
             count += 1
             manifest.iteration_counts[stage_id] = count
             save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+            # FR9: the hook denies a paid call the remaining budget can't cover,
+            # counting every paid call already allowed in this session.
+            guard = PaidToolGuard(
+                limit_usd=remaining_budget,
+                costs={VEO_SEED_TOOL: settings.image_call_cost_usd, VEO_CLIP_TOOL: settings.veo_call_cost_usd},
+            )
             try:
                 agent_result = await generate_veo_asset(
                     shot=shot.model_dump(mode="json"),
@@ -1191,6 +1426,7 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
                     max_budget_usd=remaining_budget - reserved_external_cost,
                     correction=correction,
                     previous_outcome=previous_outcome,
+                    guard=guard,
                 )
             except SkillIsolationError as exc:
                 # Raised on the init message, before any model turn or paid
@@ -1200,6 +1436,19 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
                     attempt_count=count, partial_artifact_paths=attempt_paths,
                 )
             except Exception as exc:
+                refusal = _vendor_refusal(exc=exc, guard=guard)
+                if refusal is not None:
+                    halted = await _handle_shot_vendor_refusal(
+                        refusal, agent="veo_agent", contract_name="VeoOutcomeContract",
+                        stage_id=stage_id, sequence=shot.sequence, count=count,
+                        transient_retries=transient_retries, claude_cost=0.0, guard=guard,
+                        manifest=manifest, attempt_paths=attempt_paths, exc=exc,
+                    )
+                    if halted is not None:
+                        return halted
+                    count -= 1
+                    transient_retries += 1
+                    continue
                 # Tool execution may have reached a paid boundary before the
                 # SDK/agent surfaced an exception, and up to the full Claude
                 # budget ceiling given to this attempt (remaining_budget -
@@ -1225,6 +1474,7 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
                     f"{type(exc).__name__}: {exc}",
                     attempt_count=count,
                     partial_artifact_paths=attempt_paths,
+                    reason_code="budget_exhausted" if guard.denial else "unclassified",
                 )
 
             claude_cost = agent_result.total_cost_usd
@@ -1233,6 +1483,38 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
                     "veo_agent", "Budget", "Veo agent returned no usable Claude cost",
                     attempt_count=count, partial_artifact_paths=attempt_paths,
                 )
+            if guard.denial is not None:
+                # Checked before the outcome, so the agent's own output can't
+                # mask a denied paid call (AD-7).
+                _charge_guarded_attempt(
+                    agent="veo_agent", sequence=shot.sequence, count=count,
+                    status="BUDGET_DENIED", suffix="budget_denied", claude_cost=claude_cost,
+                    guard=guard, manifest=manifest, attempt_paths=attempt_paths,
+                    agent_result=agent_result, detail=guard.denial,
+                )
+                return _halt(
+                    "veo_agent", "Budget", guard.denial,
+                    attempt_count=count, partial_artifact_paths=attempt_paths,
+                    reason_code="budget_exhausted",
+                )
+            refusal = _vendor_refusal(result=agent_result, guard=guard)
+            if refusal is not None and refusal.kind == "transient" and _reports_success(agent_result):
+                # The agent retried the tool itself and got its asset; a
+                # rerun would throw that paid work away.
+                refusal = None
+            if refusal is not None:
+                halted = await _handle_shot_vendor_refusal(
+                    refusal, agent="veo_agent", contract_name="VeoOutcomeContract",
+                    stage_id=stage_id, sequence=shot.sequence, count=count,
+                    transient_retries=transient_retries, claude_cost=claude_cost, guard=guard,
+                    manifest=manifest, attempt_paths=attempt_paths, agent_result=agent_result,
+                )
+                if halted is not None:
+                    return halted
+                count -= 1
+                transient_retries += 1
+                continue
+            transient_retries = 0
             try:
                 if agent_result.is_error:
                     raise ValueError(
@@ -1300,6 +1582,7 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
                 return _halt(
                     "veo_agent", "Budget", budget_failure.reason or "Budget exhausted",
                     attempt_count=count, partial_artifact_paths=attempt_paths,
+                    reason_code="budget_exhausted",
                 )
 
             if outcome.status == "SUCCESS":
@@ -1367,6 +1650,7 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
                 reason,
                 attempt_count=count,
                 partial_artifact_paths=attempt_paths + last_failure_paths,
+                reason_code="retry_ceiling",
             )
 
     return 0
@@ -1484,6 +1768,7 @@ async def run_stills_stage(settings: Settings, manifest: RunManifest) -> int:
             return _halt("stills_agent", "RunManifest", f"Invalid iteration count for {stage_id}")
         correction = ""
         previous_outcome: object = None
+        transient_retries = 0
         attempt_paths: list[str] = [
             str(path)
             for path in sorted(RUN_STATE_DIR.glob(f"stills_agent_shot_{shot.sequence}_attempt_*.json"))
@@ -1499,10 +1784,14 @@ async def run_stills_stage(settings: Settings, manifest: RunManifest) -> int:
                     f"${reserved_external_cost:.6f} must be reserved before the paid image call",
                     attempt_count=count,
                     partial_artifact_paths=attempt_paths,
+                    reason_code="budget_exhausted",
                 )
             count += 1
             manifest.iteration_counts[stage_id] = count
             save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+            # FR9: the hook denies a paid call the remaining budget can't cover,
+            # counting every paid call already allowed in this session.
+            guard = PaidToolGuard(limit_usd=remaining_budget, costs={STILL_TOOL: settings.image_call_cost_usd})
             try:
                 agent_result = await generate_still_asset(
                     shot=shot.model_dump(mode="json"),
@@ -1513,6 +1802,7 @@ async def run_stills_stage(settings: Settings, manifest: RunManifest) -> int:
                     max_budget_usd=remaining_budget - reserved_external_cost,
                     correction=correction,
                     previous_outcome=previous_outcome,
+                    guard=guard,
                 )
             except SkillIsolationError as exc:
                 # Raised on the init message, before any model turn or paid
@@ -1522,6 +1812,19 @@ async def run_stills_stage(settings: Settings, manifest: RunManifest) -> int:
                     attempt_count=count, partial_artifact_paths=attempt_paths,
                 )
             except Exception as exc:
+                refusal = _vendor_refusal(exc=exc, guard=guard)
+                if refusal is not None:
+                    halted = await _handle_shot_vendor_refusal(
+                        refusal, agent="stills_agent", contract_name="StillOutcomeContract",
+                        stage_id=stage_id, sequence=shot.sequence, count=count,
+                        transient_retries=transient_retries, claude_cost=0.0, guard=guard,
+                        manifest=manifest, attempt_paths=attempt_paths, exc=exc,
+                    )
+                    if halted is not None:
+                        return halted
+                    count -= 1
+                    transient_retries += 1
+                    continue
                 # Same conservative accounting as run_veo_stage: no real cost
                 # is available on this branch, so charge the whole
                 # per-attempt allotment rather than only the reserved
@@ -1543,6 +1846,7 @@ async def run_stills_stage(settings: Settings, manifest: RunManifest) -> int:
                     f"{type(exc).__name__}: {exc}",
                     attempt_count=count,
                     partial_artifact_paths=attempt_paths,
+                    reason_code="budget_exhausted" if guard.denial else "unclassified",
                 )
 
             claude_cost = agent_result.total_cost_usd
@@ -1551,6 +1855,38 @@ async def run_stills_stage(settings: Settings, manifest: RunManifest) -> int:
                     "stills_agent", "Budget", "Stills agent returned no usable Claude cost",
                     attempt_count=count, partial_artifact_paths=attempt_paths,
                 )
+            if guard.denial is not None:
+                # Checked before the outcome, so the agent's own output can't
+                # mask a denied paid call (AD-7).
+                _charge_guarded_attempt(
+                    agent="stills_agent", sequence=shot.sequence, count=count,
+                    status="BUDGET_DENIED", suffix="budget_denied", claude_cost=claude_cost,
+                    guard=guard, manifest=manifest, attempt_paths=attempt_paths,
+                    agent_result=agent_result, detail=guard.denial,
+                )
+                return _halt(
+                    "stills_agent", "Budget", guard.denial,
+                    attempt_count=count, partial_artifact_paths=attempt_paths,
+                    reason_code="budget_exhausted",
+                )
+            refusal = _vendor_refusal(result=agent_result, guard=guard)
+            if refusal is not None and refusal.kind == "transient" and _reports_success(agent_result):
+                # The agent retried the tool itself and got its asset; a
+                # rerun would throw that paid work away.
+                refusal = None
+            if refusal is not None:
+                halted = await _handle_shot_vendor_refusal(
+                    refusal, agent="stills_agent", contract_name="StillOutcomeContract",
+                    stage_id=stage_id, sequence=shot.sequence, count=count,
+                    transient_retries=transient_retries, claude_cost=claude_cost, guard=guard,
+                    manifest=manifest, attempt_paths=attempt_paths, agent_result=agent_result,
+                )
+                if halted is not None:
+                    return halted
+                count -= 1
+                transient_retries += 1
+                continue
+            transient_retries = 0
             try:
                 if agent_result.is_error:
                     raise ValueError(
@@ -1615,6 +1951,7 @@ async def run_stills_stage(settings: Settings, manifest: RunManifest) -> int:
                 return _halt(
                     "stills_agent", "Budget", budget_failure.reason or "Budget exhausted",
                     attempt_count=count, partial_artifact_paths=attempt_paths,
+                    reason_code="budget_exhausted",
                 )
 
             if outcome.status == "SUCCESS":
@@ -1667,6 +2004,7 @@ async def run_stills_stage(settings: Settings, manifest: RunManifest) -> int:
                 reason,
                 attempt_count=count,
                 partial_artifact_paths=attempt_paths + last_failure_paths,
+                reason_code="retry_ceiling",
             )
 
     return 0

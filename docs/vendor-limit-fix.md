@@ -1,5 +1,7 @@
 # Fix: a vendor limit is not a reel failure
 
+> **Superseded by Story 4.2** (`docs/implementation-artifacts/spec-4-2-guard-hooks-budget-guard-vendor-limit-classification.md`, `docs/epics.md` Story 4.2). `classify_vendor_refusal` and `_vendor_refusal` in `orchestrator/run.py` replace `_is_vendor_limit`, and cover all four refusal routes plus transient backoff. Kept for its incident history; don't apply the edits below.
+
 Every edit is in `orchestrator/run.py`. Five changes: one new helper, then four
 guards that use it. The before-blocks below are copied verbatim from the file,
 so they can be searched for directly.
