@@ -95,4 +95,5 @@ def check_init_message(message: object, skills: list[str]) -> None:
         problems.append(f"expected only the {PLUGIN_NAME} plugin, got {plugins}")
     if problems:
         raise SkillIsolationError("Agent session is not isolated -- " + "; ".join(problems))
-    log(f"Skills for this stage: {', '.join(skills)} (plugin {PLUGIN_NAME})", indent=2)
+    loaded = [name for name in listed if name in skills]
+    log(f"Skills for this stage: {', '.join(loaded)} (plugin {', '.join(plugins)})", indent=2)

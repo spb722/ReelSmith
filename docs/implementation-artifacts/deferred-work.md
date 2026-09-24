@@ -109,3 +109,6 @@
 - source_spec: `docs/implementation-artifacts/spec-2-3-autonomous-veo-generation-production-asset-manifest-structured-failure-inspection.md`
   summary: Make seed and clip MCP tools enforce a per-attempt maximum of one paid call each.
   evidence: The scoped agent prompt limits the two registered tools and the orchestrator reserves one image plus one Veo estimate, but SDK tool-call counting would require an additional runtime wrapper around Claude Agent SDK events.
+- source_spec: `docs/implementation-artifacts/spec-4-1-agent-know-how-skills-pipeline-plugin.md`
+  summary: Fail closed when a pipeline agent's stream yields no init `SystemMessage` before its first tool use or result.
+  evidence: `check_init_message` (`orchestrator/agents/_skills.py`) runs only when an init message arrives, so a CLI that stopped sending one (or renamed the subtype) would skip the skill-isolation check. `setting_sources == []` is still asserted structurally. Failing closed needs every mocked test stream to yield an init message first.
