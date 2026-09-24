@@ -594,7 +594,7 @@ def test_a_pre_change_failure_report_dict_still_builds():
     }
     report = FailureReport(**old)
     assert (report.reason_code, report.resumable) == ("unclassified", False)
-    assert {**old, "reason_code": "unclassified", "resumable": False} == asdict(report)
+    assert {**old, "reason_code": "unclassified", "resumable": False, "failed_shots": []} == asdict(report)
 
 
 @pytest.mark.parametrize("code,resumable", [

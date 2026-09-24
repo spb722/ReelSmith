@@ -82,6 +82,9 @@ DEFAULT_CLAUDE_SHOT_ATTEMPT_CAP_USD = 3.0
 DEFAULT_VEO_CONCURRENCY = 3
 DEFAULT_GEMINI_IMAGE_CONCURRENCY = 2
 DEFAULT_CODEX_IMAGE_CONCURRENCY = 1
+# Story 4.4: how many shots are in production at once. Each runs its own
+# Claude query; the vendor caps above still bound the paid calls under them.
+DEFAULT_SHOT_CONCURRENCY = 4
 
 # The Claude model every orchestrator agent runs on. Left unset, the Agent SDK
 # picks its own default (claude-sonnet-5 in the runs before this was pinned),
@@ -140,6 +143,7 @@ class Settings:
     veo_concurrency: int = DEFAULT_VEO_CONCURRENCY
     gemini_image_concurrency: int = DEFAULT_GEMINI_IMAGE_CONCURRENCY
     codex_image_concurrency: int = DEFAULT_CODEX_IMAGE_CONCURRENCY
+    shot_concurrency: int = DEFAULT_SHOT_CONCURRENCY
     claude_model: str = DEFAULT_CLAUDE_MODEL
     character_reference_path: str = DEFAULT_CHARACTER_REFERENCE_PATH
     character_face_reference_path: str = DEFAULT_CHARACTER_FACE_REFERENCE_PATH
@@ -255,6 +259,7 @@ def load_settings() -> Settings:
         codex_image_concurrency=_int_setting(
             "CODEX_IMAGE_CONCURRENCY", DEFAULT_CODEX_IMAGE_CONCURRENCY, positive=True
         ),
+        shot_concurrency=_int_setting("SHOT_CONCURRENCY", DEFAULT_SHOT_CONCURRENCY, positive=True),
         # Plain os.getenv, not _str_setting: an empty value is the documented
         # "no character" switch, and _str_setting raises on an empty string.
         claude_model=_str_setting("CLAUDE_MODEL", DEFAULT_CLAUDE_MODEL),

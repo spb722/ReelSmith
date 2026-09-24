@@ -198,6 +198,9 @@ class FailureReport:
     # vendor limit resets, or after MAX_BUDGET_USD is raised (spend
     # accumulates across runs in the manifest).
     resumable: bool = False
+    # Story 4.4, additive: one entry per shot that failed in a production run
+    # (sequence, agent, scope, reason, reason_code, ...). Empty for any other halt.
+    failed_shots: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -213,6 +216,7 @@ def build_failure_report(
     attempt_count: int,
     partial_artifact_paths: Optional[list[str]] = None,
     reason_code: str = "unclassified",
+    failed_shots: Optional[list[dict[str, Any]]] = None,
 ) -> FailureReport:
     return FailureReport(
         stage_id=stage_id,
@@ -223,6 +227,7 @@ def build_failure_report(
         partial_artifact_paths=list(partial_artifact_paths or []),
         reason_code=reason_code,
         resumable=reason_code in RESUMABLE_REASON_CODES,
+        failed_shots=list(failed_shots or []),
     )
 
 

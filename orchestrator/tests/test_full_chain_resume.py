@@ -295,16 +295,16 @@ def test_partial_chain_resumes_only_from_first_missing_stage(chain, monkeypatch)
         }),
     ))
 
-    async def no_stills_stage(settings, manifest):
-        # This test exercises stages 1.2-1.5 resume behavior only;
-        # stills_agent/run_stills_stage has its own dedicated test coverage
-        # further down in this same file.
+    async def no_production_stage(settings, manifest):
+        # This test exercises stages 1.2-1.5 resume behavior only; shot
+        # production has its own dedicated test coverage further down in
+        # this same file.
         return 0
 
     async def no_delivery_stage(settings, manifest):
         return 0
 
-    monkeypatch.setattr(run, "run_stills_stage", no_stills_stage)
+    monkeypatch.setattr(run, "run_production_stage", no_production_stage)
     monkeypatch.setattr(run, "run_delivery_stage", no_delivery_stage)
 
     assert run.main(["--project", source.parent.name]) == 0
@@ -347,16 +347,16 @@ def test_fully_valid_chain_makes_zero_new_calls_anywhere(chain, monkeypatch):
     monkeypatch.setattr(run, "extract_word_timing", RefusingTool())
     monkeypatch.setattr(run, "build_subtitle_cues", RefusingTool())
 
-    async def no_stills_stage(settings, manifest):
-        # This test exercises stages 1.2-1.5 resume behavior only;
-        # stills_agent/run_stills_stage has its own dedicated test coverage
-        # further down in this same file.
+    async def no_production_stage(settings, manifest):
+        # This test exercises stages 1.2-1.5 resume behavior only; shot
+        # production has its own dedicated test coverage further down in
+        # this same file.
         return 0
 
     async def no_delivery_stage(settings, manifest):
         return 0
 
-    monkeypatch.setattr(run, "run_stills_stage", no_stills_stage)
+    monkeypatch.setattr(run, "run_production_stage", no_production_stage)
     monkeypatch.setattr(run, "run_delivery_stage", no_delivery_stage)
 
     assert run.main(["--project", source.parent.name]) == 0
@@ -417,13 +417,13 @@ def test_stages_1_to_4_valid_only_voice_agent_missing_resumes_at_voice_agent_onl
     monkeypatch.setattr(visual_agent_module, "query", refuse_query("visual_agent"))
     tts_calls, stt_calls, dp_calls = _mock_voice_tools(monkeypatch)
 
-    async def no_stills_stage(settings, manifest):
+    async def no_production_stage(settings, manifest):
         return 0
 
     async def no_delivery_stage(settings, manifest):
         return 0
 
-    monkeypatch.setattr(run, "run_stills_stage", no_stills_stage)
+    monkeypatch.setattr(run, "run_production_stage", no_production_stage)
     monkeypatch.setattr(run, "run_delivery_stage", no_delivery_stage)
 
     assert run.main(["--project", source.parent.name]) == 0
@@ -448,13 +448,13 @@ def test_persisted_subtitle_cues_with_deleted_audio_does_not_skip(chain, monkeyp
     monkeypatch.setattr(visual_agent_module, "query", refuse_query("visual_agent"))
     tts_calls, stt_calls, dp_calls = _mock_voice_tools(monkeypatch)
 
-    async def no_stills_stage(settings, manifest):
+    async def no_production_stage(settings, manifest):
         return 0
 
     async def no_delivery_stage(settings, manifest):
         return 0
 
-    monkeypatch.setattr(run, "run_stills_stage", no_stills_stage)
+    monkeypatch.setattr(run, "run_production_stage", no_production_stage)
     monkeypatch.setattr(run, "run_delivery_stage", no_delivery_stage)
 
     assert run.main(["--project", source.parent.name]) == 0

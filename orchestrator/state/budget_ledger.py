@@ -100,8 +100,19 @@ class BudgetLedger:
                 reservation.open = False
                 self._open.remove(reservation)
 
-    def overdrawn(self) -> bool:
-        return self.unreserved_usd() < -_EPSILON
+    def holding(self, *, besides: Reservation | None = None) -> bool:
+        """Whether any open reservation (other than `besides`) still holds money."""
+
+        with STATE_LOCK:
+            return any(r is not besides and r.unspent_usd > _EPSILON for r in self._open)
+
+    def overdrawn(self, *, besides: Reservation | None = None) -> bool:
+        """Whether the pool is below zero, not counting what `besides` still
+        holds: an attempt judging its own overshoot is about to give that back."""
+
+        with STATE_LOCK:
+            own = besides.unspent_usd if besides is not None and besides.open else 0.0
+            return self.unreserved_usd() + own < -_EPSILON
 
 
 def run_ledger(manifest: RunManifest, *, max_budget_usd: float) -> BudgetLedger:
