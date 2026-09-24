@@ -10,12 +10,14 @@ from __future__ import annotations
 
 import math
 import shutil
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Optional
 
 import google.auth
 
+from orchestrator.workspace import repo_path, resolve_shared_asset
 from orchestrator.settings import (
     DEFAULT_CHARACTER_FACE_REFERENCE_PATH,
     DEFAULT_CHARACTER_REFERENCE_PATH,
@@ -24,7 +26,9 @@ from orchestrator.settings import (
     load_settings,
 )
 
-REMOTION_DIR = Path("remotion")
+# Shared by every reel, so it is addressed from the repo root rather than
+# the project the orchestrator has moved into.
+REMOTION_DIR = repo_path("remotion")
 # Two base64 image blocks ride back to the agent inside its 20MB buffer;
 # a reference much larger than this is a mistake, not a high-quality sheet.
 MAX_CHARACTER_REFERENCE_BYTES = 4 * 1024 * 1024
@@ -161,8 +165,10 @@ def _character_reference_failure(
     if not raw:
         return None
 
-    path = Path(raw)
-    if not path.is_file():
+    # Validate the copy that would really be used: the project's own if it
+    # brought one, otherwise the shared sheet at the repo root.
+    path = resolve_shared_asset(raw)
+    if path is None:
         if raw == default_path:
             return None
         return PreflightResult(
@@ -244,6 +250,49 @@ def _check_media_toolchain(settings: Settings) -> Optional[PreflightResult]:
     return None
 
 
+def _check_codex_image_provider(settings: Settings) -> Optional[PreflightResult]:
+    """Fail up front when IMAGE_PROVIDER=codex but Codex cannot draw.
+
+    Same reasoning as the ffmpeg check: a missing CLI or a logged-out Codex
+    should stop the run in preflight, not forty minutes in at the first shot
+    that needs a picture.
+    """
+
+    if settings.image_provider != "codex":
+        return None
+
+    from orchestrator.tools.codex_image_tools import CodexNotAvailableError, codex_executable
+
+    try:
+        executable = codex_executable()
+    except CodexNotAvailableError as exc:
+        return PreflightResult(passed=False, failed_check="codex", reason=str(exc))
+
+    try:
+        status = subprocess.run(
+            [executable, "login", "status"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return PreflightResult(
+            passed=False,
+            failed_check="codex",
+            reason=f"Could not ask Codex whether it is logged in: {type(exc).__name__}: {exc}",
+        )
+    if status.returncode != 0:
+        return PreflightResult(
+            passed=False,
+            failed_check="codex",
+            reason=(
+                "Codex is not logged in, so it cannot generate images. "
+                f"Run `codex login`. ({(status.stdout + status.stderr).strip()[:200]})"
+            ),
+        )
+    return None
+
+
 def check_remotion_delivery_toolchain() -> PreflightResult | None:
     """Return a failed `PreflightResult` when Remotion cannot render, else None."""
     if shutil.which("npx") is None:
@@ -296,6 +345,7 @@ def run_preflight(
         lambda: _check_budget(settings, budget_spent_usd),
         lambda: _check_character_reference(settings),
         lambda: _check_media_toolchain(settings),
+        lambda: _check_codex_image_provider(settings),
     ):
         failure = check()
         if failure is not None:

@@ -213,7 +213,7 @@ def failure_report():
 def test_fresh_run_writes_via_scoped_agent_and_persists(stage, monkeypatch):
     source, asset_ids, output = stage
     calls = mock_query(monkeypatch, [sdk_result(output)])
-    assert run.main([str(source)]) == 0
+    assert run.main(["--project", source.parent.name]) == 0
     options = calls[0][1]
     # Lifted onto the top-level session, not delegated via --agent: verified
     # live (Story 1.3) that --agent silently drops output_format/structured_output.
@@ -237,7 +237,7 @@ def test_failed_quality_bar_self_corrects_with_feedback_and_remaining_budget(sta
     low_score = copy.deepcopy(output)
     low_score["quality_review"]["scores"]["source_fidelity"] = 7
     calls = mock_query(monkeypatch, [sdk_result(low_score, cost=1.5), sdk_result(output, cost=0.5)])
-    assert run.main([str(source)]) == 0
+    assert run.main(["--project", source.parent.name]) == 0
     assert "source_fidelity" in calls[1][0]
     assert "Previous output" in calls[1][0]
     assert calls[1][1].max_budget_usd == 8.5
@@ -249,7 +249,7 @@ def test_failed_quality_bar_self_corrects_with_feedback_and_remaining_budget(sta
 def test_four_invalid_results_halt_with_diagnostics_and_no_output(stage, monkeypatch):
     source, asset_ids, _ = stage
     calls = mock_query(monkeypatch, [sdk_result({}) for _ in range(4)])
-    assert run.main([str(source)]) == 1
+    assert run.main(["--project", source.parent.name]) == 1
     assert len(calls) == 4
     report = failure_report()
     assert report["stage_id"] == "story_agent"
@@ -260,7 +260,7 @@ def test_four_invalid_results_halt_with_diagnostics_and_no_output(stage, monkeyp
     assert len(report["partial_artifact_paths"]) == 5
     assert not run.FINAL_STORY_PLAN_FILE.exists()
     assert load_run_manifest(run.RUN_STATE_DIR).budget_spent_usd == pytest.approx(1.2)
-    assert run.main([str(source)]) == 1
+    assert run.main(["--project", source.parent.name]) == 1
     assert len(calls) == 4
 
 
@@ -270,7 +270,7 @@ def test_valid_persisted_contract_skips_claude(stage, monkeypatch):
     before = run.FINAL_STORY_PLAN_FILE.read_bytes()
     calls = mock_query(monkeypatch, [])
     for _ in range(2):
-        assert run.main([str(source)]) == 0
+        assert run.main(["--project", source.parent.name]) == 0
     assert calls == []
     assert run.FINAL_STORY_PLAN_FILE.read_bytes() == before
 
@@ -288,7 +288,7 @@ def test_invalid_or_stale_persistence_cannot_skip(stage, monkeypatch, bad_file):
         del bad["produced_by"]
     run.FINAL_STORY_PLAN_FILE.write_text("{" if bad_file == "malformed" else json.dumps(bad))
     calls = mock_query(monkeypatch, [sdk_result(output)])
-    assert run.main([str(source)]) == 0
+    assert run.main(["--project", source.parent.name]) == 0
     assert len(calls) == 1
 
 
@@ -296,7 +296,7 @@ def test_no_analyzed_assets_contract_prevents_story_agent(stage, monkeypatch):
     source, asset_ids, _ = stage
     run.ANALYZED_ASSETS_FILE.unlink()
     calls = mock_query(monkeypatch, [])
-    assert run.main([str(source)]) == 1
+    assert run.main(["--project", source.parent.name]) == 1
     assert calls == []
     failure_files = list(run.RUN_STATE_DIR.glob("failure_story_agent_*.json"))
     assert len(failure_files) == 1
@@ -306,7 +306,7 @@ def test_budget_exhausted_at_stage_halts_before_claude(stage, monkeypatch):
     source, asset_ids, _ = stage
     calls = mock_query(monkeypatch, [])
     save_run_manifest(RunManifest(budget_spent_usd=10), run.RUN_STATE_DIR)
-    assert run.main([str(source)]) == 1
+    assert run.main(["--project", source.parent.name]) == 1
     assert calls == []
     assert failure_report()["attempt_count"] == 0
 
@@ -314,7 +314,7 @@ def test_budget_exhausted_at_stage_halts_before_claude(stage, monkeypatch):
 def test_budget_consumed_by_failed_attempt_prevents_next_call(stage, monkeypatch):
     source, asset_ids, _ = stage
     calls = mock_query(monkeypatch, [sdk_result({}, cost=10)])
-    assert run.main([str(source)]) == 1
+    assert run.main(["--project", source.parent.name]) == 1
     assert len(calls) == 1
     assert "Budget exhausted" in failure_report()["reason"]
 
@@ -322,14 +322,14 @@ def test_budget_consumed_by_failed_attempt_prevents_next_call(stage, monkeypatch
 def test_sdk_failure_retries_with_feedback(stage, monkeypatch):
     source, asset_ids, output = stage
     calls = mock_query(monkeypatch, [RuntimeError("transport interrupted"), sdk_result(output)])
-    assert run.main([str(source)]) == 0
+    assert run.main(["--project", source.parent.name]) == 0
     assert "transport interrupted" in calls[1][0]
 
 
 def test_result_without_usable_cost_is_not_accepted(stage, monkeypatch):
     source, asset_ids, output = stage
     mock_query(monkeypatch, [sdk_result(output, cost=None)])
-    assert run.main([str(source)]) == 1
+    assert run.main(["--project", source.parent.name]) == 1
     assert not run.FINAL_STORY_PLAN_FILE.exists()
     assert "cost" in failure_report()["reason"]
 

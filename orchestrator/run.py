@@ -1,4 +1,4 @@
-"""Orchestrator CLI entrypoint: `python -m orchestrator.run <source_images_dir>`.
+"""Orchestrator CLI entrypoint: `python -m orchestrator.run --project <name>`.
 
 Runs preflight, deterministic ingestion, and bounded screenshot understanding
 (`run_screenshot_stage`), then -- once that stage has a validated
@@ -26,6 +26,7 @@ import sys
 import time
 import uuid
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Awaitable, Callable, Optional, Sequence
 
 from claude_agent_sdk import ResultMessage
@@ -42,6 +43,13 @@ from orchestrator.contracts.stills import StillOutcomeContract
 from orchestrator.contracts.subtitle_cues import SubtitleCuesContract
 from orchestrator.contracts.veo import VeoOutcomeContract, shot_fingerprint
 from orchestrator.contracts.visual_plan import VisualPlanContract
+from orchestrator.progress import banner, format_duration, heartbeat, log, start_run
+from orchestrator.workspace import (
+    SOURCE_IMAGES_DIR_NAME,
+    ProjectError,
+    enter_project,
+    resolve_project,
+)
 from orchestrator.preflight import _check_budget, check_remotion_delivery_toolchain, run_preflight
 from orchestrator.settings import (
     GEMINI_TTS_AUDIO_TOKENS_PER_SECOND,
@@ -53,6 +61,7 @@ from orchestrator.settings import (
     load_settings,
 )
 from orchestrator.state.run_manifest import (
+    CONFIG_FILENAME,
     RUN_STATE_DIR,
     RunManifest,
     _atomic_write_json,
@@ -85,7 +94,8 @@ from orchestrator.tools.gemini_tools import (
     resolve_character_references,
 )
 from orchestrator.state.voice_cache import (
-    AUDIO_CACHE_FILE, load_audio_cache, save_audio_cache, selected_voice_name,
+    AUDIO_CACHE_FILE, discard_audio_cache, load_audio_cache, save_audio_cache,
+    selected_voice_name,
 )
 from orchestrator.tools.veo_tools import select_clip_duration_seconds
 from orchestrator.tools.timeline_converter import build_timeline_data
@@ -94,18 +104,15 @@ ANALYZED_ASSETS_FILE = Path("metadata/analyzed_assets.json")
 FINAL_STORY_PLAN_FILE = Path("metadata/final_story_plan.json")
 VISUAL_PLAN_FILE = Path("metadata/visual_plan.json")
 SUBTITLE_CUES_FILE = Path("metadata/subtitle_cues.json")
+# The project's own copy of the finished reel, kept out of shared scratch.
+FINISHED_REEL_NAME = "book_reel.mp4"
 TIMELINE_FILE = Path("metadata/timeline.json")
-MAX_ASSET_ANALYST_ATTEMPTS = 4
-MAX_STORY_AGENT_ATTEMPTS = 4
-MAX_VISUAL_AGENT_ATTEMPTS = 4
 # AD-3: transient-failure-retry default (not the 4-ceiling generate-review-
 # revise pattern) -- no creative self-correction loop exists in this stage.
-MAX_VOICE_AGENT_ATTEMPTS = 3
 # Story 2.4: mirrors Settings.max_veo_attempts's default ceiling for the
 # sibling single-shot bounded retry loop; a plain module constant rather than
 # a new Settings field, since settings.py's existing image-cost fields are
 # the only stills-specific configuration this story needs (Code Map).
-MAX_STILLS_ATTEMPTS = 3
 # How many shots per reel may become real Veo video. `visual_agent` nominates
 # more than this (MIN_VIDEO_NOMINATIONS) so there are spares once the shots too
 # long for a single clip are dropped.
@@ -128,8 +135,8 @@ def _halt(
     )
     path = write_failure_report(report, output_dir=RUN_STATE_DIR)
 
-    print(f"HALT [{stage_id}]: {reason}", file=sys.stderr)
-    print(f"Failure report written to {path}", file=sys.stderr)
+    log(f"STOPPED — {reason}", error=True)
+    log(f"Details of what went wrong: {path}", error=True)
 
     return 1
 
@@ -171,11 +178,13 @@ async def run_bounded_agent_stage(
         pass
     except (ValueError, OSError) as exc:
         feedback = f"Persisted {failed_contract_name} is invalid for this run: {exc}"
-        print(feedback, file=sys.stderr)
+        log(feedback, error=True)
     else:
-        print(f"{stage_id} skipped: validated {persisted_file}")
+        log(f"Already done in an earlier run — skipping ({persisted_file})")
         return 0
 
+    attempt_started = time.monotonic()
+    spend_before = manifest.budget_spent_usd
     count = manifest.iteration_counts.get(stage_id, 0)
     partial_paths = list(base_partial_paths)
     if persisted_file.exists():
@@ -200,11 +209,12 @@ async def run_bounded_agent_stage(
         count += 1
         manifest.iteration_counts[stage_id] = count
         save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
-        print(f"{stage_id}: starting attempt {count}/{max_attempts} (budget remaining ${settings.max_budget_usd - manifest.budget_spent_usd:.4f})")
+        log(f"Try {count} of {max_attempts} · ${settings.max_budget_usd - manifest.budget_spent_usd:.2f} left to spend")
         try:
-            result = await call_agent(
-                feedback, previous_output, settings.max_budget_usd - manifest.budget_spent_usd
-            )
+            with heartbeat("still working"):
+                result = await call_agent(
+                    feedback, previous_output, settings.max_budget_usd - manifest.budget_spent_usd
+                )
         except Exception as exc:
             feedback = f"Claude attempt failed: {type(exc).__name__}: {exc}"
             previous_output = None
@@ -236,10 +246,13 @@ async def run_bounded_agent_stage(
                 if finalize_before_persist is not None:
                     finalize_before_persist(contract)
                 _atomic_write_json(persisted_file, contract.model_dump(mode="json"))
-                print(f"{stage_id} validated: {persisted_file}")
+                log(
+                    f"Done in {format_duration(time.monotonic() - attempt_started)} · "
+                    f"cost ${manifest.budget_spent_usd - spend_before:.2f} · saved {persisted_file}"
+                )
                 return 0
 
-        print(f"{stage_id} attempt {count}/{max_attempts} failed: {feedback}", file=sys.stderr)
+        log(f"Try {count} of {max_attempts} didn't work: {feedback}", error=True)
 
     return halt(f"Retry ceiling exhausted: {feedback or f'{max_attempts} attempts already recorded for this run'}")
 
@@ -268,7 +281,7 @@ async def run_screenshot_stage(source_images_dir: Path, settings: Settings, mani
         contract_cls=AnalyzedAssetsContract,
         persisted_file=ANALYZED_ASSETS_FILE,
         validate_contract=validate_contract,
-        max_attempts=MAX_ASSET_ANALYST_ATTEMPTS,
+        max_attempts=manifest.attempts_allowed("asset_analyst"),
         settings=settings,
         manifest=manifest,
         base_partial_paths=[str(ASSETS_FILE)],
@@ -304,7 +317,7 @@ async def run_narration_stage(settings: Settings, manifest: RunManifest) -> int:
         contract_cls=FinalStoryPlanContract,
         persisted_file=FINAL_STORY_PLAN_FILE,
         validate_contract=validate_contract,
-        max_attempts=MAX_STORY_AGENT_ATTEMPTS,
+        max_attempts=manifest.attempts_allowed("story_agent"),
         settings=settings,
         manifest=manifest,
         base_partial_paths=[str(ANALYZED_ASSETS_FILE)],
@@ -451,7 +464,7 @@ def _backfill_visual_plan_shot_timing_from_cues(settings: Settings) -> None:
         visual_plan = VisualPlanContract.model_validate_json(
             VISUAL_PLAN_FILE.read_text(encoding="utf-8")
         )
-        print("=== video promotion (nominations -> VEO) ===")
+        log("Deciding which shots become moving video clips")
         _promote_video_candidates(visual_plan, settings)
         _atomic_write_json(VISUAL_PLAN_FILE, visual_plan.model_dump(mode="json"))
 
@@ -473,29 +486,29 @@ def _promote_video_candidates(visual_plan: VisualPlanContract, settings: Setting
     promoted: list[int] = []
     for shot in nominated:
         if len(promoted) >= MAX_VEO_SHOTS:
-            print(f"  shot {shot.sequence}: not promoted (already at the {MAX_VEO_SHOTS}-video cap)")
+            log(f"Shot {shot.sequence}: stays a still picture (already have the maximum {MAX_VEO_SHOTS} video clips)", indent=2)
             continue
         duration = shot.end_seconds - shot.start_seconds
         try:
             clip_seconds = select_clip_duration_seconds(duration, settings.veo_duration_seconds)
         except ValueError as exc:
-            print(f"  shot {shot.sequence}: not promoted ({exc})")
+            log(f"Shot {shot.sequence}: stays a still picture ({exc})", indent=2)
             continue
         shot.generation_mode = "VEO"
         promoted.append(shot.sequence)
-        print(f"  shot {shot.sequence}: promoted to VEO ({duration:.2f}s -> {clip_seconds}s clip)")
+        log(f"Shot {shot.sequence}: will be a moving video clip ({duration:.2f}s of narration → {clip_seconds}s clip)", indent=2)
 
     for shot in visual_plan.shots:
         shot.video_promotion_decided = True
 
     if not nominated:
-        print("video promotion: visual plan carries no video nominations")
+        log("No shots were put forward for video — every shot will be a still picture")
     elif len(promoted) < TARGET_MIN_VEO_SHOTS:
-        print(
-            f"video promotion: only {len(promoted)} of {len(nominated)} nominated shot(s) fit inside "
-            f"a {settings.veo_duration_seconds}s clip (wanted {TARGET_MIN_VEO_SHOTS}); "
-            "continuing with the rest as stills",
-            file=sys.stderr,
+        log(
+            f"Only {len(promoted)} of {len(nominated)} candidate shot(s) fit inside a "
+            f"{settings.veo_duration_seconds}s clip (hoped for {TARGET_MIN_VEO_SHOTS}) — "
+            "the rest stay still pictures",
+            error=True,
         )
     return promoted
 
@@ -514,7 +527,7 @@ def _demote_veo_shot_to_still(sequence: int, reason: str) -> None:
             shot.generation_mode = "STILL"
             break
     _atomic_write_json(VISUAL_PLAN_FILE, visual_plan.model_dump(mode="json"))
-    print(f"veo_agent: shot {sequence} demoted to STILL — {reason}", file=sys.stderr)
+    log(f"Shot {sequence}: switched from video to a still picture — {reason}", error=True)
 
 
 def _voice_shot_timing_backfill_or_halt(settings: Settings) -> int | None:
@@ -568,7 +581,7 @@ async def run_visual_stage(settings: Settings, manifest: RunManifest) -> int:
         contract_cls=VisualPlanContract,
         persisted_file=VISUAL_PLAN_FILE,
         validate_contract=validate_contract,
-        max_attempts=MAX_VISUAL_AGENT_ATTEMPTS,
+        max_attempts=manifest.attempts_allowed("visual_agent"),
         settings=settings,
         manifest=manifest,
         base_partial_paths=[str(FINAL_STORY_PLAN_FILE), str(ANALYZED_ASSETS_FILE)],
@@ -628,13 +641,13 @@ async def run_voice_pipeline(
     cached = load_audio_cache(narration_script, voice_direction)
     if cached is not None:
         tts_payload, provenance = cached["tts"], cached["provenance"]
-        print(f"voice_agent: reusing verified narration audio (voice={voice_name})")
+        log(f"Reusing the narration audio from an earlier run (voice: {voice_name})")
     else:
         budget_failure = _check_budget(settings, budget_spent_usd)
         if budget_failure:
             return result("error_max_budget_usd", budget_failure.reason)
         try:
-            print(f"voice_agent: step 1/3 TTS — generating narration (voice={voice_name})…")
+            log(f"Part 1 of 3: reading the script out loud (voice: {voice_name})")
             tts_response = await generate_narration_audio.handler({
                 "narration_script": narration_script, "voice_direction": voice_direction,
                 "project_id": settings.project_id, "location": settings.location,
@@ -657,7 +670,7 @@ async def run_voice_pipeline(
         return result("error_max_budget_usd", budget_failure.reason)
 
     try:
-        print("voice_agent: step 2/3 STT — aligning word timings (splits audio >55s)…")
+        log("Part 2 of 3: listening back to find when each word is spoken")
         # Failed requests can still incur charges. The tool reports how much
         # audio it actually submitted, including a failed chunk when applicable.
         stt_cost = round(audio_duration_seconds * STT_COST_PER_SECOND_USD, 6)
@@ -670,9 +683,17 @@ async def run_voice_pipeline(
         stt_cost = round(stt_payload.get("attempted_audio_seconds", audio_duration_seconds) * STT_COST_PER_SECOND_USD, 6)
         _atomic_write_json(RUN_STATE_DIR / "word_timing_diagnostics.json", stt_payload)
         stats = stt_payload["alignment_stats"]
-        print(
-            f"voice_agent: literal alignment={stats['exact_match_ratio']:.3f}, "
-            f"normalized alignment={stats.get('normalized_match_ratio', stats['exact_match_ratio']):.3f}"
+        trailing = stats.get("trailing_extra_words", 0)
+        if trailing:
+            log(
+                f"The voice added {trailing} word(s) after the script ended; they fall "
+                "outside the finished reel, so they are ignored",
+                indent=2,
+            )
+        log(
+            f"Words matched: {stats['exact_match_ratio']:.0%} of the script was found, "
+            f"{stats.get('normalized_match_ratio', stats['exact_match_ratio']):.0%} of what was "
+            "said is in the script"
         )
     except Exception as exc:
         stt_cost = round(getattr(exc, "attempted_audio_seconds", audio_duration_seconds) * STT_COST_PER_SECOND_USD, 6)
@@ -680,7 +701,7 @@ async def run_voice_pipeline(
         return result(kind, f"STT failed: {type(exc).__name__}: {exc}")
 
     try:
-        print("voice_agent: step 3/3 subtitles — building cue segments…")
+        log("Part 3 of 3: splitting the narration into subtitles")
         dp_response = await build_subtitle_cues.handler({
             "word_timing": stt_payload, "narration_script": narration_script,
             "voice_direction": voice_direction,
@@ -716,7 +737,7 @@ def archive_voice_attempts(manifest: RunManifest) -> Path:
     """Preserve the previous bounded batch before resetting only its ceiling."""
     archive = RUN_STATE_DIR / "voice_history" / str(uuid.uuid4())
     archive.mkdir(parents=True, exist_ok=False)
-    _atomic_write_json(archive / "run_manifest.json", manifest.to_dict())
+    _atomic_write_json(archive / CONFIG_FILENAME, manifest.to_dict())
     evidence = list(RUN_STATE_DIR.glob("voice_agent_attempt_*.json"))
     evidence += list(RUN_STATE_DIR.glob("failure_voice_agent_*.json"))
     evidence += [RUN_STATE_DIR / "word_timing_diagnostics.json", AUDIO_CACHE_FILE, NARRATION_WAV, SUBTITLE_CUES_FILE]
@@ -725,7 +746,7 @@ def archive_voice_attempts(manifest: RunManifest) -> Path:
             shutil.copy2(path, archive / path.name)
     manifest.iteration_counts["voice_agent"] = 0
     save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
-    print(f"voice_agent: previous attempts archived to {archive}; cumulative spend preserved")
+    log(f"Earlier voice attempts moved to {archive} — money already spent still counts")
     return archive
 
 
@@ -752,7 +773,7 @@ async def run_voice_stage(settings: Settings, manifest: RunManifest, *, retry_vo
         archive_voice_attempts(manifest)
 
     if _voice_stage_skip_is_valid(story_plan):
-        print(f"voice_agent skipped: validated {SUBTITLE_CUES_FILE}")
+        log(f"Voice and subtitles already done — skipping ({SUBTITLE_CUES_FILE})")
         backfill_failure = _voice_shot_timing_backfill_or_halt(settings)
         return backfill_failure if backfill_failure is not None else 0
 
@@ -768,7 +789,8 @@ async def run_voice_stage(settings: Settings, manifest: RunManifest, *, retry_vo
     if type(count) is not int or count < 0:
         return halt("Invalid persisted voice_agent iteration count")
     feedback = "Attempts already recorded; use --retry-voice to archive evidence and reset only the voice ceiling"
-    while count < MAX_VOICE_AGENT_ATTEMPTS:
+    max_voice_attempts = manifest.attempts_allowed("voice_agent")
+    while count < max_voice_attempts:
         budget_failure = _check_budget(settings, manifest.budget_spent_usd)
         if budget_failure:
             return halt(budget_failure.reason)
@@ -797,7 +819,21 @@ async def run_voice_stage(settings: Settings, manifest: RunManifest, *, retry_vo
             return halt(budget_failure.reason)
         if result.is_error:
             feedback = result.result or result.subtype
-            if result.subtype not in {"error_tts", "error_stt"}:
+            if result.subtype == "error_alignment":
+                # The recording itself disagrees with the script -- Gemini TTS
+                # does occasionally add or drop a line. Only a new take can
+                # change this evidence, and the cached one would otherwise be
+                # re-transcribed to the identical failure until the ceiling is
+                # spent. Trailing extra speech no longer reaches here at all;
+                # `align_words` scores it as harmless.
+                discarded = discard_audio_cache()
+                if discarded:
+                    log(
+                        "The recording did not match the script — discarding it so the "
+                        "next try records a fresh one",
+                        indent=2,
+                    )
+            elif result.subtype not in {"error_tts", "error_stt"}:
                 return halt(feedback)
         else:
             try:
@@ -806,11 +842,95 @@ async def run_voice_stage(settings: Settings, manifest: RunManifest, *, retry_vo
             except ValueError as exc:
                 return halt(f"Subtitle contract failed: {exc}")
             _atomic_write_json(SUBTITLE_CUES_FILE, contract.model_dump(mode="json"))
-            print(f"voice_agent validated: {SUBTITLE_CUES_FILE}")
+            log(f"Voice and subtitles done · saved {SUBTITLE_CUES_FILE}")
             backfill_failure = _voice_shot_timing_backfill_or_halt(settings)
             return backfill_failure if backfill_failure is not None else 0
-        print(f"voice_agent attempt {count}/{MAX_VOICE_AGENT_ATTEMPTS} failed: {feedback}", file=sys.stderr)
+        log(f"Try {count} of {max_voice_attempts} didn't work: {feedback}", error=True)
     return halt(f"Retry ceiling exhausted: {feedback}")
+
+
+# Veo refuses a seed whose person reads as a real, identifiable individual.
+# Two of these are explicit safety codes; an OPERATION_ERROR only counts when
+# the message says the input image itself broke the guidelines, since that
+# code also covers ordinary backend faults that a redraw cannot fix.
+LIKENESS_REJECTION_CODES = {"RAI_FILTERED", "UNSAFE_SEED"}
+
+
+def _is_likeness_rejection(failure) -> bool:
+    """True when Veo rejected the shot over the person depicted in the seed."""
+
+    if failure.code in LIKENESS_REJECTION_CODES:
+        return True
+    if failure.code != "OPERATION_ERROR":
+        return False
+    error_text = json.dumps(failure.operation_error, default=str).lower()
+    return "usage guidelines" in error_text or "violates" in error_text
+
+
+# A seed-QA rejection is the QA agent's own words, so its code and reason are
+# free text rather than a fixed enum. The ladder may only descend when the
+# complaint is about the person: a seed rejected for visible UI, stray text or
+# a duplicated subject is a different defect, and asking for less of the
+# character would not fix it while quietly costing the character.
+SEED_QA_CHARACTER_MARKERS = ("face", "character", "recognis", "recogniz", "profile", "likeness")
+
+
+def _is_character_qa_rejection(failure) -> bool:
+    """True when this repo's own seed QA rejected the seed over the person."""
+
+    if getattr(failure, "stage", "") != "seed_qa":
+        return False
+    text = f"{getattr(failure, 'code', '')} {getattr(failure, 'reason', '')}".lower()
+    return any(marker in text for marker in SEED_QA_CHARACTER_MARKERS)
+
+
+def _forces_simpler_character_wording(failure) -> bool:
+    """True when the next attempt should ask for less of the character.
+
+    Two different judges can reject a seed over the person in it: Veo's
+    likeness filter, and this repo's own seed-QA agent. They mean the same
+    thing for the prompt -- the current wording is not working -- so both must
+    move the ladder. Handling only Veo cost a live run three identical
+    attempts: the source drew the man in profile, the level-0 wording demanded
+    a face "clearly visible... never turned away", the image model kept the
+    source pose, and QA rejected the same contradiction three times over.
+    """
+
+    return _is_likeness_rejection(failure) or _is_character_qa_rejection(failure)
+
+
+def _prior_character_rejections(sequence: int) -> int:
+    """How many already-recorded attempts for this shot were refused over the person.
+
+    A resumed run must not start back at a wording already refused -- that
+    redraws a known-rejected face and spends an attempt to learn nothing. The
+    persisted attempt records are the state; nothing new has to be stored.
+    """
+
+    worst_refused = None
+    for path in sorted(RUN_STATE_DIR.glob(f"veo_agent_shot_{sequence}_attempt_*.json")):
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        failure = (record.get("structured_output") or {}).get("failure")
+        if not failure:
+            continue
+        if not _forces_simpler_character_wording(
+            SimpleNamespace(
+                code=str(failure.get("code", "")),
+                reason=str(failure.get("reason", "")),
+                stage=str(failure.get("stage", "")),
+                operation_error=failure.get("operation_error"),
+            )
+        ):
+            continue
+        # Records written before the rung was tracked all came from level 0 --
+        # that is what the code did at the time.
+        level = int(record.get("seed_prompt_level", 0) or 0)
+        worst_refused = level if worst_refused is None else max(worst_refused, level)
+
+    return 0 if worst_refused is None else worst_refused + 1
 
 
 def _veo_settings_payload(settings: Settings) -> dict:
@@ -818,6 +938,8 @@ def _veo_settings_payload(settings: Settings) -> dict:
         "project_id": settings.project_id,
         "location": settings.location,
         "image_model": settings.image_model,
+        "image_provider": settings.image_provider,
+        "codex_timeout_seconds": settings.codex_image_timeout_seconds,
         "veo_model": settings.veo_model,
         "gcs_output_uri": settings.gcs_bucket_uri,
         "resolution": settings.veo_resolution,
@@ -829,17 +951,25 @@ def _veo_settings_payload(settings: Settings) -> dict:
     }
 
 
-def _stamp_still_outcome_fingerprint(
+def _stamp_still_outcome(
     outcome: StillOutcomeContract,
     *,
     shot_sequence: int,
     expected_fingerprint: str,
+    paid_call_cost_usd: float,
 ) -> StillOutcomeContract:
-    """Replace agent-copied fingerprints with the orchestrator's authoritative hash.
+    """Replace agent-copied provenance with the orchestrator's authoritative values.
 
-    Sequence is the hard binding to the requested shot. Fingerprints are tool/
-    provenance metadata that Claude often retypes incorrectly into structured
-    output; trusting them as a gate discards otherwise-valid paid stills.
+    Sequence is the hard binding to the requested shot. Fingerprints and costs
+    are tool/provenance metadata that Claude often retypes incorrectly into
+    structured output; trusting them as a gate discards otherwise-valid paid
+    stills. One shot in a live run reported $0.1290315 for a call the tool had
+    reported as free -- roughly its own Claude session cost -- and halted the
+    whole reel, while two other shots in the same run copied it correctly.
+
+    The orchestrator already knows what an attempt costs: it reserved that
+    amount before allowing the call. `cost_usd` on the outcome is a computed
+    property, so the leaf fields are what get stamped.
     """
 
     if outcome.shot_sequence != shot_sequence:
@@ -847,34 +977,68 @@ def _stamp_still_outcome_fingerprint(
     updates: dict = {"shot_fingerprint": expected_fingerprint}
     if outcome.result is not None:
         updates["result"] = outcome.result.model_copy(
-            update={"shot_fingerprint": expected_fingerprint}
+            update={"shot_fingerprint": expected_fingerprint, "cost_usd": paid_call_cost_usd}
         )
     if outcome.failure is not None:
         updates["failure"] = outcome.failure.model_copy(
-            update={"shot_fingerprint": expected_fingerprint}
+            update={"shot_fingerprint": expected_fingerprint, "cost_usd": paid_call_cost_usd}
         )
     return outcome.model_copy(update=updates)
 
 
-def _stamp_veo_outcome_fingerprint(
+# A Veo attempt that never got past its seed did not pay for a clip. Any other
+# outcome is charged for both calls, which over-charges an RAI-filtered clip
+# Google does not bill -- the same conservative direction the STT accounting
+# already takes.
+VEO_SEED_ONLY_FAILURE_STAGES = {"seed_generation", "seed_qa"}
+
+
+def _veo_attempt_cost(outcome: VeoOutcomeContract, settings: Settings) -> tuple[float, float]:
+    """(seed cost, clip cost) the orchestrator knows this attempt incurred."""
+
+    if (
+        outcome.status == "FAILURE"
+        and outcome.failure is not None
+        and outcome.failure.stage in VEO_SEED_ONLY_FAILURE_STAGES
+    ):
+        return settings.image_call_cost_usd, 0.0
+    return settings.image_call_cost_usd, settings.veo_call_cost_usd
+
+
+def _stamp_veo_outcome(
     outcome: VeoOutcomeContract,
     *,
     shot_sequence: int,
     expected_fingerprint: str,
+    seed_cost_usd: float,
+    clip_cost_usd: float,
 ) -> VeoOutcomeContract:
-    """Same authoritative stamp as stills; also rewrites nested seed fingerprints."""
+    """Same authoritative stamp as stills; also rewrites nested seed fields.
+
+    A Veo outcome's `cost_usd` property sums the seed and clip costs, so both
+    leaves are stamped rather than the total.
+    """
 
     if outcome.shot_sequence != shot_sequence:
         raise ValueError("Veo agent outcome does not match the requested source shot")
     updates: dict = {"shot_fingerprint": expected_fingerprint}
     if outcome.result is not None:
-        seed = outcome.result.seed.model_copy(update={"shot_fingerprint": expected_fingerprint})
+        seed = outcome.result.seed.model_copy(
+            update={"shot_fingerprint": expected_fingerprint, "cost_usd": seed_cost_usd}
+        )
         updates["result"] = outcome.result.model_copy(
-            update={"shot_fingerprint": expected_fingerprint, "seed": seed}
+            update={
+                "shot_fingerprint": expected_fingerprint,
+                "seed": seed,
+                "cost_usd": clip_cost_usd,
+            }
         )
     if outcome.failure is not None:
         updates["failure"] = outcome.failure.model_copy(
-            update={"shot_fingerprint": expected_fingerprint}
+            update={
+                "shot_fingerprint": expected_fingerprint,
+                "cost_usd": seed_cost_usd + clip_cost_usd,
+            }
         )
     return outcome.model_copy(update=updates)
 
@@ -891,7 +1055,7 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
 
     veo_shots = [shot for shot in visual_plan.shots if shot.generation_mode == "VEO"]
     if not veo_shots:
-        print("veo_agent skipped: visual plan contains no VEO-mode shots")
+        log("This reel needs no video clips — skipping")
         return 0
 
     try:
@@ -934,7 +1098,7 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
         if str(shot.sequence) not in production_assets.shots
     ]
     if not pending:
-        print(f"veo_agent skipped: all {len(veo_shots)} VEO shots have matching approved assets")
+        log(f"All {len(veo_shots)} video clip(s) already made — skipping")
         return 0
 
     try:
@@ -955,8 +1119,12 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
     cues_by_id = {cue.cue_id: cue.text for cue in subtitle_cues.cues}
     settings_payload = _veo_settings_payload(settings)
     reserved_external_cost = settings.image_call_cost_usd + settings.veo_call_cost_usd
+    # Ceilings come from the project's config.json and nowhere else, so there
+    # is one file to edit when a stage needs more room.
+    max_veo_attempts = manifest.attempts_allowed("veo_agent")
 
-    for shot in pending:
+    for shot_index, shot in enumerate(pending, start=1):
+        log(f"Video clip {shot_index} of {len(pending)} — shot {shot.sequence}")
         asset = next((assets_by_id[asset_id] for asset_id in shot.source_asset_ids if asset_id in assets_by_id), None)
         if asset is None:
             return _halt(
@@ -973,12 +1141,23 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
             return _halt("veo_agent", "RunManifest", f"Invalid iteration count for {stage_id}")
         correction = ""
         previous_outcome: object = None
+        # Which rung of the seed prompt ladder this shot's next attempt starts
+        # on. Only a Veo likeness rejection moves it, and it never moves back.
+        # Seeded from the attempts already on disk so a resumed run does not
+        # repeat a wording Veo has refused before.
+        seed_prompt_level = _prior_character_rejections(shot.sequence)
+        if seed_prompt_level:
+            log(
+                f"Shot {shot.sequence}: this shot's face was refused {seed_prompt_level} "
+                "time(s) in an earlier run, so the seed starts with a less detailed one",
+                indent=2,
+            )
         attempt_paths: list[str] = [
             str(path)
             for path in sorted(RUN_STATE_DIR.glob(f"veo_agent_shot_{shot.sequence}_attempt_*.json"))
         ]
 
-        while count < settings.max_veo_attempts:
+        while count < max_veo_attempts:
             remaining_budget = settings.max_budget_usd - manifest.budget_spent_usd
             if remaining_budget <= reserved_external_cost:
                 # Not enough left for this clip. Running out of budget is a
@@ -1002,7 +1181,7 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
                     shot=shot.model_dump(mode="json"),
                     asset=asset.model_dump(mode="json"),
                     subtitle_text=subtitle_text,
-                    settings=settings_payload,
+                    settings={**settings_payload, "seed_prompt_level": seed_prompt_level},
                     attempt=count,
                     max_budget_usd=remaining_budget - reserved_external_cost,
                     correction=correction,
@@ -1049,15 +1228,16 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
                     )
                 outcome = VeoOutcomeContract.model_validate(agent_result.structured_output)
                 expected_fingerprint = shot_fingerprint(shot)
-                outcome = _stamp_veo_outcome_fingerprint(
+                seed_cost, clip_cost = _veo_attempt_cost(outcome, settings)
+                outcome = _stamp_veo_outcome(
                     outcome,
                     shot_sequence=shot.sequence,
                     expected_fingerprint=expected_fingerprint,
+                    seed_cost_usd=seed_cost,
+                    clip_cost_usd=clip_cost,
                 )
                 if outcome.status == "SUCCESS" and outcome.result.seed.source_asset_id not in shot.source_asset_ids:
                     raise ValueError("Veo agent outcome seed source asset is not cited by the requested shot")
-                if outcome.cost_usd > reserved_external_cost + 1e-9:
-                    raise ValueError("Veo agent reported paid-call cost above the configured per-attempt ceiling")
             except ValueError as exc:
                 # The agent cost is known, but a malformed response cannot safely
                 # prove which external paid calls occurred. Charge the reserved
@@ -1095,6 +1275,10 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
                 "errors": agent_result.errors,
                 "claude_cost_usd": claude_cost,
                 "paid_tool_cost_usd": outcome.cost_usd,
+                # Which rung drew this seed. A resume needs the rung that was
+                # refused, not how many refusals there were: three rejections
+                # of the same wording mean "try the next rung", not "skip three".
+                "seed_prompt_level": seed_prompt_level,
             })
             attempt_paths.append(str(attempt_path))
             previous_outcome = outcome.model_dump(mode="json")
@@ -1125,7 +1309,7 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
                         attempt_count=count,
                         partial_artifact_paths=attempt_paths,
                     )
-                print(f"veo_agent approved shot {shot.sequence}: {entry.local_path}")
+                log(f"Shot {shot.sequence}: video clip approved → {entry.local_path}", indent=2)
                 break
 
             failure = outcome.failure
@@ -1138,11 +1322,26 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
                     attempt_count=count,
                     partial_artifact_paths=attempt_paths + failure.partial_artifact_paths,
                 )
-            print(
-                f"veo_agent shot {shot.sequence} attempt {count}/{settings.max_veo_attempts} "
-                f"failed: {failure.reason}",
-                file=sys.stderr,
+            log(
+                f"Shot {shot.sequence}: try {count} of {max_veo_attempts} "
+                f"didn't work — {failure.reason}",
+                error=True,
             )
+            if _forces_simpler_character_wording(failure):
+                # Redrawing the same wording would produce the same face and
+                # be rejected again -- which is exactly what burned all three
+                # attempts before this existed.
+                seed_prompt_level += 1
+                correction = (
+                    f"{failure.reason} Veo rejected the person drawn into this seed as too "
+                    "realistic a depiction of a real individual. The next attempt redraws the "
+                    "seed with a less specific face."
+                )
+                log(
+                    f"Shot {shot.sequence}: redrawing the seed with a less detailed face "
+                    f"(character wording level {seed_prompt_level})",
+                    indent=2,
+                )
         else:
             reason = "Veo retry ceiling exhausted"
             last_failure_paths: list[str] = []
@@ -1166,6 +1365,8 @@ def _stills_settings_payload(settings: Settings) -> dict:
         "project_id": settings.project_id,
         "location": settings.location,
         "image_model": settings.image_model,
+        "image_provider": settings.image_provider,
+        "codex_timeout_seconds": settings.codex_image_timeout_seconds,
         "image_call_cost_usd": settings.image_call_cost_usd,
     }
 
@@ -1187,7 +1388,7 @@ async def run_stills_stage(settings: Settings, manifest: RunManifest) -> int:
 
     still_shots = [shot for shot in visual_plan.shots if shot.generation_mode == "STILL"]
     if not still_shots:
-        print("stills_agent skipped: visual plan contains no STILL-mode shots")
+        log("This reel needs no still pictures — skipping")
         return 0
 
     try:
@@ -1230,7 +1431,7 @@ async def run_stills_stage(settings: Settings, manifest: RunManifest) -> int:
         if str(shot.sequence) not in production_assets.shots
     ]
     if not pending:
-        print(f"stills_agent skipped: all {len(still_shots)} STILL shots have matching approved assets")
+        log(f"All {len(still_shots)} still picture(s) already made — skipping")
         return 0
 
     try:
@@ -1251,8 +1452,10 @@ async def run_stills_stage(settings: Settings, manifest: RunManifest) -> int:
     cues_by_id = {cue.cue_id: cue.text for cue in subtitle_cues.cues}
     settings_payload = _stills_settings_payload(settings)
     reserved_external_cost = settings.image_call_cost_usd
+    max_stills_attempts = manifest.attempts_allowed("stills_agent")
 
-    for shot in pending:
+    for shot_index, shot in enumerate(pending, start=1):
+        log(f"Picture {shot_index} of {len(pending)} — shot {shot.sequence}")
         asset = next((assets_by_id[asset_id] for asset_id in shot.source_asset_ids if asset_id in assets_by_id), None)
         if asset is None:
             return _halt(
@@ -1274,7 +1477,7 @@ async def run_stills_stage(settings: Settings, manifest: RunManifest) -> int:
             for path in sorted(RUN_STATE_DIR.glob(f"stills_agent_shot_{shot.sequence}_attempt_*.json"))
         ]
 
-        while count < MAX_STILLS_ATTEMPTS:
+        while count < max_stills_attempts:
             remaining_budget = settings.max_budget_usd - manifest.budget_spent_usd
             if remaining_budget <= reserved_external_cost:
                 return _halt(
@@ -1336,15 +1539,17 @@ async def run_stills_stage(settings: Settings, manifest: RunManifest) -> int:
                     )
                 outcome = StillOutcomeContract.model_validate(agent_result.structured_output)
                 expected_fingerprint = shot_fingerprint(shot)
-                outcome = _stamp_still_outcome_fingerprint(
+                # One paid image call per attempt, at the rate the orchestrator
+                # already reserved -- so the cost is stamped, never read back
+                # from the agent and re-checked against a ceiling.
+                outcome = _stamp_still_outcome(
                     outcome,
                     shot_sequence=shot.sequence,
                     expected_fingerprint=expected_fingerprint,
+                    paid_call_cost_usd=settings.image_call_cost_usd,
                 )
                 if outcome.status == "SUCCESS" and outcome.result.source_asset_id not in shot.source_asset_ids:
                     raise ValueError("Stills agent outcome source asset is not cited by the requested shot")
-                if outcome.cost_usd > reserved_external_cost + 1e-9:
-                    raise ValueError("Stills agent reported paid-call cost above the configured per-attempt ceiling")
             except ValueError as exc:
                 # The agent cost is known, but a malformed response cannot safely
                 # prove which external paid calls occurred. Charge the reserved
@@ -1412,7 +1617,7 @@ async def run_stills_stage(settings: Settings, manifest: RunManifest) -> int:
                         attempt_count=count,
                         partial_artifact_paths=attempt_paths,
                     )
-                print(f"stills_agent approved shot {shot.sequence}: {entry.local_path}")
+                log(f"Shot {shot.sequence}: picture approved → {entry.local_path}", indent=2)
                 break
 
             failure = outcome.failure
@@ -1425,10 +1630,10 @@ async def run_stills_stage(settings: Settings, manifest: RunManifest) -> int:
                     attempt_count=count,
                     partial_artifact_paths=attempt_paths + failure.partial_artifact_paths,
                 )
-            print(
-                f"stills_agent shot {shot.sequence} attempt {count}/{MAX_STILLS_ATTEMPTS} "
-                f"failed: {failure.reason}",
-                file=sys.stderr,
+            log(
+                f"Shot {shot.sequence}: try {count} of {max_stills_attempts} "
+                f"didn't work — {failure.reason}",
+                error=True,
             )
         else:
             reason = "Stills retry ceiling exhausted"
@@ -1537,7 +1742,15 @@ async def run_delivery_stage(settings: Settings, manifest: RunManifest) -> int:
             "render_remotion",
             f"Remotion render returned an unreadable tool response: {exc}",
         )
-    print(f"delivery complete: {render_payload['output_path']}")
+    # remotion/out/ is shared scratch that the next reel's render overwrites,
+    # so the keeping copy goes in the project alongside its own metadata.
+    rendered = Path(render_payload["output_path"])
+    kept = Path(FINISHED_REEL_NAME)
+    try:
+        shutil.copy2(rendered, kept)
+    except OSError as exc:
+        return _halt("delivery", "render_remotion", f"Could not keep the rendered reel: {exc}")
+    log(f"Finished! Your video is at {kept.resolve()}")
     return 0
 
 
@@ -1547,13 +1760,28 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         description="book_reels orchestrator entrypoint",
     )
     parser.add_argument(
-        "source_images_dir",
-        type=Path,
-        help="Directory containing the source screenshots for this run.",
+        "--project",
+        required=True,
+        help="Name of the folder under projects/ holding this reel. Its "
+             "source_images/ supplies the screenshots, and every artifact this "
+             "run writes stays inside it.",
     )
     parser.add_argument("--retry-voice", action="store_true",
                         help="Archive previous voice evidence and reset only its bounded retry ceiling; keep cumulative spend.")
     args = parser.parse_args(argv)
+
+    # Before anything else: every per-reel path in this repo is relative, so
+    # moving into the project is what keeps one reel's files out of another's.
+    try:
+        project = enter_project(resolve_project(args.project))
+    except ProjectError as exc:
+        print(f"STOPPED — {exc}", file=sys.stderr)
+        return 1
+
+    log_path = start_run(RUN_STATE_DIR)
+    banner(f"Starting a reel in project '{args.project}'")
+    log(f"Everything this run writes stays in {project}")
+    log(f"A copy of everything printed here is being saved to {log_path}")
 
     # A resumed invocation isn't literally "stage 1" -- but preflight
     # (AD-13) must still run before the first stage that will actually
@@ -1578,37 +1806,47 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             result.reason or "preflight failed",
         )
 
-    print(f"Preflight passed for source images dir: {args.source_images_dir}.")
+    log(f"Startup checks passed · reading screenshots from {SOURCE_IMAGES_DIR_NAME}/")
     character_references = resolve_character_references()
     if character_references:
-        print(
-            "character reference: "
+        log(
+            "Recurring character: "
             + ", ".join(str(path) for path in character_references)
-            + " (applied only to shots whose source art already shows a person)"
+            + " — drawn only into shots whose artwork already shows a person"
         )
     else:
-        print("character reference: none configured -- source figures kept as drawn")
-    return asyncio.run(run_stages(args.source_images_dir, settings, manifest, retry_voice=args.retry_voice))
+        log("No recurring character set — people stay as the source drew them")
+    source_images = Path(SOURCE_IMAGES_DIR_NAME)
+    return asyncio.run(run_stages(source_images, settings, manifest, retry_voice=args.retry_voice))
 
 
 async def run_stages(source_images_dir: Path, settings: Settings, manifest: RunManifest, *, retry_voice=False) -> int:
     """All SDK stages and their stream cleanup share one live event loop."""
-    print("=== stage: screenshot understanding (asset_analyst) ===")
+    # Built here rather than at module scope on purpose: the tests replace
+    # these stage functions as attributes of this module, and a list captured
+    # at import time would keep calling the originals.
+    steps = [
+        ("Writing the narration", run_narration_stage),
+        ("Planning the shots", run_visual_stage),
+        ("Recording the voice and building subtitles", run_voice_stage),
+        ("Making the moving video clips", run_veo_stage),
+        ("Making the still pictures", run_stills_stage),
+        ("Putting the final video together", run_delivery_stage),
+    ]
+    total = len(steps) + 1
+    banner(f"Step 1 of {total} — Looking at your screenshots")
+    started = time.monotonic()
     result = await run_screenshot_stage(source_images_dir, settings, manifest)
     if result:
         return result
-    for name, stage in [
-        ("narration (story_agent)", run_narration_stage),
-        ("visual plan (visual_agent)", run_visual_stage),
-        ("voice (TTS → STT → subtitles)", run_voice_stage),
-        ("veo generation", run_veo_stage),
-        ("stills generation", run_stills_stage),
-        ("delivery (timeline → remotion sync → render)", run_delivery_stage),
-    ]:
-        print(f"=== stage: {name} ===")
+    log(f"Step 1 took {format_duration(time.monotonic() - started)}")
+    for index, (name, stage) in enumerate(steps, start=2):
+        banner(f"Step {index} of {total} — {name}")
+        started = time.monotonic()
         result = await stage(settings, manifest, retry_voice=True) if stage is run_voice_stage and retry_voice else await stage(settings, manifest)
         if result:
             return result
+        log(f"Step {index} took {format_duration(time.monotonic() - started)} · ${manifest.budget_spent_usd:.2f} spent so far")
     return 0
 
 

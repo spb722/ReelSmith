@@ -15,6 +15,7 @@ than hardcoded to one reel's narration.
 
 from __future__ import annotations
 
+import array
 import base64
 import hashlib
 import io
@@ -32,6 +33,9 @@ import google.auth
 from claude_agent_sdk import create_sdk_mcp_server, tool
 from google.auth.transport.requests import AuthorizedSession
 from PIL import Image
+
+from orchestrator.progress import log
+from orchestrator.workspace import repo_path
 
 
 SUPPORTED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff", ".tif"}
@@ -205,11 +209,74 @@ def wav_duration_seconds(audio_path: Path) -> float:
         return handle.getnframes() / float(handle.getframerate())
 
 
+# How far back from the hard limit a split may move to land in a gap between
+# words, and how finely it looks for one.
+STT_SPLIT_SEARCH_SECONDS = 10.0
+STT_SPLIT_WINDOW_SECONDS = 0.10
+# A split is only worth moving if the chunk stays a reasonable length; below
+# this fraction of the limit we would be paying for extra requests instead.
+STT_MIN_SPLIT_FRACTION = 0.5
+
+
+def _quietest_split_frame(
+    pcm: bytes,
+    *,
+    frame_bytes: int,
+    sample_width: int,
+    frame_rate: int,
+    earliest_frame: int,
+    limit_frame: int,
+) -> int | None:
+    """Frame index of the quietest short window at or before `limit_frame`.
+
+    Google's recogniser returns *nothing at all* for a chunk that opens in the
+    middle of a word, silently losing every word in it. A 60.8s narration lost
+    its entire closing sentence that way: the fixed 55.0s cut landed 0.08s
+    inside the word "send" (loudness 154), and the following chunk came back
+    empty. The quietest moment nearby was 53.80s, where loudness was 1 -- a
+    real gap between words -- and splitting there recovered all 113 words.
+
+    Returns None when no better point is available, leaving the hard cut.
+    """
+
+    # Only 16-bit PCM is decoded here; that is what the TTS stage writes. Any
+    # other width keeps the fixed cut rather than guessing at the encoding.
+    if sample_width != 2 or limit_frame <= earliest_frame:
+        return None
+
+    window_frames = max(1, int(STT_SPLIT_WINDOW_SECONDS * frame_rate))
+    best_frame: int | None = None
+    best_loudness: float | None = None
+
+    frame = earliest_frame
+    while frame <= limit_frame:
+        window = pcm[frame * frame_bytes:(frame + window_frames) * frame_bytes]
+        if not window:
+            break
+        samples = array.array("h")
+        samples.frombytes(window[:len(window) - len(window) % samples.itemsize])
+        if samples:
+            loudness = sum(abs(sample) for sample in samples) / len(samples)
+            # `<=` so equally quiet windows resolve to the latest one: that
+            # keeps chunks as long as the limit allows, which matters when a
+            # stretch is uniformly quiet and every window ties.
+            if best_loudness is None or loudness <= best_loudness:
+                best_loudness, best_frame = loudness, frame
+        frame += window_frames
+
+    # Split at the middle of the quietest window, so neither side clips the
+    # speech on its own edge of the gap.
+    return None if best_frame is None else best_frame + window_frames // 2
+
+
 def _wav_chunk_payloads(audio_path: Path, max_chunk_seconds: float) -> list[tuple[bytes, float]]:
     """Split a PCM WAV into complete WAV blobs, each <= max_chunk_seconds.
 
     Returns (wav_bytes, start_offset_seconds) pairs so STT word times from
     later chunks can be shifted onto the full-timeline clock.
+
+    Splits land on the quietest moment near the limit rather than on the limit
+    itself; see `_quietest_split_frame` for why a mid-word cut is not survivable.
     """
     with wave.open(str(audio_path), "rb") as handle:
         params = handle.getparams()
@@ -228,6 +295,23 @@ def _wav_chunk_payloads(audio_path: Path, max_chunk_seconds: float) -> list[tupl
     frame_cursor = 0
     while frame_cursor < total_frames:
         frames_this = min(max_frames, total_frames - frame_cursor)
+        # Only worth moving when more audio follows: the final chunk ends at
+        # the end of speech, so it can never open mid-word.
+        if frame_cursor + frames_this < total_frames:
+            limit_frame = frame_cursor + frames_this
+            split_frame = _quietest_split_frame(
+                pcm,
+                frame_bytes=frame_bytes,
+                sample_width=sample_width,
+                frame_rate=frame_rate,
+                earliest_frame=max(
+                    frame_cursor + int(max_frames * STT_MIN_SPLIT_FRACTION),
+                    limit_frame - int(STT_SPLIT_SEARCH_SECONDS * frame_rate),
+                ),
+                limit_frame=limit_frame,
+            )
+            if split_frame is not None and frame_cursor < split_frame <= limit_frame:
+                frames_this = split_frame - frame_cursor
         byte_start = frame_cursor * frame_bytes
         byte_end = (frame_cursor + frames_this) * frame_bytes
         pcm_slice = pcm[byte_start:byte_end]
@@ -250,18 +334,16 @@ def transcribe_audio_path_with_word_offsets(audio_path: Path, project_id: str) -
     """
     duration = wav_duration_seconds(audio_path)
     chunks = _wav_chunk_payloads(audio_path, STT_MAX_CHUNK_SECONDS)
-    print(
-        f"STT: {audio_path} duration={duration:.2f}s -> {len(chunks)} chunk(s) "
-        f"(max {STT_MAX_CHUNK_SECONDS:.0f}s each)"
+    log(
+        f"Listening to {duration:.0f}s of narration in {len(chunks)} piece(s) "
+        f"(up to {STT_MAX_CHUNK_SECONDS:.0f}s each)",
+        indent=2,
     )
 
     transcript_parts: list[str] = []
     recognized_words: list[dict] = []
     for index, (chunk_bytes, start_offset) in enumerate(chunks, start=1):
-        print(
-            f"STT: chunk {index}/{len(chunks)} "
-            f"start={start_offset:.2f}s bytes={len(chunk_bytes)}"
-        )
+        log(f"Piece {index} of {len(chunks)}: listening…", indent=2)
         try:
             raw = transcribe_with_word_offsets(chunk_bytes, project_id)
         except Exception as exc:
@@ -277,7 +359,7 @@ def transcribe_audio_path_with_word_offsets(audio_path: Path, project_id: str) -
                 "start_seconds": round(item["start_seconds"] + start_offset, 3),
                 "end_seconds": round(item["end_seconds"] + start_offset, 3),
             })
-        print(f"STT: chunk {index}/{len(chunks)} -> {len(words)} words")
+        log(f"Piece {index} of {len(chunks)}: heard {len(words)} words", indent=2)
 
     return " ".join(transcript_parts).strip(), recognized_words
 
@@ -474,11 +556,27 @@ def align_words(canonical_words: list[str], recognized_words: list[dict]) -> tup
             item.update(start_seconds=previous+offset*step, end_seconds=previous+(offset+1)*step, alignment="interpolated")
     for idx, item in enumerate(aligned, 1):
         item.update(index=idx, start_seconds=round(item["start_seconds"], 3), end_seconds=round(item["end_seconds"], 3))
+    # Extra words *after* the last script word are inert: the composition's
+    # length comes from the last shot's end (Composition.tsx), so speech past
+    # it is never rendered. Extra words *inside* the narration are not -- they
+    # shift every later timestamp and desync the subtitles. Only the second
+    # kind may fail the run, so trailing ones are excluded from the ratio.
+    # A live take ended with an invented "What would life be like if you did
+    # that?" and scored 92.2% on a recording whose 107 script words were all
+    # found, perfectly timed.
+    trailing_insertions = 0
+    for operation in operations:          # `operations` is in reverse order
+        if operation[0] != "insert":
+            break
+        trailing_insertions += 1
+    scoreable_insertions = insertions - trailing_insertions
+
     stats = {"canonical_word_count": n, "recognized_word_count": m, "exact_matches": exact_matches,
              "equivalent_matches": equivalent_matches, "substitutions": substitutions,
              "canonical_words_missing": deletions, "extra_recognized_words": insertions,
+             "trailing_extra_words": trailing_insertions,
              "exact_match_ratio": exact_matches/n if n else 0.0,
-             "normalized_match_ratio": (exact_matches+equivalent_matches)/(n+insertions) if n else 0.0,
+             "normalized_match_ratio": (exact_matches+equivalent_matches)/(n+scoreable_insertions) if n else 0.0,
              "edit_distance": dp[n][m], "mismatches": mismatches, "timing_errors": timing_errors}
     return aligned, stats
 
@@ -1093,7 +1191,9 @@ async def build_subtitle_cues(args: dict) -> dict:
 # REMOTION DELIVERY (Story 3.1)
 # ============================================================
 
-REMOTION_DIR = Path("remotion")
+# Shared by every reel. `public/` is staging that each render overwrites and
+# `out/` holds only the most recent MP4; the keeping copy goes in the project.
+REMOTION_DIR = repo_path("remotion")
 REMOTION_PUBLIC_DIR = REMOTION_DIR / "public"
 DEFAULT_REMOTION_RENDER_OUTPUT = REMOTION_DIR / "out" / "book_reel.mp4"
 REMOTION_COMPOSITION_ID = "BookReel"

@@ -278,7 +278,7 @@ def expected_tts_only_cost(
 def test_fresh_run_runs_tools_in_sequence_and_persists_validated_contract(stage, monkeypatch):
     source = stage
     tts_tool, stt_tool, dp_tool = mock_tools(monkeypatch)
-    assert run.main([str(source)]) == 0
+    assert run.main(["--project", source.parent.name]) == 0
     assert len(tts_tool.calls) == len(stt_tool.calls) == len(dp_tool.calls) == 1
     # STT/DP each consume the previous tool's own output, chained in order.
     assert stt_tool.calls[0]["audio_path"] == "audio/narration.wav"
@@ -313,7 +313,7 @@ def test_non_normal_style_hints_survive_into_the_persisted_contract(stage, monke
     dp_payload["cues"][-1]["style_hint"] = "REFLECTION"
     mock_tools(monkeypatch, dp=[tts_content(json.dumps(dp_payload))])
 
-    assert run.main([str(source)]) == 0
+    assert run.main(["--project", source.parent.name]) == 0
 
     contract = SubtitleCuesContract.model_validate_json(run.SUBTITLE_CUES_FILE.read_text())
     assert contract.cues[0].style_hint == "IMPACT"
@@ -354,7 +354,7 @@ def test_valid_persisted_contract_skips_tools(stage, monkeypatch):
     before = run.SUBTITLE_CUES_FILE.read_bytes()
     tts_tool, stt_tool, dp_tool = mock_tools(monkeypatch, tts=[], stt=[], dp=[])
     for _ in range(2):
-        assert run.main([str(source)]) == 0
+        assert run.main(["--project", source.parent.name]) == 0
     assert tts_tool.calls == stt_tool.calls == dp_tool.calls == []
     assert run.SUBTITLE_CUES_FILE.read_bytes() == before
 
@@ -367,7 +367,7 @@ def test_voice_skip_still_backfills_visual_plan_shot_timing(stage, monkeypatch):
     assert plan["shots"][0].get("start_seconds", 0.0) == 0.0
     assert plan["shots"][0].get("end_seconds", 0.0) == 0.0
     tts_tool, stt_tool, dp_tool = mock_tools(monkeypatch, tts=[], stt=[], dp=[])
-    assert run.main([str(source)]) == 0
+    assert run.main(["--project", source.parent.name]) == 0
     assert tts_tool.calls == stt_tool.calls == dp_tool.calls == []
     updated = json.loads(run.VISUAL_PLAN_FILE.read_text())
     assert updated["shots"][0]["end_seconds"] > 0.0
@@ -381,7 +381,7 @@ def test_persisted_contract_with_missing_audio_cannot_skip(stage, monkeypatch):
     run.SUBTITLE_CUES_FILE.write_text(json.dumps(persisted_subtitle_cues_payload()), encoding="utf-8")
     assert not Path("audio/narration.wav").exists()
     tts_tool, stt_tool, dp_tool = mock_tools(monkeypatch)
-    assert run.main([str(source)]) == 0
+    assert run.main(["--project", source.parent.name]) == 0
     assert len(tts_tool.calls) == len(stt_tool.calls) == len(dp_tool.calls) == 1
 
 
@@ -398,7 +398,7 @@ def test_invalid_or_stale_persistence_cannot_skip(stage, monkeypatch, bad_file):
         persisted["source_narration_script"] = "a completely different narration script entirely"
     run.SUBTITLE_CUES_FILE.write_text("{" if bad_file == "malformed" else json.dumps(persisted), encoding="utf-8")
     tts_tool, stt_tool, dp_tool = mock_tools(monkeypatch)
-    assert run.main([str(source)]) == 0
+    assert run.main(["--project", source.parent.name]) == 0
     assert len(tts_tool.calls) == len(stt_tool.calls) == len(dp_tool.calls) == 1
 
 
@@ -410,7 +410,7 @@ def test_final_story_plan_precondition_prevents_voice_agent(stage, monkeypatch, 
     else:
         run.FINAL_STORY_PLAN_FILE.write_text("{not valid json", encoding="utf-8")
     tts_tool, stt_tool, dp_tool = mock_tools(monkeypatch)
-    assert run.main([str(source)]) == 1
+    assert run.main(["--project", source.parent.name]) == 1
     assert tts_tool.calls == stt_tool.calls == dp_tool.calls == []
     report = failure_report()
     assert report["failed_contract_name"] == "FinalStoryPlanContract"
@@ -424,7 +424,7 @@ def test_visual_plan_precondition_prevents_voice_agent(stage, monkeypatch, break
     else:
         run.VISUAL_PLAN_FILE.write_text("{not valid json", encoding="utf-8")
     tts_tool, stt_tool, dp_tool = mock_tools(monkeypatch)
-    assert run.main([str(source)]) == 1
+    assert run.main(["--project", source.parent.name]) == 1
     assert tts_tool.calls == stt_tool.calls == dp_tool.calls == []
     report = failure_report()
     assert report["failed_contract_name"] == "VisualPlanContract"
@@ -441,7 +441,7 @@ def test_transient_stt_failure_reuses_audio_then_succeeds(stage, monkeypatch):
         stt=[gate_failure, stt_ok_payload()],
         dp=[dp_ok_payload()],
     )
-    assert run.main([str(source)]) == 0
+    assert run.main(["--project", source.parent.name]) == 0
     assert len(tts_tool.calls) == 1
     assert len(stt_tool.calls) == 2
     assert len(dp_tool.calls) == 1
@@ -449,7 +449,14 @@ def test_transient_stt_failure_reuses_audio_then_succeeds(stage, monkeypatch):
     assert manifest.iteration_counts["voice_agent"] == 2
 
 
-def test_dp_recheck_failure_halts_without_repeating_paid_calls(stage, monkeypatch):
+def test_a_bad_take_is_re_recorded_and_the_second_one_succeeds(stage, monkeypatch):
+    """The self-healing path, end to end: attempt 1 fails the alignment
+    recheck, the recording is discarded, attempt 2 records again and passes.
+
+    This used to assert a halt after one attempt. The reel it was protecting
+    was stopped by a take where TTS appended a sentence of its own -- exactly
+    the case a second take fixes.
+    """
     source = stage
     recheck_failure = AlignmentQualityError("word_timing alignment is not accurate enough.\nExact match ratio: 0.960")
     tts_tool, stt_tool, dp_tool = mock_tools(
@@ -458,19 +465,18 @@ def test_dp_recheck_failure_halts_without_repeating_paid_calls(stage, monkeypatc
         stt=[stt_ok_payload(), stt_ok_payload()],
         dp=[recheck_failure, dp_ok_payload()],
     )
-    assert run.main([str(source)]) == 1
-    assert len(dp_tool.calls) == len(tts_tool.calls) == len(stt_tool.calls) == 1
+    assert run.main(["--project", source.parent.name]) == 0
+    assert len(dp_tool.calls) == len(tts_tool.calls) == len(stt_tool.calls) == 2
     manifest = load_run_manifest(run.RUN_STATE_DIR)
-    assert manifest.iteration_counts["voice_agent"] == 1
+    assert manifest.iteration_counts["voice_agent"] == 2
     assert (run.RUN_STATE_DIR / "voice_agent_attempt_1_alignment.json").exists()
-    assert "budget" not in failure_report()["reason"].lower()
 
 
 def test_retry_ceiling_exhausted_halts_with_shared_failure_report(stage, monkeypatch):
     source = stage
     always_fails = RuntimeError("transient TTS failure")
     tts_tool, stt_tool, dp_tool = mock_tools(monkeypatch, tts=[always_fails] * 3, stt=[], dp=[])
-    assert run.main([str(source)]) == 1
+    assert run.main(["--project", source.parent.name]) == 1
     assert len(tts_tool.calls) == 3
     assert stt_tool.calls == dp_tool.calls == []
     report = failure_report()
@@ -482,7 +488,7 @@ def test_retry_ceiling_exhausted_halts_with_shared_failure_report(stage, monkeyp
     assert "metadata/visual_plan.json" in report["partial_artifact_paths"]
     assert not run.SUBTITLE_CUES_FILE.exists()
     # The ceiling is persisted; restarting cannot purchase another three attempts.
-    assert run.main([str(source)]) == 1
+    assert run.main(["--project", source.parent.name]) == 1
     assert len(tts_tool.calls) == 3
 
 
@@ -490,7 +496,7 @@ def test_budget_exhausted_at_stage_halts_before_tools(stage, monkeypatch):
     source = stage
     tts_tool, stt_tool, dp_tool = mock_tools(monkeypatch, tts=[], stt=[], dp=[])
     save_run_manifest(RunManifest(budget_spent_usd=10), run.RUN_STATE_DIR)
-    assert run.main([str(source)]) == 1
+    assert run.main(["--project", source.parent.name]) == 1
     assert tts_tool.calls == stt_tool.calls == dp_tool.calls == []
     assert failure_report()["attempt_count"] == 0
 
@@ -505,7 +511,7 @@ def test_budget_checked_before_stt_call_halts_before_stt(stage, monkeypatch):
     # survive the pre-STT check once TTS's own real cost is added.
     monkeypatch.setattr(run, "load_settings", lambda: make_settings(max_budget_usd=tts_cost / 2))
     tts_tool, stt_tool, dp_tool = mock_tools(monkeypatch)
-    assert run.main([str(source)]) == 1
+    assert run.main(["--project", source.parent.name]) == 1
     assert len(tts_tool.calls) == 1
     assert stt_tool.calls == dp_tool.calls == []
     manifest = load_run_manifest(run.RUN_STATE_DIR)
@@ -543,7 +549,7 @@ def test_tts_spend_recorded_in_manifest_before_second_attempts_stt_call(stage, m
     monkeypatch.setattr(run, "extract_word_timing", stt_tool)
     monkeypatch.setattr(run, "build_subtitle_cues", dp_tool)
 
-    assert run.main([str(source)]) == 0
+    assert run.main(["--project", source.parent.name]) == 0
     assert len(tts_tool.calls) == 1
     assert len(stt_tool.calls) == 2
     # Attempted STT requests are conservatively charged, even when they fail.
@@ -560,7 +566,7 @@ def test_impact_text_not_found_halts_immediately_without_consuming_ceiling(stage
         "impact_text 'xyz' does not appear anywhere in the narration."
     )
     tts_tool, stt_tool, dp_tool = mock_tools(monkeypatch, dp=[not_found])
-    assert run.main([str(source)]) == 1
+    assert run.main(["--project", source.parent.name]) == 1
     assert len(tts_tool.calls) == len(stt_tool.calls) == len(dp_tool.calls) == 1
     report = failure_report()
     assert report["stage_id"] == "voice_agent"
@@ -569,12 +575,30 @@ def test_impact_text_not_found_halts_immediately_without_consuming_ceiling(stage
     assert manifest.iteration_counts["voice_agent"] == 1
 
 
-def test_alignment_failure_is_nonretryable_and_keeps_paid_cost(stage, monkeypatch):
-    tts, stt, dp = mock_tools(monkeypatch, stt=[AlignmentQualityError("missing speech")], dp=[])
-    assert run.main([str(stage)]) == 1
-    assert len(tts.calls) == len(stt.calls) == 1
+def test_alignment_failure_retries_with_a_genuinely_fresh_recording(stage, monkeypatch):
+    """A take that disagrees with the script is worth re-recording.
+
+    Replaces a test that asserted the opposite. Gemini TTS does sometimes add
+    or drop a line, and only a new take can change that evidence -- but the
+    audio cache would otherwise hand back the identical file on every attempt,
+    making the retry ceiling decorative. The cost of being wrong is one TTS
+    plus one STT per attempt, which is why the total is asserted too.
+    """
+    # FakeTool indexes its queue by call count, so every attempt needs its own
+    # TTS payload -- otherwise it raises IndexError and the run mistakes a test
+    # artefact for a TTS failure.
+    tts, stt, dp = mock_tools(
+        monkeypatch,
+        tts=[tts_ok_payload() for _ in range(3)],
+        stt=[AlignmentQualityError("missing speech")] * 3,
+        dp=[],
+    )
+
+    assert run.main(["--project", stage.parent.name]) == 1
+    # Three attempts, and TTS ran each time -- not one take re-transcribed.
+    assert len(tts.calls) == len(stt.calls) == 3
     assert not dp.calls
-    assert load_run_manifest(run.RUN_STATE_DIR).budget_spent_usd == pytest.approx(expected_cost())
+    assert load_run_manifest(run.RUN_STATE_DIR).budget_spent_usd == pytest.approx(expected_cost() * 3)
     assert "missing speech" in failure_report()["reason"]
 
 
@@ -582,7 +606,7 @@ def test_alignment_failure_is_nonretryable_and_keeps_paid_cost(stage, monkeypatc
 def test_stale_cache_and_cues_do_not_skip(stage, monkeypatch, change):
     from orchestrator.state.voice_cache import AUDIO_CACHE_FILE
     tts, stt, dp = mock_tools(monkeypatch)
-    assert run.main([str(stage)]) == 0
+    assert run.main(["--project", stage.parent.name]) == 0
     if change in {"narration", "direction"}:
         story = json.loads(run.FINAL_STORY_PLAN_FILE.read_text())
         if change == "narration":
@@ -608,7 +632,7 @@ def test_stale_cache_and_cues_do_not_skip(stage, monkeypatch, change):
         cues["audio_provenance"] = {"unverifiable": True}
         run.SUBTITLE_CUES_FILE.write_text(json.dumps(cues))
     tts, stt, dp = mock_tools(monkeypatch, tts=[RuntimeError("stop before any paid request")] * 2)
-    assert run.main([str(stage)]) == 1
+    assert run.main(["--project", stage.parent.name]) == 1
     assert len(tts.calls) == 2
     assert stt.calls == dp.calls == []
 
@@ -620,7 +644,7 @@ def test_explicit_override_rejects_legacy_cues(stage, monkeypatch):
     response = json.loads(tts_ok_payload()["content"][0]["text"])
     response["voice_name"] = "Algieba"
     tts, stt, dp = mock_tools(monkeypatch, tts=[tts_content(json.dumps(response))])
-    assert run.main([str(stage)]) == 0
+    assert run.main(["--project", stage.parent.name]) == 0
     assert len(tts.calls) == 1
     assert json.loads(run.SUBTITLE_CUES_FILE.read_text())["audio_provenance"]["voice_name"] == "Algieba"
 
@@ -630,7 +654,7 @@ def test_empty_voice_override_halts_before_tools_even_with_legacy_cues(stage, mo
     run.SUBTITLE_CUES_FILE.write_text(json.dumps(persisted_subtitle_cues_payload()))
     monkeypatch.setenv("TTS_VOICE_NAME", "  ")
     tts, stt, dp = mock_tools(monkeypatch, tts=[], stt=[], dp=[])
-    assert run.main([str(stage)]) == 1
+    assert run.main(["--project", stage.parent.name]) == 1
     assert tts.calls == stt.calls == dp.calls == []
     assert "must not be empty" in failure_report()["reason"]
 
@@ -640,32 +664,33 @@ def test_retry_voice_archives_evidence_preserves_spend_and_other_counts(stage, m
     save_run_manifest(RunManifest(budget_spent_usd=1.25, iteration_counts=old), run.RUN_STATE_DIR)
     run.RUN_STATE_DIR.joinpath("voice_agent_attempt_1.json").write_text('{"result": "old evidence"}')
     tts, stt, dp = mock_tools(monkeypatch)
-    assert run.main([str(stage)]) == 1
+    assert run.main(["--project", stage.parent.name]) == 1
     assert tts.calls == stt.calls == dp.calls == []
-    assert run.main([str(stage), "--retry-voice"]) == 0
+    assert run.main(["--project", stage.parent.name, "--retry-voice"]) == 0
     manifest = load_run_manifest(run.RUN_STATE_DIR)
     assert manifest.iteration_counts == {**old, "voice_agent": 1}
     assert manifest.budget_spent_usd == pytest.approx(1.25 + expected_cost())
     archives = list((run.RUN_STATE_DIR / "voice_history").iterdir())
     assert len(archives) == 1
-    assert json.loads((archives[0] / "run_manifest.json").read_text())["iteration_counts"] == old
+    archived = json.loads((archives[0] / "config.json").read_text())
+    assert archived["usage"]["attempts_used"] == old
     assert json.loads((archives[0] / "voice_agent_attempt_1.json").read_text()) == {"result": "old evidence"}
 
 
 def test_retry_voice_still_obeys_budget(stage, monkeypatch):
     save_run_manifest(RunManifest(budget_spent_usd=10, iteration_counts={"voice_agent": 3}), run.RUN_STATE_DIR)
     tts, stt, dp = mock_tools(monkeypatch, tts=[], stt=[], dp=[])
-    assert run.main([str(stage), "--retry-voice"]) == 1
+    assert run.main(["--project", stage.parent.name, "--retry-voice"]) == 1
     assert tts.calls == stt.calls == dp.calls == []
     assert load_run_manifest(run.RUN_STATE_DIR).budget_spent_usd == 10
 
 
 def test_downstream_retry_across_invocations_reuses_verified_audio(stage, monkeypatch):
     tts, stt, dp = mock_tools(monkeypatch, stt=[RuntimeError("transient")] * 3, dp=[])
-    assert run.main([str(stage)]) == 1
+    assert run.main(["--project", stage.parent.name]) == 1
     assert len(tts.calls) == 1
     tts, stt, dp = mock_tools(monkeypatch, tts=[])
-    assert run.main([str(stage), "--retry-voice"]) == 0
+    assert run.main(["--project", stage.parent.name, "--retry-voice"]) == 0
     assert not tts.calls
     assert len(stt.calls) == len(dp.calls) == 1
 
@@ -681,6 +706,6 @@ def test_all_sequential_stages_share_one_event_loop(stage, monkeypatch):
     for name in ("run_screenshot_stage", "run_narration_stage", "run_visual_stage", "run_voice_stage",
                  "run_veo_stage", "run_stills_stage", "run_delivery_stage"):
         monkeypatch.setattr(run, name, observe)
-    assert run.main([str(stage)]) == 0
+    assert run.main(["--project", stage.parent.name]) == 0
     assert len(loops) == 7
     assert all(loop is loops[0] for loop in loops)

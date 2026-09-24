@@ -262,6 +262,8 @@ def test_parse_bucket_name_rejects_empty_bucket_name():
 
 
 def test_run_main_writes_failure_report_on_preflight_failure(tmp_path, monkeypatch):
+    # main() now resolves a project, and a project has screenshots.
+    (tmp_path / "source_images").mkdir(exist_ok=True)
     import orchestrator.run as run_module
     from orchestrator.preflight import PreflightResult
     from orchestrator.settings import Settings as SettingsCls
@@ -287,7 +289,7 @@ def test_run_main_writes_failure_report_on_preflight_failure(tmp_path, monkeypat
         ),
     )
 
-    exit_code = run_module.main([str(tmp_path / "source_images")])
+    exit_code = run_module.main(["--project", tmp_path.name])
 
     assert exit_code == 1
 
@@ -304,12 +306,14 @@ def test_run_main_writes_failure_report_on_preflight_failure(tmp_path, monkeypat
 
 
 def test_run_main_halts_via_failure_report_on_malformed_budget_env(tmp_path, monkeypatch):
+    # main() now resolves a project, and a project has screenshots.
+    (tmp_path / "source_images").mkdir(exist_ok=True)
     import orchestrator.run as run_module
 
     monkeypatch.setattr(run_module, "RUN_STATE_DIR", tmp_path)
     monkeypatch.setenv("MAX_BUDGET_USD", "not-a-number")
 
-    exit_code = run_module.main([str(tmp_path / "source_images")])
+    exit_code = run_module.main(["--project", tmp_path.name])
 
     assert exit_code == 1
 
@@ -322,6 +326,8 @@ def test_run_main_halts_via_failure_report_on_malformed_budget_env(tmp_path, mon
 
 
 def test_run_main_halts_on_exhausted_budget_from_real_preflight(tmp_path, monkeypatch):
+    # main() now resolves a project, and a project has screenshots.
+    (tmp_path / "source_images").mkdir(exist_ok=True)
     """Exercises the real (unmocked) run_preflight through orchestrator.run.main(),
     with a persisted manifest whose budget_spent_usd is already at the ceiling --
     guards against a regression that hardcodes budget_spent_usd in run.py.
@@ -369,7 +375,7 @@ def test_run_main_halts_on_exhausted_budget_from_real_preflight(tmp_path, monkey
 
     save_run_manifest(RunManifest(budget_spent_usd=5.0), state_dir=tmp_path)
 
-    exit_code = run_module.main([str(tmp_path / "source_images")])
+    exit_code = run_module.main(["--project", tmp_path.name])
 
     assert exit_code == 1
 
@@ -381,6 +387,8 @@ def test_run_main_halts_on_exhausted_budget_from_real_preflight(tmp_path, monkey
 
 
 def test_run_main_returns_zero_when_preflight_passes(tmp_path, monkeypatch, capsys):
+    # main() now resolves a project, and a project has screenshots.
+    (tmp_path / "source_images").mkdir(exist_ok=True)
     import orchestrator.run as run_module
     from orchestrator.preflight import PreflightResult
     from orchestrator.settings import Settings as SettingsCls
@@ -442,7 +450,7 @@ def test_run_main_returns_zero_when_preflight_passes(tmp_path, monkeypatch, caps
     monkeypatch.setattr(run_module, "run_stills_stage", successful_stills_stage)
     monkeypatch.setattr(run_module, "run_delivery_stage", successful_delivery_stage)
 
-    exit_code = run_module.main([str(tmp_path / "source_images")])
+    exit_code = run_module.main(["--project", tmp_path.name])
 
     assert exit_code == 0
     assert stage_order == ["screenshot", "narration", "visual", "voice", "veo", "stills", "delivery"]
@@ -452,7 +460,7 @@ def test_run_main_returns_zero_when_preflight_passes(tmp_path, monkeypatch, caps
         return 1
 
     monkeypatch.setattr(run_module, "run_veo_stage", failed_veo_stage)
-    assert run_module.main([str(tmp_path / "source_images")]) == 1
+    assert run_module.main(["--project", tmp_path.name]) == 1
 
 
 def test_check_remotion_delivery_toolchain_missing_npx(tmp_path, monkeypatch):
@@ -467,6 +475,7 @@ def test_check_remotion_delivery_toolchain_missing_npx(tmp_path, monkeypatch):
 
 def test_check_remotion_delivery_toolchain_missing_package_json(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("orchestrator.preflight.REMOTION_DIR", tmp_path / "remotion")
     monkeypatch.setattr("orchestrator.preflight.shutil.which", lambda _: "/usr/bin/npx")
     result = check_remotion_delivery_toolchain()
     assert result is not None
@@ -476,10 +485,10 @@ def test_check_remotion_delivery_toolchain_missing_package_json(tmp_path, monkey
 
 def test_check_remotion_delivery_toolchain_missing_node_modules(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    from orchestrator.preflight import REMOTION_DIR
-
-    REMOTION_DIR.mkdir(parents=True)
-    (REMOTION_DIR / "package.json").write_text("{}", encoding="utf-8")
+    monkeypatch.setattr("orchestrator.preflight.REMOTION_DIR", tmp_path / "remotion")
+    fake = tmp_path / "remotion"
+    fake.mkdir(parents=True)
+    (fake / "package.json").write_text("{}", encoding="utf-8")
     monkeypatch.setattr("orchestrator.preflight.shutil.which", lambda _: "/usr/bin/npx")
     result = check_remotion_delivery_toolchain()
     assert result is not None
@@ -575,3 +584,70 @@ def test_media_toolchain_check_passes_with_a_working_ffmpeg(monkeypatch):
 
     monkeypatch.setattr(deterministic_tools, "resolve_binary", lambda name: f"/usr/bin/{name}")
     assert preflight._check_media_toolchain(load_settings()) is None
+
+
+# --- IMAGE_PROVIDER=codex ---------------------------------------------------
+# Same reasoning as the ffmpeg check: a missing or logged-out Codex must stop
+# the run in preflight, not at the first shot that needs a picture.
+
+
+def _fake_login(returncode: int, text: str = ""):
+    import subprocess
+
+    def run(command, **kwargs):
+        return subprocess.CompletedProcess(command, returncode, stdout=text, stderr="")
+
+    return run
+
+
+def test_codex_is_not_checked_on_a_gemini_run(monkeypatch):
+    from orchestrator import preflight
+
+    monkeypatch.setattr(
+        preflight.shutil, "which",
+        lambda name: pytest.fail("a Gemini run must not look for Codex"),
+    )
+    assert preflight._check_codex_image_provider(make_settings()) is None
+
+
+def test_missing_codex_cli_fails_preflight(monkeypatch):
+    from orchestrator import preflight
+    from orchestrator.tools import codex_image_tools
+
+    monkeypatch.setattr(codex_image_tools.shutil, "which", lambda name: None)
+    result = preflight._check_codex_image_provider(make_settings(image_provider="codex"))
+    assert result is not None and result.failed_check == "codex"
+    assert "IMAGE_PROVIDER=gemini" in result.reason
+
+
+def test_logged_out_codex_fails_preflight(monkeypatch):
+    from orchestrator import preflight
+    from orchestrator.tools import codex_image_tools
+
+    monkeypatch.setattr(codex_image_tools.shutil, "which", lambda name: "/bin/codex")
+    monkeypatch.setattr(preflight.subprocess, "run", _fake_login(1, "Not logged in"))
+    result = preflight._check_codex_image_provider(make_settings(image_provider="codex"))
+    assert result is not None and result.failed_check == "codex"
+    assert "codex login" in result.reason
+
+
+def test_logged_in_codex_passes_preflight(monkeypatch):
+    from orchestrator import preflight
+    from orchestrator.tools import codex_image_tools
+
+    monkeypatch.setattr(codex_image_tools.shutil, "which", lambda name: "/bin/codex")
+    monkeypatch.setattr(preflight.subprocess, "run", _fake_login(0, "Logged in using ChatGPT"))
+    assert preflight._check_codex_image_provider(make_settings(image_provider="codex")) is None
+
+
+def test_an_unrunnable_codex_fails_rather_than_raising(monkeypatch):
+    from orchestrator import preflight
+    from orchestrator.tools import codex_image_tools
+
+    def explode(command, **kwargs):
+        raise OSError("exec format error")
+
+    monkeypatch.setattr(codex_image_tools.shutil, "which", lambda name: "/bin/codex")
+    monkeypatch.setattr(preflight.subprocess, "run", explode)
+    result = preflight._check_codex_image_provider(make_settings(image_provider="codex"))
+    assert result is not None and result.failed_check == "codex"

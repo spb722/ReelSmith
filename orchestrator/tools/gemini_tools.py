@@ -25,10 +25,12 @@ from google.genai import errors as genai_errors
 from google.genai import types
 from PIL import Image
 
+from orchestrator.progress import log
 from orchestrator.contracts.stills import STILLS_DIR, StillFailureContract, StillResultContract
 from orchestrator.contracts.veo import VeoFailureContract, VeoSeedContract, sha256_file, shot_fingerprint
 from orchestrator.contracts.visual_plan import Shot
 from orchestrator.settings import load_settings
+from orchestrator.workspace import resolve_shared_asset
 from orchestrator.state.voice_cache import TTS_MODEL, TTS_VOICE_NAME, selected_voice_name
 from orchestrator.tools.deterministic_tools import tokenize
 
@@ -185,7 +187,7 @@ async def generate_narration_audio(args: dict) -> dict:
         raise ValueError("narration_script must not be empty")
 
     voice_name = selected_voice_name()
-    print(f"TTS: model={TTS_MODEL} voice={voice_name}")
+    log(f"Speaking the script with the {voice_name} voice", indent=2)
     prompt = build_tts_prompt(narration_script, args.get("voice_direction", {}))
 
     client = genai.Client(vertexai=True, project=args["project_id"], location=args["location"])
@@ -239,7 +241,9 @@ def extract_generated_image(response) -> tuple[Image.Image | None, str]:
     return None, "\n".join(text_parts).strip()
 
 
-def build_seed_spec(shot: dict, asset: dict, subtitle_text: str) -> dict:
+def build_seed_spec(
+    shot: dict, asset: dict, subtitle_text: str, start_level: int = 0
+) -> dict:
     """Build a dynamic recomposition request from the validated shot.
 
     Unlike the legacy script this works for any shot assigned VEO mode; it
@@ -276,7 +280,14 @@ def build_seed_spec(shot: dict, asset: dict, subtitle_text: str) -> dict:
     )
     # FINAL RULE always lands last, after any character block, so a plan that
     # asks for on-screen text cannot win.
-    ladder = build_prompt_ladder(prompt, asset)
+    #
+    # `start_level` exists because Veo rejects a seed whose person reads as a
+    # real individual, and that rejection arrives a stage *after* the image was
+    # drawn -- so the ladder's own refusal-driven descent never sees it. The
+    # orchestrator carries the rung forward across attempts instead, otherwise
+    # every retry redraws the identical rejected face.
+    full_ladder = build_prompt_ladder(prompt, asset)
+    ladder = full_ladder[min(max(start_level, 0), len(full_ladder) - 1):]
     return {
         "shot_sequence": validated_shot.sequence,
         "shot_fingerprint": shot_fingerprint(validated_shot),
@@ -307,21 +318,27 @@ def resolve_character_references() -> list[Path]:
 
     settings = load_settings()
 
-    body_raw = (settings.character_reference_path or "").strip()
-    if not body_raw:
-        return []
-    body = Path(body_raw)
-    if not body.is_file():
+    # A project that drops its own sheet in overrides the shared one; see
+    # `resolve_shared_asset`.
+    #
+    # The turnaround wins when present. It is the same character from front,
+    # three-quarter and profile, so a scene that draws its figure side-on can
+    # still be checked -- against the reference's own profile rather than
+    # against a front view it can never match. It replaces the single sheet
+    # rather than joining it: two body references would trip the two-image
+    # wording below, which describes the second as a face close-up.
+    body = resolve_shared_asset(settings.character_turnaround_reference_path)
+    if body is None:
+        body = resolve_shared_asset(settings.character_reference_path)
+    if body is None:
         return []
 
     # The face crop only ever supplements the full-body sheet; a face alone
     # cannot describe a whole figure, so it is never used on its own.
     references = [body]
-    face_raw = (settings.character_face_reference_path or "").strip()
-    if face_raw:
-        face = Path(face_raw)
-        if face.is_file() and face.resolve() != body.resolve():
-            references.append(face)
+    face = resolve_shared_asset(settings.character_face_reference_path)
+    if face is not None and face.resolve() != body.resolve():
+        references.append(face)
     return references
 
 
@@ -397,7 +414,12 @@ def build_character_prompt_block(
             "features -- follow it exactly for the face. "
         )
     else:
-        which = "The SECOND image is a character reference. "
+        which = (
+            "The SECOND image is a character reference sheet. It may show the character "
+            "from more than one angle -- front, three-quarter and profile. Match whichever "
+            "angle the figure in the scene is already drawn at; never rotate the scene's "
+            "figure to match a different panel. "
+        )
 
     if level >= 1:
         # Rung 2 of the ladder: identity carried by hair, build and clothing
@@ -408,7 +430,10 @@ def build_character_prompt_block(
             "Redraw that one figure as the referenced character, matching their hair, "
             "build, colouring and clothing, and keeping the source figure's existing pose, "
             "body angle and head direction exactly as drawn -- do not turn, lift or rotate "
-            "the head, and do not add a face that the source does not show. "
+            "the head, and do not add a face that the source does not show. If the figure "
+            "is drawn side-on and the reference sheet has a profile panel, match that panel: "
+            "the brow line, nose profile, beard outline and hairline should read as the same "
+            "person seen from the side. "
         )
     else:
         identity = (
@@ -625,6 +650,17 @@ def run_gemini_image_edit(
     )
 
 
+def recorded_model_name(provider: str, model: str) -> str:
+    """What the contract records as having drawn this image.
+
+    The Gemini model name is meaningless on a Codex run, where the model is
+    whatever the operator's own Codex config selects -- but a reel still has
+    to be able to say which backend produced each shot.
+    """
+
+    return "codex" if provider == "codex" else model
+
+
 def _save_generated_image(generated_image: Image.Image, output_path: Path) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     temporary_path = output_path.with_suffix(output_path.suffix + ".tmp")
@@ -633,16 +669,21 @@ def _save_generated_image(generated_image: Image.Image, output_path: Path) -> No
 
 
 def generate_seed_image(
-    client: genai.Client,
+    client: genai.Client | None,
     spec: dict,
     *,
     model: str,
     cost_usd: float,
+    provider: str = "gemini",
+    timeout_seconds: float = 0.0,
 ) -> tuple[VeoSeedContract, str]:
-    """Run one Gemini image recomposition and materialize its seed."""
+    """Run one image recomposition and materialize its seed."""
 
     source_path = Path(spec["source_image_path"])
-    generated_image, model_text, rung = run_image_edit_ladder(client, spec, model=model)
+    generated_image, model_text, rung = run_image_edit_ladder(
+        client, spec, model=model, provider=provider, timeout_seconds=timeout_seconds
+    )
+    model = recorded_model_name(provider, model)
     spec["used_prompt_level"] = rung["level"]
 
     output_path = Path(spec["output_image_path"])
@@ -719,8 +760,49 @@ def build_still_spec(shot: dict, asset: dict, subtitle_text: str) -> dict:
     }
 
 
+def _run_image_edit(
+    provider: str,
+    *,
+    client: genai.Client | None,
+    source_image_path: Path,
+    prompt: str,
+    model: str,
+    reference_image_paths: Sequence[Path],
+    timeout_seconds: float,
+    label: str,
+) -> tuple[Image.Image, str]:
+    """One image call against whichever backend the run selected."""
+
+    if provider == "codex":
+        # Imported here rather than at module scope: codex_image_tools takes
+        # ImageEditRefused from this module, so a top-level import is a cycle.
+        from orchestrator.tools.codex_image_tools import run_codex_image_edit
+
+        return run_codex_image_edit(
+            source_image_path=source_image_path,
+            prompt=prompt,
+            reference_image_paths=reference_image_paths,
+            timeout_seconds=timeout_seconds,
+            label=label,
+        )
+    if client is None:
+        raise ValueError("The gemini image provider needs a genai client")
+    return run_gemini_image_edit(
+        client,
+        source_image_path=source_image_path,
+        prompt=prompt,
+        model=model,
+        reference_image_paths=reference_image_paths,
+    )
+
+
 def run_image_edit_ladder(
-    client: genai.Client, spec: dict, *, model: str,
+    client: genai.Client | None,
+    spec: dict,
+    *,
+    model: str,
+    provider: str = "gemini",
+    timeout_seconds: float = 0.0,
 ) -> tuple[Image.Image, str, dict]:
     """Walk the spec's prompt ladder until the model accepts one rung.
 
@@ -736,15 +818,19 @@ def run_image_edit_ladder(
         "reference_image_paths": spec.get("character_reference_paths", []),
     }]
 
+    label = f"Shot {spec.get('shot_sequence', '?')}"
     refusals: list[str] = []
     for rung in ladder:
         try:
-            image, model_text = run_gemini_image_edit(
-                client,
+            image, model_text = _run_image_edit(
+                provider,
+                client=client,
                 source_image_path=source_path,
                 prompt=rung["prompt"],
                 model=model,
                 reference_image_paths=[Path(p) for p in rung["reference_image_paths"]],
+                timeout_seconds=timeout_seconds,
+                label=label,
             )
         except ImageEditRefused as exc:
             refusals.append(f"level {rung['level']}: {exc}")
@@ -752,7 +838,7 @@ def run_image_edit_ladder(
         return image, model_text, rung
 
     raise ImageEditRefused(
-        "Gemini image edit refused every prompt variant, including the one with no "
+        "The image model refused every prompt variant, including the one with no "
         "character reference, so the scene itself is the trigger. "
         + " | ".join(refusals)
     )
@@ -768,10 +854,12 @@ def describe_ladder_outcome(rung: dict) -> str:
             "what was actually drawn. Judge the face from the image itself."
         ),
         1: (
-            "The image model refused the recognisable-face wording for this scene, so the "
-            "character was applied keeping the source figure's own pose and head direction. "
-            "Judge the likeness on hair, build, colouring and clothing -- do NOT reject this "
-            "image for a face that is turned away or not visible."
+            "The strongest wording was refused for this scene, so the character was applied "
+            "keeping the source figure's own pose and head direction. Judge the likeness on "
+            "hair, build, colouring and clothing -- and, when the figure is side-on and the "
+            "reference sheet includes a profile panel, on the profile itself: brow, nose, "
+            "beard outline, hairline. Do NOT reject this image for a face that is turned "
+            "away or not visible; that is what this wording asked for."
         ),
         2: (
             "The image model refused every wording that included the character reference, so "
@@ -782,16 +870,21 @@ def describe_ladder_outcome(rung: dict) -> str:
 
 
 def generate_still_image(
-    client: genai.Client,
+    client: genai.Client | None,
     spec: dict,
     *,
     model: str,
     cost_usd: float,
+    provider: str = "gemini",
+    timeout_seconds: float = 0.0,
 ) -> tuple[StillResultContract, str]:
-    """Run one Gemini image edit and materialize the resulting still."""
+    """Run one image edit and materialize the resulting still."""
 
     source_path = Path(spec["source_image_path"])
-    generated_image, model_text, rung = run_image_edit_ladder(client, spec, model=model)
+    generated_image, model_text, rung = run_image_edit_ladder(
+        client, spec, model=model, provider=provider, timeout_seconds=timeout_seconds
+    )
+    model = recorded_model_name(provider, model)
     spec["used_prompt_level"] = rung["level"]
 
     output_path = Path(spec["output_image_path"])
@@ -896,23 +989,39 @@ def _image_content(path: Path) -> dict:
         "project_id": str,
         "location": str,
         "image_model": str,
+        "image_provider": str,
+        "codex_timeout_seconds": float,
+        "seed_prompt_level": float,
         "cost_usd": float,
     },
 )
 async def generate_veo_seed(args: dict) -> dict:
     try:
-        spec = build_seed_spec(args["shot"], args["asset"], args.get("subtitle_text", ""))
-        client = genai.Client(
-            vertexai=True,
-            project=args["project_id"],
-            location=args["location"],
-            http_options=types.HttpOptions(api_version="v1"),
+        spec = build_seed_spec(
+            args["shot"],
+            args["asset"],
+            args.get("subtitle_text", ""),
+            # Carried by the orchestrator, not chosen by the agent: an earlier
+            # Veo likeness rejection is the only thing that moves this.
+            start_level=int(args.get("seed_prompt_level") or 0),
         )
+        provider = str(args.get("image_provider") or "gemini")
+        timeout_seconds = float(args.get("codex_timeout_seconds") or 0.0)
+        client = None
+        if provider != "codex":
+            client = genai.Client(
+                vertexai=True,
+                project=args["project_id"],
+                location=args["location"],
+                http_options=types.HttpOptions(api_version="v1"),
+            )
         seed, model_text = generate_seed_image(
             client,
             spec,
             model=args["image_model"],
             cost_usd=float(args["cost_usd"]),
+            provider=provider,
+            timeout_seconds=timeout_seconds,
         )
     except Exception as exc:
         try:
@@ -964,23 +1073,31 @@ async def generate_veo_seed(args: dict) -> dict:
         "project_id": str,
         "location": str,
         "image_model": str,
+        "image_provider": str,
+        "codex_timeout_seconds": float,
         "cost_usd": float,
     },
 )
 async def generate_still(args: dict) -> dict:
     try:
         spec = build_still_spec(args["shot"], args["asset"], args.get("subtitle_text", ""))
-        client = genai.Client(
-            vertexai=True,
-            project=args["project_id"],
-            location=args["location"],
-            http_options=types.HttpOptions(api_version="v1"),
-        )
+        provider = str(args.get("image_provider") or "gemini")
+        timeout_seconds = float(args.get("codex_timeout_seconds") or 0.0)
+        client = None
+        if provider != "codex":
+            client = genai.Client(
+                vertexai=True,
+                project=args["project_id"],
+                location=args["location"],
+                http_options=types.HttpOptions(api_version="v1"),
+            )
         result, model_text = generate_still_image(
             client,
             spec,
             model=args["image_model"],
             cost_usd=float(args["cost_usd"]),
+            provider=provider,
+            timeout_seconds=timeout_seconds,
         )
     except Exception as exc:
         try:

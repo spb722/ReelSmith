@@ -66,3 +66,24 @@ def load_audio_cache(narration: str, direction: dict) -> dict | None:
         return cached
     except (OSError, ValueError, TypeError, KeyError):
         return None
+
+
+def discard_audio_cache() -> list[Path]:
+    """Throw away the recording so the next attempt records a fresh one.
+
+    Without this the voice stage's retry ceiling is decorative: the cache
+    verifies, TTS is skipped, and every attempt re-transcribes the identical
+    file to the identical failure. A live run burned its attempts that way on
+    a take where Gemini TTS appended a sentence that was never in the script.
+
+    Returns what it removed, so the caller can say so.
+    """
+
+    from orchestrator.tools.gemini_tools import NARRATION_WAV
+
+    discarded = []
+    for path in (AUDIO_CACHE_FILE, NARRATION_WAV):
+        if path.is_file():
+            path.unlink()
+            discarded.append(path)
+    return discarded

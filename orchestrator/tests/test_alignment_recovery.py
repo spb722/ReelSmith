@@ -6,6 +6,7 @@ import wave
 import pytest
 
 from orchestrator.tools import deterministic_tools as dt
+from orchestrator.tools.deterministic_tools import align_words, tokenize
 
 
 def observed(words):
@@ -106,3 +107,66 @@ def test_overlapping_observations_cannot_pass_gate():
     assert stats["timing_errors"]
     with pytest.raises(dt.AlignmentQualityError):
         asyncio.run(dt.build_subtitle_cues.handler({"word_timing": {"locked_narration": "keep going", "alignment_stats": stats, "words": words}, "narration_script": "keep going"}))
+
+
+# --- trailing extra speech is harmless -------------------------------------
+# Gemini TTS occasionally appends a line of its own. Extra words *after* the
+# last script word are inert: the composition's length comes from the last
+# shot's end (Composition.tsx), so speech past it is never rendered. Extra
+# words *inside* the narration are not -- they shift every later timestamp.
+
+
+def words_at(pairs):
+    """Recognised words with sane increasing timings."""
+    return [
+        {"word": w, "start_seconds": float(i), "end_seconds": float(i) + 0.4}
+        for i, w in enumerate(pairs)
+    ]
+
+
+def test_trailing_extra_speech_does_not_fail_the_run():
+    """The exact failure from a live take: every script word found and timed,
+    nine invented words on the end, scored 0.922 and halted the reel."""
+    script = "you win the game"
+    heard = words_at(["you", "win", "the", "game", "What", "would", "life", "be"])
+    _, stats = align_words(tokenize(script), heard)
+
+    assert stats["canonical_words_missing"] == 0
+    assert stats["extra_recognized_words"] == 4
+    assert stats["trailing_extra_words"] == 4
+    assert stats["normalized_match_ratio"] == 1.0
+
+
+def test_extra_speech_in_the_middle_still_fails():
+    """These genuinely desync subtitles, so they must keep counting."""
+    script = "you win the game"
+    heard = words_at(["you", "win", "absolutely", "the", "game"])
+    _, stats = align_words(tokenize(script), heard)
+
+    assert stats["trailing_extra_words"] == 0
+    assert stats["extra_recognized_words"] == 1
+    assert stats["normalized_match_ratio"] < 1.0
+
+
+def test_a_missing_word_still_fails():
+    """Dropping a word is never harmless -- the subtitle for it would have no
+    timing at all.
+
+    Tested on its own rather than combined with trailing extras: a deletion
+    plus two inserts and two substitutions cost the same three edits, so the
+    aligner may legitimately choose either and an assertion on which one it
+    picked would be testing the tie-break, not the rule.
+    """
+    script = "you win the game"
+    heard = words_at(["you", "win", "game"])
+    _, stats = align_words(tokenize(script), heard)
+
+    assert stats["canonical_words_missing"] == 1
+    assert stats["normalized_match_ratio"] < 1.0
+
+
+def test_a_clean_take_is_unaffected():
+    script = "you win the game"
+    _, stats = align_words(tokenize(script), words_at(["you", "win", "the", "game"]))
+    assert stats["trailing_extra_words"] == 0
+    assert stats["normalized_match_ratio"] == 1.0

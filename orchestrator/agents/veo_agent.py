@@ -7,6 +7,7 @@ from pathlib import Path
 
 from claude_agent_sdk import AgentDefinition, ClaudeAgentOptions, ResultMessage, query
 
+from orchestrator.agents._stream import log_tool_uses
 from orchestrator.contracts.veo import VeoOutcomeContract
 from orchestrator.tools.gemini_tools import gemini_server
 from orchestrator.tools.veo_tools import veo_server
@@ -29,7 +30,10 @@ your only record of prior work.
 
 1. Call generate_veo_seed exactly once this session using the supplied shot,
 cited analyzed asset, subtitle context, and settings -- you must still call it
-even on a retry, since you hold no seed object across attempts. If the
+even on a retry, since you hold no seed object across attempts. Pass every
+field of the supplied settings through to the tool exactly as given, including
+seed_prompt_level: the orchestrator sets it, it is not yours to choose, and
+dropping it silently redraws a seed Veo has already rejected. If the
 supplied previous attempt outcome's failure.stage is "veo_generation" or
 "clip_qa" (the seed already passed QA before; only the clip needed
 correction), do not re-litigate the seed: confirm it is still structurally
@@ -50,7 +54,10 @@ plain oval, reject a generic person who is not the reference, and reject a frame
 whose whole scene has been restyled to match the character -- only the person may
 be drawn in the character's style, the scene keeps the source's art style,
 palette and lighting. Other people in the scene, such as background silhouettes,
-must stay as the source drew them. When the tool result includes NO character
+must stay as the source drew them. When the reference is a turnaround sheet showing the
+character from several angles, verify against whichever panel matches how the
+scene draws the figure -- a side-on figure is checked against the profile panel
+(brow, nose, beard outline, hairline), not against the front view. When the tool result includes NO character
 reference, the source scene has no person in it: that seed is correct without
 one -- never reject it for a missing character and never ask for a person to be
 added. On rejection, return a structured retryable seed_qa
@@ -120,6 +127,7 @@ async def generate_veo_asset(
     )
     result = None
     async for message in query(prompt=prompt, options=options):
+        log_tool_uses(message)
         if isinstance(message, ResultMessage):
             result = message
     # Exhaust the stream so SDK cleanup finishes in this task before returning.

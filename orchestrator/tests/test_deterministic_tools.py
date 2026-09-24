@@ -11,8 +11,6 @@ from PIL import Image
 import orchestrator.tools.deterministic_tools as deterministic_tools_module
 from orchestrator.tools.deterministic_tools import (
     ImpactPhraseNotFoundError,
-    REMOTION_DIR,
-    REMOTION_PUBLIC_DIR,
     build_subtitle_cues,
     deterministic_server,
     discover_images,
@@ -269,8 +267,30 @@ def test_build_subtitle_cues_raises_distinct_error_when_impact_text_not_in_narra
         }))
 
 
+def fake_remotion(tmp_path, monkeypatch):
+    """Point the shared-renderer constants at a throwaway copy.
+
+    They are absolute now -- pinned to the repo root, because the renderer is
+    shared by every reel while the working directory moves per project -- so
+    chdir alone no longer redirects them.
+    """
+
+    remotion = tmp_path / "remotion"
+    monkeypatch.setattr(deterministic_tools_module, "REMOTION_DIR", remotion)
+    monkeypatch.setattr(deterministic_tools_module, "REMOTION_PUBLIC_DIR", remotion / "public")
+    monkeypatch.setattr(
+        deterministic_tools_module, "DEFAULT_REMOTION_RENDER_OUTPUT",
+        remotion / "out" / "book_reel.mp4",
+    )
+    return remotion
+
+
 def test_sync_remotion_assets_copies_public_layout(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
+    # Without this the test writes into the real remotion/public/: the shared
+    # constants are repo-pinned now, so chdir no longer redirects them, and a
+    # passing run was truncating the live narration.wav and stills to 3 bytes.
+    fake_remotion(tmp_path, monkeypatch)
     narration = tmp_path / "audio/narration.wav"
     narration.parent.mkdir(parents=True)
     narration.write_bytes(b"wav")
@@ -290,16 +310,17 @@ def test_sync_remotion_assets_copies_public_layout(tmp_path, monkeypatch):
         "shot_asset_sources": {"1": str(still)},
     }))
     payload = json.loads(response["content"][0]["text"])
-    assert (REMOTION_PUBLIC_DIR / "audio/narration.wav").read_bytes() == b"wav"
-    assert (REMOTION_PUBLIC_DIR / "data/subtitle_cues.json").exists()
-    assert (REMOTION_PUBLIC_DIR / "data/timeline.json").exists()
-    assert (REMOTION_PUBLIC_DIR / "stills/shot_01.png").read_bytes() == b"png"
+    assert (deterministic_tools_module.REMOTION_PUBLIC_DIR / "audio/narration.wav").read_bytes() == b"wav"
+    assert (deterministic_tools_module.REMOTION_PUBLIC_DIR / "data/subtitle_cues.json").exists()
+    assert (deterministic_tools_module.REMOTION_PUBLIC_DIR / "data/timeline.json").exists()
+    assert (deterministic_tools_module.REMOTION_PUBLIC_DIR / "stills/shot_01.png").read_bytes() == b"png"
     assert payload["shot_assets"]["1"] == "stills/shot_01.png"
 
 
 def test_sync_remotion_assets_same_path_is_noop(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    public_timeline = REMOTION_PUBLIC_DIR / "data/timeline.json"
+    fake_remotion(tmp_path, monkeypatch)
+    public_timeline = deterministic_tools_module.REMOTION_PUBLIC_DIR / "data/timeline.json"
     public_timeline.parent.mkdir(parents=True)
     public_timeline.write_text('{"shots": []}', encoding="utf-8")
     narration = tmp_path / "audio/narration.wav"
@@ -325,8 +346,8 @@ def test_sync_remotion_assets_same_path_is_noop(tmp_path, monkeypatch):
 
 def test_render_remotion_success_uses_absolute_output(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    remotion = REMOTION_DIR
-    remotion.mkdir(parents=True)
+    remotion = fake_remotion(tmp_path, monkeypatch)
+    remotion.mkdir(parents=True, exist_ok=True)
     (remotion / "package.json").write_text("{}", encoding="utf-8")
     (remotion / "node_modules").mkdir()
     out = tmp_path / "remotion/out/book_reel.mp4"
@@ -349,7 +370,7 @@ def test_render_remotion_success_uses_absolute_output(tmp_path, monkeypatch):
 
 def test_render_remotion_failure_raises_runtime_error(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    remotion = REMOTION_DIR
+    remotion = fake_remotion(tmp_path, monkeypatch)
     remotion.mkdir(parents=True)
     (remotion / "package.json").write_text("{}", encoding="utf-8")
     (remotion / "node_modules").mkdir()

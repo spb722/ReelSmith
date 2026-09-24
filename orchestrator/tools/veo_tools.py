@@ -24,6 +24,7 @@ from orchestrator.contracts.veo import (
     shot_fingerprint,
 )
 from orchestrator.contracts.visual_plan import Shot
+from orchestrator.progress import format_duration, log
 from orchestrator.settings import VEO_ALLOWED_DURATION_SECONDS
 from orchestrator.state.run_manifest import _atomic_write_json
 from orchestrator.tools.deterministic_tools import resolve_binary
@@ -509,6 +510,10 @@ def run_veo_generation(
             cost_usd=cost_usd,
         )
     deadline = time.monotonic() + max_poll_seconds
+    # The poll loop is the single longest silence in a run (up to
+    # `max_poll_seconds`), so every pass reports rather than waiting mutely.
+    poll_started = time.monotonic()
+    log(f"Shot {shot.sequence}: video sent off to be generated, now waiting for it", indent=2)
     while not bool(_get(operation, "done", default=False)):
         if time.monotonic() >= deadline:
             VEO_OPERATION_DIR.mkdir(parents=True, exist_ok=True)
@@ -525,6 +530,11 @@ def run_veo_generation(
                 operation_dump_path=dump_path,
             )
         time.sleep(poll_seconds)
+        log(
+            f"Shot {shot.sequence}: still generating… "
+            f"{format_duration(time.monotonic() - poll_started)} so far",
+            indent=2,
+        )
         try:
             operation = client.operations.get(operation)
         except Exception as exc:

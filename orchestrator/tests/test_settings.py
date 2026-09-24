@@ -36,6 +36,8 @@ ENV_VARS = (
     "MAX_VEO_ATTEMPTS",
     "IMAGE_CALL_COST_USD",
     "VEO_CALL_COST_USD",
+    "IMAGE_PROVIDER",
+    "CODEX_IMAGE_TIMEOUT_SECONDS",
 )
 
 
@@ -182,3 +184,47 @@ def test_claude_model_defaults_to_opus_and_is_env_overridable(monkeypatch):
 
     monkeypatch.setenv("CLAUDE_MODEL", "claude-sonnet-5")
     assert load_settings().claude_model == "claude-sonnet-5"
+
+
+def test_image_provider_defaults_to_gemini():
+    """An unset environment must reproduce the pre-Codex behaviour exactly."""
+    settings = load_settings()
+    assert settings.image_provider == "gemini"
+    assert settings.image_call_cost_usd == DEFAULT_IMAGE_CALL_COST_USD
+
+
+def test_codex_provider_reserves_no_budget(monkeypatch):
+    """Codex bills the operator's subscription, not per call, so a Codex image
+    must not have to reserve headroom it will never spend."""
+    monkeypatch.setenv("IMAGE_PROVIDER", "codex")
+    settings = load_settings()
+    assert settings.image_provider == "codex"
+    assert settings.image_call_cost_usd == 0.0
+
+
+def test_explicit_image_call_cost_still_wins_for_codex(monkeypatch):
+    monkeypatch.setenv("IMAGE_PROVIDER", "codex")
+    monkeypatch.setenv("IMAGE_CALL_COST_USD", "0.5")
+    assert load_settings().image_call_cost_usd == 0.5
+
+
+def test_image_provider_is_case_insensitive(monkeypatch):
+    monkeypatch.setenv("IMAGE_PROVIDER", "  CODEX ")
+    assert load_settings().image_provider == "codex"
+
+
+def test_unknown_image_provider_is_rejected(monkeypatch):
+    """Fails at settings load rather than at the first shot that needs a picture."""
+    monkeypatch.setenv("IMAGE_PROVIDER", "dall-e")
+    with pytest.raises(SettingsError, match="IMAGE_PROVIDER"):
+        load_settings()
+
+
+def test_codex_image_timeout_is_overridable(monkeypatch):
+    assert load_settings().codex_image_timeout_seconds == 900.0
+    monkeypatch.setenv("CODEX_IMAGE_TIMEOUT_SECONDS", "120")
+    assert load_settings().codex_image_timeout_seconds == 120.0
+
+    monkeypatch.setenv("CODEX_IMAGE_TIMEOUT_SECONDS", "0")
+    with pytest.raises(SettingsError):
+        load_settings()

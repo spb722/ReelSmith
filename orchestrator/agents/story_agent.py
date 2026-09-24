@@ -9,6 +9,7 @@ from pathlib import Path
 
 from claude_agent_sdk import AgentDefinition, ClaudeAgentOptions, ResultMessage, query
 
+from orchestrator.agents._stream import log_tool_uses
 from orchestrator.contracts.final_story_plan import FinalStoryPlanContract
 from orchestrator.settings import load_settings
 
@@ -146,6 +147,7 @@ async def write_story(
     )
     result = None
     async for message in query(prompt=prompt, options=options):
+        log_tool_uses(message)
         if isinstance(message, ResultMessage):
             result = message
     # Exhaust the stream so SDK cleanup finishes in this task before returning.

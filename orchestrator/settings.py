@@ -31,6 +31,19 @@ DEFAULT_MAX_BUDGET_USD = 15.0
 DEFAULT_VEO_MODEL = "veo-3.1-fast-generate-001"
 DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
 DEFAULT_IMAGE_MODEL = "gemini-3.1-flash-image"
+# Which backend actually draws the stills and Veo seeds. "gemini" is the
+# one-shot image-edit API; "codex" shells out to the local Codex CLI and asks
+# it, via the `$imagegen` directive, to write the image to disk. Gemini stays
+# the default so an unset environment reproduces today's behaviour exactly.
+IMAGE_PROVIDERS = ("gemini", "codex")
+DEFAULT_IMAGE_PROVIDER = "gemini"
+# Codex runs on the operator's ChatGPT subscription rather than per-call API
+# billing, so a Codex image reserves no budget headroom. The Gemini estimate
+# below still applies whenever that provider is selected.
+CODEX_IMAGE_CALL_COST_USD = 0.0
+# One Codex image is a whole agent turn, not an API round trip. Minutes are
+# normal; this ceiling only exists so a wedged call cannot stall a run forever.
+DEFAULT_CODEX_IMAGE_TIMEOUT_SECONDS = 900.0
 DEFAULT_VEO_RESOLUTION = "720p"
 DEFAULT_VEO_DURATION_SECONDS = 8
 # The clip lengths Veo accepts, shortest first. A shot only becomes a video
@@ -42,6 +55,18 @@ VEO_ALLOWED_DURATION_SECONDS = (4, 6, 8)
 DEFAULT_VEO_POLL_SECONDS = 15.0
 DEFAULT_VEO_MAX_POLL_SECONDS = 900.0
 DEFAULT_MAX_VEO_ATTEMPTS = 3
+# How many tries each stage gets before the run halts. These were constants
+# scattered through run.py; they live here so a project's config.json can be
+# seeded from one place and the operator can raise a ceiling without editing
+# Python. Keys match the stage ids used in `iteration_counts`.
+DEFAULT_MAX_ATTEMPTS = {
+    "asset_analyst": 4,
+    "story_agent": 4,
+    "visual_agent": 4,
+    "voice_agent": 3,
+    "veo_agent": DEFAULT_MAX_VEO_ATTEMPTS,
+    "stills_agent": 3,
+}
 # Cost estimates are configuration, not hidden model knowledge. They are
 # intentionally conservative and can be updated without code changes.
 DEFAULT_IMAGE_CALL_COST_USD = 0.04
@@ -62,6 +87,13 @@ DEFAULT_CHARACTER_REFERENCE_PATH = "assets/character/character.png"
 # full-body sheet alone is accepted. Point CHARACTER_FACE_REFERENCE_PATH at a
 # flatter, more illustrated face crop to opt back in.
 DEFAULT_CHARACTER_FACE_REFERENCE_PATH = ""
+# A multi-angle sheet (front, three-quarter, profile). Preferred over the
+# single front-on sheet when present: a scene that draws its figure in profile
+# cannot be checked against a front view, and a live run lost three attempts
+# to exactly that -- the QA agent reported the reference's "face shape, thick
+# straight eyebrows, broad nose and mouth shape are not visible" on a figure
+# the source itself draws side-on.
+DEFAULT_CHARACTER_TURNAROUND_REFERENCE_PATH = "assets/character/character_turnaround.png"
 
 
 # Story 1.5: Gemini TTS / Google STT per-unit cost-rate constants. Unlike
@@ -84,6 +116,8 @@ class Settings:
     veo_model: str
     gemini_model: str
     image_model: str = DEFAULT_IMAGE_MODEL
+    image_provider: str = DEFAULT_IMAGE_PROVIDER
+    codex_image_timeout_seconds: float = DEFAULT_CODEX_IMAGE_TIMEOUT_SECONDS
     veo_resolution: str = DEFAULT_VEO_RESOLUTION
     veo_duration_seconds: int = DEFAULT_VEO_DURATION_SECONDS
     veo_poll_seconds: float = DEFAULT_VEO_POLL_SECONDS
@@ -94,6 +128,7 @@ class Settings:
     claude_model: str = DEFAULT_CLAUDE_MODEL
     character_reference_path: str = DEFAULT_CHARACTER_REFERENCE_PATH
     character_face_reference_path: str = DEFAULT_CHARACTER_FACE_REFERENCE_PATH
+    character_turnaround_reference_path: str = DEFAULT_CHARACTER_TURNAROUND_REFERENCE_PATH
 
 
 def _float_setting(name: str, default: float, *, positive: bool = False) -> float:
@@ -137,6 +172,29 @@ def _int_setting(name: str, default: int, *, positive: bool = False) -> int:
     return value
 
 
+def _image_provider_setting() -> str:
+    raw = _str_setting("IMAGE_PROVIDER", DEFAULT_IMAGE_PROVIDER).strip().lower()
+    if raw not in IMAGE_PROVIDERS:
+        raise SettingsError(
+            f"IMAGE_PROVIDER={raw!r} is not one of {', '.join(IMAGE_PROVIDERS)}"
+        )
+    return raw
+
+
+def _image_call_cost_setting(provider: str) -> float:
+    """Per-image budget reservation for the selected provider.
+
+    Codex bills against the operator's subscription, so its calls reserve
+    nothing -- but an explicit IMAGE_CALL_COST_USD still wins, since the
+    operator may want the ceiling to account for them anyway.
+    """
+
+    default = (
+        CODEX_IMAGE_CALL_COST_USD if provider == "codex" else DEFAULT_IMAGE_CALL_COST_USD
+    )
+    return _float_setting("IMAGE_CALL_COST_USD", default)
+
+
 def load_settings() -> Settings:
     """Build a `Settings` instance from environment variables.
 
@@ -147,6 +205,7 @@ def load_settings() -> Settings:
     """
 
     max_budget_usd = _float_setting("MAX_BUDGET_USD", DEFAULT_MAX_BUDGET_USD)
+    image_provider = _image_provider_setting()
 
     return Settings(
         project_id=os.getenv("GOOGLE_CLOUD_PROJECT", DEFAULT_PROJECT_ID),
@@ -165,9 +224,11 @@ def load_settings() -> Settings:
             "VEO_MAX_POLL_SECONDS", DEFAULT_VEO_MAX_POLL_SECONDS, positive=True
         ),
         max_veo_attempts=_int_setting("MAX_VEO_ATTEMPTS", DEFAULT_MAX_VEO_ATTEMPTS, positive=True),
-        image_call_cost_usd=_float_setting(
-            "IMAGE_CALL_COST_USD", DEFAULT_IMAGE_CALL_COST_USD
+        image_provider=image_provider,
+        codex_image_timeout_seconds=_float_setting(
+            "CODEX_IMAGE_TIMEOUT_SECONDS", DEFAULT_CODEX_IMAGE_TIMEOUT_SECONDS, positive=True
         ),
+        image_call_cost_usd=_image_call_cost_setting(image_provider),
         veo_call_cost_usd=_float_setting("VEO_CALL_COST_USD", DEFAULT_VEO_CALL_COST_USD),
         # Plain os.getenv, not _str_setting: an empty value is the documented
         # "no character" switch, and _str_setting raises on an empty string.
@@ -177,5 +238,8 @@ def load_settings() -> Settings:
         ),
         character_face_reference_path=os.getenv(
             "CHARACTER_FACE_REFERENCE_PATH", DEFAULT_CHARACTER_FACE_REFERENCE_PATH
+        ),
+        character_turnaround_reference_path=os.getenv(
+            "CHARACTER_TURNAROUND_REFERENCE_PATH", DEFAULT_CHARACTER_TURNAROUND_REFERENCE_PATH
         ),
     )

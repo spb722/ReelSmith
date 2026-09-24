@@ -1045,7 +1045,9 @@ def test_a_downgraded_rung_tells_the_qa_agent_not_to_expect_a_face(tmp_path, mon
     )
 
     labels = " ".join(b["text"] for b in result["content"] if b["type"] == "text")
-    assert "do NOT reject this image for a face that is turned away" in labels
+    # Case-insensitive: the clause became its own sentence when the profile
+    # allowance was added, so it now starts with a capital.
+    assert "not reject this image for a face that is turned away" in labels.lower()
 
 
 def test_tool_payload_is_exactly_the_contract_shape(tmp_path, monkeypatch):
@@ -1153,3 +1155,231 @@ def test_level_zero_note_claims_acceptance_not_a_rendered_face():
     assert "ACCEPTED the wording" in note
     assert "not a claim about what was actually drawn" in note
     assert "applied with a recognisable face" not in note
+
+
+# --- provider switch -------------------------------------------------------
+# IMAGE_PROVIDER picks which backend actually draws. The ladder, contracts and
+# QA above are shared, so these only cover the routing and what it records.
+
+
+def test_gemini_stays_the_default_route(tmp_path, monkeypatch):
+    """An unset provider must reach Gemini and never touch Codex."""
+    from orchestrator.tools import gemini_tools
+
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    spec = build_still_spec(shot_dict(generation_mode="STILL"), asset_for(source), "N.")
+
+    seen = []
+    monkeypatch.setattr(
+        gemini_tools, "run_gemini_image_edit",
+        lambda client, **kw: (seen.append(kw) or (Image.new("RGB", (9, 16)), "")),
+    )
+    gemini_tools.run_image_edit_ladder(FakeGeminiClient(), spec, model="gemini-x")
+    assert len(seen) == 1
+    assert seen[0]["model"] == "gemini-x"
+
+
+def test_codex_provider_routes_to_codex_and_needs_no_client(tmp_path, monkeypatch):
+    """A Codex run must not require a Vertex client -- or ADC -- to draw."""
+    from orchestrator.tools import codex_image_tools, gemini_tools
+
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    spec = build_still_spec(shot_dict(generation_mode="STILL"), asset_for(source), "N.")
+
+    seen = []
+    monkeypatch.setattr(
+        codex_image_tools, "run_codex_image_edit",
+        lambda **kw: (seen.append(kw) or (Image.new("RGB", (9, 16)), "drew it")),
+    )
+    monkeypatch.setattr(
+        gemini_tools, "run_gemini_image_edit",
+        lambda *a, **k: pytest.fail("Codex run must not call Gemini"),
+    )
+
+    image, note, rung = gemini_tools.run_image_edit_ladder(
+        None, spec, model="gemini-x", provider="codex", timeout_seconds=42
+    )
+    assert image is not None and note == "drew it"
+    assert len(seen) == 1, "the first rung succeeded, so the ladder must not escalate"
+    assert rung is spec["prompt_ladder"][0]
+    assert seen[0]["timeout_seconds"] == 42
+    assert seen[0]["label"] == "Shot 1"
+
+
+def test_gemini_route_without_a_client_is_a_clear_error(tmp_path):
+    from orchestrator.tools import gemini_tools
+
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    spec = build_still_spec(shot_dict(generation_mode="STILL"), asset_for(source), "N.")
+
+    with pytest.raises(ValueError, match="needs a genai client"):
+        gemini_tools.run_image_edit_ladder(None, spec, model="gemini-x")
+
+
+def test_a_codex_refusal_advances_the_ladder_too(tmp_path, monkeypatch):
+    """Refusal handling is shared: whoever refuses, the next rung is tried."""
+    from orchestrator.tools import codex_image_tools, gemini_tools
+
+    body, _ = _write_character(tmp_path)
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", str(body))
+    monkeypatch.delenv("CHARACTER_FACE_REFERENCE_PATH", raising=False)
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    spec = build_still_spec(shot_dict(generation_mode="STILL"), asset_with_figure(source), "N.")
+
+    attempts = []
+
+    def refuse_once(**kw):
+        attempts.append(kw)
+        if len(attempts) == 1:
+            raise gemini_tools.ImageEditRefused("no likenesses", reason="likeness")
+        return Image.new("RGB", (9, 16)), ""
+
+    monkeypatch.setattr(codex_image_tools, "run_codex_image_edit", refuse_once)
+    _, _, rung = gemini_tools.run_image_edit_ladder(
+        None, spec, model="m", provider="codex", timeout_seconds=1
+    )
+    assert rung["level"] == 1
+    assert len(attempts) == 2
+
+
+def test_the_contract_records_which_backend_drew_the_shot():
+    """A reel's provenance has to survive a provider switch."""
+    from orchestrator.tools.gemini_tools import recorded_model_name
+
+    assert recorded_model_name("gemini", "gemini-3.1-flash-image") == "gemini-3.1-flash-image"
+    assert recorded_model_name("codex", "gemini-3.1-flash-image") == "codex"
+
+
+# --- seed prompt ladder start rung -----------------------------------------
+# Veo rejects a seed whose person reads as a real individual, and that arrives
+# a stage after the image was drawn, so the ladder's own refusal-driven descent
+# never sees it. The orchestrator carries the rung forward instead.
+
+
+def test_seed_spec_starts_at_the_requested_rung(tmp_path, monkeypatch):
+    body, _ = _write_character(tmp_path)
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", str(body))
+    monkeypatch.delenv("CHARACTER_FACE_REFERENCE_PATH", raising=False)
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    shot = shot_dict(generation_mode="VEO")
+
+    full = build_seed_spec(shot, asset_with_figure(source), "N.")
+    assert [rung["level"] for rung in full["prompt_ladder"]] == [0, 1, 2]
+
+    descended = build_seed_spec(shot, asset_with_figure(source), "N.", start_level=1)
+    assert [rung["level"] for rung in descended["prompt_ladder"]] == [1, 2]
+    assert descended["prompt"] == descended["prompt_ladder"][0]["prompt"]
+    assert descended["prompt"] != full["prompt"]
+
+
+def test_the_descended_rung_drops_the_visible_face_demand(tmp_path, monkeypatch):
+    """Rung 0 is what Veo refused: it insists on a clear, detailed face."""
+    body, _ = _write_character(tmp_path)
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", str(body))
+    monkeypatch.delenv("CHARACTER_FACE_REFERENCE_PATH", raising=False)
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    shot = shot_dict(generation_mode="VEO")
+
+    assert "clearly visible, in focus" in build_seed_spec(
+        shot, asset_with_figure(source), "N."
+    )["prompt"]
+    assert "clearly visible, in focus" not in build_seed_spec(
+        shot, asset_with_figure(source), "N.", start_level=1
+    )["prompt"]
+
+
+def test_start_level_past_the_end_settles_on_the_last_rung(tmp_path, monkeypatch):
+    """Attempt 4 of a 3-rung ladder must still produce a usable prompt."""
+    body, _ = _write_character(tmp_path)
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", str(body))
+    monkeypatch.delenv("CHARACTER_FACE_REFERENCE_PATH", raising=False)
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+
+    spec = build_seed_spec(shot_dict(generation_mode="VEO"), asset_with_figure(source), "N.", start_level=99)
+    assert [rung["level"] for rung in spec["prompt_ladder"]] == [2]
+    # The last rung carries no character at all, which is the only wording
+    # left that a likeness filter cannot object to.
+    assert spec["character_reference_paths"] == []
+
+
+def test_a_scene_with_no_person_ignores_the_start_rung(tmp_path):
+    """A single-rung ladder has nothing to descend to."""
+    source = tmp_path / "shot.png"
+    _write_source_image(source)
+    spec = build_seed_spec(shot_dict(generation_mode="VEO"), asset_for(source), "N.", start_level=2)
+    assert len(spec["prompt_ladder"]) == 1
+
+
+# --- the turnaround sheet --------------------------------------------------
+# A scene that draws its figure side-on cannot be verified against a front
+# view. A live run lost three attempts to that: the QA agent reported the
+# reference's "face shape, thick straight eyebrows, broad nose and mouth
+# shape are not visible" on a figure the source itself draws in profile.
+
+
+def test_the_turnaround_is_preferred_over_the_single_front_view(tmp_path, monkeypatch):
+    from orchestrator.tools.gemini_tools import resolve_character_references
+
+    front = tmp_path / "character.png"
+    turn = tmp_path / "character_turnaround.png"
+    _write_source_image(front)
+    _write_source_image(turn)
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", str(front))
+    monkeypatch.setenv("CHARACTER_TURNAROUND_REFERENCE_PATH", str(turn))
+    monkeypatch.delenv("CHARACTER_FACE_REFERENCE_PATH", raising=False)
+
+    # One reference, not two: a second body sheet would trip the wording that
+    # describes the second image as a face close-up.
+    assert resolve_character_references() == [turn]
+
+
+def test_the_front_view_is_used_when_there_is_no_turnaround(tmp_path, monkeypatch):
+    from orchestrator.tools.gemini_tools import resolve_character_references
+
+    front = tmp_path / "character.png"
+    _write_source_image(front)
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", str(front))
+    monkeypatch.setenv("CHARACTER_TURNAROUND_REFERENCE_PATH", str(tmp_path / "absent.png"))
+    monkeypatch.delenv("CHARACTER_FACE_REFERENCE_PATH", raising=False)
+
+    assert resolve_character_references() == [front]
+
+
+def test_neither_sheet_present_still_means_the_feature_is_off(tmp_path, monkeypatch):
+    from orchestrator.tools.gemini_tools import resolve_character_references
+
+    monkeypatch.setenv("CHARACTER_REFERENCE_PATH", str(tmp_path / "none.png"))
+    monkeypatch.setenv("CHARACTER_TURNAROUND_REFERENCE_PATH", str(tmp_path / "none2.png"))
+    monkeypatch.delenv("CHARACTER_FACE_REFERENCE_PATH", raising=False)
+
+    assert resolve_character_references() == []
+
+
+def test_the_prompt_tells_the_model_to_match_the_angle_not_rotate_the_figure():
+    from orchestrator.tools.gemini_tools import build_character_prompt_block
+
+    block = build_character_prompt_block("a bearded man", 1, 0)
+    assert "front, three-quarter and profile" in block
+    assert "never rotate the scene's figure" in block
+
+
+def test_level_one_checks_the_profile_panel_rather_than_giving_up():
+    """Level 1 keeps the source's head direction, so a side-on figure is
+    exactly the case the profile panel exists for."""
+    from orchestrator.tools.gemini_tools import build_character_prompt_block, describe_ladder_outcome
+
+    block = build_character_prompt_block("a bearded man", 1, 1)
+    assert "do not turn, lift or rotate" in block
+    assert "profile panel" in block
+    assert "nose profile" in block
+
+    brief = describe_ladder_outcome({"level": 1})
+    assert "profile" in brief
+    assert "Do NOT reject this image for a face that is turned away" in brief

@@ -151,7 +151,7 @@ def failure_report():
 def test_fresh_run_reads_via_scoped_agent_and_persists(stage, monkeypatch):
     source, output, events = stage
     calls = mock_query(monkeypatch, [sdk_result(output)])
-    assert run.main([str(source)]) == 0
+    assert run.main(["--project", source.parent.name]) == 0
     assert events == ["preflight"]
     options = calls[0][1]
     # Lifted onto the top-level session, not delegated via --agent: verified
@@ -177,7 +177,7 @@ def test_failed_schema_self_corrects_with_feedback_and_remaining_budget(stage, m
     broken = copy.deepcopy(output)
     del broken["assets"][0]["analysis"]["source_text"]
     calls = mock_query(monkeypatch, [sdk_result(broken, cost=1.5), sdk_result(output, cost=0.5)])
-    assert run.main([str(source)]) == 0
+    assert run.main(["--project", source.parent.name]) == 0
     assert "source_text" in calls[1][0]
     assert "Previous output" in calls[1][0]
     assert calls[1][1].max_budget_usd == 8.5
@@ -189,7 +189,7 @@ def test_failed_schema_self_corrects_with_feedback_and_remaining_budget(stage, m
 def test_four_invalid_results_halt_with_diagnostics_and_no_output(stage, monkeypatch):
     source, _, _ = stage
     calls = mock_query(monkeypatch, [sdk_result({}) for _ in range(4)])
-    assert run.main([str(source)]) == 1
+    assert run.main(["--project", source.parent.name]) == 1
     assert len(calls) == 4
     report = failure_report()
     assert report["stage_id"] == "asset_analyst"
@@ -202,7 +202,7 @@ def test_four_invalid_results_halt_with_diagnostics_and_no_output(stage, monkeyp
     assert load_run_manifest(run.RUN_STATE_DIR).budget_spent_usd == pytest.approx(0.8)
     assert run.run_narration_stage.calls == []
     # The ceiling is persisted; restarting cannot purchase another four attempts.
-    assert run.main([str(source)]) == 1
+    assert run.main(["--project", source.parent.name]) == 1
     assert len(calls) == 4
     assert run.run_narration_stage.calls == []
 
@@ -214,7 +214,7 @@ def test_valid_persisted_contract_skips_claude_but_still_preflights_and_ingests(
     before = run.ANALYZED_ASSETS_FILE.read_bytes()
     calls = mock_query(monkeypatch, [])
     for _ in range(2):
-        assert run.main([str(source)]) == 0
+        assert run.main(["--project", source.parent.name]) == 0
         assert json.loads(run.ASSETS_FILE.read_text())["asset_count"] == 6
         run.ASSETS_FILE.unlink()
     assert events == ["preflight", "preflight"]
@@ -239,7 +239,7 @@ def test_invalid_or_stale_persistence_cannot_skip(stage, monkeypatch, bad_file):
     run.ANALYZED_ASSETS_FILE.parent.mkdir()
     run.ANALYZED_ASSETS_FILE.write_text("{" if bad_file == "malformed" else json.dumps(bad))
     calls = mock_query(monkeypatch, [sdk_result(output)])
-    assert run.main([str(source)]) == 0
+    assert run.main(["--project", source.parent.name]) == 0
     assert len(calls) == 1
 
 
@@ -247,7 +247,7 @@ def test_budget_exhausted_at_stage_halts_before_claude(stage, monkeypatch):
     source, _, _ = stage
     calls = mock_query(monkeypatch, [])
     save_run_manifest(RunManifest(budget_spent_usd=10), run.RUN_STATE_DIR)
-    assert run.main([str(source)]) == 1
+    assert run.main(["--project", source.parent.name]) == 1
     assert calls == []
     assert failure_report()["attempt_count"] == 0
     assert run.run_narration_stage.calls == []
@@ -256,7 +256,7 @@ def test_budget_exhausted_at_stage_halts_before_claude(stage, monkeypatch):
 def test_budget_consumed_by_failed_attempt_prevents_next_call(stage, monkeypatch):
     source, _, _ = stage
     calls = mock_query(monkeypatch, [sdk_result({}, cost=10)])
-    assert run.main([str(source)]) == 1
+    assert run.main(["--project", source.parent.name]) == 1
     assert len(calls) == 1
     assert "Budget exhausted" in failure_report()["reason"]
     assert run.run_narration_stage.calls == []
@@ -265,7 +265,7 @@ def test_budget_consumed_by_failed_attempt_prevents_next_call(stage, monkeypatch
 def test_sdk_budget_stop_halts_even_below_exact_ceiling(stage, monkeypatch):
     source, _, _ = stage
     calls = mock_query(monkeypatch, [sdk_result({}, cost=9.9, is_error=True, subtype="error_max_budget_usd")])
-    assert run.main([str(source)]) == 1
+    assert run.main(["--project", source.parent.name]) == 1
     assert len(calls) == 1
     assert "budget" in failure_report()["reason"]
     assert run.run_narration_stage.calls == []
@@ -274,14 +274,14 @@ def test_sdk_budget_stop_halts_even_below_exact_ceiling(stage, monkeypatch):
 def test_sdk_failure_retries_with_feedback(stage, monkeypatch):
     source, output, _ = stage
     calls = mock_query(monkeypatch, [RuntimeError("transport interrupted"), sdk_result(output)])
-    assert run.main([str(source)]) == 0
+    assert run.main(["--project", source.parent.name]) == 0
     assert "transport interrupted" in calls[1][0]
 
 
 def test_result_without_usable_cost_is_not_accepted(stage, monkeypatch):
     source, output, _ = stage
     mock_query(monkeypatch, [sdk_result(output, cost=None)])
-    assert run.main([str(source)]) == 1
+    assert run.main(["--project", source.parent.name]) == 1
     assert not run.ANALYZED_ASSETS_FILE.exists()
     assert "cost" in failure_report()["reason"]
     assert run.run_narration_stage.calls == []
@@ -292,7 +292,7 @@ def test_omitted_screenshot_fails_even_when_schema_valid(stage, monkeypatch):
     incomplete = copy.deepcopy(output)
     incomplete["assets"].pop()
     calls = mock_query(monkeypatch, [sdk_result(incomplete), sdk_result(output)])
-    assert run.main([str(source)]) == 0
+    assert run.main(["--project", source.parent.name]) == 0
     assert "every ingested screenshot" in calls[1][0]
 
 
@@ -300,7 +300,7 @@ def test_preflight_failure_prevents_ingest_and_claude(stage, monkeypatch):
     source, _, _ = stage
     monkeypatch.setattr(run, "run_preflight", lambda **kw: PreflightResult(False, "credentials", "missing"))
     calls = mock_query(monkeypatch, [])
-    assert run.main([str(source)]) == 1
+    assert run.main(["--project", source.parent.name]) == 1
     assert calls == []
     assert not run.ASSETS_FILE.exists()
     assert run.run_narration_stage.calls == []

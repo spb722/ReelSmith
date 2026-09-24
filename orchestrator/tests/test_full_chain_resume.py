@@ -32,7 +32,7 @@ from orchestrator.contracts.veo import (
 )
 from orchestrator.contracts.visual_plan import VisualPlanContract
 from orchestrator.state.production_assets import load_production_assets, upsert_production_asset
-from orchestrator.state.run_manifest import load_run_manifest
+from orchestrator.state.run_manifest import load_run_manifest, save_run_manifest
 from orchestrator.tests.test_preflight import make_settings
 from orchestrator.tools.deterministic_tools import inspect_image
 
@@ -307,7 +307,7 @@ def test_partial_chain_resumes_only_from_first_missing_stage(chain, monkeypatch)
     monkeypatch.setattr(run, "run_stills_stage", no_stills_stage)
     monkeypatch.setattr(run, "run_delivery_stage", no_delivery_stage)
 
-    assert run.main([str(source)]) == 0
+    assert run.main(["--project", source.parent.name]) == 0
 
     assert len(visual_calls) == 1
     assert len(tts_calls) == len(stt_calls) == len(dp_calls) == 1
@@ -359,8 +359,8 @@ def test_fully_valid_chain_makes_zero_new_calls_anywhere(chain, monkeypatch):
     monkeypatch.setattr(run, "run_stills_stage", no_stills_stage)
     monkeypatch.setattr(run, "run_delivery_stage", no_delivery_stage)
 
-    assert run.main([str(source)]) == 0
-    assert run.main([str(source)]) == 0  # idempotent across repeated invocations too
+    assert run.main(["--project", source.parent.name]) == 0
+    assert run.main(["--project", source.parent.name]) == 0  # idempotent across repeated invocations too
 
     for path, contents in before.items():
         assert path.read_bytes() == contents
@@ -426,7 +426,7 @@ def test_stages_1_to_4_valid_only_voice_agent_missing_resumes_at_voice_agent_onl
     monkeypatch.setattr(run, "run_stills_stage", no_stills_stage)
     monkeypatch.setattr(run, "run_delivery_stage", no_delivery_stage)
 
-    assert run.main([str(source)]) == 0
+    assert run.main(["--project", source.parent.name]) == 0
 
     assert len(tts_calls) == len(stt_calls) == len(dp_calls) == 1
     assert run.SUBTITLE_CUES_FILE.exists()
@@ -457,7 +457,7 @@ def test_persisted_subtitle_cues_with_deleted_audio_does_not_skip(chain, monkeyp
     monkeypatch.setattr(run, "run_stills_stage", no_stills_stage)
     monkeypatch.setattr(run, "run_delivery_stage", no_delivery_stage)
 
-    assert run.main([str(source)]) == 0
+    assert run.main(["--project", source.parent.name]) == 0
 
     assert len(tts_calls) == len(stt_calls) == len(dp_calls) == 1
     assert Path("audio/narration.wav").exists()
@@ -711,7 +711,10 @@ def test_retryable_veo_failure_stops_at_attempt_ceiling(chain, monkeypatch):
         return sdk_result(failed_outcome_for(visual_plan.shots[0], retryable=True, reason="still failing").model_dump(mode="json"), cost=0.1)
 
     monkeypatch.setattr(run, "generate_veo_asset", agent)
-    assert asyncio.run(run.run_veo_stage(make_settings(max_veo_attempts=2), load_run_manifest(run.RUN_STATE_DIR))) == 1
+    manifest = load_run_manifest(run.RUN_STATE_DIR)
+    manifest.max_attempts["veo_agent"] = 2
+    save_run_manifest(manifest, state_dir=run.RUN_STATE_DIR)
+    assert asyncio.run(run.run_veo_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 1
     assert calls == [1, 2]
     reports = sorted(run.RUN_STATE_DIR.glob("failure_veo_agent_*.json"))
     assert reports
@@ -1027,7 +1030,15 @@ def test_stills_agent_wrong_sequence_halts_and_persists_invalid_outcome(chain, m
     assert not run.PRODUCTION_ASSETS_FILE.exists()
 
 
-def test_stills_agent_cost_above_ceiling_halts(chain, monkeypatch):
+def test_stills_agent_invented_cost_is_replaced_not_fatal(chain, monkeypatch):
+    """The agent's cost_usd is provenance it frequently retypes wrongly, so the
+    orchestrator stamps its own figure rather than gating on the agent's.
+
+    Replaces an earlier test that asserted a halt here. A live run halted a
+    whole reel because one shot reported $0.1290315 -- roughly its own Claude
+    session cost -- for an image call the tool had reported as free, while two
+    other shots in the same run copied the same value correctly.
+    """
     source, asset_id = chain
     visual_plan = still_visual_plan_for(asset_id)
     run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
@@ -1039,15 +1050,108 @@ def test_stills_agent_cost_above_ceiling_halts(chain, monkeypatch):
         return sdk_result(outcome, cost=0.1)
 
     monkeypatch.setattr(run, "generate_still_asset", agent)
-    assert asyncio.run(run.run_stills_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 1
-    reports = sorted(run.RUN_STATE_DIR.glob("failure_stills_agent_*.json"))
-    assert reports
-    report = json.loads(reports[-1].read_text(encoding="utf-8"))
-    assert "Invalid stills agent outcome" in report["reason"]
+    settings = make_settings()
+    manifest = load_run_manifest(run.RUN_STATE_DIR)
+
+    assert asyncio.run(run.run_stills_stage(settings, manifest)) == 0
+    assert not sorted(run.RUN_STATE_DIR.glob("failure_stills_agent_*.json"))
+
     attempt = json.loads(
         (run.RUN_STATE_DIR / "stills_agent_shot_1_attempt_1.json").read_text(encoding="utf-8")
     )
-    assert attempt["status"] == "INVALID_OUTCOME"
+    assert attempt["paid_tool_cost_usd"] == pytest.approx(settings.image_call_cost_usd)
+    assert attempt["structured_output"]["result"]["cost_usd"] == pytest.approx(
+        settings.image_call_cost_usd
+    )
+    # The invented figure must not reach the budget either.
+    assert manifest.budget_spent_usd == pytest.approx(0.1 + settings.image_call_cost_usd)
+
+
+def test_stills_cost_is_stamped_when_the_provider_is_free(chain, monkeypatch):
+    """Under IMAGE_PROVIDER=codex an image costs nothing, so the ceiling was
+    exactly 0.0 and any invented figure was fatal. Stamping removes that."""
+    source, asset_id = chain
+    visual_plan = still_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+
+    async def agent(**kwargs):
+        outcome = approved_still_outcome_for(visual_plan.shots[0]).model_dump(mode="json")
+        outcome["result"]["cost_usd"] = 0.1290315  # the exact figure from the halted run
+        return sdk_result(outcome, cost=0.1)
+
+    monkeypatch.setattr(run, "generate_still_asset", agent)
+    settings = make_settings(image_call_cost_usd=0.0)
+    manifest = load_run_manifest(run.RUN_STATE_DIR)
+
+    assert asyncio.run(run.run_stills_stage(settings, manifest)) == 0
+    attempt = json.loads(
+        (run.RUN_STATE_DIR / "stills_agent_shot_1_attempt_1.json").read_text(encoding="utf-8")
+    )
+    assert attempt["paid_tool_cost_usd"] == 0.0
+    assert manifest.budget_spent_usd == pytest.approx(0.1)
+
+
+def test_veo_agent_invented_cost_is_replaced_not_fatal(chain, monkeypatch):
+    """Same stamping on the Veo side, where the seed and clip costs are
+    separate leaves that the outcome's cost_usd property sums."""
+    source, asset_id = chain
+    visual_plan = veo_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+
+    async def agent(**kwargs):
+        outcome = approved_outcome_for(visual_plan.shots[0]).model_dump(mode="json")
+        outcome["result"]["cost_usd"] = 999.0
+        outcome["result"]["seed"]["cost_usd"] = 999.0
+        return sdk_result(outcome, cost=0.1)
+
+    monkeypatch.setattr(run, "generate_veo_asset", agent)
+    settings = make_settings()
+    manifest = load_run_manifest(run.RUN_STATE_DIR)
+
+    assert asyncio.run(run.run_veo_stage(settings, manifest)) == 0
+    attempt = json.loads(
+        (run.RUN_STATE_DIR / "veo_agent_shot_1_attempt_1.json").read_text(encoding="utf-8")
+    )
+    expected = settings.image_call_cost_usd + settings.veo_call_cost_usd
+    assert attempt["paid_tool_cost_usd"] == pytest.approx(expected)
+    assert attempt["structured_output"]["result"]["seed"]["cost_usd"] == pytest.approx(
+        settings.image_call_cost_usd
+    )
+    assert attempt["structured_output"]["result"]["cost_usd"] == pytest.approx(
+        settings.veo_call_cost_usd
+    )
+
+
+def test_a_veo_attempt_that_never_reached_the_clip_is_not_charged_for_one(chain):
+    """A seed-stage failure spent nothing on Veo, so charging the clip rate
+    would drain the budget for calls that never happened."""
+    settings = make_settings()
+    visual_plan = veo_visual_plan_for("img_aaaaaaaaaaaa")
+    outcome = approved_outcome_for(visual_plan.shots[0])
+
+    seed_only = outcome.model_copy(update={
+        "status": "FAILURE",
+        "result": None,
+        "failure": VeoFailureContract(
+            produced_by="veo_tool",
+            shot_sequence=outcome.shot_sequence,
+            shot_fingerprint=outcome.shot_fingerprint,
+            stage="seed_generation",
+            code="SEED_GENERATION_FAILED",
+            reason="codex refused",
+            retryable=True,
+            attempt=1,
+        ),
+    })
+    assert run._veo_attempt_cost(seed_only, settings) == (settings.image_call_cost_usd, 0.0)
+
+    # Anything that got as far as the clip is charged for both calls.
+    assert run._veo_attempt_cost(outcome, settings) == (
+        settings.image_call_cost_usd,
+        settings.veo_call_cost_usd,
+    )
 
 def test_stills_agent_outcome_source_asset_not_cited_halts(chain, monkeypatch):
     source, asset_id = chain
@@ -1120,7 +1224,11 @@ def test_retryable_still_failure_stops_at_attempt_ceiling(chain, monkeypatch):
     visual_plan = still_visual_plan_for(asset_id)
     run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
     run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
-    monkeypatch.setattr(run, "MAX_STILLS_ATTEMPTS", 2)
+    # The ceiling now comes from the project's config.json, which is the
+    # mechanism an operator actually uses to raise or lower it.
+    manifest = load_run_manifest(run.RUN_STATE_DIR)
+    manifest.max_attempts["stills_agent"] = 2
+    save_run_manifest(manifest, state_dir=run.RUN_STATE_DIR)
     calls = []
 
     async def agent(**kwargs):
