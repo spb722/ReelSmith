@@ -5,6 +5,7 @@ import json
 from claude_agent_sdk import ResultMessage
 
 import orchestrator.agents.veo_agent as veo_agent_module
+from orchestrator.agents._skills import PLUGIN_DIR, plugin_read_rule
 from orchestrator.contracts.veo import shot_fingerprint
 from orchestrator.contracts.visual_plan import Shot
 
@@ -89,21 +90,22 @@ def test_agent_is_limited_to_seed_and_veo_tools_and_receives_correction(monkeypa
     assert result.structured_output["status"] == "FAILURE"
     prompt, options = calls[0]
     assert options.max_budget_usd == 2.0
-    assert options.tools == options.allowed_tools == [
-        "mcp__gemini__generate_veo_seed",
-        "mcp__veo__generate_veo_clip",
-    ]
+    generation_tools = ["mcp__gemini__generate_veo_seed", "mcp__veo__generate_veo_clip"]
+    assert options.tools == [*generation_tools, "Skill", "Read"]
+    assert options.allowed_tools == [*generation_tools, plugin_read_rule()]
     assert set(options.mcp_servers) == {"gemini", "veo"}
-    assert "Read" not in options.tools and "Bash" not in options.tools
+    assert "Bash" not in options.tools
+    # Read is only for skill references; the guard hook denies anything else.
+    assert [m.matcher for m in options.hooks["PreToolUse"]] == ["Read"]
     assert "production_assets" not in json.dumps(options.output_format)
     assert "Remove retained UI." in prompt
     assert '"generation_mode": "VEO"' in prompt
 
 
-def test_prompt_requires_the_seed_and_clip_to_hold_the_character_face():
-    from orchestrator.agents.veo_agent import veo_agent
-
-    prompt = veo_agent.prompt
-    assert "character reference" in prompt
-    assert "never reject it for a missing character" in prompt
-    assert "stable and recognisable in every preview frame" in prompt
+def test_skills_require_the_seed_and_clip_to_hold_the_character_face():
+    skills = PLUGIN_DIR / "skills"
+    likeness = (skills / "character-likeness-qa" / "SKILL.md").read_text()
+    production = (skills / "veo-production" / "SKILL.md").read_text()
+    assert "character reference" in likeness
+    assert "never reject it for a missing character" in likeness
+    assert "stable and recognisable in every preview frame" in production

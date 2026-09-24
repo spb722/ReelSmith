@@ -29,5 +29,11 @@ def log_tool_uses(message: object) -> None:
         return
     for block in message.content:
         if isinstance(block, ToolUseBlock):
+            if block.name == "Skill":
+                log(f"loading its know-how: {block.input.get('skill', '')}", indent=2)
+                continue
+            if block.name == "Read" and "skills_plugin" in str(block.input.get("file_path", "")):
+                log(f"reading a skill reference: {block.input['file_path'].rsplit('/', 1)[-1]}", indent=2)
+                continue
             short_name = block.name.rsplit("__", 1)[-1]
             log(_PLAIN_TOOL_NAMES.get(short_name, short_name), indent=2)

@@ -10,6 +10,7 @@ from claude_agent_sdk import ResultMessage
 from pydantic import ValidationError
 
 import orchestrator.run as run
+from orchestrator.agents._skills import plugin_read_rule
 from orchestrator.contracts.final_story_plan import FinalStoryPlanContract
 from orchestrator.contracts.visual_plan import VisualPlanContract, _scene_content_fingerprint
 from orchestrator.preflight import PreflightResult
@@ -269,7 +270,8 @@ def test_fresh_run_writes_via_scoped_agent_and_persists(stage, monkeypatch):
     assert options.system_prompt == agent_module.visual_agent.prompt
     assert not options.agents
     assert not options.extra_args
-    assert options.tools == options.allowed_tools == []
+    assert options.tools == ["Skill", "Read"]
+    assert options.allowed_tools == [plugin_read_rule()]
     assert options.permission_mode == "dontAsk"
     assert options.strict_mcp_config
     assert options.output_format["schema"] == VisualPlanContract.model_json_schema()

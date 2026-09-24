@@ -7,7 +7,7 @@ paradigm: 'Agentic pipes-and-filters (agent-per-stage pipeline, hexagonal tool p
 scope: 'book_reels pipeline orchestration: which stages become Claude Agent SDK agents vs stay Gemini/Google API calls vs stay deterministic code'
 status: final
 created: '2026-09-15'
-updated: '2026-09-15'
+updated: '2026-09-24'
 binds: []
 sources: ['docs/book_reels_architecture.md', 'docs/book_reels_manual_interventions_and_automation_map.md', 'docs/book_reels_troubleshooting_agent_playbook.md', 'AGENTS.md']
 companions: []
@@ -27,8 +27,9 @@ Every agent reaches (2) and (3) only through tools behind a hexagonal port — a
 
 ```text
 orchestrator/
-  run.py       # core: top-level query(), session/budget/iteration state, failure-report writer
-  agents/      # core: AgentDefinition specs — the reasoning filters
+  run.py       # core: sequences the stages in code; session/budget/iteration state, failure-report writer
+  agents/      # core: AgentDefinition specs — the reasoning filters, each run as its own top-level query()
+  skills_plugin/  # the `book-reels` plugin: each agent's know-how as skills (AD-16)
   tools/       # port/adapter: @tool-wrapped Gemini, Veo, STT, and deterministic calls
   contracts/   # the validated shape crossing every stage boundary
   state/       # run manifest: budget spent, iteration counts, session id
@@ -36,7 +37,8 @@ orchestrator/
 
 ```mermaid
 flowchart LR
-    O[orchestrator/run.py] -->|delegates via Agent tool| A[orchestrator/agents/*]
+    O[orchestrator/run.py] -->|sequences stages; one top-level query per stage| A[orchestrator/agents/*]
+    A -->|loads its own skills| K[orchestrator/skills_plugin — book-reels]
     A -->|calls named tool| T[orchestrator/tools/*]
     T --> G[Gemini / Veo / Google STT]
     T --> D[Deterministic compute]
@@ -57,7 +59,7 @@ flowchart LR
 
 - **Binds:** `orchestrator/agents/`
 - **Prevents:** a single agent prompt accumulating unrelated responsibilities (story writing mixed with Veo troubleshooting mixed with visual QA) and becoming unmaintainable
-- **Rule:** Each pipeline responsibility — asset understanding, story writing, visual planning, Veo generation + QA, stills generation + QA, voice + word-timing + subtitle QA — is its own `AgentDefinition`, scoped to only the tools it needs. The top-level orchestrator delegates to these agents; it never performs a stage's reasoning itself. The one exemption is AD-13's preflight: a pass/fail verification involving no judgment, so it runs as plain orchestrator code, not an `AgentDefinition`.
+- **Rule:** Each pipeline responsibility — asset understanding, story writing, visual planning, Veo generation + QA, stills generation + QA, voice + word-timing + subtitle QA — is its own `AgentDefinition`, scoped to only the tools it needs. Each stage is its own top-level `query()`; the orchestrator sequences stages in code. It never delegates through the Agent tool, because the CLI's `--agent` delegation mode silently drops `output_format`, so each agent's prompt and tools are lifted onto a top-level session instead (rationale verified live, recorded in `orchestrator/agents/asset_analyst.py`'s `analyze_assets` docstring). The orchestrator never performs a stage's reasoning itself. The one exemption is AD-13's preflight: a pass/fail verification involving no judgment, so it runs as plain orchestrator code, not an `AgentDefinition`. `[AMENDED 2026-09-24 — originally worded as the orchestrator delegating to agents via the Agent tool; that was never how it was practised.]`
 
 ### AD-3 — Existing scripts become in-process tools, not subprocesses
 
@@ -137,6 +139,12 @@ flowchart LR
 - **Prevents:** two generation agents disagreeing about who has final say over one shot's still-vs-Veo mode after a QA failure — one hard-halting on it, the other silently picking it up; *and* a creative planner being forced to decide a question it provably cannot answer, because real per-shot durations do not exist until the voice stage has run
 - **Rule:** `visual_agent` alone makes the creative call about which beats deserve real motion, and expresses it as a ranked, non-binding nomination (`video_candidate_rank`, `video_motion_intent`) on each shot of the visual-plan contract. It never writes `generation_mode`; that field is not in its output schema. The orchestrator (`run.py`), and only the orchestrator, converts nominations into `generation_mode`, in one deterministic step immediately after cue-derived shot timing is backfilled, applying exactly three mechanical constraints and no judgment: (a) the shot's real duration must fit inside a single Veo clip at the configured maximum clip length — no extension, stretching, or splitting across clips is permitted; (b) at most `MAX_VEO_SHOTS` shots are promoted, highest-ranked first; (c) a promoted shot is demoted back to `STILL` if the run's remaining budget cannot cover its generation. Falling short of the video-shot target is logged and the run continues; it is never a halt. `veo_agent`/`stills_agent` still generate only for the mode they were handed and may never change it; AD-6's hard-halt still applies to that assigned mode, and to Veo retry-ceiling and non-retryable failures, which signal a real seed/QA defect rather than a resource limit. Every shot carries `still_motion` at all times so promotion and demotion are lossless and reversible; the renderer ignores it on a video shot. `[AMENDED 2026-09-19 — the original rule required visual_agent to assign generation_mode directly; that proved unsatisfiable, because the planner runs before any real shot duration exists, and in practice produced reels with no video at all.]`
 
+### AD-16 — Agent know-how lives in skills in one pipeline plugin, loaded per agent, never from `.claude/`
+
+- **Binds:** `orchestrator/skills_plugin/`, `orchestrator/agents/`, `orchestrator/run.py`
+- **Prevents:** domain rules duplicated between agents (the character-likeness QA block once lived in both the Veo and stills prompts) drifting apart; prompts growing into unmaintainable strings; and developer tooling (`CLAUDE.md`, `.claude/skills`, user settings, bundled CLI skills) silently steering a pipeline agent
+- **Rule:** Each agent's domain know-how is a skill (`SKILL.md` plus one-level `references/`) in the single local plugin `book-reels` at `orchestrator/skills_plugin/`; a rule shared by agents exists in one skill. Each agent's prompt holds only its role, its boundaries, the contract it returns and an instruction to use its skills. Each agent loads the plugin through an absolute path built from `__file__` and names only its own skills in `skills=[...]`, in the qualified `book-reels:<skill>` form. Isolation is enforced in code: `setting_sources == []` is asserted when options are built; bundled CLI skills are switched off; and the init message is checked — every listed skill must be `book-reels:*` (or the CLI built-in `doctor`), the only plugin must be `book-reels`, and the agent's own skills must be present — otherwise the stage halts through AD-6 with no retry, and a shot stage charges nothing. Bare `Skill` is a tool, never an allow rule. Agents whose only file need is their skills get a `PreToolUse` hook that denies `Read` outside the plugin folder, because permission rules can't narrow `Read`. Deterministic likeness logic (the seed prompt ladder) stays in code; skills hold judgment criteria only. Evidence: `docs/implementation-artifacts/spike-4-1-sdk-skills.md`. `[ADOPTED 2026-09-24]`
+
 ## Consistency Conventions
 
 | Concern | Convention |
@@ -159,7 +167,8 @@ flowchart LR
 
 ```text
 orchestrator/
-  run.py                    # top-level query(), session/budget/iteration state, failure-report writer
+  run.py                    # sequences stages (one top-level query() each), session/budget/iteration state, failure-report writer
+  skills_plugin/            # `book-reels` plugin: skills/<skill>/SKILL.md + references/ (AD-16)
   agents/
     asset_analyst.py        # AgentDefinition: screenshot/image understanding (Claude's own vision, no Gemini call)
     story_agent.py          # AgentDefinition: narration write + self-review + revise loop

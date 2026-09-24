@@ -31,6 +31,7 @@ from typing import Awaitable, Callable, Optional, Sequence
 
 from claude_agent_sdk import ResultMessage
 
+from orchestrator.agents._skills import SkillIsolationError
 from orchestrator.agents.asset_analyst import analyze_assets
 from orchestrator.agents.stills_agent import generate_still_asset
 from orchestrator.agents.story_agent import write_story
@@ -215,6 +216,10 @@ async def run_bounded_agent_stage(
                 result = await call_agent(
                     feedback, previous_output, settings.max_budget_usd - manifest.budget_spent_usd
                 )
+        except SkillIsolationError as exc:
+            # A leak of developer tooling is not the agent's defect; retrying
+            # would only repeat it.
+            return halt(str(exc))
         except Exception as exc:
             feedback = f"Claude attempt failed: {type(exc).__name__}: {exc}"
             previous_output = None
@@ -1187,6 +1192,13 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
                     correction=correction,
                     previous_outcome=previous_outcome,
                 )
+            except SkillIsolationError as exc:
+                # Raised on the init message, before any model turn or paid
+                # tool call, so nothing is charged.
+                return _halt(
+                    "veo_agent", "VeoOutcomeContract", str(exc),
+                    attempt_count=count, partial_artifact_paths=attempt_paths,
+                )
             except Exception as exc:
                 # Tool execution may have reached a paid boundary before the
                 # SDK/agent surfaced an exception, and up to the full Claude
@@ -1501,6 +1513,13 @@ async def run_stills_stage(settings: Settings, manifest: RunManifest) -> int:
                     max_budget_usd=remaining_budget - reserved_external_cost,
                     correction=correction,
                     previous_outcome=previous_outcome,
+                )
+            except SkillIsolationError as exc:
+                # Raised on the init message, before any model turn or paid
+                # tool call, so nothing is charged.
+                return _halt(
+                    "stills_agent", "StillOutcomeContract", str(exc),
+                    attempt_count=count, partial_artifact_paths=attempt_paths,
                 )
             except Exception as exc:
                 # Same conservative accounting as run_veo_stage: no real cost

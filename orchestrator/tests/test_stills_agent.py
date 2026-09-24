@@ -5,6 +5,7 @@ import json
 from claude_agent_sdk import ResultMessage
 
 import orchestrator.agents.stills_agent as stills_agent_module
+from orchestrator.agents._skills import PLUGIN_DIR, plugin_read_rule
 from orchestrator.contracts.veo import shot_fingerprint
 from orchestrator.contracts.visual_plan import Shot, StillMotion
 
@@ -85,21 +86,22 @@ def test_agent_is_limited_to_still_tool_and_receives_correction(monkeypatch):
     assert result.structured_output["status"] == "FAILURE"
     prompt, options = calls[0]
     assert options.max_budget_usd == 2.0
-    assert options.tools == options.allowed_tools == ["mcp__gemini__generate_still"]
+    assert options.tools == ["mcp__gemini__generate_still", "Skill", "Read"]
+    assert options.allowed_tools == ["mcp__gemini__generate_still", plugin_read_rule()]
     assert set(options.mcp_servers) == {"gemini"}
-    assert "Read" not in options.tools and "Bash" not in options.tools
+    assert "Bash" not in options.tools
+    # Read is only for skill references; the guard hook denies anything else.
+    assert [m.matcher for m in options.hooks["PreToolUse"]] == ["Read"]
     assert "production_assets" not in json.dumps(options.output_format)
     assert "Remove the duplicated subject." in prompt
     assert '"generation_mode": "STILL"' in prompt
 
 
-def test_prompt_requires_the_still_to_match_the_character_reference():
-    from orchestrator.agents.stills_agent import stills_agent
-
-    prompt = stills_agent.prompt
-    assert "character reference" in prompt
-    assert "NOT under QA" in prompt
-    assert "never reject it for a missing character" in prompt
+def test_skill_requires_the_still_to_match_the_character_reference():
+    likeness = (PLUGIN_DIR / "skills" / "character-likeness-qa" / "SKILL.md").read_text()
+    assert "character reference" in likeness
+    assert "NOT under QA" in likeness
+    assert "never reject it for a missing character" in likeness
 
 
 def test_every_agent_pins_the_configured_claude_model(monkeypatch):

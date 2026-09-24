@@ -11,6 +11,7 @@ from PIL import Image
 from pydantic import ValidationError
 
 import orchestrator.run as run
+from orchestrator.agents._skills import plugin_read_rule
 from orchestrator.contracts.analyzed_assets import AnalyzedAssetsContract
 from orchestrator.preflight import PreflightResult
 from orchestrator.state.run_manifest import RunManifest, load_run_manifest, save_run_manifest
@@ -159,7 +160,8 @@ def test_fresh_run_reads_via_scoped_agent_and_persists(stage, monkeypatch):
     assert options.system_prompt == analyst.asset_analyst.prompt
     assert not options.agents
     assert not options.extra_args
-    assert options.tools == options.allowed_tools == ["Read"]
+    assert options.tools == ["Read", "Skill"]
+    assert options.allowed_tools == ["Read", plugin_read_rule()]
     assert options.permission_mode == "dontAsk"
     assert options.strict_mcp_config
     assert options.output_format["schema"] == AnalyzedAssetsContract.model_json_schema()

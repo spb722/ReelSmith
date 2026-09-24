@@ -3,10 +3,20 @@
 from __future__ import annotations
 
 import json
+from contextlib import aclosing
 from pathlib import Path
 
 from claude_agent_sdk import AgentDefinition, ClaudeAgentOptions, ResultMessage, query
 
+from orchestrator.agents._skills import (
+    PIPELINE_ENV,
+    PLUGIN,
+    assert_isolated,
+    check_init_message,
+    plugin_read_guard,
+    plugin_read_rule,
+    qualified,
+)
 from orchestrator.agents._stream import log_tool_uses
 from orchestrator.contracts.veo import VeoOutcomeContract
 from orchestrator.tools.gemini_tools import gemini_server
@@ -14,7 +24,10 @@ from orchestrator.tools.veo_tools import veo_server
 from orchestrator.settings import load_settings
 
 
-TOOLS = ["mcp__gemini__generate_veo_seed", "mcp__veo__generate_veo_clip"]
+GENERATION_TOOLS = ["mcp__gemini__generate_veo_seed", "mcp__veo__generate_veo_clip"]
+SKILLS = qualified("veo-production", "visual-qa", "character-likeness-qa")
+# Read exists only to open skill reference files; a hook denies anything else.
+TOOLS = [*GENERATION_TOOLS, "Skill", "Read"]
 
 
 veo_agent = AgentDefinition(
@@ -23,62 +36,16 @@ veo_agent = AgentDefinition(
     prompt="""You are the Veo generation and visual-QA agent for exactly one shot.
 The supplied validated shot is authoritative. It is already assigned VEO mode;
 never change its mode, timing, source assets, narration, or subtitle linkage.
-You have exactly two tools and no filesystem, shell, web, or shared-state tool.
+You have exactly two generation tools, plus Skill and a Read limited to your
+skills' files, and no shell, web, or shared-state tool.
 Each invocation is a fresh session with no memory of any earlier attempt for
 this shot; the supplied correction and previous attempt outcome (if any) are
 your only record of prior work.
 
-1. Call generate_veo_seed exactly once this session using the supplied shot,
-cited analyzed asset, subtitle context, and settings -- you must still call it
-even on a retry, since you hold no seed object across attempts. Pass every
-field of the supplied settings through to the tool exactly as given, including
-seed_prompt_level: the orchestrator sets it, it is not yours to choose, and
-dropping it silently redraws a seed Veo has already rejected. If the
-supplied previous attempt outcome's failure.stage is "veo_generation" or
-"clip_qa" (the seed already passed QA before; only the clip needed
-correction), do not re-litigate the seed: confirm it is still structurally
-sound and approve it without repeating full visual scrutiny, so the correction
-budget goes to the clip. Otherwise -- no previous outcome, or its
-failure.stage is "seed_qa" or "seed_generation" -- give the seed your normal
-full inspection: reject it if it contains app UI, visible text, duplicate/extra
-subjects, wrong scene or emotion, photorealistic drift, or a composition that
-does not serve the shot. When the tool result includes character reference image(s) after the generated
-seed, the scene is one that already contained a person and that person must now
-be the referenced character. Those references are NOT under QA -- never judge the
-seed against a reference's background, pose, crop, or framing. Approve only if
-the person in the seed is unmistakably that character: same face shape, eyes,
-eyebrows, nose, mouth, beard, hairstyle, hair colour and skin tone, with the face
-clearly visible, in focus, and detailed. Reject a faceless, blank, featureless,
-blurred, obscured or turned-away figure, reject a face simplified into dots or a
-plain oval, reject a generic person who is not the reference, and reject a frame
-whose whole scene has been restyled to match the character -- only the person may
-be drawn in the character's style, the scene keeps the source's art style,
-palette and lighting. Other people in the scene, such as background silhouettes,
-must stay as the source drew them. When the reference is a turnaround sheet showing the
-character from several angles, verify against whichever panel matches how the
-scene draws the figure -- a side-on figure is checked against the profile panel
-(brow, nose, beard outline, hairline), not against the front view. When the tool result includes NO character
-reference, the source scene has no person in it: that seed is correct without
-one -- never reject it for a missing character and never ask for a person to be
-added. On rejection, return a structured retryable seed_qa
-failure. Include the seed's cost and path in partial_artifact_paths. Do not
-call Veo.
-2. On seed approval, copy the seed payload exactly, set approved=true, and add a
-specific qa_summary describing what you verified. Call generate_veo_clip exactly
-once with that approved seed and the supplied settings/attempt/correction.
-3. If the tool returns FAILURE, preserve every failure field exactly in your
-VeoOutcomeContract. Never flatten RAI reasons or operation errors.
-4. If it returns an unapproved result, inspect every returned preview image.
-Approve only if the clip preserves the seed's scene/style, has coherent restrained
-motion, no UI/text/extra subjects/distortion, and serves the shot. If the approved
-seed showed the character, approve the clip only if that character's face stays
-stable and recognisable in every preview frame -- reject warping, melting, face
-swapping, a face drifting toward a different person, or a face dissolving into a
-blank or generic figure. Return SUCCESS
-with result.approved=true and a specific clip qa_summary. If no preview images are
-available or visual QA fails, return a retryable clip_qa failure preserving the
-operation name/dump, paths, costs, and a concrete correction reason for the next
-attempt.
+Before calling any tool, load book-reels:veo-production, book-reels:visual-qa
+and book-reels:character-likeness-qa with the Skill tool and follow them:
+veo-production is your step-by-step procedure, visual-qa and
+character-likeness-qa are the criteria you judge the seed and clip by.
 
 The top-level produced_by is always "veo_agent" and generation_mode is always
 "VEO". Return only the supplied JSON schema. Never write production_assets.json,
@@ -113,23 +80,31 @@ async def generate_veo_asset(
     options = ClaudeAgentOptions(
         model=load_settings().claude_model,
         system_prompt=veo_agent.prompt,
-        tools=veo_agent.tools,
-        allowed_tools=veo_agent.tools,
+        tools=TOOLS,
+        allowed_tools=[*GENERATION_TOOLS, plugin_read_rule()],
+        skills=SKILLS,
+        plugins=[PLUGIN],
+        env=dict(PIPELINE_ENV),
+        hooks=plugin_read_guard(),
         mcp_servers={"gemini": gemini_server, "veo": veo_server},
         permission_mode="dontAsk",
         setting_sources=[],
         strict_mcp_config=True,
         cwd=Path.cwd(),
         max_budget_usd=max_budget_usd,
-        max_turns=8,
+        # Skill loads take turns too; max_budget_usd still bounds the spend.
+        max_turns=12,
         output_format={"type": "json_schema", "schema": VeoOutcomeContract.model_json_schema()},
         max_buffer_size=20 * 1024 * 1024,
     )
+    assert_isolated(options)
     result = None
-    async for message in query(prompt=prompt, options=options):
-        log_tool_uses(message)
-        if isinstance(message, ResultMessage):
-            result = message
+    async with aclosing(query(prompt=prompt, options=options)) as stream:
+        async for message in stream:
+            check_init_message(message, SKILLS)
+            log_tool_uses(message)
+            if isinstance(message, ResultMessage):
+                result = message
     # Exhaust the stream so SDK cleanup finishes in this task before returning.
     if result is not None:
         return result
