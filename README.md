@@ -389,6 +389,8 @@ Everything is environment-variable overridable, with defaults in `orchestrator/s
 | `CODEX_IMAGE_TIMEOUT_SECONDS` | `900` | Ceiling on one Codex image call |
 | `MAX_VEO_ATTEMPTS` | `3` | |
 | `VEO_CALL_COST_USD` / `IMAGE_CALL_COST_USD` | `1.20` / `0.04` | Estimates for budget reservation, not billing |
+| `CLAUDE_SHOT_ATTEMPT_CAP_USD` | `1.0` | Claude spend one shot attempt may use. Each attempt reserves this plus its image/Veo costs before it starts; if the first tries of all remaining shots can't fit the budget, video shots become stills, and a run where even stills don't fit stops before any paid call |
+| `VEO_CONCURRENCY` / `GEMINI_IMAGE_CONCURRENCY` / `CODEX_IMAGE_CONCURRENCY` | `3` / `2` / `1` | Most calls to each vendor in flight at once |
 | `TTS_VOICE_NAME` | `Gacrux` | The narrator. Empty is an error, not a default |
 | `CLAUDE_MODEL` | `claude-opus-5` | Pinned so a reel's cost and quality cannot drift |
 | `CHARACTER_REFERENCE_PATH` | `assets/character/character.png` | Project's own copy wins; falls back to the repo root. Set empty to turn the character off |

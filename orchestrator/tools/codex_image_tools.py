@@ -34,6 +34,7 @@ from typing import Sequence
 from PIL import Image
 
 from orchestrator.progress import format_duration, heartbeat, log
+from orchestrator.tools.vendor_limits import CODEX_IMAGE, vendor_slot
 
 # Reuse the Gemini path's exception so `run_image_edit_ladder` needs no
 # provider-specific branch: a refusal is a refusal whoever issued it.
@@ -299,7 +300,7 @@ def run_codex_image_edit(
             started = time.monotonic()
             log(f"{label}: asking Codex to draw it (try {attempt} of {max_attempts})", indent=2)
             try:
-                with heartbeat(f"{label}: Codex is still drawing"):
+                with vendor_slot(CODEX_IMAGE), heartbeat(f"{label}: Codex is still drawing"):
                     completed = subprocess.run(
                         command,
                         input=codex_prompt,

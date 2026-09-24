@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import hashlib
 import json
@@ -28,6 +29,7 @@ from orchestrator.progress import format_duration, log
 from orchestrator.settings import VEO_ALLOWED_DURATION_SECONDS
 from orchestrator.state.run_manifest import _atomic_write_json
 from orchestrator.tools.deterministic_tools import resolve_binary
+from orchestrator.tools.vendor_limits import VEO, vendor_slot
 
 
 VEO_OUTPUT_DIR = Path("generated/veo")
@@ -482,75 +484,78 @@ def run_veo_generation(
         )
 
     prompt, negative_prompt = build_video_prompt(shot, seed, correction)
-    try:
-        image = types.Image.from_file(location=seed.local_path)
-        operation = client.models.generate_videos(
-            model=model,
-            source=types.GenerateVideosSource(prompt=prompt, image=image),
-            config=types.GenerateVideosConfig(
-                number_of_videos=1,
-                duration_seconds=clip_duration_seconds,
-                aspect_ratio="9:16",
-                resolution=resolution,
-                output_gcs_uri=gcs_output_uri,
-                generate_audio=False,
-                enhance_prompt=True,
-                negative_prompt=negative_prompt,
-                person_generation="allow_adult",
-                seed=1000 + shot.sequence + attempt - 1,
-            ),
-        )
-    except Exception as exc:
-        return _failure(
-            shot=shot,
-            attempt=attempt,
-            code="SDK_ERROR",
-            reason=f"Veo request failed: {type(exc).__name__}: {exc}",
-            retryable=True,
-            cost_usd=cost_usd,
-        )
-    deadline = time.monotonic() + max_poll_seconds
-    # The poll loop is the single longest silence in a run (up to
-    # `max_poll_seconds`), so every pass reports rather than waiting mutely.
-    poll_started = time.monotonic()
-    log(f"Shot {shot.sequence}: video sent off to be generated, now waiting for it", indent=2)
-    while not bool(_get(operation, "done", default=False)):
-        if time.monotonic() >= deadline:
-            VEO_OPERATION_DIR.mkdir(parents=True, exist_ok=True)
-            dump_path = VEO_OPERATION_DIR / f"shot_{shot.sequence:02d}_attempt_{attempt:02d}.json"
-            _atomic_write_json(dump_path, operation_to_jsonable(operation))
-            return _failure(
-                shot=shot,
-                attempt=attempt,
-                code="POLL_TIMEOUT",
-                reason=f"Veo operation did not complete within {max_poll_seconds} seconds",
-                retryable=True,
-                cost_usd=cost_usd,
-                operation_name=_get(operation, "name"),
-                operation_dump_path=dump_path,
-            )
-        time.sleep(poll_seconds)
-        log(
-            f"Shot {shot.sequence}: still generating… "
-            f"{format_duration(time.monotonic() - poll_started)} so far",
-            indent=2,
-        )
+    # One VEO_CONCURRENCY slot per operation, held from submit until the
+    # operation is done: that is the span during which it counts against Veo.
+    with vendor_slot(VEO):
         try:
-            operation = client.operations.get(operation)
+            image = types.Image.from_file(location=seed.local_path)
+            operation = client.models.generate_videos(
+                model=model,
+                source=types.GenerateVideosSource(prompt=prompt, image=image),
+                config=types.GenerateVideosConfig(
+                    number_of_videos=1,
+                    duration_seconds=clip_duration_seconds,
+                    aspect_ratio="9:16",
+                    resolution=resolution,
+                    output_gcs_uri=gcs_output_uri,
+                    generate_audio=False,
+                    enhance_prompt=True,
+                    negative_prompt=negative_prompt,
+                    person_generation="allow_adult",
+                    seed=1000 + shot.sequence + attempt - 1,
+                ),
+            )
         except Exception as exc:
-            VEO_OPERATION_DIR.mkdir(parents=True, exist_ok=True)
-            dump_path = VEO_OPERATION_DIR / f"shot_{shot.sequence:02d}_attempt_{attempt:02d}.json"
-            _atomic_write_json(dump_path, operation_to_jsonable(operation))
             return _failure(
                 shot=shot,
                 attempt=attempt,
                 code="SDK_ERROR",
-                reason=f"Veo polling failed: {type(exc).__name__}: {exc}",
+                reason=f"Veo request failed: {type(exc).__name__}: {exc}",
                 retryable=True,
                 cost_usd=cost_usd,
-                operation_name=_get(operation, "name"),
-                operation_dump_path=dump_path,
             )
+        deadline = time.monotonic() + max_poll_seconds
+        # The poll loop is the single longest silence in a run (up to
+        # `max_poll_seconds`), so every pass reports rather than waiting mutely.
+        poll_started = time.monotonic()
+        log(f"Shot {shot.sequence}: video sent off to be generated, now waiting for it", indent=2)
+        while not bool(_get(operation, "done", default=False)):
+            if time.monotonic() >= deadline:
+                VEO_OPERATION_DIR.mkdir(parents=True, exist_ok=True)
+                dump_path = VEO_OPERATION_DIR / f"shot_{shot.sequence:02d}_attempt_{attempt:02d}.json"
+                _atomic_write_json(dump_path, operation_to_jsonable(operation))
+                return _failure(
+                    shot=shot,
+                    attempt=attempt,
+                    code="POLL_TIMEOUT",
+                    reason=f"Veo operation did not complete within {max_poll_seconds} seconds",
+                    retryable=True,
+                    cost_usd=cost_usd,
+                    operation_name=_get(operation, "name"),
+                    operation_dump_path=dump_path,
+                )
+            time.sleep(poll_seconds)
+            log(
+                f"Shot {shot.sequence}: still generating… "
+                f"{format_duration(time.monotonic() - poll_started)} so far",
+                indent=2,
+            )
+            try:
+                operation = client.operations.get(operation)
+            except Exception as exc:
+                VEO_OPERATION_DIR.mkdir(parents=True, exist_ok=True)
+                dump_path = VEO_OPERATION_DIR / f"shot_{shot.sequence:02d}_attempt_{attempt:02d}.json"
+                _atomic_write_json(dump_path, operation_to_jsonable(operation))
+                return _failure(
+                    shot=shot,
+                    attempt=attempt,
+                    code="SDK_ERROR",
+                    reason=f"Veo polling failed: {type(exc).__name__}: {exc}",
+                    retryable=True,
+                    cost_usd=cost_usd,
+                    operation_name=_get(operation, "name"),
+                    operation_dump_path=dump_path,
+                )
     return inspect_completed_operation(
         operation,
         shot=shot,
@@ -591,6 +596,12 @@ def _preview_content(path: Path) -> dict:
     },
 )
 async def generate_veo_clip(args: dict) -> dict:
+    # Submit, sleep-polling, the GCS download and ffmpeg all block, so the body
+    # runs in a worker thread and the event loop stays free (Story 4.3).
+    return await asyncio.to_thread(_generate_veo_clip, args)
+
+
+def _generate_veo_clip(args: dict) -> dict:
     shot = Shot.model_validate(args["shot"])
     try:
         seed = VeoSeedContract.model_validate(args["seed"])

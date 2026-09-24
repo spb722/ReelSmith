@@ -635,9 +635,10 @@ def test_veo_stage_generates_only_veo_mode_and_never_changes_plan(chain, monkeyp
 
 def test_veo_budget_gate_demotes_to_still_before_any_agent_or_paid_call(chain, monkeypatch):
     """Running out of budget is a resource fact, not a defect in the shot, so
-    the shot falls back to a still and the reel still finishes. The gate still
-    runs before the agent or either paid tool. Retry-ceiling and non-retryable
-    Veo failures do still halt -- those signal a real seed/QA problem.
+    the shot falls back to a still and the reel still finishes. Story 4.3: the
+    demotion is decided by production planning, before the agent or either
+    paid tool, when the shot's first Veo attempt can't be reserved but a still
+    one can. Retry-ceiling and non-retryable Veo failures do still halt.
     """
     source, asset_id = chain
     visual_plan = veo_visual_plan_for(asset_id)
@@ -649,7 +650,9 @@ def test_veo_budget_gate_demotes_to_still_before_any_agent_or_paid_call(chain, m
 
     monkeypatch.setattr(run, "generate_veo_asset", refuse_agent)
     manifest = load_run_manifest(run.RUN_STATE_DIR)
-    assert asyncio.run(run.run_veo_stage(make_settings(max_budget_usd=1.0), manifest)) == 0
+    # Veo needs 0.5 + 0.04 + 1.2 reserved, a still 0.5 + 0.04: only the still fits.
+    settings = make_settings(max_budget_usd=1.0, claude_shot_attempt_cap_usd=0.5)
+    assert asyncio.run(run.run_veo_stage(settings, manifest)) == 0
     assert not run.PRODUCTION_ASSETS_FILE.exists()
 
     # The plan on disk now routes that shot to the stills stage instead, and it
@@ -741,9 +744,9 @@ def test_corrupt_production_manifest_halts_without_reset_or_agent_call(chain, mo
 
 def test_veo_agent_exception_charges_full_attempt_ceiling_and_halts(chain, monkeypatch):
     """Fix #4: an exception from generate_veo_asset must charge the whole
-    per-attempt ceiling (remaining_budget), since a real cost is never
-    available on this branch and up to that much Claude spend may have
-    already occurred.
+    per-attempt ceiling, since a real cost is never available on this branch.
+    Story 4.3: that ceiling is the attempt's reservation (Claude cap plus seed
+    and clip), no longer the run's whole remaining budget.
     """
     source, asset_id = chain
     visual_plan = veo_visual_plan_for(asset_id)
@@ -756,7 +759,9 @@ def test_veo_agent_exception_charges_full_attempt_ceiling_and_halts(chain, monke
     monkeypatch.setattr(run, "generate_veo_asset", raising_agent)
     settings = make_settings()
     manifest = load_run_manifest(run.RUN_STATE_DIR)
-    expected_charge = settings.max_budget_usd - manifest.budget_spent_usd
+    expected_charge = (
+        settings.claude_shot_attempt_cap_usd + settings.image_call_cost_usd + settings.veo_call_cost_usd
+    )
 
     assert asyncio.run(run.run_veo_stage(settings, manifest)) == 1
 

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import math
+import threading
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -25,6 +26,13 @@ CONFIG_FILENAME = "config.json"
 # resuming after the upgrade.
 RUN_MANIFEST_FILENAME = "run_manifest.json"
 
+# AD-10's single writer, made safe for concurrent shots (Story 4.3): one
+# orchestrator-owned lock serialises production-asset upserts, run-manifest
+# saves and budget-ledger changes. Re-entrant, because a ledger debit saves the
+# manifest while it holds the lock. Held only around synchronous code, so it
+# is safe from both the event loop and worker threads.
+STATE_LOCK = threading.RLock()
+
 
 def _atomic_write_json(path: Path, data: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -41,6 +49,8 @@ def _atomic_write_json(path: Path, data: dict[str, Any]) -> None:
 class RunManifest:
     budget_spent_usd: float = 0.0
     iteration_counts: dict[str, int] = field(default_factory=dict)
+    # Last-writer-wins once shots run concurrently (Story 4.4): each shot's
+    # query has its own session, and this keeps whichever finished last.
     session_id: Optional[str] = None
     max_budget_usd: Optional[float] = None
     max_attempts: dict[str, int] = field(default_factory=dict)
@@ -127,10 +137,11 @@ def save_run_manifest(manifest: RunManifest, state_dir: Path = RUN_STATE_DIR) ->
     knob that exists rather than only the ones already changed.
     """
 
-    if not manifest.max_attempts:
-        manifest.max_attempts = dict(DEFAULT_MAX_ATTEMPTS)
-    path = config_file(state_dir)
-    _atomic_write_json(path, manifest.to_dict())
+    with STATE_LOCK:
+        if not manifest.max_attempts:
+            manifest.max_attempts = dict(DEFAULT_MAX_ATTEMPTS)
+        path = config_file(state_dir)
+        _atomic_write_json(path, manifest.to_dict())
     return path
 
 

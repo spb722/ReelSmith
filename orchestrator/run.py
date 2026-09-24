@@ -84,6 +84,7 @@ from orchestrator.state.production_assets import (
     load_production_assets,
     upsert_production_asset,
 )
+from orchestrator.state.budget_ledger import BudgetLedger, Reservation, run_ledger
 from orchestrator.tools.deterministic_tools import (
     ASSETS_FILE,
     DEFAULT_REMOTION_RENDER_OUTPUT,
@@ -107,6 +108,7 @@ from orchestrator.state.voice_cache import (
     selected_voice_name,
 )
 from orchestrator.tools.veo_tools import select_clip_duration_seconds
+from orchestrator.tools.vendor_limits import configure_vendor_limits
 from orchestrator.tools.timeline_converter import build_timeline_data
 
 ANALYZED_ASSETS_FILE = Path("metadata/analyzed_assets.json")
@@ -578,21 +580,114 @@ def _promote_video_candidates(visual_plan: VisualPlanContract, settings: Setting
     return promoted
 
 
-def _demote_veo_shot_to_still(sequence: int, reason: str) -> None:
-    """Send one not-yet-generated VEO shot back to STILL, in the plan on disk.
+def shot_attempt_reservation(settings: Settings, generation_mode: str) -> tuple[float, float]:
+    """(Claude cap, paid-call costs) one attempt of a shot in this mode reserves.
 
-    Safe because the shot has no production-asset entry yet, so no fingerprint
-    stale-check can trip, and every shot already carries `still_motion`.
+    A Veo attempt draws a seed and a clip, a still attempt one image.
     """
-    visual_plan = VisualPlanContract.model_validate_json(
-        VISUAL_PLAN_FILE.read_text(encoding="utf-8")
+
+    external = settings.image_call_cost_usd
+    if generation_mode == "VEO":
+        external += settings.veo_call_cost_usd
+    return settings.claude_shot_attempt_cap_usd, external
+
+
+def plan_first_attempt_demotions(
+    pending: Sequence, settings: Settings, unreserved_usd: float, *, started: frozenset[int] = frozenset(),
+) -> tuple[list[int], float]:
+    """Which pending Veo shots to demote so every first attempt fits (AD-15(c)).
+
+    Returns the demoted sequences, lowest-ranked first, and what the first
+    attempts then need in all. Deterministic: the highest
+    `video_candidate_rank` number goes first, an unranked Veo shot before any
+    ranked one, and a tie goes to the later shot. A Veo shot in `started`
+    already has Veo attempts on record and is never demoted: that would drop
+    its ladder state and step around its retry ceiling.
+    """
+
+    def needed(mode: str) -> float:
+        return sum(shot_attempt_reservation(settings, mode))
+
+    total = sum(needed(shot.generation_mode) for shot in pending)
+    demotable = sorted(
+        (shot for shot in pending if shot.generation_mode == "VEO" and shot.sequence not in started),
+        key=lambda shot: (
+            shot.video_candidate_rank is not None,
+            -(shot.video_candidate_rank or 0),
+            -shot.sequence,
+        ),
     )
-    for shot in visual_plan.shots:
-        if shot.sequence == sequence:
-            shot.generation_mode = "STILL"
+    demoted: list[int] = []
+    for shot in demotable:
+        if total <= unreserved_usd + 1e-9:
             break
-    _atomic_write_json(VISUAL_PLAN_FILE, visual_plan.model_dump(mode="json"))
-    log(f"Shot {sequence}: switched from video to a still picture — {reason}", error=True)
+        total -= needed("VEO") - needed("STILL")
+        demoted.append(shot.sequence)
+    return demoted, total
+
+
+async def run_production_planning(settings: Settings, manifest: RunManifest) -> int:
+    """Fix every pending shot's mode against the budget before any shot starts.
+
+    Run by `run_veo_stage` before anything else, since that is where shot
+    production begins.
+
+    Story 4.3: computes each pending shot's first-attempt reservation, demotes
+    the lowest-ranked Veo shots to stills until they all fit (one
+    `visual_plan.json` write, here and nowhere else), and halts with
+    `budget_exhausted` before any paid call when even stills can't fit. Every
+    shot keeps `still_motion`, so a demotion is lossless, and a pending shot
+    has no production-asset entry, so no fingerprint goes stale.
+    """
+
+    try:
+        visual_plan = VisualPlanContract.model_validate_json(
+            VISUAL_PLAN_FILE.read_text(encoding="utf-8")
+        )
+        production_assets = load_production_assets(PRODUCTION_ASSETS_FILE)
+    except (FileNotFoundError, ValueError, OSError) as exc:
+        return _halt(
+            "production_planning", "ProductionInputs",
+            f"A validated visual plan and production-asset manifest are required: {exc}",
+            partial_artifact_paths=[str(VISUAL_PLAN_FILE), str(PRODUCTION_ASSETS_FILE)],
+        )
+
+    pending = [shot for shot in visual_plan.shots if str(shot.sequence) not in production_assets.shots]
+    if not pending:
+        log("Every shot is already made — nothing to reserve")
+        return 0
+
+    unreserved = run_ledger(manifest, max_budget_usd=settings.max_budget_usd).unreserved_usd()
+    started = frozenset(
+        shot.sequence for shot in pending
+        if manifest.iteration_counts.get(f"veo_agent_shot_{shot.sequence}", 0)
+    )
+    demoted, needed = plan_first_attempt_demotions(pending, settings, unreserved, started=started)
+    if needed > unreserved + 1e-9:
+        return _halt(
+            "production_planning", "Budget",
+            f"The next try of the {len(pending)} remaining shot(s) needs ${needed:.4f} reserved, even with "
+            "every shot not yet started as a video made a still picture, but only "
+            f"${unreserved:.4f} of the budget is left",
+            partial_artifact_paths=[str(VISUAL_PLAN_FILE)],
+            reason_code="budget_exhausted",
+        )
+    if demoted:
+        for shot in visual_plan.shots:
+            if shot.sequence in demoted:
+                shot.generation_mode = "STILL"
+        _atomic_write_json(VISUAL_PLAN_FILE, visual_plan.model_dump(mode="json"))
+        for sequence in demoted:
+            log(
+                f"Shot {sequence}: switched from video to a still picture — the budget can't also "
+                "reserve its first try as a video",
+                error=True,
+            )
+    # Checked, not held: each attempt reserves for itself when it starts.
+    log(
+        f"The first try of {len(pending)} shot(s) needs ${needed:.2f} of the ${unreserved:.2f} left"
+    )
+    return 0
 
 
 def _voice_shot_timing_backfill_or_halt(settings: Settings) -> int | None:
@@ -1191,7 +1286,7 @@ def _stamp_veo_outcome(
 
 def _charge_guarded_attempt(
     *, agent: str, sequence: int, count: int, status: str, suffix: str,
-    claude_cost: float, guard: PaidToolGuard, manifest: RunManifest,
+    claude_cost: float, guard: PaidToolGuard, ledger: BudgetLedger, reservation: Reservation,
     attempt_paths: list[str], agent_result: ResultMessage | None = None,
     exc: BaseException | None = None, detail: str = "",
 ) -> None:
@@ -1203,7 +1298,6 @@ def _charge_guarded_attempt(
     resumed attempt's own `_{count}.json` never collide with it.
     """
 
-    manifest.budget_spent_usd += claude_cost + guard.billed_usd
     attempt_path = RUN_STATE_DIR / f"{agent}_shot_{sequence}_attempt_{count}_{suffix}.json"
     record: dict = {
         "status": status,
@@ -1223,7 +1317,8 @@ def _charge_guarded_attempt(
         record["error"] = f"{type(exc).__name__}: {exc}"
     _atomic_write_json(attempt_path, record)
     attempt_paths.append(str(attempt_path))
-    save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+    # Debited last: the ledger saves the manifest, attempt counter included.
+    ledger.debit(reservation, claude_cost + guard.billed_usd)
 
 
 def _reports_success(agent_result: ResultMessage) -> bool:
@@ -1234,10 +1329,13 @@ def _reports_success(agent_result: ResultMessage) -> bool:
 async def _handle_shot_vendor_refusal(
     refusal: VendorRefusal, *, agent: str, contract_name: str, stage_id: str,
     sequence: int, count: int, transient_retries: int, claude_cost: float,
-    guard: PaidToolGuard, manifest: RunManifest, attempt_paths: list[str],
-    agent_result: ResultMessage | None = None, exc: BaseException | None = None,
+    guard: PaidToolGuard, manifest: RunManifest, ledger: BudgetLedger, reservation: Reservation,
+    attempt_paths: list[str], agent_result: ResultMessage | None = None,
+    exc: BaseException | None = None,
 ) -> int | None:
     """Give the attempt back, then either back off (None: rerun it) or halt.
+
+    The caller releases the reservation; a rerun reserves afresh.
 
     Only a transient refusal on a route with no retry of its own is rerun, at
     most `len(TRANSIENT_BACKOFF_SECONDS)` times. A rerun starts a new agent
@@ -1254,10 +1352,13 @@ async def _handle_shot_vendor_refusal(
         agent=agent, sequence=sequence, count=count,
         status="TRANSIENT_VENDOR_REFUSAL" if retry else "VENDOR_LIMIT",
         suffix=f"transient_{transient_retries + 1}" if retry else "vendor_limit",
-        claude_cost=claude_cost, guard=guard, manifest=manifest, attempt_paths=attempt_paths,
-        agent_result=agent_result, exc=exc, detail=f"{refusal.kind}: {refusal.detail}",
+        claude_cost=claude_cost, guard=guard, ledger=ledger, reservation=reservation,
+        attempt_paths=attempt_paths, agent_result=agent_result, exc=exc,
+        detail=f"{refusal.kind}: {refusal.detail}",
     )
     if retry:
+        # Nothing of it is held while waiting; the rerun reserves afresh.
+        ledger.release(reservation)
         delay = TRANSIENT_BACKOFF_SECONDS[transient_retries]
         log(
             f"Shot {sequence}: the vendor asked us to slow down ({refusal.detail}); "
@@ -1277,7 +1378,16 @@ async def _handle_shot_vendor_refusal(
 
 
 async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
-    """Generate only VEO-mode shots and atomically record approved clips."""
+    """Generate only VEO-mode shots and atomically record approved clips.
+
+    It is the first shot stage, so shot production begins here: production
+    planning fixes every pending shot's mode against the budget first, and
+    `run_stills_stage` then reads the plan as it left it.
+    """
+
+    planning_failure = await run_production_planning(settings, manifest)
+    if planning_failure:
+        return planning_failure
 
     try:
         visual_plan = VisualPlanContract.model_validate_json(
@@ -1351,7 +1461,8 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
     assets_by_id = {asset.asset_id: asset for asset in analyzed.assets}
     cues_by_id = {cue.cue_id: cue.text for cue in subtitle_cues.cues}
     settings_payload = _veo_settings_payload(settings)
-    reserved_external_cost = settings.image_call_cost_usd + settings.veo_call_cost_usd
+    claude_cap, reserved_external_cost = shot_attempt_reservation(settings, "VEO")
+    ledger = run_ledger(manifest, max_budget_usd=settings.max_budget_usd)
     # Ceilings come from the project's config.json and nowhere else, so there
     # is one file to edit when a stage needs more room.
     max_veo_attempts = manifest.attempts_allowed("veo_agent")
@@ -1392,251 +1503,258 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
         ]
 
         while count < max_veo_attempts:
-            remaining_budget = settings.max_budget_usd - manifest.budget_spent_usd
-            if remaining_budget <= reserved_external_cost:
-                # Not enough left for this clip. Running out of budget is a
-                # resource fact, not a defect in the shot, so the shot falls
-                # back to a still rather than halting the whole reel -- it
-                # still has `still_motion`, and `run_stills_stage` re-reads the
-                # plan from disk and picks it up. Retry-ceiling and
-                # non-retryable Veo failures still halt: those signal a real
-                # seed/QA problem worth a human look.
-                _demote_veo_shot_to_still(
-                    shot.sequence,
-                    f"${remaining_budget:.4f} remains, ${reserved_external_cost:.4f} must be "
-                    "reserved before paid image/Veo calls",
-                )
-                break
-            count += 1
-            manifest.iteration_counts[stage_id] = count
-            save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
-            # FR9: the hook denies a paid call the remaining budget can't cover,
-            # counting every paid call already allowed in this session.
-            guard = PaidToolGuard(
-                limit_usd=remaining_budget,
-                costs={VEO_SEED_TOOL: settings.image_call_cost_usd, VEO_CLIP_TOOL: settings.veo_call_cost_usd},
+            # FR7: this attempt's worst case is held before its query starts.
+            # Every retry reserves afresh; one that can't is a budget stop, not
+            # a demotion -- modes were fixed before launch (AD-15(c)).
+            reservation = ledger.reserve(
+                label=f"shot {shot.sequence} try {count + 1}",
+                claude_cap_usd=claude_cap, external_usd=reserved_external_cost,
             )
-            try:
-                agent_result = await generate_veo_asset(
-                    shot=shot.model_dump(mode="json"),
-                    asset=asset.model_dump(mode="json"),
-                    subtitle_text=subtitle_text,
-                    settings={**settings_payload, "seed_prompt_level": seed_prompt_level},
-                    attempt=count,
-                    max_budget_usd=remaining_budget - reserved_external_cost,
-                    correction=correction,
-                    previous_outcome=previous_outcome,
-                    guard=guard,
-                )
-            except SkillIsolationError as exc:
-                # Raised on the init message, before any model turn or paid
-                # tool call, so nothing is charged.
+            if reservation is None:
                 return _halt(
-                    "veo_agent", "VeoOutcomeContract", str(exc),
-                    attempt_count=count, partial_artifact_paths=attempt_paths,
+                    "veo_agent",
+                    "Budget",
+                    f"Shot {shot.sequence}: try {count + 1} needs ${claude_cap + reserved_external_cost:.4f} "
+                    f"reserved (Claude ${claude_cap:.4f} + paid calls ${reserved_external_cost:.4f}), but only "
+                    f"${ledger.unreserved_usd():.4f} of the run budget is unreserved",
+                    attempt_count=count,
+                    partial_artifact_paths=attempt_paths,
+                    reason_code="budget_exhausted",
                 )
-            except Exception as exc:
-                refusal = _vendor_refusal(exc=exc, guard=guard)
+            try:
+                count += 1
+                manifest.iteration_counts[stage_id] = count
+                save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+                # FR9: the hook denies a paid call this attempt's reservation can't
+                # cover, counting every paid call already allowed in this session.
+                guard = PaidToolGuard(
+                    limit_usd=reservation.paid_tool_allowance_usd,
+                    costs={VEO_SEED_TOOL: settings.image_call_cost_usd, VEO_CLIP_TOOL: settings.veo_call_cost_usd},
+                )
+                try:
+                    agent_result = await generate_veo_asset(
+                        shot=shot.model_dump(mode="json"),
+                        asset=asset.model_dump(mode="json"),
+                        subtitle_text=subtitle_text,
+                        settings={**settings_payload, "seed_prompt_level": seed_prompt_level},
+                        attempt=count,
+                        max_budget_usd=claude_cap,
+                        correction=correction,
+                        previous_outcome=previous_outcome,
+                        guard=guard,
+                    )
+                except SkillIsolationError as exc:
+                    # Raised on the init message, before any model turn or paid
+                    # tool call, so nothing is charged.
+                    return _halt(
+                        "veo_agent", "VeoOutcomeContract", str(exc),
+                        attempt_count=count, partial_artifact_paths=attempt_paths,
+                    )
+                except Exception as exc:
+                    refusal = _vendor_refusal(exc=exc, guard=guard)
+                    if refusal is not None:
+                        halted = await _handle_shot_vendor_refusal(
+                            refusal, agent="veo_agent", contract_name="VeoOutcomeContract",
+                            stage_id=stage_id, sequence=shot.sequence, count=count,
+                            transient_retries=transient_retries, claude_cost=0.0, guard=guard,
+                            manifest=manifest, ledger=ledger, reservation=reservation,
+                            attempt_paths=attempt_paths, exc=exc,
+                        )
+                        if halted is not None:
+                            return halted
+                        count -= 1
+                        transient_retries += 1
+                        continue
+                    # Tools may have billed and Claude may have spent up to its cap,
+                    # with no cost ever reported, so charge the attempt's whole
+                    # reservation -- its worst case, and never more.
+                    charged_cost = reservation.amount_usd
+                    ledger.debit(reservation, charged_cost)
+                    attempt_path = RUN_STATE_DIR / f"veo_agent_shot_{shot.sequence}_attempt_{count}.json"
+                    _atomic_write_json(attempt_path, {
+                        "status": "EXCEPTION",
+                        "error": f"{type(exc).__name__}: {exc}",
+                        "charged_cost_usd": charged_cost,
+                    })
+                    attempt_paths.append(str(attempt_path))
+                    return _halt(
+                        "veo_agent",
+                        "VeoOutcomeContract",
+                        "Veo agent ended without an accountable result after tools may have run: "
+                        f"{type(exc).__name__}: {exc}",
+                        attempt_count=count,
+                        partial_artifact_paths=attempt_paths,
+                        reason_code="budget_exhausted" if guard.denial else "unclassified",
+                    )
+
+                claude_cost = agent_result.total_cost_usd
+                if claude_cost is None or not math.isfinite(claude_cost) or claude_cost < 0:
+                    # As unaccountable as a crash, so charged the same worst case.
+                    ledger.debit(reservation, reservation.amount_usd)
+                    return _halt(
+                        "veo_agent", "Budget", "Veo agent returned no usable Claude cost",
+                        attempt_count=count, partial_artifact_paths=attempt_paths,
+                    )
+                if guard.denial is not None:
+                    # Checked before the outcome, so the agent's own output can't
+                    # mask a denied paid call (AD-7).
+                    _charge_guarded_attempt(
+                        agent="veo_agent", sequence=shot.sequence, count=count,
+                        status="BUDGET_DENIED", suffix="budget_denied", claude_cost=claude_cost,
+                        guard=guard, ledger=ledger, reservation=reservation, attempt_paths=attempt_paths,
+                        agent_result=agent_result, detail=guard.denial,
+                    )
+                    return _halt(
+                        "veo_agent", "Budget", guard.denial,
+                        attempt_count=count, partial_artifact_paths=attempt_paths,
+                        reason_code="budget_exhausted",
+                    )
+                refusal = _vendor_refusal(result=agent_result, guard=guard)
+                if refusal is not None and refusal.kind == "transient" and _reports_success(agent_result):
+                    # The agent retried the tool itself and got its asset; a
+                    # rerun would throw that paid work away.
+                    refusal = None
                 if refusal is not None:
                     halted = await _handle_shot_vendor_refusal(
                         refusal, agent="veo_agent", contract_name="VeoOutcomeContract",
                         stage_id=stage_id, sequence=shot.sequence, count=count,
-                        transient_retries=transient_retries, claude_cost=0.0, guard=guard,
-                        manifest=manifest, attempt_paths=attempt_paths, exc=exc,
+                        transient_retries=transient_retries, claude_cost=claude_cost, guard=guard,
+                        manifest=manifest, ledger=ledger, reservation=reservation,
+                        attempt_paths=attempt_paths, agent_result=agent_result,
                     )
                     if halted is not None:
                         return halted
                     count -= 1
                     transient_retries += 1
                     continue
-                # Tool execution may have reached a paid boundary before the
-                # SDK/agent surfaced an exception, and up to the full Claude
-                # budget ceiling given to this attempt (remaining_budget -
-                # reserved_external_cost) may also have been spent on tokens
-                # with no cost value ever returned. No real cost is available
-                # in this branch, so charge the whole per-attempt allotment
-                # (remaining_budget) as the conservative worst case rather
-                # than only the reserved external cost.
-                charged_cost = remaining_budget
-                manifest.budget_spent_usd += charged_cost
-                attempt_path = RUN_STATE_DIR / f"veo_agent_shot_{shot.sequence}_attempt_{count}.json"
-                _atomic_write_json(attempt_path, {
-                    "status": "EXCEPTION",
-                    "error": f"{type(exc).__name__}: {exc}",
-                    "charged_cost_usd": charged_cost,
-                })
-                attempt_paths.append(str(attempt_path))
-                save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
-                return _halt(
-                    "veo_agent",
-                    "VeoOutcomeContract",
-                    "Veo agent ended without an accountable result after tools may have run: "
-                    f"{type(exc).__name__}: {exc}",
-                    attempt_count=count,
-                    partial_artifact_paths=attempt_paths,
-                    reason_code="budget_exhausted" if guard.denial else "unclassified",
-                )
-
-            claude_cost = agent_result.total_cost_usd
-            if claude_cost is None or not math.isfinite(claude_cost) or claude_cost < 0:
-                return _halt(
-                    "veo_agent", "Budget", "Veo agent returned no usable Claude cost",
-                    attempt_count=count, partial_artifact_paths=attempt_paths,
-                )
-            if guard.denial is not None:
-                # Checked before the outcome, so the agent's own output can't
-                # mask a denied paid call (AD-7).
-                _charge_guarded_attempt(
-                    agent="veo_agent", sequence=shot.sequence, count=count,
-                    status="BUDGET_DENIED", suffix="budget_denied", claude_cost=claude_cost,
-                    guard=guard, manifest=manifest, attempt_paths=attempt_paths,
-                    agent_result=agent_result, detail=guard.denial,
-                )
-                return _halt(
-                    "veo_agent", "Budget", guard.denial,
-                    attempt_count=count, partial_artifact_paths=attempt_paths,
-                    reason_code="budget_exhausted",
-                )
-            refusal = _vendor_refusal(result=agent_result, guard=guard)
-            if refusal is not None and refusal.kind == "transient" and _reports_success(agent_result):
-                # The agent retried the tool itself and got its asset; a
-                # rerun would throw that paid work away.
-                refusal = None
-            if refusal is not None:
-                halted = await _handle_shot_vendor_refusal(
-                    refusal, agent="veo_agent", contract_name="VeoOutcomeContract",
-                    stage_id=stage_id, sequence=shot.sequence, count=count,
-                    transient_retries=transient_retries, claude_cost=claude_cost, guard=guard,
-                    manifest=manifest, attempt_paths=attempt_paths, agent_result=agent_result,
-                )
-                if halted is not None:
-                    return halted
-                count -= 1
-                transient_retries += 1
-                continue
-            transient_retries = 0
-            try:
-                if agent_result.is_error:
-                    raise ValueError(
-                        f"Claude failed ({agent_result.subtype}): {agent_result.errors or agent_result.result}"
+                transient_retries = 0
+                try:
+                    if agent_result.is_error:
+                        raise ValueError(
+                            f"Claude failed ({agent_result.subtype}): {agent_result.errors or agent_result.result}"
+                        )
+                    outcome = VeoOutcomeContract.model_validate(agent_result.structured_output)
+                    expected_fingerprint = shot_fingerprint(shot)
+                    seed_cost, clip_cost = _veo_attempt_cost(outcome, settings)
+                    outcome = _stamp_veo_outcome(
+                        outcome,
+                        shot_sequence=shot.sequence,
+                        expected_fingerprint=expected_fingerprint,
+                        seed_cost_usd=seed_cost,
+                        clip_cost_usd=clip_cost,
                     )
-                outcome = VeoOutcomeContract.model_validate(agent_result.structured_output)
-                expected_fingerprint = shot_fingerprint(shot)
-                seed_cost, clip_cost = _veo_attempt_cost(outcome, settings)
-                outcome = _stamp_veo_outcome(
-                    outcome,
-                    shot_sequence=shot.sequence,
-                    expected_fingerprint=expected_fingerprint,
-                    seed_cost_usd=seed_cost,
-                    clip_cost_usd=clip_cost,
-                )
-                if outcome.status == "SUCCESS" and outcome.result.seed.source_asset_id not in shot.source_asset_ids:
-                    raise ValueError("Veo agent outcome seed source asset is not cited by the requested shot")
-            except ValueError as exc:
-                # The agent cost is known, but a malformed response cannot safely
-                # prove which external paid calls occurred. Charge the reserved
-                # ceiling conservatively and halt instead of retrying blindly.
-                manifest.budget_spent_usd += claude_cost + reserved_external_cost
+                    if outcome.status == "SUCCESS" and outcome.result.seed.source_asset_id not in shot.source_asset_ids:
+                        raise ValueError("Veo agent outcome seed source asset is not cited by the requested shot")
+                except ValueError as exc:
+                    # The agent cost is known, but a malformed response cannot safely
+                    # prove which external paid calls occurred. Charge the reserved
+                    # ceiling conservatively and halt instead of retrying blindly.
+                    ledger.debit(reservation, claude_cost + reserved_external_cost)
+                    attempt_path = RUN_STATE_DIR / f"veo_agent_shot_{shot.sequence}_attempt_{count}.json"
+                    _atomic_write_json(attempt_path, {
+                        "status": "INVALID_OUTCOME",
+                        "error": str(exc),
+                        "structured_output": agent_result.structured_output,
+                        "result": agent_result.result,
+                        "subtype": agent_result.subtype,
+                        "errors": agent_result.errors,
+                        "claude_cost_usd": claude_cost,
+                        "charged_paid_tool_cost_usd": reserved_external_cost,
+                    })
+                    attempt_paths.append(str(attempt_path))
+                    return _halt(
+                        "veo_agent",
+                        "VeoOutcomeContract",
+                        f"Invalid Veo agent outcome: {exc}",
+                        attempt_count=count,
+                        partial_artifact_paths=attempt_paths,
+                    )
+
+                manifest.session_id = agent_result.session_id
+                ledger.debit(reservation, claude_cost + outcome.cost_usd)
                 attempt_path = RUN_STATE_DIR / f"veo_agent_shot_{shot.sequence}_attempt_{count}.json"
                 _atomic_write_json(attempt_path, {
-                    "status": "INVALID_OUTCOME",
-                    "error": str(exc),
-                    "structured_output": agent_result.structured_output,
+                    "structured_output": outcome.model_dump(mode="json"),
                     "result": agent_result.result,
                     "subtype": agent_result.subtype,
                     "errors": agent_result.errors,
                     "claude_cost_usd": claude_cost,
-                    "charged_paid_tool_cost_usd": reserved_external_cost,
+                    "paid_tool_cost_usd": outcome.cost_usd,
+                    # Which rung drew this seed. A resume needs the rung that was
+                    # refused, not how many refusals there were: three rejections
+                    # of the same wording mean "try the next rung", not "skip three".
+                    "seed_prompt_level": seed_prompt_level,
                 })
                 attempt_paths.append(str(attempt_path))
-                save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
-                return _halt(
-                    "veo_agent",
-                    "VeoOutcomeContract",
-                    f"Invalid Veo agent outcome: {exc}",
-                    attempt_count=count,
-                    partial_artifact_paths=attempt_paths,
-                )
+                previous_outcome = outcome.model_dump(mode="json")
 
-            manifest.budget_spent_usd += claude_cost + outcome.cost_usd
-            manifest.session_id = agent_result.session_id
-            save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
-            attempt_path = RUN_STATE_DIR / f"veo_agent_shot_{shot.sequence}_attempt_{count}.json"
-            _atomic_write_json(attempt_path, {
-                "structured_output": outcome.model_dump(mode="json"),
-                "result": agent_result.result,
-                "subtype": agent_result.subtype,
-                "errors": agent_result.errors,
-                "claude_cost_usd": claude_cost,
-                "paid_tool_cost_usd": outcome.cost_usd,
-                # Which rung drew this seed. A resume needs the rung that was
-                # refused, not how many refusals there were: three rejections
-                # of the same wording mean "try the next rung", not "skip three".
-                "seed_prompt_level": seed_prompt_level,
-            })
-            attempt_paths.append(str(attempt_path))
-            previous_outcome = outcome.model_dump(mode="json")
-
-            budget_failure = _check_budget(settings, manifest.budget_spent_usd)
-            if budget_failure:
-                return _halt(
-                    "veo_agent", "Budget", budget_failure.reason or "Budget exhausted",
-                    attempt_count=count, partial_artifact_paths=attempt_paths,
-                    reason_code="budget_exhausted",
-                )
-
-            if outcome.status == "SUCCESS":
-                try:
-                    entry = ProductionAssetEntry.from_veo_result(
-                        outcome.result,
-                        source_asset_ids=shot.source_asset_ids,
+                if ledger.overdrawn():
+                    # The attempt cost more than it reserved, and the excess took the
+                    # unreserved pool below zero (FR7): systemic, like any budget stop.
+                    return _halt(
+                        "veo_agent", "Budget",
+                        f"Shot {shot.sequence}: try {count} cost ${reservation.debited_usd:.4f}, "
+                        f"${reservation.debited_usd - reservation.amount_usd:.4f} more than it reserved, "
+                        "and the run budget can't cover the overshoot",
+                        attempt_count=count, partial_artifact_paths=attempt_paths,
+                        reason_code="budget_exhausted",
                     )
-                    upsert_production_asset(
-                        entry,
-                        path=PRODUCTION_ASSETS_FILE,
-                        writer="orchestrator",
-                    )
-                except Exception as exc:
+
+                if outcome.status == "SUCCESS":
+                    try:
+                        entry = ProductionAssetEntry.from_veo_result(
+                            outcome.result,
+                            source_asset_ids=shot.source_asset_ids,
+                        )
+                        upsert_production_asset(
+                            entry,
+                            path=PRODUCTION_ASSETS_FILE,
+                            writer="orchestrator",
+                        )
+                    except Exception as exc:
+                        return _halt(
+                            "veo_agent",
+                            "ProductionAssetsContract",
+                            f"Approved Veo result could not be persisted: {type(exc).__name__}: {exc}",
+                            attempt_count=count,
+                            partial_artifact_paths=attempt_paths,
+                        )
+                    log(f"Shot {shot.sequence}: video clip approved → {entry.local_path}", indent=2)
+                    break
+
+                failure = outcome.failure
+                correction = failure.reason
+                if not failure.retryable:
                     return _halt(
                         "veo_agent",
-                        "ProductionAssetsContract",
-                        f"Approved Veo result could not be persisted: {type(exc).__name__}: {exc}",
+                        "VeoFailureContract",
+                        failure.reason,
                         attempt_count=count,
-                        partial_artifact_paths=attempt_paths,
+                        partial_artifact_paths=attempt_paths + failure.partial_artifact_paths,
                     )
-                log(f"Shot {shot.sequence}: video clip approved → {entry.local_path}", indent=2)
-                break
-
-            failure = outcome.failure
-            correction = failure.reason
-            if not failure.retryable:
-                return _halt(
-                    "veo_agent",
-                    "VeoFailureContract",
-                    failure.reason,
-                    attempt_count=count,
-                    partial_artifact_paths=attempt_paths + failure.partial_artifact_paths,
-                )
-            log(
-                f"Shot {shot.sequence}: try {count} of {max_veo_attempts} "
-                f"didn't work — {failure.reason}",
-                error=True,
-            )
-            if _forces_simpler_character_wording(failure):
-                # Redrawing the same wording would produce the same face and
-                # be rejected again -- which is exactly what burned all three
-                # attempts before this existed.
-                seed_prompt_level += 1
-                correction = (
-                    f"{failure.reason} Veo rejected the person drawn into this seed as too "
-                    "realistic a depiction of a real individual. The next attempt redraws the "
-                    "seed with a less specific face."
-                )
                 log(
-                    f"Shot {shot.sequence}: redrawing the seed with a less detailed face "
-                    f"(character wording level {seed_prompt_level})",
-                    indent=2,
+                    f"Shot {shot.sequence}: try {count} of {max_veo_attempts} "
+                    f"didn't work — {failure.reason}",
+                    error=True,
                 )
+                if _forces_simpler_character_wording(failure):
+                    # Redrawing the same wording would produce the same face and
+                    # be rejected again -- which is exactly what burned all three
+                    # attempts before this existed.
+                    seed_prompt_level += 1
+                    correction = (
+                        f"{failure.reason} Veo rejected the person drawn into this seed as too "
+                        "realistic a depiction of a real individual. The next attempt redraws the "
+                        "seed with a less specific face."
+                    )
+                    log(
+                        f"Shot {shot.sequence}: redrawing the seed with a less detailed face "
+                        f"(character wording level {seed_prompt_level})",
+                        indent=2,
+                    )
+            finally:
+                # Whatever this attempt didn't spend goes back, on every path.
+                ledger.release(reservation)
         else:
             reason = "Veo retry ceiling exhausted"
             last_failure_paths: list[str] = []
@@ -1747,7 +1865,8 @@ async def run_stills_stage(settings: Settings, manifest: RunManifest) -> int:
     assets_by_id = {asset.asset_id: asset for asset in analyzed.assets}
     cues_by_id = {cue.cue_id: cue.text for cue in subtitle_cues.cues}
     settings_payload = _stills_settings_payload(settings)
-    reserved_external_cost = settings.image_call_cost_usd
+    claude_cap, reserved_external_cost = shot_attempt_reservation(settings, "STILL")
+    ledger = run_ledger(manifest, max_budget_usd=settings.max_budget_usd)
     max_stills_attempts = manifest.attempts_allowed("stills_agent")
 
     for shot_index, shot in enumerate(pending, start=1):
@@ -1775,222 +1894,239 @@ async def run_stills_stage(settings: Settings, manifest: RunManifest) -> int:
         ]
 
         while count < max_stills_attempts:
-            remaining_budget = settings.max_budget_usd - manifest.budget_spent_usd
-            if remaining_budget <= reserved_external_cost:
+            # FR7: this attempt's worst case is held before its query starts.
+            # Every retry reserves afresh; one that can't is a budget stop, not
+            # a demotion -- modes were fixed before launch (AD-15(c)).
+            reservation = ledger.reserve(
+                label=f"shot {shot.sequence} try {count + 1}",
+                claude_cap_usd=claude_cap, external_usd=reserved_external_cost,
+            )
+            if reservation is None:
                 return _halt(
                     "stills_agent",
                     "Budget",
-                    f"Insufficient budget for shot {shot.sequence}: ${remaining_budget:.6f} remains, "
-                    f"${reserved_external_cost:.6f} must be reserved before the paid image call",
+                    f"Shot {shot.sequence}: try {count + 1} needs ${claude_cap + reserved_external_cost:.4f} "
+                    f"reserved (Claude ${claude_cap:.4f} + paid calls ${reserved_external_cost:.4f}), but only "
+                    f"${ledger.unreserved_usd():.4f} of the run budget is unreserved",
                     attempt_count=count,
                     partial_artifact_paths=attempt_paths,
                     reason_code="budget_exhausted",
                 )
-            count += 1
-            manifest.iteration_counts[stage_id] = count
-            save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
-            # FR9: the hook denies a paid call the remaining budget can't cover,
-            # counting every paid call already allowed in this session.
-            guard = PaidToolGuard(limit_usd=remaining_budget, costs={STILL_TOOL: settings.image_call_cost_usd})
             try:
-                agent_result = await generate_still_asset(
-                    shot=shot.model_dump(mode="json"),
-                    asset=asset.model_dump(mode="json"),
-                    subtitle_text=subtitle_text,
-                    settings=settings_payload,
-                    attempt=count,
-                    max_budget_usd=remaining_budget - reserved_external_cost,
-                    correction=correction,
-                    previous_outcome=previous_outcome,
-                    guard=guard,
+                count += 1
+                manifest.iteration_counts[stage_id] = count
+                save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+                # FR9: the hook denies a paid call this attempt's reservation can't
+                # cover, counting every paid call already allowed in this session.
+                guard = PaidToolGuard(
+                    limit_usd=reservation.paid_tool_allowance_usd, costs={STILL_TOOL: settings.image_call_cost_usd},
                 )
-            except SkillIsolationError as exc:
-                # Raised on the init message, before any model turn or paid
-                # tool call, so nothing is charged.
-                return _halt(
-                    "stills_agent", "StillOutcomeContract", str(exc),
-                    attempt_count=count, partial_artifact_paths=attempt_paths,
-                )
-            except Exception as exc:
-                refusal = _vendor_refusal(exc=exc, guard=guard)
+                try:
+                    agent_result = await generate_still_asset(
+                        shot=shot.model_dump(mode="json"),
+                        asset=asset.model_dump(mode="json"),
+                        subtitle_text=subtitle_text,
+                        settings=settings_payload,
+                        attempt=count,
+                        max_budget_usd=claude_cap,
+                        correction=correction,
+                        previous_outcome=previous_outcome,
+                        guard=guard,
+                    )
+                except SkillIsolationError as exc:
+                    # Raised on the init message, before any model turn or paid
+                    # tool call, so nothing is charged.
+                    return _halt(
+                        "stills_agent", "StillOutcomeContract", str(exc),
+                        attempt_count=count, partial_artifact_paths=attempt_paths,
+                    )
+                except Exception as exc:
+                    refusal = _vendor_refusal(exc=exc, guard=guard)
+                    if refusal is not None:
+                        halted = await _handle_shot_vendor_refusal(
+                            refusal, agent="stills_agent", contract_name="StillOutcomeContract",
+                            stage_id=stage_id, sequence=shot.sequence, count=count,
+                            transient_retries=transient_retries, claude_cost=0.0, guard=guard,
+                            manifest=manifest, ledger=ledger, reservation=reservation,
+                            attempt_paths=attempt_paths, exc=exc,
+                        )
+                        if halted is not None:
+                            return halted
+                        count -= 1
+                        transient_retries += 1
+                        continue
+                    # Tools may have billed and Claude may have spent up to its cap,
+                    # with no cost ever reported, so charge the attempt's whole
+                    # reservation -- its worst case, and never more.
+                    charged_cost = reservation.amount_usd
+                    ledger.debit(reservation, charged_cost)
+                    attempt_path = RUN_STATE_DIR / f"stills_agent_shot_{shot.sequence}_attempt_{count}.json"
+                    _atomic_write_json(attempt_path, {
+                        "status": "EXCEPTION",
+                        "error": f"{type(exc).__name__}: {exc}",
+                        "charged_cost_usd": charged_cost,
+                    })
+                    attempt_paths.append(str(attempt_path))
+                    return _halt(
+                        "stills_agent",
+                        "StillOutcomeContract",
+                        "Stills agent ended without an accountable result after tools may have run: "
+                        f"{type(exc).__name__}: {exc}",
+                        attempt_count=count,
+                        partial_artifact_paths=attempt_paths,
+                        reason_code="budget_exhausted" if guard.denial else "unclassified",
+                    )
+
+                claude_cost = agent_result.total_cost_usd
+                if claude_cost is None or not math.isfinite(claude_cost) or claude_cost < 0:
+                    # As unaccountable as a crash, so charged the same worst case.
+                    ledger.debit(reservation, reservation.amount_usd)
+                    return _halt(
+                        "stills_agent", "Budget", "Stills agent returned no usable Claude cost",
+                        attempt_count=count, partial_artifact_paths=attempt_paths,
+                    )
+                if guard.denial is not None:
+                    # Checked before the outcome, so the agent's own output can't
+                    # mask a denied paid call (AD-7).
+                    _charge_guarded_attempt(
+                        agent="stills_agent", sequence=shot.sequence, count=count,
+                        status="BUDGET_DENIED", suffix="budget_denied", claude_cost=claude_cost,
+                        guard=guard, ledger=ledger, reservation=reservation, attempt_paths=attempt_paths,
+                        agent_result=agent_result, detail=guard.denial,
+                    )
+                    return _halt(
+                        "stills_agent", "Budget", guard.denial,
+                        attempt_count=count, partial_artifact_paths=attempt_paths,
+                        reason_code="budget_exhausted",
+                    )
+                refusal = _vendor_refusal(result=agent_result, guard=guard)
+                if refusal is not None and refusal.kind == "transient" and _reports_success(agent_result):
+                    # The agent retried the tool itself and got its asset; a
+                    # rerun would throw that paid work away.
+                    refusal = None
                 if refusal is not None:
                     halted = await _handle_shot_vendor_refusal(
                         refusal, agent="stills_agent", contract_name="StillOutcomeContract",
                         stage_id=stage_id, sequence=shot.sequence, count=count,
-                        transient_retries=transient_retries, claude_cost=0.0, guard=guard,
-                        manifest=manifest, attempt_paths=attempt_paths, exc=exc,
+                        transient_retries=transient_retries, claude_cost=claude_cost, guard=guard,
+                        manifest=manifest, ledger=ledger, reservation=reservation,
+                        attempt_paths=attempt_paths, agent_result=agent_result,
                     )
                     if halted is not None:
                         return halted
                     count -= 1
                     transient_retries += 1
                     continue
-                # Same conservative accounting as run_veo_stage: no real cost
-                # is available on this branch, so charge the whole
-                # per-attempt allotment rather than only the reserved
-                # external cost.
-                charged_cost = remaining_budget
-                manifest.budget_spent_usd += charged_cost
-                attempt_path = RUN_STATE_DIR / f"stills_agent_shot_{shot.sequence}_attempt_{count}.json"
-                _atomic_write_json(attempt_path, {
-                    "status": "EXCEPTION",
-                    "error": f"{type(exc).__name__}: {exc}",
-                    "charged_cost_usd": charged_cost,
-                })
-                attempt_paths.append(str(attempt_path))
-                save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
-                return _halt(
-                    "stills_agent",
-                    "StillOutcomeContract",
-                    "Stills agent ended without an accountable result after tools may have run: "
-                    f"{type(exc).__name__}: {exc}",
-                    attempt_count=count,
-                    partial_artifact_paths=attempt_paths,
-                    reason_code="budget_exhausted" if guard.denial else "unclassified",
-                )
-
-            claude_cost = agent_result.total_cost_usd
-            if claude_cost is None or not math.isfinite(claude_cost) or claude_cost < 0:
-                return _halt(
-                    "stills_agent", "Budget", "Stills agent returned no usable Claude cost",
-                    attempt_count=count, partial_artifact_paths=attempt_paths,
-                )
-            if guard.denial is not None:
-                # Checked before the outcome, so the agent's own output can't
-                # mask a denied paid call (AD-7).
-                _charge_guarded_attempt(
-                    agent="stills_agent", sequence=shot.sequence, count=count,
-                    status="BUDGET_DENIED", suffix="budget_denied", claude_cost=claude_cost,
-                    guard=guard, manifest=manifest, attempt_paths=attempt_paths,
-                    agent_result=agent_result, detail=guard.denial,
-                )
-                return _halt(
-                    "stills_agent", "Budget", guard.denial,
-                    attempt_count=count, partial_artifact_paths=attempt_paths,
-                    reason_code="budget_exhausted",
-                )
-            refusal = _vendor_refusal(result=agent_result, guard=guard)
-            if refusal is not None and refusal.kind == "transient" and _reports_success(agent_result):
-                # The agent retried the tool itself and got its asset; a
-                # rerun would throw that paid work away.
-                refusal = None
-            if refusal is not None:
-                halted = await _handle_shot_vendor_refusal(
-                    refusal, agent="stills_agent", contract_name="StillOutcomeContract",
-                    stage_id=stage_id, sequence=shot.sequence, count=count,
-                    transient_retries=transient_retries, claude_cost=claude_cost, guard=guard,
-                    manifest=manifest, attempt_paths=attempt_paths, agent_result=agent_result,
-                )
-                if halted is not None:
-                    return halted
-                count -= 1
-                transient_retries += 1
-                continue
-            transient_retries = 0
-            try:
-                if agent_result.is_error:
-                    raise ValueError(
-                        f"Claude failed ({agent_result.subtype}): {agent_result.errors or agent_result.result}"
+                transient_retries = 0
+                try:
+                    if agent_result.is_error:
+                        raise ValueError(
+                            f"Claude failed ({agent_result.subtype}): {agent_result.errors or agent_result.result}"
+                        )
+                    outcome = StillOutcomeContract.model_validate(agent_result.structured_output)
+                    expected_fingerprint = shot_fingerprint(shot)
+                    # One paid image call per attempt, at the rate the orchestrator
+                    # already reserved -- so the cost is stamped, never read back
+                    # from the agent and re-checked against a ceiling.
+                    outcome = _stamp_still_outcome(
+                        outcome,
+                        shot_sequence=shot.sequence,
+                        expected_fingerprint=expected_fingerprint,
+                        paid_call_cost_usd=settings.image_call_cost_usd,
                     )
-                outcome = StillOutcomeContract.model_validate(agent_result.structured_output)
-                expected_fingerprint = shot_fingerprint(shot)
-                # One paid image call per attempt, at the rate the orchestrator
-                # already reserved -- so the cost is stamped, never read back
-                # from the agent and re-checked against a ceiling.
-                outcome = _stamp_still_outcome(
-                    outcome,
-                    shot_sequence=shot.sequence,
-                    expected_fingerprint=expected_fingerprint,
-                    paid_call_cost_usd=settings.image_call_cost_usd,
-                )
-                if outcome.status == "SUCCESS" and outcome.result.source_asset_id not in shot.source_asset_ids:
-                    raise ValueError("Stills agent outcome source asset is not cited by the requested shot")
-            except ValueError as exc:
-                # The agent cost is known, but a malformed response cannot safely
-                # prove which external paid calls occurred. Charge the reserved
-                # ceiling conservatively and halt instead of retrying blindly.
-                manifest.budget_spent_usd += claude_cost + reserved_external_cost
+                    if outcome.status == "SUCCESS" and outcome.result.source_asset_id not in shot.source_asset_ids:
+                        raise ValueError("Stills agent outcome source asset is not cited by the requested shot")
+                except ValueError as exc:
+                    # The agent cost is known, but a malformed response cannot safely
+                    # prove which external paid calls occurred. Charge the reserved
+                    # ceiling conservatively and halt instead of retrying blindly.
+                    ledger.debit(reservation, claude_cost + reserved_external_cost)
+                    attempt_path = RUN_STATE_DIR / f"stills_agent_shot_{shot.sequence}_attempt_{count}.json"
+                    _atomic_write_json(attempt_path, {
+                        "status": "INVALID_OUTCOME",
+                        "error": str(exc),
+                        "structured_output": agent_result.structured_output,
+                        "result": agent_result.result,
+                        "subtype": agent_result.subtype,
+                        "errors": agent_result.errors,
+                        "claude_cost_usd": claude_cost,
+                        "charged_paid_tool_cost_usd": reserved_external_cost,
+                    })
+                    attempt_paths.append(str(attempt_path))
+                    return _halt(
+                        "stills_agent",
+                        "StillOutcomeContract",
+                        f"Invalid stills agent outcome: {exc}",
+                        attempt_count=count,
+                        partial_artifact_paths=attempt_paths,
+                    )
+
+                manifest.session_id = agent_result.session_id
+                ledger.debit(reservation, claude_cost + outcome.cost_usd)
                 attempt_path = RUN_STATE_DIR / f"stills_agent_shot_{shot.sequence}_attempt_{count}.json"
                 _atomic_write_json(attempt_path, {
-                    "status": "INVALID_OUTCOME",
-                    "error": str(exc),
-                    "structured_output": agent_result.structured_output,
+                    "structured_output": outcome.model_dump(mode="json"),
                     "result": agent_result.result,
                     "subtype": agent_result.subtype,
                     "errors": agent_result.errors,
                     "claude_cost_usd": claude_cost,
-                    "charged_paid_tool_cost_usd": reserved_external_cost,
+                    "paid_tool_cost_usd": outcome.cost_usd,
                 })
                 attempt_paths.append(str(attempt_path))
-                save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
-                return _halt(
-                    "stills_agent",
-                    "StillOutcomeContract",
-                    f"Invalid stills agent outcome: {exc}",
-                    attempt_count=count,
-                    partial_artifact_paths=attempt_paths,
-                )
+                previous_outcome = outcome.model_dump(mode="json")
 
-            manifest.budget_spent_usd += claude_cost + outcome.cost_usd
-            manifest.session_id = agent_result.session_id
-            save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
-            attempt_path = RUN_STATE_DIR / f"stills_agent_shot_{shot.sequence}_attempt_{count}.json"
-            _atomic_write_json(attempt_path, {
-                "structured_output": outcome.model_dump(mode="json"),
-                "result": agent_result.result,
-                "subtype": agent_result.subtype,
-                "errors": agent_result.errors,
-                "claude_cost_usd": claude_cost,
-                "paid_tool_cost_usd": outcome.cost_usd,
-            })
-            attempt_paths.append(str(attempt_path))
-            previous_outcome = outcome.model_dump(mode="json")
-
-            budget_failure = _check_budget(settings, manifest.budget_spent_usd)
-            if budget_failure:
-                return _halt(
-                    "stills_agent", "Budget", budget_failure.reason or "Budget exhausted",
-                    attempt_count=count, partial_artifact_paths=attempt_paths,
-                    reason_code="budget_exhausted",
-                )
-
-            if outcome.status == "SUCCESS":
-                try:
-                    entry = ProductionAssetEntry.from_still_result(
-                        outcome.result,
-                        source_asset_ids=shot.source_asset_ids,
+                if ledger.overdrawn():
+                    # The attempt cost more than it reserved, and the excess took the
+                    # unreserved pool below zero (FR7): systemic, like any budget stop.
+                    return _halt(
+                        "stills_agent", "Budget",
+                        f"Shot {shot.sequence}: try {count} cost ${reservation.debited_usd:.4f}, "
+                        f"${reservation.debited_usd - reservation.amount_usd:.4f} more than it reserved, "
+                        "and the run budget can't cover the overshoot",
+                        attempt_count=count, partial_artifact_paths=attempt_paths,
+                        reason_code="budget_exhausted",
                     )
-                    upsert_production_asset(
-                        entry,
-                        path=PRODUCTION_ASSETS_FILE,
-                        writer="orchestrator",
-                    )
-                except Exception as exc:
+
+                if outcome.status == "SUCCESS":
+                    try:
+                        entry = ProductionAssetEntry.from_still_result(
+                            outcome.result,
+                            source_asset_ids=shot.source_asset_ids,
+                        )
+                        upsert_production_asset(
+                            entry,
+                            path=PRODUCTION_ASSETS_FILE,
+                            writer="orchestrator",
+                        )
+                    except Exception as exc:
+                        return _halt(
+                            "stills_agent",
+                            "ProductionAssetsContract",
+                            f"Approved still result could not be persisted: {type(exc).__name__}: {exc}",
+                            attempt_count=count,
+                            partial_artifact_paths=attempt_paths,
+                        )
+                    log(f"Shot {shot.sequence}: picture approved → {entry.local_path}", indent=2)
+                    break
+
+                failure = outcome.failure
+                correction = failure.reason
+                if not failure.retryable:
                     return _halt(
                         "stills_agent",
-                        "ProductionAssetsContract",
-                        f"Approved still result could not be persisted: {type(exc).__name__}: {exc}",
+                        "StillFailureContract",
+                        failure.reason,
                         attempt_count=count,
-                        partial_artifact_paths=attempt_paths,
+                        partial_artifact_paths=attempt_paths + failure.partial_artifact_paths,
                     )
-                log(f"Shot {shot.sequence}: picture approved → {entry.local_path}", indent=2)
-                break
-
-            failure = outcome.failure
-            correction = failure.reason
-            if not failure.retryable:
-                return _halt(
-                    "stills_agent",
-                    "StillFailureContract",
-                    failure.reason,
-                    attempt_count=count,
-                    partial_artifact_paths=attempt_paths + failure.partial_artifact_paths,
+                log(
+                    f"Shot {shot.sequence}: try {count} of {max_stills_attempts} "
+                    f"didn't work — {failure.reason}",
+                    error=True,
                 )
-            log(
-                f"Shot {shot.sequence}: try {count} of {max_stills_attempts} "
-                f"didn't work — {failure.reason}",
-                error=True,
-            )
+            finally:
+                # Whatever this attempt didn't spend goes back, on every path.
+                ledger.release(reservation)
         else:
             reason = "Stills retry ceiling exhausted"
             last_failure_paths: list[str] = []
@@ -2191,6 +2327,12 @@ async def run_stages(source_images_dir: Path, settings: Settings, manifest: RunM
         ("Putting the final video together", run_delivery_stage),
     ]
     total = len(steps) + 1
+    # Set once, before any shot, while no vendor call is in flight.
+    configure_vendor_limits(
+        veo=settings.veo_concurrency,
+        gemini_image=settings.gemini_image_concurrency,
+        codex_image=settings.codex_image_concurrency,
+    )
     banner(f"Step 1 of {total} — Looking at your screenshots")
     started = time.monotonic()
     result = await run_screenshot_stage(source_images_dir, settings, manifest)

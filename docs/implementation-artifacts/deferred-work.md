@@ -124,3 +124,12 @@
 - source_spec: `docs/implementation-artifacts/spec-4-2-guard-hooks-budget-guard-vendor-limit-classification.md`
   summary: Repeated vendor halts at the same attempt number overwrite `_attempt_K_vendor_limit.json` evidence.
   evidence: The attempt is given back, so a resumed run halting again reuses the name; a timestamp suffix would keep both.
+- source_spec: `docs/implementation-artifacts/spec-4-3-concurrency-safe-shot-plumbing-per-attempt-reservations.md`
+  summary: A process killed mid shot attempt never debits the paid calls already billed in that attempt, so a resumed run starts with understated spend.
+  evidence: Costs are debited only when the attempt returns (`ledger.debit` in run.py's shot loops); this predates Story 4.3, whose reservations are in memory only.
+- source_spec: `docs/implementation-artifacts/spec-4-3-concurrency-safe-shot-plumbing-per-attempt-reservations.md`
+  summary: Per-vendor slots are acquired with no timeout, so one hung Gemini image call would hold a GEMINI_IMAGE_CONCURRENCY slot indefinitely.
+  evidence: `vendor_slot()` returns a plain semaphore used with `with`; Veo polls with a deadline and Codex has a subprocess timeout, but `generate_content` has none. Matters once Story 4.4 runs shots concurrently.
+- source_spec: `docs/implementation-artifacts/spec-4-3-concurrency-safe-shot-plumbing-per-attempt-reservations.md`
+  summary: A successful shot attempt whose overshoot drives the pool negative halts before its already-paid asset is upserted, so a resume pays for it again.
+  evidence: The budget check before `upsert_production_asset` predates Story 4.3 (it was `_check_budget`); 4.3 kept its position for behaviour parity.

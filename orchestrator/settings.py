@@ -71,6 +71,14 @@ DEFAULT_MAX_ATTEMPTS = {
 # intentionally conservative and can be updated without code changes.
 DEFAULT_IMAGE_CALL_COST_USD = 0.04
 DEFAULT_VEO_CALL_COST_USD = 1.20
+# Story 4.3: the Claude spend one shot attempt may use; it becomes that shot
+# query's `max_budget_usd`. Live Veo and stills attempts have cost $0.18-$0.59
+# of Claude each, so $1.00 leaves headroom without holding most of the run.
+DEFAULT_CLAUDE_SHOT_ATTEMPT_CAP_USD = 1.0
+# How many calls to each vendor may be in flight at once, across every shot.
+DEFAULT_VEO_CONCURRENCY = 3
+DEFAULT_GEMINI_IMAGE_CONCURRENCY = 2
+DEFAULT_CODEX_IMAGE_CONCURRENCY = 1
 
 # The Claude model every orchestrator agent runs on. Left unset, the Agent SDK
 # picks its own default (claude-sonnet-5 in the runs before this was pinned),
@@ -125,6 +133,10 @@ class Settings:
     max_veo_attempts: int = DEFAULT_MAX_VEO_ATTEMPTS
     image_call_cost_usd: float = DEFAULT_IMAGE_CALL_COST_USD
     veo_call_cost_usd: float = DEFAULT_VEO_CALL_COST_USD
+    claude_shot_attempt_cap_usd: float = DEFAULT_CLAUDE_SHOT_ATTEMPT_CAP_USD
+    veo_concurrency: int = DEFAULT_VEO_CONCURRENCY
+    gemini_image_concurrency: int = DEFAULT_GEMINI_IMAGE_CONCURRENCY
+    codex_image_concurrency: int = DEFAULT_CODEX_IMAGE_CONCURRENCY
     claude_model: str = DEFAULT_CLAUDE_MODEL
     character_reference_path: str = DEFAULT_CHARACTER_REFERENCE_PATH
     character_face_reference_path: str = DEFAULT_CHARACTER_FACE_REFERENCE_PATH
@@ -230,6 +242,16 @@ def load_settings() -> Settings:
         ),
         image_call_cost_usd=_image_call_cost_setting(image_provider),
         veo_call_cost_usd=_float_setting("VEO_CALL_COST_USD", DEFAULT_VEO_CALL_COST_USD),
+        claude_shot_attempt_cap_usd=_float_setting(
+            "CLAUDE_SHOT_ATTEMPT_CAP_USD", DEFAULT_CLAUDE_SHOT_ATTEMPT_CAP_USD, positive=True
+        ),
+        veo_concurrency=_int_setting("VEO_CONCURRENCY", DEFAULT_VEO_CONCURRENCY, positive=True),
+        gemini_image_concurrency=_int_setting(
+            "GEMINI_IMAGE_CONCURRENCY", DEFAULT_GEMINI_IMAGE_CONCURRENCY, positive=True
+        ),
+        codex_image_concurrency=_int_setting(
+            "CODEX_IMAGE_CONCURRENCY", DEFAULT_CODEX_IMAGE_CONCURRENCY, positive=True
+        ),
         # Plain os.getenv, not _str_setting: an empty value is the documented
         # "no character" switch, and _str_setting raises on an empty string.
         claude_model=_str_setting("CLAUDE_MODEL", DEFAULT_CLAUDE_MODEL),

@@ -270,9 +270,10 @@ def test_cumulative_denial_halts_with_budget_exhausted_whatever_the_agent_return
     async def agent(**kwargs):
         calls.append(kwargs)
         guard = kwargs["guard"]
-        # The guard's limit is the run's remaining budget; shrink it so the
-        # second seed can't be covered, then claim success anyway.
-        assert guard.limit_usd == pytest.approx(10.0)
+        # Story 4.3: the guard's limit is the attempt's reservation less the
+        # Claude cap (seed + clip). Shrink it so the second seed can't be
+        # covered, then claim success anyway.
+        assert guard.limit_usd == pytest.approx(0.04 + 1.2)
         guard.limit_usd = 0.05
         assert await call_paid(guard, VEO_SEED_TOOL, SEED_OK)
         assert not await call_paid(guard, VEO_SEED_TOOL, SEED_OK)
@@ -675,8 +676,10 @@ def test_exception_after_a_tool_refusal_charges_what_billed(chain, monkeypatch, 
 
     async def raising(**kwargs):
         guard = kwargs["guard"]
-        await call_paid(guard, tool, SEED_OK)  # billed
+        # Refused first: a still attempt reserves one image (Story 4.3), so a
+        # second billed image after a billed one would be denied instead.
         await call_paid(guard, tool, image_failure("You've hit your usage limit."), tool_input={"image_provider": "codex"})
+        assert await call_paid(guard, tool, SEED_OK)  # billed
         raise RuntimeError("socket closed")
 
     monkeypatch.setattr(run, generate, raising)

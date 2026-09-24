@@ -10,9 +10,11 @@ epic's directory-layout decision).
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import hashlib
 import json
+import threading
 import time
 import wave
 from io import BytesIO
@@ -33,6 +35,7 @@ from orchestrator.settings import load_settings
 from orchestrator.workspace import resolve_shared_asset
 from orchestrator.state.voice_cache import TTS_MODEL, TTS_VOICE_NAME, selected_voice_name
 from orchestrator.tools.deterministic_tools import tokenize
+from orchestrator.tools.vendor_limits import GEMINI_IMAGE, vendor_slot
 
 # Ported verbatim from generate_voice.py -- config literals unchanged.
 TTS_LANGUAGE_CODE = "en-US"
@@ -58,6 +61,9 @@ GEMINI_IMAGE_MIN_INTERVAL_SECONDS = 5.0
 # 429 means slow down, not give up, so it gets its own longer backoff.
 QUOTA_RETRY_SECONDS = (15.0, 45.0)
 _last_image_call_monotonic = 0.0
+# Guards `_last_image_call_monotonic`: image calls run in worker threads
+# (Story 4.3), and two unguarded threads could both read "no call recently".
+_image_pace_lock = threading.Lock()
 
 
 def count_words(text: str) -> int:
@@ -504,12 +510,14 @@ def _pace_image_call() -> None:
     """Keep at least `GEMINI_IMAGE_MIN_INTERVAL_SECONDS` between image calls."""
 
     global _last_image_call_monotonic
-    if _last_image_call_monotonic:
-        elapsed = time.monotonic() - _last_image_call_monotonic
-        remaining = GEMINI_IMAGE_MIN_INTERVAL_SECONDS - elapsed
-        if remaining > 0:
-            time.sleep(remaining)
-    _last_image_call_monotonic = time.monotonic()
+    # Held across the sleep, so concurrent callers are spaced one after another.
+    with _image_pace_lock:
+        if _last_image_call_monotonic:
+            elapsed = time.monotonic() - _last_image_call_monotonic
+            remaining = GEMINI_IMAGE_MIN_INTERVAL_SECONDS - elapsed
+            if remaining > 0:
+                time.sleep(remaining)
+        _last_image_call_monotonic = time.monotonic()
 
 
 def blocked_reason(response) -> str:
@@ -611,15 +619,17 @@ def run_gemini_image_edit(
     #   no image -> transient null, retry quickly
     diagnosis = ""
     for attempt in range(1, max_attempts + 1):
-        _pace_image_call()
         try:
-            response = client.models.generate_content(
-                model=model,
-                contents=[source_image, *reference_images, prompt],
-                config=types.GenerateContentConfig(
-                    response_modalities=[types.Modality.TEXT, types.Modality.IMAGE],
-                ),
-            )
+            # The per-vendor cap covers the call itself, not the backoff below.
+            with vendor_slot(GEMINI_IMAGE):
+                _pace_image_call()
+                response = client.models.generate_content(
+                    model=model,
+                    contents=[source_image, *reference_images, prompt],
+                    config=types.GenerateContentConfig(
+                        response_modalities=[types.Modality.TEXT, types.Modality.IMAGE],
+                    ),
+                )
         except genai_errors.APIError as exc:
             if getattr(exc, "code", None) != 429 or attempt == max_attempts:
                 raise
@@ -996,6 +1006,12 @@ def _image_content(path: Path) -> dict:
     },
 )
 async def generate_veo_seed(args: dict) -> dict:
+    # The body blocks (image call, sleeps, file I/O), so it runs in a worker
+    # thread and the event loop stays free for other shots (Story 4.3).
+    return await asyncio.to_thread(_generate_veo_seed, args)
+
+
+def _generate_veo_seed(args: dict) -> dict:
     try:
         spec = build_seed_spec(
             args["shot"],
@@ -1079,6 +1095,11 @@ async def generate_veo_seed(args: dict) -> dict:
     },
 )
 async def generate_still(args: dict) -> dict:
+    # Offloaded for the same reason as `generate_veo_seed`.
+    return await asyncio.to_thread(_generate_still, args)
+
+
+def _generate_still(args: dict) -> dict:
     try:
         spec = build_still_spec(args["shot"], args["asset"], args.get("subtitle_text", ""))
         provider = str(args.get("image_provider") or "gemini")
