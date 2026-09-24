@@ -315,7 +315,7 @@ def test_bounded_stage_halts_on_isolation_error_without_retry(stage, monkeypatch
     report = json.loads(reports[0].read_text())
     assert "bmad-build" in report["reason"]
     manifest = load_run_manifest(run.RUN_STATE_DIR)
-    assert manifest.iteration_counts["story_agent"] == 1
+    assert manifest.iteration_counts["story_agent"] == 0
     assert manifest.budget_spent_usd == 0
 
 
@@ -338,6 +338,8 @@ def test_shot_stage_isolation_halt_charges_nothing(kind, chain, monkeypatch):  #
     assert asyncio.run(stage_fn(make_settings(), manifest)) == 1
     assert calls == [1]
     assert manifest.budget_spent_usd == spent_before
+    shot = plan.shots[0].sequence
+    assert load_run_manifest(run.RUN_STATE_DIR).iteration_counts[f"{kind}_agent_shot_{shot}"] == 0
     reports = sorted(run.RUN_STATE_DIR.glob(f"failure_{kind}_agent_*.json"))
     assert reports
     assert "lossless-teacher" in json.loads(reports[-1].read_text())["reason"]

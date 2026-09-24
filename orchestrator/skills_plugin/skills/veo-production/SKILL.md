@@ -5,8 +5,9 @@ description: The step-by-step procedure for producing one VEO-mode shot - callin
 
 # Veo production
 
-Judge images with the visual-qa skill's reject list and, when the tool result
-includes character reference image(s), with the character-likeness-qa skill.
+Whenever step 1 calls for a full inspection, judge the seed with the visual-qa
+skill's reject list and, when the tool result includes character reference
+image(s), with the character-likeness-qa skill.
 
 ## 1. Seed
 

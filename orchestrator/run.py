@@ -253,7 +253,10 @@ async def run_bounded_agent_stage(
                 )
         except SkillIsolationError as exc:
             # A leak of developer tooling is not the agent's defect; retrying
-            # would only repeat it.
+            # would only repeat it. No model turn ran, so the attempt goes back.
+            count -= 1
+            manifest.iteration_counts[stage_id] = count
+            save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
             return halt(str(exc))
         except Exception as exc:
             refusal = _vendor_refusal(exc=exc)
@@ -1545,10 +1548,12 @@ async def run_veo_stage(settings: Settings, manifest: RunManifest) -> int:
                     )
                 except SkillIsolationError as exc:
                     # Raised on the init message, before any model turn or paid
-                    # tool call, so nothing is charged.
+                    # tool call, so nothing is charged and the attempt goes back.
+                    manifest.iteration_counts[stage_id] = count - 1
+                    save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
                     return _halt(
                         "veo_agent", "VeoOutcomeContract", str(exc),
-                        attempt_count=count, partial_artifact_paths=attempt_paths,
+                        attempt_count=count - 1, partial_artifact_paths=attempt_paths,
                     )
                 except Exception as exc:
                     refusal = _vendor_refusal(exc=exc, guard=guard)
@@ -1935,10 +1940,12 @@ async def run_stills_stage(settings: Settings, manifest: RunManifest) -> int:
                     )
                 except SkillIsolationError as exc:
                     # Raised on the init message, before any model turn or paid
-                    # tool call, so nothing is charged.
+                    # tool call, so nothing is charged and the attempt goes back.
+                    manifest.iteration_counts[stage_id] = count - 1
+                    save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
                     return _halt(
                         "stills_agent", "StillOutcomeContract", str(exc),
-                        attempt_count=count, partial_artifact_paths=attempt_paths,
+                        attempt_count=count - 1, partial_artifact_paths=attempt_paths,
                     )
                 except Exception as exc:
                     refusal = _vendor_refusal(exc=exc, guard=guard)
