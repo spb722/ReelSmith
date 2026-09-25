@@ -5,3 +5,4 @@ _bmad/render/
 
 __pycache__/
 *.pyc
+.env

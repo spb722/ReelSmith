@@ -66,6 +66,7 @@ from orchestrator.workspace import (
 )
 from orchestrator.preflight import _check_budget, check_remotion_delivery_toolchain, run_preflight
 from orchestrator.settings import (
+    load_dotenv_file,
     GEMINI_TTS_AUDIO_TOKENS_PER_SECOND,
     GEMINI_TTS_INPUT_TOKEN_COST_USD,
     GEMINI_TTS_OUTPUT_TOKEN_COST_USD,
@@ -2870,6 +2871,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--retry-voice", action="store_true",
                         help="Archive previous voice evidence and reset only its bounded retry ceiling; keep cumulative spend.")
     args = parser.parse_args(argv)
+    load_dotenv_file()
 
     # Before anything else: every per-reel path in this repo is relative, so
     # moving into the project is what keeps one reel's files out of another's.

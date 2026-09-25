@@ -12,10 +12,38 @@ from __future__ import annotations
 import math
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 
 class SettingsError(Exception):
     """Raised when settings cannot be loaded from the environment."""
+
+
+# Absolute, because `enter_project` changes the cwd to `projects/<name>`.
+DOTENV_PATH = Path(__file__).resolve().parent.parent / ".env"
+
+
+def load_dotenv_file(path: Path | None = None) -> None:
+    """Put the repo's `.env` into the environment; a variable already set wins.
+
+    `KEY=value` lines only, with optional `export ` and surrounding quotes.
+    """
+
+    path = DOTENV_PATH if path is None else path
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except FileNotFoundError:
+        return
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.removeprefix("export ").partition("=")
+        key, value = key.strip(), value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
+            value = value[1:-1]
+        if key and key not in os.environ:
+            os.environ[key] = value
 
 
 # Defaults mirror the literals already hardcoded across the existing

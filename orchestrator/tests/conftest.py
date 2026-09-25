@@ -49,6 +49,18 @@ def _no_live_claude_calls():
         yield
 
 
+@pytest.fixture(autouse=True)
+def _no_repo_dotenv(tmp_path):
+    """Tests never read the operator's `.env`: its Langfuse keys would switch
+    tracing on and its settings would change what a test sees."""
+
+    from orchestrator import settings
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(settings, "DOTENV_PATH", tmp_path / "no-such.env")
+        yield
+
+
 def _approving_result(output: dict) -> ResultMessage:
     return ResultMessage(
         subtype="success", duration_ms=1, duration_api_ms=1, is_error=False,

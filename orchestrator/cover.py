@@ -33,7 +33,7 @@ from orchestrator.contracts.final_story_plan import FinalStoryPlanContract
 from orchestrator.contracts.visual_plan import VisualPlanContract
 from orchestrator.progress import banner, format_duration, log, start_run
 from orchestrator.workspace import ProjectError, enter_project, resolve_project
-from orchestrator.settings import SettingsError, load_settings
+from orchestrator.settings import SettingsError, load_dotenv_file, load_settings
 from orchestrator.state.production_assets import PRODUCTION_ASSETS_FILE, load_production_assets
 from orchestrator.state.run_manifest import (
     RUN_STATE_DIR,
@@ -227,6 +227,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--shot", type=int, default=None, help="Force the cover to use this shot's artwork.")
     parser.add_argument("--force", action="store_true", help="Regenerate even if a cover plan already exists.")
     args = parser.parse_args(argv)
+    load_dotenv_file()
 
     try:
         project = enter_project(resolve_project(args.project))

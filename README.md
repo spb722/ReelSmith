@@ -103,6 +103,8 @@ There is no `requirements.txt` or `pyproject.toml` — the conda environment is 
 
 ## Running
 
+Settings can live in a `.env` file at the repo root (git-ignored), one `KEY=value` per line. It is read at the start of every run and cover command; a variable already set in your shell wins. Put `IMAGE_PROVIDER` (`gemini` or `codex`) and the `LANGFUSE_*` keys there.
+
 ```bash
 python -m orchestrator.run --project <name>
 ```
