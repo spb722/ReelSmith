@@ -6,7 +6,7 @@ import json
 from contextlib import aclosing
 from pathlib import Path
 
-from claude_agent_sdk import AgentDefinition, ClaudeAgentOptions, ResultMessage, query
+from claude_agent_sdk import AgentDefinition, ClaudeAgentOptions, ResultMessage
 
 from orchestrator.agents._skills import (
     PIPELINE_ENV,
@@ -19,6 +19,11 @@ from orchestrator.agents._skills import (
 from orchestrator.agents._stream import log_tool_uses
 from orchestrator.contracts.analyzed_assets import AnalyzedAssetsContract
 from orchestrator.settings import load_settings
+from orchestrator.tracing import agent_query
+
+# Resolved through the SDK module at call time, so the tracing instrumentation
+# takes effect; tests replace this name (Story 4.6).
+query = agent_query("asset_analyst")
 
 
 SKILLS = qualified("asset-analysis")

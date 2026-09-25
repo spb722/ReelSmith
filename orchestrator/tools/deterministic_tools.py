@@ -1319,7 +1319,10 @@ async def render_remotion(args: dict) -> dict:
     if not output_path.is_file() or output_path.stat().st_size == 0:
         raise RuntimeError(f"Remotion render produced no output at {output_path}")
 
-    payload = {"output_path": str(output_path), "composition_id": REMOTION_COMPOSITION_ID}
+    payload = {
+        "output_path": str(output_path), "composition_id": REMOTION_COMPOSITION_ID,
+        "command": command, "cwd": str(REMOTION_DIR),
+    }
     return {"content": [{"type": "text", "text": json.dumps(payload, ensure_ascii=False)}]}
 
 

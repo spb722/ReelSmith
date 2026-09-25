@@ -91,6 +91,14 @@ gcloud auth application-default login
 
 Auth is Google Cloud ADC against Vertex AI, not an API key. Speech-to-Text is called over REST with an authorized session, so no `google-cloud-speech` package is needed.
 
+Tracing in Langfuse (optional, off without keys) needs two more packages. Install them into the same env:
+
+```bash
+/opt/homebrew/anaconda3/envs/kayak-video/bin/python -m pip install "langfuse==4.15.6" "openinference-instrumentation-claude-agent-sdk==0.1.18"
+```
+
+The story's requirement is `langfuse>=4,<5`; the pins above are the tested versions. Installed and tested: `langfuse` 4.15.6 and `openinference-instrumentation-claude-agent-sdk` 0.1.18. They pulled in `openinference-instrumentation` 0.1.66, `openinference-semantic-conventions` 0.1.39, `opentelemetry-sdk`/`-api` 1.44.0, `opentelemetry-exporter-otlp-proto-http` 1.44.0, `opentelemetry-instrumentation` 0.65b0 and `wrapt` 2.4.1.
+
 There is no `requirements.txt` or `pyproject.toml` — the conda environment is where dependencies live. Known-good versions: `claude-agent-sdk` 0.2.152, `google-genai` 2.23.0, `pydantic` 2.13.4, Remotion 4.0.524. Don't upgrade `google-genai` reflexively; diagnose the actual traceback first.
 
 ## Running
@@ -371,6 +379,31 @@ heartbeat rather than going silent, so a stalled run is distinguishable from a s
 one. The agents' tool calls are logged live as they stream. Everything printed is
 also written to `orchestrator_runs/run_<timestamp>.log`, since the console scrollback
 is usually gone by the time a long run halts.
+
+### Tracing in Langfuse
+
+Optional. When the keys are set, every run becomes one trace in your Langfuse Cloud project:
+- a span per stage (`preflight`, `asset_analyst`, `story_agent`, `visual_agent`, `voice`, `production`, `delivery`), with a `story_critic` span inside `story_agent` for each critique, and a span per shot inside `production`;
+- each Claude turn's prompt, system prompt, skills, output, tool calls, tokens and cost;
+- every image/Veo call's provider, model, exact prompt and ladder rung, paths, GCS URI, failure and cost;
+- the TTS/STT/subtitle steps, and the Remotion render command.
+
+Traces are grouped in the session `<project>:<run_id>` and tagged with the project name.
+
+One-time setup, by hand in the Langfuse UI (nothing is created automatically):
+1. Sign in at https://cloud.langfuse.com (EU) or https://us.cloud.langfuse.com (US).
+2. Create a project, for example "Book Reels".
+3. In that project's **Settings → API Keys**, create a key pair.
+
+Then, per shell or in your profile:
+
+```bash
+export LANGFUSE_PUBLIC_KEY=pk-lf-...
+export LANGFUSE_SECRET_KEY=sk-lf-...
+export LANGFUSE_BASE_URL=https://cloud.langfuse.com   # or https://us.cloud.langfuse.com
+```
+
+`LANGFUSE_HOST` is the legacy name for the base URL and still works. `LANGFUSE_MAX_CHARS` (default `20000`) caps how much of any one text is recorded. With the two keys unset, tracing is off and nothing Langfuse-related is loaded. Tracing never fails or stalls a run: a problem in our tracing code is logged once, export errors are left to the Langfuse/OpenTelemetry loggers, and the exit flush waits at most 5 seconds. `LANGFUSE_MAX_CHARS` and the flush timeout live in `orchestrator/tracing.py`, not `settings.py`. Secrets (API keys, ADC tokens, the Langfuse keys) and media bytes are never recorded; images appear as their file paths.
 
 ### Configuration
 

@@ -56,6 +56,7 @@ from orchestrator.contracts.stills import StillFailureContract, StillOutcomeCont
 from orchestrator.contracts.subtitle_cues import SubtitleCuesContract
 from orchestrator.contracts.veo import VeoFailureContract, VeoOutcomeContract, shot_fingerprint
 from orchestrator.contracts.visual_plan import VisualPlanContract
+from orchestrator import tracing
 from orchestrator.progress import banner, format_duration, heartbeat, log, start_run
 from orchestrator.workspace import (
     SOURCE_IMAGES_DIR_NAME,
@@ -93,6 +94,7 @@ from orchestrator.state.budget_ledger import BudgetLedger, Reservation, run_ledg
 from orchestrator.tools.deterministic_tools import (
     ASSETS_FILE,
     DEFAULT_REMOTION_RENDER_OUTPUT,
+    STT_MODEL,
     ImpactPhraseNotFoundError,
     AlignmentQualityError,
     build_subtitle_cues,
@@ -112,7 +114,7 @@ from orchestrator.tools.gemini_tools import (
     resolve_character_references,
 )
 from orchestrator.state.voice_cache import (
-    AUDIO_CACHE_FILE, discard_audio_cache, load_audio_cache, save_audio_cache,
+    AUDIO_CACHE_FILE, TTS_MODEL, discard_audio_cache, load_audio_cache, save_audio_cache,
     selected_voice_name,
 )
 from orchestrator.tools.veo_tools import select_clip_duration_seconds
@@ -169,6 +171,7 @@ def _halt(
         failed_shots=failed_shots,
     )
     path = write_failure_report(report, output_dir=RUN_STATE_DIR)
+    tracing.record_halt(report)
 
     log(f"STOPPED — {reason}", error=True)
     log(f"Details of what went wrong: {path}", error=True)
@@ -494,11 +497,14 @@ async def run_narration_stage(settings: Settings, manifest: RunManifest) -> int:
         # FR11: a fresh session that sees only the draft and the analyses --
         # not the writer's own quality_review (AD-18).
         log("Having the draft checked by an independent story critic")
-        result = await critique_story(
-            contract.model_dump(mode="json", exclude={"quality_review"}), assets_bundle,
-            max_budget_usd=max_budget_usd,
-        )
-        return story_critique_review(result)
+        with tracing.span("story_critic") as critic_span:
+            result = await critique_story(
+                contract.model_dump(mode="json", exclude={"quality_review"}), assets_bundle,
+                max_budget_usd=max_budget_usd,
+            )
+            verdict = story_critique_review(result)
+            critic_span.update(output={"approved": verdict.approved, "feedback": verdict.feedback})
+        return verdict
 
     return await run_bounded_agent_stage(
         stage_id="story_agent",
@@ -956,24 +962,33 @@ async def run_voice_pipeline(
     if cached is not None:
         tts_payload, provenance = cached["tts"], cached["provenance"]
         log(f"Reusing the narration audio from an earlier run (voice: {voice_name})")
+        with tracing.span("tts", as_type="tool", metadata={
+            "provider": "gemini", "model": TTS_MODEL, "voice": voice_name, "cached": True, "cost_usd": 0.0,
+        }) as tts_span:
+            tts_span.update(output={"tts": tts_payload, "provenance": provenance})
     else:
         budget_failure = _check_budget(settings, budget_spent_usd)
         if budget_failure:
             return result("error_max_budget_usd", budget_failure.reason)
         try:
             log(f"Part 1 of 3: reading the script out loud (voice: {voice_name})")
-            tts_response = await generate_narration_audio.handler({
+            with tracing.span("tts", as_type="tool", input={
                 "narration_script": narration_script, "voice_direction": voice_direction,
-                "project_id": settings.project_id, "location": settings.location,
-            })
-            tts_payload = json.loads(tts_response["content"][0]["text"])
-            duration = float(tts_payload["duration_seconds"])
-            if not math.isfinite(duration) or duration <= 0:
-                raise ValueError("TTS returned an invalid duration")
-            tts_cost = round(
-                tts_payload["prompt_word_count"] * GEMINI_TTS_INPUT_TOKEN_COST_USD
-                + duration * GEMINI_TTS_AUDIO_TOKENS_PER_SECOND * GEMINI_TTS_OUTPUT_TOKEN_COST_USD, 6,
-            )
+            }, metadata={"provider": "gemini", "model": TTS_MODEL, "voice": voice_name}) as tts_span:
+                tts_response = await generate_narration_audio.handler({
+                    "narration_script": narration_script, "voice_direction": voice_direction,
+                    "project_id": settings.project_id, "location": settings.location,
+                })
+                tts_payload = json.loads(tts_response["content"][0]["text"])
+                tts_span.update(output=tts_payload)
+                duration = float(tts_payload["duration_seconds"])
+                if not math.isfinite(duration) or duration <= 0:
+                    raise ValueError("TTS returned an invalid duration")
+                tts_cost = round(
+                    tts_payload["prompt_word_count"] * GEMINI_TTS_INPUT_TOKEN_COST_USD
+                    + duration * GEMINI_TTS_AUDIO_TOKENS_PER_SECOND * GEMINI_TTS_OUTPUT_TOKEN_COST_USD, 6,
+                )
+                tts_span.update(metadata={"cost_usd": tts_cost})
             provenance = save_audio_cache(tts_payload, narration_script, voice_direction)
         except Exception as exc:
             return result("error_tts", f"TTS failed: {type(exc).__name__}: {exc}")
@@ -988,13 +1003,22 @@ async def run_voice_pipeline(
         # Failed requests can still incur charges. The tool reports how much
         # audio it actually submitted, including a failed chunk when applicable.
         stt_cost = round(audio_duration_seconds * STT_COST_PER_SECOND_USD, 6)
-        stt_response = await extract_word_timing.handler({
-            "audio_path": tts_payload["audio_path"], "narration_script": narration_script,
-            "project_id": settings.project_id,
-            "diagnostics_path": str(RUN_STATE_DIR / "word_timing_diagnostics.json"),
-        })
-        stt_payload = json.loads(stt_response["content"][0]["text"])
-        stt_cost = round(stt_payload.get("attempted_audio_seconds", audio_duration_seconds) * STT_COST_PER_SECOND_USD, 6)
+        with tracing.span("stt", as_type="tool", input={"audio_path": tts_payload["audio_path"]},
+                          metadata={"provider": "google_speech", "model": STT_MODEL}) as stt_span:
+            stt_response = await extract_word_timing.handler({
+                "audio_path": tts_payload["audio_path"], "narration_script": narration_script,
+                "project_id": settings.project_id,
+                "diagnostics_path": str(RUN_STATE_DIR / "word_timing_diagnostics.json"),
+            })
+            stt_payload = json.loads(stt_response["content"][0]["text"])
+            # A summary, not the word list: the diagnostics file keeps that.
+            stt_span.update(output={
+                "alignment_stats": stt_payload.get("alignment_stats"),
+                "attempted_audio_seconds": stt_payload.get("attempted_audio_seconds"),
+                "word_count": len(stt_payload.get("words") or []),
+            })
+            stt_cost = round(stt_payload.get("attempted_audio_seconds", audio_duration_seconds) * STT_COST_PER_SECOND_USD, 6)
+            stt_span.update(metadata={"cost_usd": stt_cost})
         _atomic_write_json(RUN_STATE_DIR / "word_timing_diagnostics.json", stt_payload)
         stats = stt_payload["alignment_stats"]
         trailing = stats.get("trailing_extra_words", 0)
@@ -1016,13 +1040,18 @@ async def run_voice_pipeline(
 
     try:
         log("Part 3 of 3: splitting the narration into subtitles")
-        dp_response = await build_subtitle_cues.handler({
-            "word_timing": stt_payload, "narration_script": narration_script,
-            "voice_direction": voice_direction,
-            "scenes": [scene.model_dump(mode="json") for scene in story_plan.scenes],
-            "viewer_reflection": story_plan.story_arc.viewer_reflection,
-        })
-        dp_payload = json.loads(dp_response["content"][0]["text"])
+        with tracing.span("subtitle_cues") as cues_span:
+            dp_response = await build_subtitle_cues.handler({
+                "word_timing": stt_payload, "narration_script": narration_script,
+                "voice_direction": voice_direction,
+                "scenes": [scene.model_dump(mode="json") for scene in story_plan.scenes],
+                "viewer_reflection": story_plan.story_arc.viewer_reflection,
+            })
+            dp_payload = json.loads(dp_response["content"][0]["text"])
+            cues_span.update(output={
+                "cue_count": len(dp_payload.get("cues") or []),
+                "alignment_ratio": dp_payload.get("alignment_ratio"),
+            })
     except Exception as exc:
         # Segmentation and quality checks are deterministic for this evidence.
         # Retrying TTS cannot repair an invalid impact phrase or segmentation.
@@ -1804,10 +1833,20 @@ async def _run_shot_production(
             log(f"Shot {shot.sequence}: making a {'video clip' if video else 'still picture'}")
             producer = _produce_veo_shot if video else _produce_still_shot
             try:
-                outcome = await producer(
-                    shot, asset=asset, subtitle_text=subtitle_text,
-                    settings=settings, manifest=manifest, launch=launch,
-                )
+                # Opened inside this shot's own task, so its queries and the
+                # tool calls they make nest here even with shots side by side.
+                with tracing.span(
+                    f"shot_{shot.sequence:02d}",
+                    metadata={"shot_sequence": shot.sequence, "generation_mode": shot.generation_mode, "agent": agent},
+                ) as shot_span:
+                    outcome = await producer(
+                        shot, asset=asset, subtitle_text=subtitle_text,
+                        settings=settings, manifest=manifest, launch=launch,
+                    )
+                    if isinstance(outcome, ShotFailure):
+                        shot_span.update(output=outcome.report_entry(), level="ERROR", status_message=outcome.reason)
+                    else:
+                        shot_span.update(output={"outcome": outcome})
             except Exception as exc:
                 # A bug, not a vendor or budget fact. Kept as this shot's
                 # failure so its siblings are never torn down with it.
@@ -2784,12 +2823,17 @@ async def run_delivery_stage(settings: Settings, manifest: RunManifest) -> int:
     except Exception as exc:
         return _halt("delivery", "sync_remotion_assets", f"{type(exc).__name__}: {exc}")
 
-    try:
-        render_response = await render_remotion.handler({
-            "output_path": str(DEFAULT_REMOTION_RENDER_OUTPUT),
-        })
-    except Exception as exc:
-        return _halt("delivery", "render_remotion", f"{type(exc).__name__}: {exc}")
+    # The tool reports the command and cwd it actually ran; the span records those.
+    with tracing.span("render_remotion", as_type="tool", input={
+        "timeline_path": str(timeline_path), "output_path": str(DEFAULT_REMOTION_RENDER_OUTPUT),
+    }) as render_span:
+        try:
+            render_response = await render_remotion.handler({
+                "output_path": str(DEFAULT_REMOTION_RENDER_OUTPUT),
+            })
+        except Exception as exc:
+            return _halt("delivery", "render_remotion", f"{type(exc).__name__}: {exc}")
+        render_span.update(output=tracing.tool_response_for_trace(render_response))
 
     try:
         render_payload = json.loads(render_response["content"][0]["text"])
@@ -2836,6 +2880,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return 1
 
     log_path = start_run(RUN_STATE_DIR)
+    # FR13: one trace per run, wrapping settings, preflight and every stage.
+    # Off, and never imported, without the Langfuse keys (FR16).
+    tracing.init_run_trace(args.project, log_path.stem if log_path else "run")
+    exit_code = None
+    try:
+        exit_code = _run_after_start(args, project, log_path)
+        return exit_code
+    finally:
+        tracing.end_run_trace(exit_code)
+
+
+def _run_after_start(args: argparse.Namespace, project: Path, log_path: Path | None) -> int:
     banner(f"Starting a reel in project '{args.project}'")
     log(f"Everything this run writes stays in {project}")
     log(f"A copy of everything printed here is being saved to {log_path}")
@@ -2851,10 +2907,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     except SettingsError as exc:
         return _halt("settings", "Settings", str(exc))
 
-    result = run_preflight(
-        settings=settings,
-        budget_spent_usd=manifest.budget_spent_usd,
-    )
+    with tracing.span("preflight") as preflight_span:
+        result = run_preflight(
+            settings=settings,
+            budget_spent_usd=manifest.budget_spent_usd,
+        )
+        preflight_span.update(output={
+            "passed": result.passed, "failed_check": result.failed_check, "reason": result.reason,
+        })
 
     if not result.passed:
         return _halt(
@@ -2882,13 +2942,14 @@ async def run_stages(source_images_dir: Path, settings: Settings, manifest: RunM
     # Built here rather than at module scope on purpose: the tests replace
     # these stage functions as attributes of this module, and a list captured
     # at import time would keep calling the originals.
+    # The middle name is each stage's trace span (Story 4.6).
     steps = [
-        ("Writing the narration", run_narration_stage),
-        ("Planning the shots", run_visual_stage),
-        ("Recording the voice and building subtitles", run_voice_stage),
+        ("Writing the narration", "story_agent", run_narration_stage),
+        ("Planning the shots", "visual_agent", run_visual_stage),
+        ("Recording the voice and building subtitles", "voice", run_voice_stage),
         # Story 4.4: one step, Veo and still shots side by side.
-        ("Making the video clips and still pictures", run_production_stage),
-        ("Putting the final video together", run_delivery_stage),
+        ("Making the video clips and still pictures", "production", run_production_stage),
+        ("Putting the final video together", "delivery", run_delivery_stage),
     ]
     total = len(steps) + 1
     # Set once, before any shot, while no vendor call is in flight.
@@ -2899,14 +2960,18 @@ async def run_stages(source_images_dir: Path, settings: Settings, manifest: RunM
     )
     banner(f"Step 1 of {total} — Looking at your screenshots")
     started = time.monotonic()
-    result = await run_screenshot_stage(source_images_dir, settings, manifest)
+    with tracing.span("asset_analyst") as stage_span:
+        result = await run_screenshot_stage(source_images_dir, settings, manifest)
+        tracing.mark_stage_result(stage_span, result, budget_spent_usd=manifest.budget_spent_usd)
     if result:
         return result
     log(f"Step 1 took {format_duration(time.monotonic() - started)}")
-    for index, (name, stage) in enumerate(steps, start=2):
+    for index, (name, span_name, stage) in enumerate(steps, start=2):
         banner(f"Step {index} of {total} — {name}")
         started = time.monotonic()
-        result = await stage(settings, manifest, retry_voice=True) if stage is run_voice_stage and retry_voice else await stage(settings, manifest)
+        with tracing.span(span_name) as stage_span:
+            result = await stage(settings, manifest, retry_voice=True) if stage is run_voice_stage and retry_voice else await stage(settings, manifest)
+            tracing.mark_stage_result(stage_span, result, budget_spent_usd=manifest.budget_spent_usd)
         if result:
             return result
         log(f"Step {index} took {format_duration(time.monotonic() - started)} · ${manifest.budget_spent_usd:.2f} spent so far")

@@ -25,6 +25,7 @@ from orchestrator.contracts.veo import (
     shot_fingerprint,
 )
 from orchestrator.contracts.visual_plan import Shot
+from orchestrator import tracing
 from orchestrator.progress import format_duration, log
 from orchestrator.settings import VEO_ALLOWED_DURATION_SECONDS
 from orchestrator.state.run_manifest import _atomic_write_json
@@ -486,7 +487,15 @@ def run_veo_generation(
     prompt, negative_prompt = build_video_prompt(shot, seed, correction)
     # One VEO_CONCURRENCY slot per operation, held from submit until the
     # operation is done: that is the span during which it counts against Veo.
-    with vendor_slot(VEO):
+    # The trace span records the request exactly as sent (FR14); it opens once
+    # the slot is held, so its duration is Veo's, not the queue's.
+    with vendor_slot(VEO), tracing.span("veo.generate_videos", as_type="tool", input={
+        "prompt": prompt, "negative_prompt": negative_prompt, "seed_image_path": seed.local_path,
+    }, metadata={
+        "provider": "gemini", "model": model, "duration_seconds": clip_duration_seconds,
+        "aspect_ratio": "9:16", "resolution": resolution, "gcs_output_uri": gcs_output_uri,
+        "attempt": attempt, "shot_sequence": shot.sequence,
+    }) as request_span:
         try:
             image = types.Image.from_file(location=seed.local_path)
             operation = client.models.generate_videos(
@@ -514,6 +523,7 @@ def run_veo_generation(
                 retryable=True,
                 cost_usd=cost_usd,
             )
+        request_span.update(output={"operation_name": _get(operation, "name")})
         deadline = time.monotonic() + max_poll_seconds
         # The poll loop is the single longest silence in a run (up to
         # `max_poll_seconds`), so every pass reports rather than waiting mutely.
@@ -598,7 +608,16 @@ def _preview_content(path: Path) -> dict:
 async def generate_veo_clip(args: dict) -> dict:
     # Submit, sleep-polling, the GCS download and ffmpeg all block, so the body
     # runs in a worker thread and the event loop stays free (Story 4.3).
-    return await asyncio.to_thread(_generate_veo_clip, args)
+    return await asyncio.to_thread(_traced_veo_clip, args)
+
+
+def _traced_veo_clip(args: dict) -> dict:
+    # Runs in the worker thread; the copied context keeps the span under its shot.
+    return tracing.traced_tool_call("generate_veo_clip", _generate_veo_clip, args, metadata={
+        "provider": "gemini", "model": args.get("model"), "gcs_output_uri": args.get("gcs_output_uri"),
+        "duration_ceiling_seconds": args.get("duration_seconds"), "aspect_ratio": "9:16",
+        "resolution": args.get("resolution"),
+    })
 
 
 def _generate_veo_clip(args: dict) -> dict:

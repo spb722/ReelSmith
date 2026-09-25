@@ -175,6 +175,16 @@ flowchart LR
   - **Budget.** Each query runs at `CLAUDE_REVIEWER_CAP_USD`. Each shot attempt's reservation (AD-7) holds one review. The story agent's budget is the remaining budget less that cap, and the critic runs only when the cap is left. Its cost is charged to the run.
   - **Failures.** A vendor refusal of either query gives back the attempt and halts `vendor_limit` (AD-5). The Veo producer makes the seed and the clip in one session, so a reviewer's seed rejection arrives after the clip is paid for. That is accepted, because the producer's own seed QA still gates the clip. `[ADOPTED 2026-09-24]`
 
+### AD-19 — Observability is opt-in via env, fails open, and never records secrets or media bytes
+
+- **Binds:** `orchestrator/tracing.py`, `orchestrator/run.py` (`main`, `run_stages`, the shot task, the voice and delivery steps, `_halt`), every pipeline agent module's `query` binding, and the vendor tool bodies in `orchestrator/tools/gemini_tools.py` and `veo_tools.py`
+- **Prevents:** a tracing backend that breaks, slows or leaks from a run; agents' Claude turns silently going untraced because each agent module bound `query` at import time
+- **Rule:**
+  - **Opt-in.** Tracing is on only when `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY` are set, with `LANGFUSE_BASE_URL` choosing the region. Without them, neither Langfuse nor the instrumentation is imported, and the run is unchanged. The Langfuse project and keys are created once, by hand, in the UI; nothing is auto-created.
+  - **Shape.** A run is one trace, opened right after `start_run` in session `<project>:<run_id>` and tagged with the project. Each stage is a span (`preflight`, `asset_analyst`, `story_agent`, `visual_agent`, `voice`, `production`, `delivery`). `story_critic` is a span inside `story_agent`, one per critique, and each shot is a span opened inside its own task. A halted stage carries the halt fields and ERROR, as does the step it halted in. Vendor calls and deterministic steps are spans made by hand. Claude turns come from OpenInference's instrumentor. The instrumentor takes effect because every agent resolves `claude_agent_sdk.query` at call time (`agent_query`), and our span around it adds the system prompt and the skill names. Nesting across concurrent shots and `asyncio.to_thread` rests on contextvar propagation.
+  - **Fails open.** Every tracing call swallows its own errors. The exit flush runs in a daemon thread joined with a timeout. The provider is ours, not global, and has no atexit hook, and Langfuse's atexit shutdown is unregistered.
+  - **No secrets or media.** Values are redacted before they reach a span: key and token patterns, secret-named env values, data URIs and base64 runs. On top of that, a span processor redacts every finished span before Langfuse's exporter (and its media upload) sees it. Text is truncated at `LANGFUSE_MAX_CHARS` (default 20000). `[ADOPTED 2026-09-25]`
+
 ## Consistency Conventions
 
 | Concern | Convention |

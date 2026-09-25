@@ -366,6 +366,10 @@ def test_render_remotion_success_uses_absolute_output(tmp_path, monkeypatch):
     payload = json.loads(response["content"][0]["text"])
     assert Path(payload["output_path"]) == out.resolve()
     assert out.is_file()
+    # Story 4.6: the trace records the command that actually ran, and where.
+    assert payload["command"][:3] == ["npx", "remotion", "render"]
+    assert payload["command"][-1] == str(out.resolve())
+    assert payload["cwd"] == str(remotion)
 
 
 def test_render_remotion_failure_raises_runtime_error(tmp_path, monkeypatch):

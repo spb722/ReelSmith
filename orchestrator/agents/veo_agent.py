@@ -6,7 +6,7 @@ import json
 from contextlib import aclosing
 from pathlib import Path
 
-from claude_agent_sdk import AgentDefinition, ClaudeAgentOptions, ResultMessage, query
+from claude_agent_sdk import AgentDefinition, ClaudeAgentOptions, ResultMessage
 
 from orchestrator.agents._guard import PaidToolGuard
 from orchestrator.agents._skills import (
@@ -24,6 +24,11 @@ from orchestrator.contracts.veo import VeoOutcomeContract
 from orchestrator.tools.gemini_tools import gemini_server
 from orchestrator.tools.veo_tools import veo_server
 from orchestrator.settings import load_settings
+from orchestrator.tracing import agent_query
+
+# Resolved through the SDK module at call time, so the tracing instrumentation
+# takes effect; tests replace this name (Story 4.6).
+query = agent_query("veo_agent")
 
 
 GENERATION_TOOLS = ["mcp__gemini__generate_veo_seed", "mcp__veo__generate_veo_clip"]

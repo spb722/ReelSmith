@@ -27,6 +27,7 @@ from google.genai import errors as genai_errors
 from google.genai import types
 from PIL import Image
 
+from orchestrator import tracing
 from orchestrator.progress import log
 from orchestrator.contracts.stills import STILLS_DIR, StillFailureContract, StillResultContract
 from orchestrator.contracts.veo import VeoFailureContract, VeoSeedContract, sha256_file, shot_fingerprint
@@ -831,20 +832,31 @@ def run_image_edit_ladder(
     label = f"Shot {spec.get('shot_sequence', '?')}"
     refusals: list[str] = []
     for rung in ladder:
-        try:
-            image, model_text = _run_image_edit(
-                provider,
-                client=client,
-                source_image_path=source_path,
-                prompt=rung["prompt"],
-                model=model,
-                reference_image_paths=[Path(p) for p in rung["reference_image_paths"]],
-                timeout_seconds=timeout_seconds,
-                label=label,
-            )
-        except ImageEditRefused as exc:
-            refusals.append(f"level {rung['level']}: {exc}")
-            continue
+        # One span per vendor call: the exact prompt and references this rung sent (FR14).
+        with tracing.span("image_edit", as_type="tool", input={
+            "prompt": rung["prompt"],
+            "source_image_path": str(source_path),
+            "reference_image_paths": [str(p) for p in rung["reference_image_paths"]],
+        }, metadata={
+            "provider": provider, "model": recorded_model_name(provider, model),
+            "rung": rung["level"], "shot_sequence": spec.get("shot_sequence"),
+        }) as rung_span:
+            try:
+                image, model_text = _run_image_edit(
+                    provider,
+                    client=client,
+                    source_image_path=source_path,
+                    prompt=rung["prompt"],
+                    model=model,
+                    reference_image_paths=[Path(p) for p in rung["reference_image_paths"]],
+                    timeout_seconds=timeout_seconds,
+                    label=label,
+                )
+            except ImageEditRefused as exc:
+                rung_span.update(output={"refused": True, "reason": str(exc)}, level="WARNING")
+                refusals.append(f"level {rung['level']}: {exc}")
+                continue
+            rung_span.update(output={"accepted": True, "model_text": model_text})
         return image, model_text, rung
 
     raise ImageEditRefused(
@@ -1008,7 +1020,17 @@ def _image_content(path: Path) -> dict:
 async def generate_veo_seed(args: dict) -> dict:
     # The body blocks (image call, sleeps, file I/O), so it runs in a worker
     # thread and the event loop stays free for other shots (Story 4.3).
-    return await asyncio.to_thread(_generate_veo_seed, args)
+    return await asyncio.to_thread(_traced_image_tool, "generate_veo_seed", _generate_veo_seed, args)
+
+
+def _traced_image_tool(name: str, body, args: dict) -> dict:
+    # Runs in the worker thread; the copied context keeps the span under its shot.
+    provider = str(args.get("image_provider") or "gemini")
+    return tracing.traced_tool_call(name, body, args, metadata={
+        "provider": provider,
+        "model": recorded_model_name(provider, str(args.get("image_model") or "")),
+        "start_rung": args.get("seed_prompt_level", 0),
+    })
 
 
 def _generate_veo_seed(args: dict) -> dict:
@@ -1096,7 +1118,7 @@ def _generate_veo_seed(args: dict) -> dict:
 )
 async def generate_still(args: dict) -> dict:
     # Offloaded for the same reason as `generate_veo_seed`.
-    return await asyncio.to_thread(_generate_still, args)
+    return await asyncio.to_thread(_traced_image_tool, "generate_still", _generate_still, args)
 
 
 def _generate_still(args: dict) -> dict:
