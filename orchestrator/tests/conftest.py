@@ -30,6 +30,25 @@ def _tmp_path_is_addressable_as_a_project(tmp_path, monkeypatch):
     monkeypatch.setattr(workspace, "PROJECTS_DIR", tmp_path.parent)
 
 
+@pytest.fixture(autouse=True)
+def _no_live_claude_calls():
+    """A test that forgets to mock `query` fails at once instead of spending.
+
+    Every agent resolves `claude_agent_sdk.query` at call time (Story 4.6),
+    so replacing it here covers them all. A private MonkeyPatch, so this
+    doesn't reorder the shared `monkeypatch` fixture's teardown.
+    """
+
+    import claude_agent_sdk
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("a test reached the real claude_agent_sdk.query; mock it")
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(claude_agent_sdk, "query", refuse)
+        yield
+
+
 def _approving_result(output: dict) -> ResultMessage:
     return ResultMessage(
         subtype="success", duration_ms=1, duration_api_ms=1, is_error=False,
