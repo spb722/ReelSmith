@@ -103,7 +103,9 @@ There is no `requirements.txt` or `pyproject.toml` — the conda environment is 
 
 ## Running
 
-Settings can live in a `.env` file at the repo root (git-ignored), one `KEY=value` per line. It is read at the start of every run and cover command; a variable already set in your shell wins. Put `IMAGE_PROVIDER` (`gemini` or `codex`) and the `LANGFUSE_*` keys there.
+Settings can live in a `.env` file at the repo root (git-ignored), one `KEY=value` per line. It is read at the start of every run and cover command; a variable already set in your shell wins. Put `IMAGE_PROVIDER` (`gemini` or `codex`), `IMAGE_FALLBACK_PROVIDER` and the `LANGFUSE_*` keys there. Write one setting per line, with no comment on the same line.
+
+**Run with the `kayak-video` Python.** Plain `python` in the `(base)` conda env has older packages (langfuse 3.15.0, claude-agent-sdk 0.2.147) the pipeline was not built for. Tracing then turns itself off with `Tracing problem ... unexpected keyword argument 'span_exporter'`. Run `conda activate kayak-video` first, or call `/opt/homebrew/anaconda3/envs/kayak-video/bin/python` directly.
 
 ```bash
 python -m orchestrator.run --project <name>
@@ -232,7 +234,8 @@ ls -t projects/<name>/orchestrator_runs/failure_*.json | head -1
 | --- | --- |
 | `Retry ceiling exhausted` | set that stage's `attempts_used` back to `0`, or raise its `max_attempts` |
 | `Budget exhausted: spent 30.0 of max 30.0` at startup, when you know you have not | set `usage.budget_spent_usd` to the real figure |
-| `You've hit your session limit` / `usage limit` | nothing wrong with the reel — wait for the reset, then clear the counters those failed attempts consumed |
+| `You've hit your session limit` / `usage limit` | nothing — a vendor limit gives its attempt back and the report says `reason_code: vendor_limit`; wait for the reset and re-run |
+| A shot's images keep failing on Gemini (`still_qa`, `seed_qa`, …) | nothing, if `IMAGE_FALLBACK_PROVIDER=codex` is set — the re-run moves that shot to Codex with fresh tries (see [Automatic fallback](#automatic-fallback-to-another-image-provider)) |
 
 A ceiling left out of the file falls back to its built-in default, so a partial
 edit still runs. A corrupt file falls back to a fresh config rather than
@@ -243,11 +246,10 @@ environment override, because it is genuinely a per-run choice
 (`MAX_BUDGET_USD=60 python -m orchestrator.run ...`); `usage.budget_spent_usd`
 is what that ceiling is measured against.
 
-Why a counter gets stuck when nothing is wrong with the reel: an external
-vendor refusing service — a Claude session limit, a Codex credit shortfall —
-currently looks the same to the retry machinery as a shot that will not render,
-so it consumes an attempt. `docs/vendor-limit-fix.md` has the code change that
-tells those apart. Until then, this file is how you recover.
+A vendor refusing service — a Claude session limit, a Codex credit shortfall,
+a 401/403 — is recognised as such: it gives back the attempt it interrupted,
+charges only what was really spent, and stops the run with
+`reason_code: vendor_limit` and `resumable: true`. Re-run once the limit resets.
 
 Projects created before this file existed keep working: their old
 `run_manifest.json` is read once and superseded by `config.json` on the next
@@ -363,6 +365,37 @@ Taste is involved, so there are overrides: `--hook "your own words"`, `--shot 6`
 force a frame, `--force` to replace an existing cover. Supplying both `--hook` and
 `--shot` skips the Claude call entirely.
 
+#### Changing a cover you already have
+
+Describe the change in plain words with `--feedback`:
+
+```bash
+conda activate kayak-video
+python -m orchestrator.cover --project <name> --feedback "make the headline bigger and move it a little higher"
+```
+
+What happens:
+
+1. The current `generated/cover/cover.png` is copied to `cover_v1.png` (then `cover_v2.png`, and so on), so no version is ever lost.
+2. Codex receives the current cover and your feedback, with the instruction to change only what you asked. The headline must stay exactly as written, be the only text, and stay inside the band from one-fifth to halfway down the image.
+3. The new `cover.png` and a fresh `cover_grid.png` are written. The feedback, the saved previous version, the headline and the shot are appended to `generated/cover/feedback_history.json`.
+4. If Codex fails, the previous cover is put back, so you are never left without one.
+
+Options, which can be combined:
+
+| Add | Effect |
+| --- | --- |
+| `--hook "new words"` | the revised cover uses this headline; `metadata/cover_plan.json` is updated |
+| `--shot 6` | redraw from that shot's artwork with your feedback applied, instead of editing the current cover |
+
+Run it again with new feedback for another round. To go back to an earlier version, copy it over the current one:
+
+```bash
+cp projects/<name>/generated/cover/cover_v1.png projects/<name>/generated/cover/cover.png
+```
+
+`--feedback` makes no Claude call and needs an existing cover; make one first without it. Codex draws it whatever `IMAGE_PROVIDER` says.
+
 ### Watching a run
 
 Every stage reports as it goes, timestamped with elapsed time since the run started:
@@ -399,7 +432,7 @@ One-time setup, by hand in the Langfuse UI (nothing is created automatically):
 2. Create a project, for example "Book Reels".
 3. In that project's **Settings → API Keys**, create a key pair.
 
-Then, per shell or in your profile:
+Then put the keys in the repo-root `.env`, or export them per shell:
 
 ```bash
 export LANGFUSE_PUBLIC_KEY=pk-lf-...
@@ -408,6 +441,8 @@ export LANGFUSE_BASE_URL=https://cloud.langfuse.com   # or https://us.cloud.lang
 ```
 
 `LANGFUSE_HOST` is the legacy name for the base URL and still works. `LANGFUSE_MAX_CHARS` (default `20000`) caps how much of any one text is recorded. With the two keys unset, tracing is off and nothing Langfuse-related is loaded. Tracing never fails or stalls a run: a problem in our tracing code is logged once, export errors are left to the Langfuse/OpenTelemetry loggers, and the exit flush waits at most 5 seconds. `LANGFUSE_MAX_CHARS` and the flush timeout live in `orchestrator/tracing.py`, not `settings.py`. Secrets (API keys, ADC tokens, the Langfuse keys) and media bytes are never recorded; images appear as their file paths.
+
+**Finding a run and reading it step by step** — which filter to use, what each step in the trace tree means, and where each input and output is — is in [`docs/langfuse_run_guide.md`](docs/langfuse_run_guide.md). In short: open **Tracing → Traces**, filter **Tags = `<project>`**, and open the trace whose session matches the run's log name (`<project>:run_<timestamp>`). There is no project ID to enter.
 
 ### Configuration
 
@@ -472,6 +507,39 @@ so a missing or logged-out CLI stops the run up front rather than at the first s
 that needs a picture. `$imagegen` is a prompt convention, not a documented CLI flag —
 if it changes, this provider breaks and `gemini` does not.
 
+#### Automatic fallback to another image provider
+
+Set in `.env`:
+
+```
+IMAGE_PROVIDER=gemini
+IMAGE_FALLBACK_PROVIDER=codex
+```
+
+When a shot uses up its tries **because of its images**, it gets a fresh set of tries on the fallback provider:
+
+```
+Shot on Gemini: try 1 ✗, try 2 ✗, try 3 ✗
+   ↓  was the failure about the image? (still_generation, still_qa, seed_generation, seed_qa)
+   ↓  yes
+Its Gemini attempt records move to orchestrator_runs/provider_fallback_history/<agent>_shot_<n>/
+Its try counter resets to 0
+orchestrator_runs/<agent>_shot_<n>_image_provider.json records "codex"
+   ↓
+Shot on Codex: try 1, 2, 3 → approved, or reported as failed as before
+```
+
+The rules:
+
+- **Only image failures switch.** A Veo shot that fails on the video clip itself (`clip_qa`, `veo_generation`) does not, because a different image provider wouldn't fix a video problem. Vendor limits, budget stops and crashes don't switch either; they stop the run as before.
+- **Once per shot.** If the fallback also fails, the shot fails as it always did.
+- **Per shot, remembered.** The other shots stay on `IMAGE_PROVIDER`. A re-run keeps a switched shot on the fallback, and a shot that already used its Gemini tries in an earlier run switches on the next run, with no `config.json` edit.
+- **Spend stays counted.** What the earlier tries cost stays in `budget_spent_usd`. Codex images are reserved at $0.
+- **Checked up front.** With `codex` as the fallback, preflight checks that Codex is installed and logged in even on a Gemini run, and stops at startup with `Run codex login` if it isn't.
+- **Off** with `IMAGE_FALLBACK_PROVIDER=none`, or by leaving it unset. It can't equal `IMAGE_PROVIDER`; that is a settings error at startup.
+
+In Langfuse, a switched shot shows its Gemini tries followed by tries whose `image_edit` step names `codex`.
+
 ## Tests
 
 ```bash
@@ -494,7 +562,8 @@ Read these before changing the pipeline — they are the source of truth:
 
 - `AGENTS.md` — policy, pitfalls, and where things live
 - `docs/book_reels_architecture.md` — pipeline architecture
-- `docs/architecture/architecture-book_reels-2026-09-15/ARCHITECTURE-SPINE.md` — the orchestration design and its numbered decisions (AD-1 … AD-15)
+- `docs/architecture/architecture-book_reels-2026-09-15/ARCHITECTURE-SPINE.md` — the orchestration design and its numbered decisions (AD-1 … AD-19)
 - `docs/epics.md` — requirements, epics, and per-story acceptance criteria
 - `docs/book_reels_live_run_fixes_2026-09.md` — symptom → cause → fix table from the first live run
 - `docs/book_reels_troubleshooting_agent_playbook.md` — failure triage
+- `docs/langfuse_run_guide.md` — finding a run in Langfuse and reading it step by step
