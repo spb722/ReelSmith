@@ -164,6 +164,9 @@ class Settings:
     gemini_model: str
     image_model: str = DEFAULT_IMAGE_MODEL
     image_provider: str = DEFAULT_IMAGE_PROVIDER
+    # A shot whose images keep failing on `image_provider` gets one more full
+    # round of tries on this provider; "" means no fallback.
+    image_fallback_provider: str = ""
     codex_image_timeout_seconds: float = DEFAULT_CODEX_IMAGE_TIMEOUT_SECONDS
     veo_resolution: str = DEFAULT_VEO_RESOLUTION
     veo_duration_seconds: int = DEFAULT_VEO_DURATION_SECONDS
@@ -238,7 +241,20 @@ def _image_provider_setting() -> str:
     return raw
 
 
-def _image_call_cost_setting(provider: str) -> float:
+def _image_fallback_provider_setting(image_provider: str) -> str:
+    raw = (os.getenv("IMAGE_FALLBACK_PROVIDER") or "").strip().lower()
+    if raw in ("", "none", "off"):
+        return ""
+    if raw not in IMAGE_PROVIDERS:
+        raise SettingsError(
+            f"IMAGE_FALLBACK_PROVIDER={raw!r} is not one of {', '.join(IMAGE_PROVIDERS)} (or none)"
+        )
+    if raw == image_provider:
+        raise SettingsError(f"IMAGE_FALLBACK_PROVIDER={raw!r} is the same as IMAGE_PROVIDER")
+    return raw
+
+
+def image_call_cost_for_provider(provider: str) -> float:
     """Per-image budget reservation for the selected provider.
 
     Codex bills against the operator's subscription, so its calls reserve
@@ -283,10 +299,11 @@ def load_settings() -> Settings:
         ),
         max_veo_attempts=_int_setting("MAX_VEO_ATTEMPTS", DEFAULT_MAX_VEO_ATTEMPTS, positive=True),
         image_provider=image_provider,
+        image_fallback_provider=_image_fallback_provider_setting(image_provider),
         codex_image_timeout_seconds=_float_setting(
             "CODEX_IMAGE_TIMEOUT_SECONDS", DEFAULT_CODEX_IMAGE_TIMEOUT_SECONDS, positive=True
         ),
-        image_call_cost_usd=_image_call_cost_setting(image_provider),
+        image_call_cost_usd=image_call_cost_for_provider(image_provider),
         veo_call_cost_usd=_float_setting("VEO_CALL_COST_USD", DEFAULT_VEO_CALL_COST_USD),
         claude_shot_attempt_cap_usd=_float_setting(
             "CLAUDE_SHOT_ATTEMPT_CAP_USD", DEFAULT_CLAUDE_SHOT_ATTEMPT_CAP_USD, positive=True

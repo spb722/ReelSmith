@@ -18,6 +18,7 @@ import argparse
 import asyncio
 import json
 import math
+import shutil
 import sys
 from pathlib import Path
 from typing import Optional, Sequence
@@ -151,6 +152,99 @@ def build_cover_prompt(plan: CoverPlanContract, shot_goal: str) -> str:
     )
 
 
+COVER_FEEDBACK_HISTORY_FILE = COVER_DIR / "feedback_history.json"
+
+
+def build_cover_revision_prompt(hook_text: str, feedback: str) -> str:
+    """Brief for revising the existing cover: change what was asked, keep the rest."""
+
+    return (
+        "This image is the current social media cover. Revise it according to this "
+        f"feedback, and change nothing the feedback does not ask for: {feedback} "
+        "Keep the composition, artwork, art style, palette, line quality and lighting "
+        "exactly as they are unless the feedback says otherwise; it must not drift toward "
+        f'photorealism. The headline must read EXACTLY: "{hook_text}" -- spelled letter '
+        "for letter, no extra or duplicated words, and it must be the only text in the "
+        "image (no captions, signage, logos or watermarks). Keep the whole headline inside "
+        "the horizontal band from one-fifth of the way down to halfway down, never in the "
+        "bottom third, and never over the character's face. The output must be a single "
+        "vertical 9:16 portrait image, 1080x1920."
+    )
+
+
+def _next_cover_version() -> Path:
+    n = 1
+    while (COVER_DIR / f"cover_v{n}.png").exists():
+        n += 1
+    return COVER_DIR / f"cover_v{n}.png"
+
+
+def _draw_cover(source: Path, prompt: str, settings) -> None:
+    image, note = run_codex_image_edit(
+        source_image_path=source,
+        prompt=prompt,
+        reference_image_paths=resolve_character_references(),
+        timeout_seconds=settings.codex_image_timeout_seconds,
+        label="Cover",
+    )
+    COVER_FILE.parent.mkdir(parents=True, exist_ok=True)
+    image.save(COVER_FILE, format="PNG", optimize=True)
+    if note:
+        log(note[:200], indent=2)
+    log(f"Cover written to {COVER_FILE} ({image.size[0]}x{image.size[1]})", indent=2)
+    write_grid_preview(COVER_FILE, COVER_GRID_FILE)
+
+
+def revise_cover(feedback: str, *, hook: str, shot: Optional[int], settings, visual_plan) -> int:
+    """Apply operator feedback to the existing cover, keeping the old one as a version."""
+
+    try:
+        plan = CoverPlanContract.model_validate_json(COVER_PLAN_FILE.read_text(encoding="utf-8"))
+    except (FileNotFoundError, ValueError, OSError) as exc:
+        return _halt(f"There is no cover to revise yet; make one first without --feedback: {exc}")
+    if not COVER_FILE.is_file():
+        return _halt(f"There is no cover image at {COVER_FILE} to revise; make one first without --feedback")
+    if hook:
+        plan = plan.model_copy(update={"hook_text": hook})
+
+    if shot is None:
+        source_note = "the current cover"
+    else:
+        approved = _approved_sequences()
+        if shot not in approved:
+            return _halt(f"Shot {shot} has no approved artwork; available: {sorted(approved)}")
+        plan = plan.model_copy(update={"base_shot_sequence": shot})
+        source_note = f"shot {shot}'s artwork"
+
+    previous = _next_cover_version()
+    shutil.copy2(COVER_FILE, previous)
+    log(f"Kept the current cover as {previous}")
+    log(f'Revising from {source_note}: "{feedback}"')
+    try:
+        if shot is None:
+            _draw_cover(COVER_FILE, build_cover_revision_prompt(plan.hook_text, feedback), settings)
+        else:
+            shot_goal = next((s.shot_goal for s in visual_plan.shots if s.sequence == shot), "")
+            prompt = build_cover_prompt(plan, shot_goal) + f" Operator feedback to apply: {feedback}"
+            _draw_cover(resolve_base_frame(_approved_sequences()[shot]), prompt, settings)
+    except Exception as exc:
+        shutil.copy2(previous, COVER_FILE)
+        return _halt(f"Cover revision failed, the previous cover is back in place: {type(exc).__name__}: {exc}")
+
+    _atomic_write_json(COVER_PLAN_FILE, plan.model_dump(mode="json"))
+    try:
+        history = json.loads(COVER_FEEDBACK_HISTORY_FILE.read_text(encoding="utf-8"))
+    except (FileNotFoundError, ValueError):
+        history = []
+    history.append({
+        "feedback": feedback, "previous_cover": str(previous),
+        "hook_text": plan.hook_text, "base_shot_sequence": plan.base_shot_sequence,
+    })
+    _atomic_write_json(COVER_FEEDBACK_HISTORY_FILE, history)
+    log(f"Finished! Your revised cover is at {COVER_FILE} (the previous one is {previous})")
+    return 0
+
+
 async def _plan_with_retries(
     *, story_plan: FinalStoryPlanContract, visual_plan: VisualPlanContract,
     approved: dict[int, dict], budget_usd: float,
@@ -226,6 +320,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--hook", default="", help="Use this exact hook text instead of asking Claude.")
     parser.add_argument("--shot", type=int, default=None, help="Force the cover to use this shot's artwork.")
     parser.add_argument("--force", action="store_true", help="Regenerate even if a cover plan already exists.")
+    parser.add_argument(
+        "--feedback", default="",
+        help='Revise the existing cover, e.g. "make the headline bigger". The current cover is kept as cover_v<N>.png.',
+    )
     args = parser.parse_args(argv)
     load_dotenv_file()
 
@@ -259,6 +357,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if not approved:
         return _halt("No approved shot artwork found, so there is nothing to build a cover from")
     log(f"{len(approved)} approved shot(s) available: {sorted(approved)}")
+
+    if args.feedback.strip():
+        return revise_cover(
+            args.feedback.strip(), hook=args.hook, shot=args.shot, settings=settings, visual_plan=visual_plan,
+        )
 
     if COVER_FILE.is_file() and not args.force:
         log(f"A cover already exists at {COVER_FILE} — pass --force to replace it")
@@ -303,20 +406,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "",
     )
     try:
-        base_frame = resolve_base_frame(entry)
-        image, note = run_codex_image_edit(
-            source_image_path=base_frame,
-            prompt=build_cover_prompt(plan, shot_goal),
-            reference_image_paths=resolve_character_references(),
-            timeout_seconds=settings.codex_image_timeout_seconds,
-            label="Cover",
-        )
-        COVER_FILE.parent.mkdir(parents=True, exist_ok=True)
-        image.save(COVER_FILE, format="PNG", optimize=True)
-        if note:
-            log(note[:200], indent=2)
-        log(f"Cover written to {COVER_FILE} ({image.size[0]}x{image.size[1]})", indent=2)
-        write_grid_preview(COVER_FILE, COVER_GRID_FILE)
+        _draw_cover(resolve_base_frame(entry), build_cover_prompt(plan, shot_goal), settings)
     except Exception as exc:
         return _halt(
             f"Cover artwork failed: {type(exc).__name__}: {exc}",

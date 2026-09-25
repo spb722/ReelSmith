@@ -251,14 +251,14 @@ def _check_media_toolchain(settings: Settings) -> Optional[PreflightResult]:
 
 
 def _check_codex_image_provider(settings: Settings) -> Optional[PreflightResult]:
-    """Fail up front when IMAGE_PROVIDER=codex but Codex cannot draw.
+    """Fail up front when Codex is the image provider or its fallback but cannot draw.
 
     Same reasoning as the ffmpeg check: a missing CLI or a logged-out Codex
     should stop the run in preflight, not forty minutes in at the first shot
     that needs a picture.
     """
 
-    if settings.image_provider != "codex":
+    if "codex" not in (settings.image_provider, settings.image_fallback_provider):
         return None
 
     from orchestrator.tools.codex_image_tools import CodexNotAvailableError, codex_executable

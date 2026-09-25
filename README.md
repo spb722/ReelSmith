@@ -8,7 +8,7 @@ and walk away:
 ```bash
 python -m orchestrator.run --project <name>
 ```
-
+mkdir -p projects/37rule/source_images
 The most recent run produced a 53-second, 1080×1920, 30fps reel from 5 screenshots: 6 shots (4 Gemini-composed stills, 2 Veo clips), 28 subtitle cues, for about $3.83 of API spend.
 
 ## How it works
@@ -174,6 +174,7 @@ PY=/opt/homebrew/anaconda3/envs/kayak-video/bin/python
 | A cover, Claude picks frame and hook | `IMAGE_PROVIDER=codex $PY -m orchestrator.cover --project <name>` |
 | A cover, your words | `IMAGE_PROVIDER=codex $PY -m orchestrator.cover --project <name> --hook "your line" --force` |
 | A cover, your frame and words (no Claude call) | `IMAGE_PROVIDER=codex $PY -m orchestrator.cover --project <name> --shot 6 --hook "your line" --force` |
+| Change the existing cover | `$PY -m orchestrator.cover --project <name> --feedback "make the headline bigger"` (add `--hook` to change the words, `--shot N` to redraw from another shot) |
 | Compare cover designs, free | `$PY test/try_cover.py --sweep --shot 6 --hook "your line"` |
 | Move a pre-projects reel in | `$PY -m orchestrator.migrate <name>` |
 
@@ -187,6 +188,7 @@ Flags:
 | `cover` | `--hook "..."` | use these exact words instead of asking Claude |
 | `cover` | `--shot <n>` | build from this shot's artwork |
 | `cover` | `--force` | replace an existing cover |
+| `cover` | `--feedback "..."` | revise the existing cover; the old one is kept as `generated/cover/cover_v<N>.png`, and each change is logged in `generated/cover/feedback_history.json` |
 
 Every knob is an environment variable — see [Configuration](#configuration). The ones
 you will reach for: `IMAGE_PROVIDER`, `MAX_BUDGET_USD`, `TTS_VOICE_NAME`,
@@ -421,6 +423,7 @@ Everything is environment-variable overridable, with defaults in `orchestrator/s
 | `GEMINI_MODEL` | `gemini-2.5-flash` | |
 | `IMAGE_MODEL` | `gemini-3.1-flash-image` | Used only by the `gemini` image provider |
 | `IMAGE_PROVIDER` | `gemini` | `gemini` or `codex` — which backend draws stills and Veo seeds |
+| `IMAGE_FALLBACK_PROVIDER` | unset (off) | `codex`, `gemini` or `none`. When a shot runs out of tries because of its images (a still, or a Veo seed; not a Veo clip failure), it gets a fresh set of tries on this provider. Its earlier attempt records move to `orchestrator_runs/provider_fallback_history/`, and a rerun remembers the switch. Spend already charged stays charged |
 | `CODEX_IMAGE_TIMEOUT_SECONDS` | `900` | Ceiling on one Codex image call |
 | `MAX_VEO_ATTEMPTS` | `3` | |
 | `VEO_CALL_COST_USD` / `IMAGE_CALL_COST_USD` | `1.20` / `0.04` | Estimates for budget reservation, not billing |

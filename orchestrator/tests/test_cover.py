@@ -172,3 +172,72 @@ def test_the_brief_pins_the_headline_to_the_upper_half():
     assert "never in the bottom third" in prompt
     # The reason has to travel with the rule, or it reads as arbitrary taste.
     assert "caption" in prompt and "crops the tall image" in prompt
+
+
+# --- revising an existing cover from feedback --------------------------------
+
+def cover_project(tmp_path, monkeypatch):
+    import json
+
+    monkeypatch.chdir(tmp_path)
+    cover.COVER_FILE.parent.mkdir(parents=True, exist_ok=True)
+    Image.new("RGB", (COVER_WIDTH, COVER_HEIGHT), "navy").save(cover.COVER_FILE)
+    cover.COVER_PLAN_FILE.parent.mkdir(parents=True, exist_ok=True)
+    cover.COVER_PLAN_FILE.write_text(json.dumps({
+        "base_shot_sequence": 2, "hook_text": "Fear wearing a mask",
+        "art_direction": "Push in on the mask.", "rationale": "Strongest line.",
+    }))
+    calls = []
+
+    def fake_codex(*, source_image_path, prompt, **kwargs):
+        calls.append({"source": Path(source_image_path), "prompt": prompt})
+        return Image.new("RGB", (COVER_WIDTH, COVER_HEIGHT), "teal"), ""
+
+    monkeypatch.setattr(cover, "run_codex_image_edit", fake_codex)
+    monkeypatch.setattr(cover, "resolve_character_references", lambda: [])
+    return calls
+
+
+def test_feedback_revises_the_current_cover_and_keeps_the_old_one(tmp_path, monkeypatch):
+    import json
+    from orchestrator.tests.test_preflight import make_settings
+
+    calls = cover_project(tmp_path, monkeypatch)
+
+    assert cover.revise_cover("make the headline bigger", hook="", shot=None,
+                              settings=make_settings(), visual_plan=None) == 0
+
+    [call] = calls
+    assert call["source"] == cover.COVER_FILE
+    assert "make the headline bigger" in call["prompt"] and '"Fear wearing a mask"' in call["prompt"]
+    with Image.open(cover.COVER_DIR / "cover_v1.png") as old, Image.open(cover.COVER_FILE) as new:
+        assert old.getpixel((0, 0)) != new.getpixel((0, 0))
+    [entry] = json.loads(cover.COVER_FEEDBACK_HISTORY_FILE.read_text())
+    assert entry["feedback"] == "make the headline bigger" and entry["previous_cover"].endswith("cover_v1.png")
+
+    assert cover.revise_cover("warmer colours", hook="A new hook", shot=None,
+                              settings=make_settings(), visual_plan=None) == 0
+    assert (cover.COVER_DIR / "cover_v2.png").is_file()
+    assert '"A new hook"' in calls[-1]["prompt"]
+    assert json.loads(cover.COVER_PLAN_FILE.read_text())["hook_text"] == "A new hook"
+
+
+def test_a_failed_revision_puts_the_previous_cover_back(tmp_path, monkeypatch):
+    from orchestrator.tests.test_preflight import make_settings
+
+    cover_project(tmp_path, monkeypatch)
+
+    def broken(**kwargs):
+        raise RuntimeError("codex down")
+
+    monkeypatch.setattr(cover, "run_codex_image_edit", broken)
+    assert cover.revise_cover("bigger", hook="", shot=None, settings=make_settings(), visual_plan=None) == 1
+    with Image.open(cover.COVER_FILE) as image:
+        assert image.getpixel((0, 0)) == (0, 0, 128)
+
+
+def test_feedback_needs_an_existing_cover(tmp_path, monkeypatch):
+    from orchestrator.tests.test_preflight import make_settings
+
+    monkeypatch.chdir(tmp_path)
+    assert cover.revise_cover("bigger", hook="", shot=None, settings=make_settings(), visual_plan=None) == 1

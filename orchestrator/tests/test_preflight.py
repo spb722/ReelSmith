@@ -609,6 +609,15 @@ def test_codex_is_not_checked_on_a_gemini_run(monkeypatch):
     assert preflight._check_codex_image_provider(make_settings()) is None
 
 
+def test_codex_as_the_fallback_is_checked_on_a_gemini_run(monkeypatch):
+    from orchestrator import preflight
+    from orchestrator.tools import codex_image_tools
+
+    monkeypatch.setattr(codex_image_tools.shutil, "which", lambda name: None)
+    result = preflight._check_codex_image_provider(make_settings(image_fallback_provider="codex"))
+    assert result is not None and result.failed_check == "codex"
+
+
 def test_missing_codex_cli_fails_preflight(monkeypatch):
     from orchestrator import preflight
     from orchestrator.tools import codex_image_tools

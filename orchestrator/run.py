@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import dataclasses
 import functools
 import json
 import math
@@ -66,6 +67,7 @@ from orchestrator.workspace import (
 )
 from orchestrator.preflight import _check_budget, check_remotion_delivery_toolchain, run_preflight
 from orchestrator.settings import (
+    image_call_cost_for_provider,
     load_dotenv_file,
     GEMINI_TTS_AUDIO_TOKENS_PER_SECOND,
     GEMINI_TTS_INPUT_TOKEN_COST_USD,
@@ -1703,6 +1705,80 @@ def _halt_for_shot_failures(
     )
 
 
+# The failure stages that are the image provider's doing, so a different
+# provider is worth a fresh round. A Veo clip failure is not among them.
+IMAGE_FAILURE_STAGES = {"still_generation", "still_qa", "seed_generation", "seed_qa"}
+PROVIDER_FALLBACK_HISTORY_DIR = RUN_STATE_DIR / "provider_fallback_history"
+
+
+def _shot_provider_file(agent: str, sequence: int) -> Path:
+    return RUN_STATE_DIR / f"{agent}_shot_{sequence}_image_provider.json"
+
+
+def _settings_for_shot(settings: Settings, agent: str, sequence: int) -> Settings:
+    """The run's settings, or its fallback provider once this shot switched to it."""
+
+    try:
+        provider = json.loads(_shot_provider_file(agent, sequence).read_text(encoding="utf-8"))["image_provider"]
+    except (FileNotFoundError, ValueError, KeyError, TypeError):
+        return settings
+    if provider == settings.image_provider:
+        return settings
+    return dataclasses.replace(
+        settings, image_provider=provider, image_call_cost_usd=image_call_cost_for_provider(provider),
+    )
+
+
+def _last_failure_stage(agent: str, sequence: int) -> str | None:
+    """The failure stage in this shot's newest attempt record, read from disk.
+
+    A shot whose ceiling was already used up before this run fails at once,
+    before any attempt runs, so its failure carries no stage of its own.
+    """
+
+    def number(path: Path) -> int:
+        match = re.fullmatch(rf"{agent}_shot_{sequence}_attempt_(\d+)\.json", path.name)
+        return int(match.group(1)) if match else -1
+
+    records = [p for p in RUN_STATE_DIR.glob(f"{agent}_shot_{sequence}_attempt_*.json") if number(p) >= 0]
+    for path in sorted(records, key=number, reverse=True):
+        try:
+            failure = (json.loads(path.read_text(encoding="utf-8")).get("structured_output") or {}).get("failure")
+        except (OSError, ValueError, AttributeError):
+            continue
+        if isinstance(failure, dict):
+            return failure.get("stage")
+    return None
+
+
+def _should_fall_back(outcome: object, shot_settings: Settings, settings: Settings, agent: str, sequence: int) -> bool:
+    fallback = settings.image_fallback_provider
+    if not fallback or shot_settings.image_provider == fallback:
+        return False
+    if not (isinstance(outcome, ShotFailure) and outcome.shot_specific):
+        return False
+    stage = outcome.failure_stage or _last_failure_stage(agent, sequence)
+    return stage in IMAGE_FAILURE_STAGES
+
+
+def _switch_shot_to_fallback(agent: str, sequence: int, provider: str, manifest: RunManifest) -> None:
+    """Give the shot a fresh round of tries on the fallback provider.
+
+    Like `--retry-voice`: the earlier attempt records move to a history
+    folder (so neither the resume nor the likeness ladder reads them as this
+    round's), the shot's counter resets, and a marker keeps the provider
+    choice for a resumed run. Spend already charged stays charged.
+    """
+
+    history = PROVIDER_FALLBACK_HISTORY_DIR / f"{agent}_shot_{sequence}"
+    history.mkdir(parents=True, exist_ok=True)
+    for path in RUN_STATE_DIR.glob(f"{agent}_shot_{sequence}_attempt_*.json"):
+        shutil.move(str(path), str(history / path.name))
+    _atomic_write_json(_shot_provider_file(agent, sequence), {"image_provider": provider})
+    manifest.iteration_counts[f"{agent}_shot_{sequence}"] = 0
+    save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+
+
 async def run_production_stage(settings: Settings, manifest: RunManifest) -> int:
     """Make every pending shot, Veo and still side by side (Story 4.4, AD-17).
 
@@ -1840,10 +1916,24 @@ async def _run_shot_production(
                     f"shot_{shot.sequence:02d}",
                     metadata={"shot_sequence": shot.sequence, "generation_mode": shot.generation_mode, "agent": agent},
                 ) as shot_span:
+                    shot_settings = _settings_for_shot(settings, agent, shot.sequence)
                     outcome = await producer(
                         shot, asset=asset, subtitle_text=subtitle_text,
-                        settings=settings, manifest=manifest, launch=launch,
+                        settings=shot_settings, manifest=manifest, launch=launch,
                     )
+                    if _should_fall_back(outcome, shot_settings, settings, agent, shot.sequence):
+                        fallback = settings.image_fallback_provider
+                        log(
+                            f"Shot {shot.sequence}: {shot_settings.image_provider} used all its tries "
+                            f"({outcome.reason[:120]}) — switching to {fallback} with a fresh set of tries",
+                            error=True,
+                        )
+                        _switch_shot_to_fallback(agent, shot.sequence, fallback, manifest)
+                        shot_settings = _settings_for_shot(settings, agent, shot.sequence)
+                        outcome = await producer(
+                            shot, asset=asset, subtitle_text=subtitle_text,
+                            settings=shot_settings, manifest=manifest, launch=launch,
+                        )
                     if isinstance(outcome, ShotFailure):
                         shot_span.update(output=outcome.report_entry(), level="ERROR", status_message=outcome.reason)
                     else:
