@@ -1,84 +1,84 @@
 {
-  "generated_at_utc": "2026-09-19T03:17:58.668877+00:00",
+  "generated_at_utc": "2026-09-22T12:20:15.694765+00:00",
   "asset_count": 5,
   "assets": [
     {
-      "asset_id": "img_87a825c5a858",
-      "source_path": "source_images/IMG_8849.PNG",
-      "original_filename": "IMG_8849.PNG",
-      "sha256": "87a825c5a85817f161d75eb3d848a965e272f2da8d17f6f87a016038e3f2dcfe",
-      "file_size_bytes": 1614088,
+      "asset_id": "img_55d33b8161ef",
+      "source_path": "source_images/IMG_8917.jpg",
+      "original_filename": "IMG_8917.jpg",
+      "sha256": "55d33b8161ef72cb6f76cdf90cdbd699760c396c485e7e64604e2476fbaf32cb",
+      "file_size_bytes": 241793,
       "image": {
-        "format": "PNG",
+        "format": "JPEG",
         "width": 1290,
-        "height": 2796,
+        "height": 1663,
         "orientation": "portrait",
         "mode": "RGB",
-        "aspect_ratio": 0.4614
+        "aspect_ratio": 0.7757
       },
       "semantic_analysis": null
     },
     {
-      "asset_id": "img_c99892bd2a98",
-      "source_path": "source_images/IMG_8850.PNG",
-      "original_filename": "IMG_8850.PNG",
-      "sha256": "c99892bd2a98d34ae3604dd8eeca686bad7feec79e7d0bbec1259d5be7ce8ff2",
-      "file_size_bytes": 1711752,
+      "asset_id": "img_32bc0f72bd41",
+      "source_path": "source_images/IMG_8918.jpg",
+      "original_filename": "IMG_8918.jpg",
+      "sha256": "32bc0f72bd41459d0d53d4f34c468f102f9f492dfe6ad2466d51a68a5fcf2174",
+      "file_size_bytes": 223123,
       "image": {
-        "format": "PNG",
-        "width": 1290,
-        "height": 2796,
+        "format": "JPEG",
+        "width": 1282,
+        "height": 1590,
         "orientation": "portrait",
         "mode": "RGB",
-        "aspect_ratio": 0.4614
+        "aspect_ratio": 0.8063
       },
       "semantic_analysis": null
     },
     {
-      "asset_id": "img_7e9bbe598ea9",
-      "source_path": "source_images/IMG_8851.PNG",
-      "original_filename": "IMG_8851.PNG",
-      "sha256": "7e9bbe598ea9e7bded233dc5672253aad692dc101b375c628b959cab5aa8e9a1",
-      "file_size_bytes": 1686637,
+      "asset_id": "img_4298f6afa10b",
+      "source_path": "source_images/IMG_8919.jpg",
+      "original_filename": "IMG_8919.jpg",
+      "sha256": "4298f6afa10bbdb2258475f65237af0b208335e339583f1e5001c668a57198db",
+      "file_size_bytes": 253149,
       "image": {
-        "format": "PNG",
+        "format": "JPEG",
         "width": 1290,
-        "height": 2796,
+        "height": 1658,
         "orientation": "portrait",
         "mode": "RGB",
-        "aspect_ratio": 0.4614
+        "aspect_ratio": 0.778
       },
       "semantic_analysis": null
     },
     {
-      "asset_id": "img_d5101d6cfa1e",
-      "source_path": "source_images/IMG_8852.PNG",
-      "original_filename": "IMG_8852.PNG",
-      "sha256": "d5101d6cfa1e5662360b942ac937ffbbff0bb868c59d756cb9cb951da9d09c0b",
-      "file_size_bytes": 1717982,
+      "asset_id": "img_00daa58a9bb0",
+      "source_path": "source_images/IMG_8920.jpg",
+      "original_filename": "IMG_8920.jpg",
+      "sha256": "00daa58a9bb025db19e29e2be644edbd4b4fb0081bf24d735c745720a82e4fd8",
+      "file_size_bytes": 254567,
       "image": {
-        "format": "PNG",
+        "format": "JPEG",
         "width": 1290,
-        "height": 2796,
+        "height": 1562,
         "orientation": "portrait",
         "mode": "RGB",
-        "aspect_ratio": 0.4614
+        "aspect_ratio": 0.8259
       },
       "semantic_analysis": null
     },
     {
-      "asset_id": "img_189adab8f683",
-      "source_path": "source_images/IMG_8853.PNG",
-      "original_filename": "IMG_8853.PNG",
-      "sha256": "189adab8f6834edca59835cd861a9d2f94d5c9b351730f8a3cb613b91e8c1906",
-      "file_size_bytes": 560103,
+      "asset_id": "img_b54ab1e561ef",
+      "source_path": "source_images/IMG_8921.jpg",
+      "original_filename": "IMG_8921.jpg",
+      "sha256": "b54ab1e561ef98fca1f53515dec06400160b57521ded7abe290fd7d24f828e0b",
+      "file_size_bytes": 212221,
       "image": {
-        "format": "PNG",
-        "width": 1290,
-        "height": 2796,
-        "orientation": "portrait",
+        "format": "JPEG",
+        "width": 1095,
+        "height": 1062,
+        "orientation": "landscape",
         "mode": "RGB",
-        "aspect_ratio": 0.4614
+        "aspect_ratio": 1.0311
       },
       "semantic_analysis": null
     }

@@ -1,174 +1,249 @@
 {
   "structured_output": {
     "produced_by": "visual_agent",
-    "overall_visual_style": "A warm, halftone-textured flat-illustration style throughout, carried directly from the source app's recurring bald cartoon figure and muted amber/teal/orange palette; every shot crops out app chrome, the status bar, and the unrelated cricket-score banner so only the illustrated story world and narration-timed text overlays remain. Camera language stays slow, deliberate, and hushed -- soft push-ins, gentle horizontal pans, and unhurried pull-backs -- mirroring the narrator's calm, contemplative pacing, with motion intensity rising only slightly on the two human-scale \"practice\" scenes to underline physical, earned effort versus the stillness of realization.",
+    "overall_visual_style": "One continuous flat-vector illustrated world, cropped out of its app chrome and recomposed vertical: rounded-corner story art enlarged and padded with its own blurred, darkened palette so every frame fills 9:16 without white bars. The palette travels the emotional arc — deep plum and monitor-green at the open, teal-and-mustard lamplight in the middle, fractured grey-orange at the peak of panic, then warm amber daybreak for the turn and a clean cream paper field at the close. Motion language is restrained and hand-guided: slow Ken-Burns pushes and lateral slides at a steady, breath-like speed, never snapping, with fades that tighten and shorten as the panic escalates and lengthen again once the mask breaks. Texture stays flat-graphic — clean shapes, grainless fills, soft light cones and shafts as the only atmosphere — matching the narrator's calm, close-mic, quietly intense recounting rather than dramatizing it. Lower-third areas are left visually quiet in every shot so narration text can be composited later without fighting the art.",
     "shots": [
       {
         "sequence": 1,
-        "visual_treatment": "USE_EXISTING_ART",
+        "visual_treatment": "CROP_AND_RECOMPOSE",
         "source_asset_ids": [
-          "img_87a825c5a858"
+          "img_55d33b8161ef"
         ],
-        "shot_goal": "Establish the prince's sheltered isolation amid abundance to open the hook with quiet foreboding.",
-        "frame_composition": "Crop to the story_art_region (x:54-943, y:457-702) per the asset's recommended CROP_TO_TEXT_AND_ART strategy, cutting out the status bar/cricket banner, header, progress bar, and nav arrows per its listed ui_regions; vertical reframe centers the bald prince figure (~433-563, 540-685) with silhouetted servants and trays flanking him under the arched, vine-draped colonnade.",
-        "motion_plan": "Slow, steady zoom-in toward the centered prince per the asset's own suggested_motion ('slow zoom-in on the prince figure'), tightening gradually over the shot so the servants and archways recede toward the frame edges, visually reinforcing isolation despite abundance; a single smooth push, no separate parallax layers.",
+        "shot_goal": "Open on the frozen decision — a man suspended over a keyboard he cannot commit to — and establish the dark, watched, claustrophobic world of the story.",
+        "frame_composition": "Vertical recompose of the page-1 story art only, app header bar and page-progress dashes cropped away. The dark night cubicle fills the frame in deep plum and purple, the seated man in a dark button-up shirt held slightly right of centre in profile, one hand resting on the keyboard, his face lit cold by the pale-green glow of the monitor at his left. The dark looming silhouette of a standing figure sits just behind his shoulder, deliberately soft and unreadable. A pale rounded thought bubble with small simple line icons floats above his head near the top third. Cubicle partitions frame the edges; the empty desk surface and shadowed floor hold the bottom third quiet. Side padding is filled with a blurred, darkened extension of the same plum interior.",
+        "motion_plan": "Slow, continuous push-in toward the seated man, the frame easing very slightly leftward so he settles from off-centre toward centre as the shot closes. The looming silhouette scales marginally slower than the desk foreground, giving a faint parallax separation between the dread behind him and the lit workspace in front of him. No cuts, no whip — one unbroken creeping approach that never quite arrives.",
         "text_overlay": "",
-        "source_support": "Grounded in img_87a825c5a858's story_art_region and figure_descriptions (centered bald prince, silhouetted servants with trays, ornate amber-lit courtyard); the fallback motion follows the asset's own suggested_motion, and cropping follows its visual_cleanup_needed notes about removing the cricket banner and app chrome.",
-        "video_motion_intent": "",
-        "video_candidate_rank": null,
-        "fade_in_frames": 10,
-        "fade_out_frames": 12,
+        "source_support": "Every element is taken from the page-1 analysis: the seated man at 440-680 x, the monitor with its glowing pale-green screen at left, the dark looming silhouette behind him, the thought bubble, and the dim night cubicle environment. The crop follows the asset's own CROP_TO_TEXT_AND_ART strategy and its note that UI is safe to remove, and the push-in plus shadow/foreground parallax are two of its three suggested_motion entries. The asset flags both the bubble icons' meaning and whether the silhouette is a coworker or symbolic as uncertain, so the shot describes them only as shapes and a dark figure without asserting either reading.",
         "still_motion": {
           "scale_from": 1,
-          "scale_to": 1.12,
+          "scale_to": 1.17,
           "translate_x_from": 0,
-          "translate_x_to": 0,
-          "translate_y_from": 0.02,
-          "translate_y_to": -0.02,
-          "easing": "easeOut"
-        }
+          "translate_x_to": -3,
+          "translate_y_from": 0,
+          "translate_y_to": 1,
+          "easing": "ease"
+        },
+        "fade_in_frames": 18,
+        "fade_out_frames": 8,
+        "video_candidate_rank": 3,
+        "video_motion_intent": "A held, almost still frame in which only tiny things live: the man's finger trembling a few millimetres above the keys without landing, the monitor glow breathing faintly across his face, and the silhouette behind him drifting a hair closer. The whole point of the hook is a body refusing to move, which a Ken-Burns push can only imply — real micro-motion makes the frozen finger read as genuinely suspended rather than as a photograph."
       },
       {
         "sequence": 2,
-        "visual_treatment": "USE_EXISTING_ART",
+        "visual_treatment": "SUBTLE_ANIMATION",
         "source_asset_ids": [
-          "img_c99892bd2a98"
+          "img_32bc0f72bd41"
         ],
-        "shot_goal": "Visualize the extremity of his search -- renouncing the throne, sleeping in dirt, starving himself -- using the seated ascetic figure as the visual anchor the scene calls for.",
-        "frame_composition": "Crop to story_art_region (x:54-943, y:457-702), centering the seated cross-legged figure beneath the heart-leaved tree with the empty alms bowl beside him, removing the status bar/cricket banner and progress indicator per ui_regions.",
-        "motion_plan": "Gentle, slow zoom drifting inward toward the seated figure per the asset's suggested_motion ('slow zoom into the seated figure's face'), kept measured and unhurried to match the slow, weighted narration pacing note for this passage; movement stays understated so the figure reads as an ongoing state of searching rather than a single instant.",
+        "shot_goal": "Show that the escape route is already real and paid for — six months of night work sitting finished on the screen.",
+        "frame_composition": "Vertical crop of the page-2 story art, UI removed. The lamp-lit corner of the night desk carries the frame: the open laptop's illuminated screen sits at the visual centre with its rows of list items and a fan of banknotes readable as shapes, the articulated desk lamp above-left throwing a warm cone of light down across it. The bearded man leans in from the right edge, partly cropped, blanket-wrapped shoulder catching the lamp glow. Deep green-teal office recedes behind him with the round wall clock and the night window's city lights small and dim in the upper background. Blurred teal extension pads the vertical sides.",
+        "motion_plan": "Steady push-in toward the laptop glow, the frame drifting slightly right and up so the screen grows into the centre of the vertical frame. The lamp's light cone blooms almost imperceptibly brighter across the move, and the distant window lights hold a slower parallax than the desk plane so the room feels deep rather than flat.",
+        "source_support": "The laptop with list rows and a fan of cash, the articulated lamp and its warm cone, the wall clock, the blanketed bearded man and the city-light window are all itemised in the page-2 visual subjects with their regions, and the push-in toward the laptop glow, the lamp bloom and the window parallax are exactly this asset's three suggested_motion entries. The asset notes the small screen icons are legible only as list rows and banknotes, so the composition asks for shapes rather than any readable content.",
         "text_overlay": "",
-        "source_support": "Uses img_c99892bd2a98's seated meditating figure and empty bowl (figure_descriptions, visual_subjects) as the anchor image the scene's visual_intent explicitly requests, even though the narration here describes the flight itself; motion follows the asset's own suggested slow zoom toward the figure.",
-        "video_motion_intent": "",
-        "video_candidate_rank": null,
-        "fade_in_frames": 12,
-        "fade_out_frames": 8,
         "still_motion": {
-          "scale_from": 1,
-          "scale_to": 1.15,
+          "scale_from": 1.05,
+          "scale_to": 1.22,
           "translate_x_from": 0,
-          "translate_x_to": 0,
-          "translate_y_from": 0.04,
-          "translate_y_to": 0,
-          "easing": "ease"
-        }
+          "translate_x_to": 4,
+          "translate_y_from": 0,
+          "translate_y_to": -2,
+          "easing": "easeOut"
+        },
+        "fade_in_frames": 8,
+        "fade_out_frames": 6,
+        "video_candidate_rank": null,
+        "video_motion_intent": ""
       },
       {
         "sequence": 3,
-        "visual_treatment": "SUBTLE_ANIMATION",
+        "visual_treatment": "USE_EXISTING_ART",
         "source_asset_ids": [
-          "img_c99892bd2a98"
+          "img_32bc0f72bd41"
         ],
-        "shot_goal": "Land the reversal -- his extremes failed, and the realization that everyone suffers becomes the Buddha's first teaching -- as a calm, weighty revelation.",
-        "frame_composition": "Same story_art_region crop as the previous shot (seated figure under the heart-leaved tree, empty bowl beside him), held slightly wider and steadier to let stillness read as the emotional center of the frame.",
-        "motion_plan": "Hushed, continuous drift: heart-shaped leaves settle slowly per the asset's own suggested 'gentle falling-leaves animation,' paired with a near-imperceptible push toward the figure, timed to hold through the flat 'It handed him nothing' beat before easing very slightly further as 'everyone suffers' resolves.",
-        "text_overlay": "It handed him nothing",
-        "source_support": "Reuses img_c99892bd2a98's seated figure and its own suggested_motion (falling leaves, slow zoom toward the figure) to carry the revelation without inventing new imagery; the tree's heart-shaped leaves are flagged in the asset's uncertainties as stylized rather than a literal Bodhi tree, so no botanical specificity is asserted.",
-        "video_motion_intent": "Gentle downward drift of the heart-shaped leaves falling from the canopy around the seated figure, with an almost imperceptible push-in toward him as stillness settles after 'it handed him nothing' -- slow, hushed motion that lets the revelation breathe rather than distracting from it.",
-        "video_candidate_rank": 2,
-        "fade_in_frames": 8,
-        "fade_out_frames": 14,
+        "shot_goal": "Let the pull of safety land — the same night desk, now read as a cocoon rather than a workshop.",
+        "frame_composition": "The same page-2 illustration held wide in vertical, UI cropped, but recentred on the figure rather than the screen: the bearded man wrapped in the large mustard-yellow blanket occupies the middle of the frame, hunched toward the laptop, the blanket's soft bulk taking up more of the picture than his body does. The lamp cone and laptop glow fall to warm secondary accents at the left; the dark green-teal walls, the round clock and the night window close in around him, the framing kept slightly tight on all sides so the cosiness reads as enclosure. Lower frame stays quiet desk shadow.",
+        "motion_plan": "Near-stillness — an extremely slow creep inward with a faint downward drift, barely perceptible, so the shot feels like it is settling and warming rather than travelling. The light holds constant; nothing in the frame reaches or opens.",
+        "text_overlay": "",
+        "source_support": "Uses the page-2 art as-is per the scene's treatment, drawing on the analysis's mustard-yellow blanket, hunched posture, lamp and laptop light, teal night office and clock. Tightening the frame around the blanketed figure literalises the asset's own 'cozy-but-trapped' emotional tone and its composition note that the figure sits centre-right of the landscape card. The asset flags that whether the blanket is literal or symbolic is unstated, so the shot simply frames the blanket as drawn and lets the narration carry the metaphor.",
         "still_motion": {
-          "scale_from": 1.05,
-          "scale_to": 1.18,
-          "translate_x_from": -0.02,
-          "translate_x_to": 0.02,
-          "translate_y_from": null,
-          "translate_y_to": null,
+          "scale_from": 1.1,
+          "scale_to": 1.15,
+          "translate_x_from": 0,
+          "translate_x_to": -1,
+          "translate_y_from": 0,
+          "translate_y_to": 1.5,
           "easing": "linear"
-        }
+        },
+        "fade_in_frames": 6,
+        "fade_out_frames": 10,
+        "video_candidate_rank": null,
+        "video_motion_intent": ""
       },
       {
         "sequence": 4,
-        "visual_treatment": "USE_EXISTING_ART",
+        "visual_treatment": "SUBTLE_ANIMATION",
         "source_asset_ids": [
-          "img_7e9bbe598ea9"
+          "img_4298f6afa10b"
         ],
-        "shot_goal": "Shift the lesson to a relatable modern register by showing Manson's unused guitar and idle props as evidence of dreaming without practicing.",
-        "frame_composition": "Crop to story_art_region (x:54-943, y:435-685) per CROP_TO_TEXT_AND_ART, framing the top-down flat-lay of guitar, alarm clock, spilled coffee mug, and notebook on the wood floor, with the standing figure kept at the frame's edge (~628-834, 410-540) beneath the diagonal orange spotlight band.",
-        "motion_plan": "Slow horizontal pan across the flat-lay per the asset's own suggested_motion ('slow pan across the flat-lay objects'), moving across guitar, clock, spilled mug and notebook, with a slight additional push toward the guitar as the visual focal point of 'never practiced.'",
-        "text_overlay": "loving the fame, never the practice",
-        "source_support": "Grounded in img_7e9bbe598ea9's visual_subjects (guitar, clock, spilled mug, notebook, standing figure) and its suggested_motion (slow pan, subtle zoom on the guitar); the figure is not asserted to be a literal portrait of the author, consistent with the asset's own uncertainty about whether 'Manson' refers to a specific confirmed public figure.",
-        "video_motion_intent": "Subtle wisps of steam rising from the spilled coffee and a faint ticking motion on the clock hands, with dust motes drifting through the diagonal spotlight -- small signs of time passing while the guitar sits untouched, reinforcing 'never practiced' through environmental motion rather than a single dramatic action.",
-        "video_candidate_rank": 4,
-        "fade_in_frames": 10,
-        "fade_out_frames": 6,
+        "shot_goal": "Turn the volume up — intrusive worries crowding in one after another around a man who has stopped working.",
+        "frame_composition": "Vertical crop of the page-3 angular cubist art, UI removed. The hunched man in a blue shirt sits right of centre, seen from behind and side, face in shadow over the boxy bright-screened monitor. The cluster of dark jagged thought bubbles arcs above and around his head across the upper middle of the frame, each holding a small simple icon shape. Hard diagonal beams of orange light cut in from the bright window behind him; the faint wall clock hangs in the dark. The grey-and-orange shard mass is just visible entering frame at the far left edge. Angular dark office planes fill the padding.",
+        "motion_plan": "Slow zoom toward the hunched figure while the jagged bubbles arrive in a staggered sequence around his head — one, then two more, then the rest — each snapping into place at slightly different speeds and sizes so the crowding accelerates. A faint tremor runs through the shard mass at the frame edge on the later arrivals. The zoom never eases off; it keeps closing as the frame fills.",
+        "text_overlay": "",
+        "source_support": "The hunched blue-shirted man, the cluster of dark jagged thought bubbles with icon shapes, the CRT-style monitor, the diagonal orange window light, the wall clock and the grey-orange shard mass are all listed in the page-3 visual subjects with regions. The staggered bubble pop-in, the slow zoom toward the figure and the shard tremor are precisely this asset's three suggested_motion entries. Because the asset states the bubble icons are interpreted rather than labelled, they are framed as small icon shapes with no assigned meaning.",
         "still_motion": {
           "scale_from": 1,
-          "scale_to": 1.06,
-          "translate_x_from": -0.05,
-          "translate_x_to": 0.05,
-          "translate_y_from": null,
-          "translate_y_to": null,
-          "easing": "linear"
-        }
+          "scale_to": 1.14,
+          "translate_x_from": 0,
+          "translate_x_to": -4,
+          "translate_y_from": 1,
+          "translate_y_to": -1,
+          "easing": "ease"
+        },
+        "fade_in_frames": 4,
+        "fade_out_frames": 3,
+        "video_candidate_rank": 5,
+        "video_motion_intent": "Anxious thoughts arriving as real staggered events — jagged shapes punching in around his head at uneven intervals, each one jolting the light a little, the room's angular planes seeming to tighten with every arrival. Escalation is a rhythm, and rhythm is something only actual timed motion can carry; a still can show crowding but not the sensation of it getting louder."
       },
       {
         "sequence": 5,
-        "visual_treatment": "USE_EXISTING_ART",
+        "visual_treatment": "CROP_AND_RECOMPOSE",
         "source_asset_ids": [
-          "img_d5101d6cfa1e"
+          "img_4298f6afa10b"
         ],
-        "shot_goal": "Crystallize the core principle -- everyone wants the reward, few want the struggle -- by contrasting the solitary practicing figure with the empty chairs of an absent audience.",
-        "frame_composition": "Crop to story_art_region (x:54-943, y:490-700), centering the seated figure playing acoustic guitar under the warm floor lamp (~357-672, 490-660), with rows of empty folding chairs visible at either side, removing the 'Drag or tap the card' UI instruction and status bar per ui_regions.",
-        "motion_plan": "Slow zoom in on the figure playing guitar per the asset's own suggested_motion, paired with a gentle warm glow/flicker from the floor lamp; frame stays tight enough that the empty chairs remain a felt presence at the edges rather than the focal point.",
-        "text_overlay": "Few want the struggle that earns it",
-        "source_support": "Grounded in img_d5101d6cfa1e's visual_subjects (figure playing guitar, floor lamp, empty folding chairs) and its own suggested_motion ('slow zoom on figure playing guitar,' 'warm light flicker/glow animation from the lamp'), which together stage the solitary grind the narration names.",
-        "video_motion_intent": "The figure's fingers actually moving in a slow strum across the guitar strings, with the floor lamp's warm light gently breathing/flickering -- real motion of solitary practice against the empty chairs sells 'the struggle that earns it' far more than a static pose, and the narration here is short and punchy enough for a brief generated clip to carry it.",
-        "video_candidate_rank": 1,
-        "fade_in_frames": 6,
-        "fade_out_frames": 10,
+        "shot_goal": "Peak blockage — put the barrier physically between the viewer and the man, so the goal is visibly cut off.",
+        "frame_composition": "Hard vertical recompose of the left portion of the page-3 art: the mass of grey and orange angular shards fills roughly the near half of the frame as a fractured foreground plane, its cracked edges running top to bottom. Beyond it, small and pushed to the far side, the hunched man at his monitor is glimpsed between shard edges, with a sliver of the orange window light reaching past. Everything else is dark angular office. The shards are near enough to be graphically abstract — flat facets, sharp negative gaps — with the human scale deliberately tiny by comparison.",
+        "motion_plan": "A lateral slide across the shard plane combined with a slight pull inward: the frame tracks sideways so successive facets pass through the foreground and progressively occlude the distant figure until only a narrow gap of him remains. A low-amplitude tremor runs through the shard facets throughout, out of sync with the camera move.",
+        "text_overlay": "",
+        "source_support": "Built entirely from the page-3 asset's own cracked grey-and-orange shard mass (region 150-450 x, 510-880 y) on the left of the landscape card and the hunched figure at 580-760 x, following the composition note that the shattered wall on the left balances the figure on the right — the vertical crop simply isolates that left mass. The asset flags as uncertain whether the shard wall is being built or is shattering, so no growth or collapse is described: the barrier holds and only the camera move changes what it hides.",
         "still_motion": {
-          "scale_from": 1,
-          "scale_to": 1.1,
-          "translate_x_from": 0,
-          "translate_x_to": 0,
-          "translate_y_from": 0.02,
-          "translate_y_to": -0.02,
-          "easing": "easeOut"
-        }
+          "scale_from": 1.3,
+          "scale_to": 1.21,
+          "translate_x_from": 6,
+          "translate_x_to": -4,
+          "translate_y_from": 0,
+          "translate_y_to": 0,
+          "easing": "ease"
+        },
+        "fade_in_frames": 3,
+        "fade_out_frames": 12,
+        "video_candidate_rank": 4,
+        "video_motion_intent": "Foreground shards drifting and rotating fractionally against each other as the camera tracks, the gaps between them narrowing until the distant figure is swallowed — a slow, physical shutting-out. The line is four and a half seconds and purely about obstruction, so a barrier that genuinely moves in front of the lens delivers the claustrophobia far better than a pan across a fixed plate."
       },
       {
         "sequence": 6,
-        "visual_treatment": "MIXED",
+        "visual_treatment": "SUBTLE_ANIMATION",
         "source_asset_ids": [
-          "img_d5101d6cfa1e",
-          "img_189adab8f683"
+          "img_00daa58a9bb0"
         ],
-        "shot_goal": "Close on a reflective note, letting the practicing figure's quiet dedication and the closing line hand the idea back to the viewer.",
-        "frame_composition": "Open on the same story_art_region as the previous shot (figure playing guitar under the lamp amid empty chairs) but framed slightly wider than shot 5's tight push, then settle the closing narration as text_overlay layered over the warm-lit scene, echoing the wording of img_189adab8f683's prominent_quote rather than reproducing that asset's plain white card, which its own production notes flag as having no illustrative art and needing generation to use visually.",
-        "motion_plan": "A slow, gentle zoom-out/pull-back from the practicing figure, widening to reveal more of the empty room and chairs so the frame has room to breathe as the final line lands; text fades in softly over the closing seconds.",
-        "text_overlay": "Happiness isn't a finish line",
-        "source_support": "Primary visual is grounded in img_d5101d6cfa1e's practicing-figure illustration and suggested_motion, deliberately reused to bookend the Manson thread; img_189adab8f683 contributes only its verified prominent_quote wording (which matches the narration's closing line), since the asset itself states it has no story_art_region and recommends NEEDS_GENERATION rather than direct visual reuse.",
-        "video_motion_intent": "A slow, unhurried pull-back/dolly-out from the practicing figure under the lamp, widening to reveal the empty chairs and quiet room, as if giving the viewer literal room to sit with the closing thought -- minimal, gentle camera movement matching the slowed, reflective pace of the final line.",
-        "video_candidate_rank": 3,
-        "fade_in_frames": 10,
-        "fade_out_frames": 20,
+        "shot_goal": "The turn — pressure releases as the thing that looked like judgement comes apart.",
+        "frame_composition": "Cut to the warm-toned page-4 art in vertical crop, UI removed, an immediate palette jump from fractured grey to amber. The dark mask-like face sits upper-left of the frame, already breaking into angular shards; the curly-haired figure in a dark long-sleeve top is centred lower-right, eyes closed, hands on the keyboard, face and shoulders bathed in the diagonal orange light shafts that fall from the upper right. The round white clock sits low beside the mask. The monitor with its envelope icon is kept just inside the right edge, small for now. Dim warm office fills the padded sides.",
+        "motion_plan": "Gentle push-in that favours the mask side of the frame while the mask's fragments separate and drift outward in a slow, uneven bloom, the pieces losing their grip on the face shape and thinning into the warm air. The light shafts brighten a touch as the mask opens. The figure stays still and soft-edged throughout — the only thing coming apart is the dark shape behind them.",
+        "text_overlay": "fear wearing a mask",
+        "source_support": "The page-4 analysis supplies the dark mask-like face breaking into shards (270-420 x, 525-640 y), the curly-haired figure with eyes closed, the round clock, the envelope monitor at the right and the warm diagonal light shafts from the window. The animated shatter of the mask fragments and the push-in are two of the asset's three suggested_motion entries. The asset notes the mask motif is inferred and that this figure may not be the page-1 character, so the shot describes only what is drawn and never identifies the figure by name.",
         "still_motion": {
-          "scale_from": 1.12,
-          "scale_to": 1,
+          "scale_from": 1,
+          "scale_to": 1.18,
           "translate_x_from": 0,
-          "translate_x_to": 0,
-          "translate_y_from": -0.02,
+          "translate_x_to": 3,
+          "translate_y_from": 1,
           "translate_y_to": 0,
           "easing": "easeOut"
-        }
+        },
+        "fade_in_frames": 12,
+        "fade_out_frames": 6,
+        "video_candidate_rank": 1,
+        "video_motion_intent": "The mask genuinely coming apart: shards peeling off the dark face in staggered order, tumbling and slowing as they drift into the warm light, with the light shafts strengthening through the widening gaps. This is the single beat where something physically happens and the whole reel pivots on it, the narration is short and lands on the image, and a Ken-Burns push can only slide past a shatter that is already frozen in the artwork."
+      },
+      {
+        "sequence": 7,
+        "visual_treatment": "TEXT_LED",
+        "source_asset_ids": [
+          "img_00daa58a9bb0",
+          "img_b54ab1e561ef"
+        ],
+        "shot_goal": "Step out of the story for four seconds and name the mechanism driving all of it.",
+        "frame_composition": "A darkened, simplified plate: the page-4 warm office pushed down into deep shadow and heavy blur so only the amber light shafts and the vague silhouette of the desk read, with scattered dark mask fragments drifting sparsely across the upper third against that gloom. A thin gold horizontal rule sits near the very top of the frame and a narrow gold vertical strip runs down the right edge, borrowed from the cream reflection page as a framing device. The entire middle and lower two-thirds are held deliberately empty and uncluttered.",
+        "motion_plan": "Very slow outward drift — the plate easing back and sinking a fraction — while the loose mask fragments float downward at differing speeds with slight rotation, like ash settling. Nothing accelerates; the movement is cool and even, letting the frame feel like a held breath rather than a scene.",
+        "text_overlay": "The ego hates change",
+        "source_support": "Reuses the page-4 asset's own mask fragments, warm light shafts and dim office, and the reflection page's only two graphic features — its thin gold rule at the top edge and the narrow gold strip at the right. That second asset's production block records no artwork at all and recommends pairing its text with reused illustration, which is exactly what this darkened page-4 plate provides. Both cited assets belong to this scene. The reflection page's uncertainty about its surrounding context is untouched here, since only its cream-page gold edge treatment is used.",
+        "still_motion": {
+          "scale_from": 1.16,
+          "scale_to": 1.08,
+          "translate_x_from": 0,
+          "translate_x_to": -1,
+          "translate_y_from": -1,
+          "translate_y_to": 2,
+          "easing": "ease"
+        },
+        "fade_in_frames": 6,
+        "fade_out_frames": 7,
+        "video_candidate_rank": null,
+        "video_motion_intent": ""
+      },
+      {
+        "sequence": 8,
+        "visual_treatment": "SUBTLE_ANIMATION",
+        "source_asset_ids": [
+          "img_00daa58a9bb0"
+        ],
+        "shot_goal": "Land the irreversible act — a breath, then the letter is gone.",
+        "frame_composition": "Return to the page-4 art, now cropped close: the curly-haired figure's head and shoulders fill the upper-centre of the vertical frame, eyes closed, the visible puff of exhaled breath drawn in front of their face, hands still on the keyboard at the lower edge. Warm orange light shafts rake across from the upper right. The monitor displaying the large envelope icon is brought fully into frame at the right, sized large enough to read clearly as the second focal point. Background office is dim and simple; the mask fragments are gone from this crop.",
+        "motion_plan": "A close push-in that starts on the exhaling face and drifts steadily leftward-across so the envelope-icon monitor rises into frame and takes the composition by the end of the move. As the envelope arrives, a soft glow pulse swells out from the screen and fades, warming the figure's face and hands. The breath puff expands and dissipates during the first half of the move.",
+        "text_overlay": "",
+        "source_support": "Directly follows the page-4 asset's suggested_motion: slow push-in on the exhaling face and a glow pulse on the envelope icon at the moment of send. The exhaling curly-haired figure (390-680 x, 555-880 y), the envelope monitor (730-840 x, 625-755 y), the keyboard and the warm light shafts are all documented visual subjects, and the analysis's composition note that the envelope anchors the payoff on the right is what drives the lateral drift. The figure is again described only as drawn, respecting the asset's uncertainty about their identity.",
+        "still_motion": {
+          "scale_from": 1.08,
+          "scale_to": 1.24,
+          "translate_x_from": 0,
+          "translate_x_to": -5,
+          "translate_y_from": 0,
+          "translate_y_to": 1,
+          "easing": "easeOut"
+        },
+        "fade_in_frames": 7,
+        "fade_out_frames": 14,
+        "video_candidate_rank": 2,
+        "video_motion_intent": "A real breath: the chest and shoulders rising and falling once, the exhaled puff forming and dissolving, then a single small hand movement at the keys and the envelope on the screen flaring warm and settling. Short, punchy narration built out of three physical actions — closing, breathing, clicking — and motion is the only way the click reads as a decision rather than a still of someone sitting quietly."
+      },
+      {
+        "sequence": 9,
+        "visual_treatment": "TEXT_LED",
+        "source_asset_ids": [
+          "img_b54ab1e561ef"
+        ],
+        "shot_goal": "Hand the question to the viewer and hold the frame open long enough for it to land.",
+        "frame_composition": "The reflection page reduced to its clean plate: a full-frame field of warm cream-ivory paper, generous and completely empty through the centre, with a thin gold horizontal rule running across near the very top and a narrow gold vertical strip along the right edge. The dark sliver at the extreme right is cropped away. A soft warm falloff darkens the outer corners very slightly, and a faint suggestion of warm amber light spills in from the upper right, carrying the tone forward from the previous shot. No figures, no objects, no artwork — just paper, light and the two gold accents.",
+        "motion_plan": "An almost imperceptible slow drift: the paper field easing inward and rising a fraction, so the frame feels alive without going anywhere. The warm light in the upper right dims gradually across the shot until the whole field cools toward a soft, even calm at the end.",
+        "text_overlay": "What has your fear disguised as common sense?",
+        "source_support": "This asset's visual analysis records exactly three things — a plain cream/ivory background, a thin gold rule at the top and a narrow gold strip at the right edge — plus a dark sliver at the far right that its cleanup notes say to crop, and that is precisely the plate described. Its production block lists no story art region and rates vertical suitability low, so the shot is built as an empty typographic ground with the slow vertical drift it suggests, leaving the whole centre clear for composited text. The asset's uncertainty about its relationship to the story pages is irrelevant here, since only its blank page surface is used.",
+        "still_motion": {
+          "scale_from": 1.04,
+          "scale_to": 1.1,
+          "translate_x_from": 0,
+          "translate_x_to": 0,
+          "translate_y_from": 1.5,
+          "translate_y_to": -1.5,
+          "easing": "linear"
+        },
+        "fade_in_frames": 14,
+        "fade_out_frames": 30,
+        "video_candidate_rank": null,
+        "video_motion_intent": ""
       }
     ],
     "quality_review": {
       "verdict": "APPROVE",
       "ready_for_generation": true,
-      "confidence": 0.9,
+      "confidence": 0.88,
       "scores": {
         "source_fidelity": 9,
         "generation_mode_appropriateness": 9,
         "visual_coherence": 9,
         "narrative_alignment": 9,
-        "internal_consistency": 9
+        "internal_consistency": 10
       }
     }
   },
-  "result": "{\"produced_by\":\"visual_agent\",\"overall_visual_style\":\"A warm, halftone-textured flat-illustration style throughout, carried directly from the source app's recurring bald cartoon figure and muted amber/teal/orange palette; every shot crops out app chrome, the status bar, and the unrelated cricket-score banner so only the illustrated story world and narration-timed text overlays remain. Camera language stays slow, deliberate, and hushed -- soft push-ins, gentle horizontal pans, and unhurried pull-backs -- mirroring the narrator's calm, contemplative pacing, with motion intensity rising only slightly on the two human-scale \\\"practice\\\" scenes to underline physical, earned effort versus the stillness of realization.\",\"shots\":[{\"sequence\":1,\"visual_treatment\":\"USE_EXISTING_ART\",\"source_asset_ids\":[\"img_87a825c5a858\"],\"shot_goal\":\"Establish the prince's sheltered isolation amid abundance to open the hook with quiet foreboding.\",\"frame_composition\":\"Crop to the story_art_region (x:54-943, y:457-702) per the asset's recommended CROP_TO_TEXT_AND_ART strategy, cutting out the status bar/cricket banner, header, progress bar, and nav arrows per its listed ui_regions; vertical reframe centers the bald prince figure (~433-563, 540-685) with silhouetted servants and trays flanking him under the arched, vine-draped colonnade.\",\"motion_plan\":\"Slow, steady zoom-in toward the centered prince per the asset's own suggested_motion ('slow zoom-in on the prince figure'), tightening gradually over the shot so the servants and archways recede toward the frame edges, visually reinforcing isolation despite abundance; a single smooth push, no separate parallax layers.\",\"text_overlay\":\"\",\"source_support\":\"Grounded in img_87a825c5a858's story_art_region and figure_descriptions (centered bald prince, silhouetted servants with trays, ornate amber-lit courtyard); the fallback motion follows the asset's own suggested_motion, and cropping follows its visual_cleanup_needed notes about removing the cricket banner and app chrome.\",\"video_motion_intent\":\"\",\"video_candidate_rank\":null,\"fade_in_frames\":10,\"fade_out_frames\":12,\"still_motion\":{\"scale_from\":1,\"scale_to\":1.12,\"translate_x_from\":0,\"translate_x_to\":0,\"translate_y_from\":0.02,\"translate_y_to\":-0.02,\"easing\":\"easeOut\"}},{\"sequence\":2,\"visual_treatment\":\"USE_EXISTING_ART\",\"source_asset_ids\":[\"img_c99892bd2a98\"],\"shot_goal\":\"Visualize the extremity of his search -- renouncing the throne, sleeping in dirt, starving himself -- using the seated ascetic figure as the visual anchor the scene calls for.\",\"frame_composition\":\"Crop to story_art_region (x:54-943, y:457-702), centering the seated cross-legged figure beneath the heart-leaved tree with the empty alms bowl beside him, removing the status bar/cricket banner and progress indicator per ui_regions.\",\"motion_plan\":\"Gentle, slow zoom drifting inward toward the seated figure per the asset's suggested_motion ('slow zoom into the seated figure's face'), kept measured and unhurried to match the slow, weighted narration pacing note for this passage; movement stays understated so the figure reads as an ongoing state of searching rather than a single instant.\",\"text_overlay\":\"\",\"source_support\":\"Uses img_c99892bd2a98's seated meditating figure and empty bowl (figure_descriptions, visual_subjects) as the anchor image the scene's visual_intent explicitly requests, even though the narration here describes the flight itself; motion follows the asset's own suggested slow zoom toward the figure.\",\"video_motion_intent\":\"\",\"video_candidate_rank\":null,\"fade_in_frames\":12,\"fade_out_frames\":8,\"still_motion\":{\"scale_from\":1,\"scale_to\":1.15,\"translate_x_from\":0,\"translate_x_to\":0,\"translate_y_from\":0.04,\"translate_y_to\":0,\"easing\":\"ease\"}},{\"sequence\":3,\"visual_treatment\":\"SUBTLE_ANIMATION\",\"source_asset_ids\":[\"img_c99892bd2a98\"],\"shot_goal\":\"Land the reversal -- his extremes failed, and the realization that everyone suffers becomes the Buddha's first teaching -- as a calm, weighty revelation.\",\"frame_composition\":\"Same story_art_region crop as the previous shot (seated figure under the heart-leaved tree, empty bowl beside him), held slightly wider and steadier to let stillness read as the emotional center of the frame.\",\"motion_plan\":\"Hushed, continuous drift: heart-shaped leaves settle slowly per the asset's own suggested 'gentle falling-leaves animation,' paired with a near-imperceptible push toward the figure, timed to hold through the flat 'It handed him nothing' beat before easing very slightly further as 'everyone suffers' resolves.\",\"text_overlay\":\"It handed him nothing\",\"source_support\":\"Reuses img_c99892bd2a98's seated figure and its own suggested_motion (falling leaves, slow zoom toward the figure) to carry the revelation without inventing new imagery; the tree's heart-shaped leaves are flagged in the asset's uncertainties as stylized rather than a literal Bodhi tree, so no botanical specificity is asserted.\",\"video_motion_intent\":\"Gentle downward drift of the heart-shaped leaves falling from the canopy around the seated figure, with an almost imperceptible push-in toward him as stillness settles after 'it handed him nothing' -- slow, hushed motion that lets the revelation breathe rather than distracting from it.\",\"video_candidate_rank\":2,\"fade_in_frames\":8,\"fade_out_frames\":14,\"still_motion\":{\"scale_from\":1.05,\"scale_to\":1.18,\"translate_x_from\":-0.02,\"translate_x_to\":0.02,\"translate_y_from\":null,\"translate_y_to\":null,\"easing\":\"linear\"}},{\"sequence\":4,\"visual_treatment\":\"USE_EXISTING_ART\",\"source_asset_ids\":[\"img_7e9bbe598ea9\"],\"shot_goal\":\"Shift the lesson to a relatable modern register by showing Manson's unused guitar and idle props as evidence of dreaming without practicing.\",\"frame_composition\":\"Crop to story_art_region (x:54-943, y:435-685) per CROP_TO_TEXT_AND_ART, framing the top-down flat-lay of guitar, alarm clock, spilled coffee mug, and notebook on the wood floor, with the standing figure kept at the frame's edge (~628-834, 410-540) beneath the diagonal orange spotlight band.\",\"motion_plan\":\"Slow horizontal pan across the flat-lay per the asset's own suggested_motion ('slow pan across the flat-lay objects'), moving across guitar, clock, spilled mug and notebook, with a slight additional push toward the guitar as the visual focal point of 'never practiced.'\",\"text_overlay\":\"loving the fame, never the practice\",\"source_support\":\"Grounded in img_7e9bbe598ea9's visual_subjects (guitar, clock, spilled mug, notebook, standing figure) and its suggested_motion (slow pan, subtle zoom on the guitar); the figure is not asserted to be a literal portrait of the author, consistent with the asset's own uncertainty about whether 'Manson' refers to a specific confirmed public figure.\",\"video_motion_intent\":\"Subtle wisps of steam rising from the spilled coffee and a faint ticking motion on the clock hands, with dust motes drifting through the diagonal spotlight -- small signs of time passing while the guitar sits untouched, reinforcing 'never practiced' through environmental motion rather than a single dramatic action.\",\"video_candidate_rank\":4,\"fade_in_frames\":10,\"fade_out_frames\":6,\"still_motion\":{\"scale_from\":1,\"scale_to\":1.06,\"translate_x_from\":-0.05,\"translate_x_to\":0.05,\"translate_y_from\":null,\"translate_y_to\":null,\"easing\":\"linear\"}},{\"sequence\":5,\"visual_treatment\":\"USE_EXISTING_ART\",\"source_asset_ids\":[\"img_d5101d6cfa1e\"],\"shot_goal\":\"Crystallize the core principle -- everyone wants the reward, few want the struggle -- by contrasting the solitary practicing figure with the empty chairs of an absent audience.\",\"frame_composition\":\"Crop to story_art_region (x:54-943, y:490-700), centering the seated figure playing acoustic guitar under the warm floor lamp (~357-672, 490-660), with rows of empty folding chairs visible at either side, removing the 'Drag or tap the card' UI instruction and status bar per ui_regions.\",\"motion_plan\":\"Slow zoom in on the figure playing guitar per the asset's own suggested_motion, paired with a gentle warm glow/flicker from the floor lamp; frame stays tight enough that the empty chairs remain a felt presence at the edges rather than the focal point.\",\"text_overlay\":\"Few want the struggle that earns it\",\"source_support\":\"Grounded in img_d5101d6cfa1e's visual_subjects (figure playing guitar, floor lamp, empty folding chairs) and its own suggested_motion ('slow zoom on figure playing guitar,' 'warm light flicker/glow animation from the lamp'), which together stage the solitary grind the narration names.\",\"video_motion_intent\":\"The figure's fingers actually moving in a slow strum across the guitar strings, with the floor lamp's warm light gently breathing/flickering -- real motion of solitary practice against the empty chairs sells 'the struggle that earns it' far more than a static pose, and the narration here is short and punchy enough for a brief generated clip to carry it.\",\"video_candidate_rank\":1,\"fade_in_frames\":6,\"fade_out_frames\":10,\"still_motion\":{\"scale_from\":1,\"scale_to\":1.1,\"translate_x_from\":0,\"translate_x_to\":0,\"translate_y_from\":0.02,\"translate_y_to\":-0.02,\"easing\":\"easeOut\"}},{\"sequence\":6,\"visual_treatment\":\"MIXED\",\"source_asset_ids\":[\"img_d5101d6cfa1e\",\"img_189adab8f683\"],\"shot_goal\":\"Close on a reflective note, letting the practicing figure's quiet dedication and the closing line hand the idea back to the viewer.\",\"frame_composition\":\"Open on the same story_art_region as the previous shot (figure playing guitar under the lamp amid empty chairs) but framed slightly wider than shot 5's tight push, then settle the closing narration as text_overlay layered over the warm-lit scene, echoing the wording of img_189adab8f683's prominent_quote rather than reproducing that asset's plain white card, which its own production notes flag as having no illustrative art and needing generation to use visually.\",\"motion_plan\":\"A slow, gentle zoom-out/pull-back from the practicing figure, widening to reveal more of the empty room and chairs so the frame has room to breathe as the final line lands; text fades in softly over the closing seconds.\",\"text_overlay\":\"Happiness isn't a finish line\",\"source_support\":\"Primary visual is grounded in img_d5101d6cfa1e's practicing-figure illustration and suggested_motion, deliberately reused to bookend the Manson thread; img_189adab8f683 contributes only its verified prominent_quote wording (which matches the narration's closing line), since the asset itself states it has no story_art_region and recommends NEEDS_GENERATION rather than direct visual reuse.\",\"video_motion_intent\":\"A slow, unhurried pull-back/dolly-out from the practicing figure under the lamp, widening to reveal the empty chairs and quiet room, as if giving the viewer literal room to sit with the closing thought -- minimal, gentle camera movement matching the slowed, reflective pace of the final line.\",\"video_candidate_rank\":3,\"fade_in_frames\":10,\"fade_out_frames\":20,\"still_motion\":{\"scale_from\":1.12,\"scale_to\":1,\"translate_x_from\":0,\"translate_x_to\":0,\"translate_y_from\":-0.02,\"translate_y_to\":0,\"easing\":\"easeOut\"}}],\"quality_review\":{\"verdict\":\"APPROVE\",\"ready_for_generation\":true,\"confidence\":0.9,\"scores\":{\"source_fidelity\":9,\"generation_mode_appropriateness\":9,\"visual_coherence\":9,\"narrative_alignment\":9,\"internal_consistency\":9}}}",
+  "result": "{\"produced_by\":\"visual_agent\",\"overall_visual_style\":\"One continuous flat-vector illustrated world, cropped out of its app chrome and recomposed vertical: rounded-corner story art enlarged and padded with its own blurred, darkened palette so every frame fills 9:16 without white bars. The palette travels the emotional arc — deep plum and monitor-green at the open, teal-and-mustard lamplight in the middle, fractured grey-orange at the peak of panic, then warm amber daybreak for the turn and a clean cream paper field at the close. Motion language is restrained and hand-guided: slow Ken-Burns pushes and lateral slides at a steady, breath-like speed, never snapping, with fades that tighten and shorten as the panic escalates and lengthen again once the mask breaks. Texture stays flat-graphic — clean shapes, grainless fills, soft light cones and shafts as the only atmosphere — matching the narrator's calm, close-mic, quietly intense recounting rather than dramatizing it. Lower-third areas are left visually quiet in every shot so narration text can be composited later without fighting the art.\",\"shots\":[{\"sequence\":1,\"visual_treatment\":\"CROP_AND_RECOMPOSE\",\"source_asset_ids\":[\"img_55d33b8161ef\"],\"shot_goal\":\"Open on the frozen decision — a man suspended over a keyboard he cannot commit to — and establish the dark, watched, claustrophobic world of the story.\",\"frame_composition\":\"Vertical recompose of the page-1 story art only, app header bar and page-progress dashes cropped away. The dark night cubicle fills the frame in deep plum and purple, the seated man in a dark button-up shirt held slightly right of centre in profile, one hand resting on the keyboard, his face lit cold by the pale-green glow of the monitor at his left. The dark looming silhouette of a standing figure sits just behind his shoulder, deliberately soft and unreadable. A pale rounded thought bubble with small simple line icons floats above his head near the top third. Cubicle partitions frame the edges; the empty desk surface and shadowed floor hold the bottom third quiet. Side padding is filled with a blurred, darkened extension of the same plum interior.\",\"motion_plan\":\"Slow, continuous push-in toward the seated man, the frame easing very slightly leftward so he settles from off-centre toward centre as the shot closes. The looming silhouette scales marginally slower than the desk foreground, giving a faint parallax separation between the dread behind him and the lit workspace in front of him. No cuts, no whip — one unbroken creeping approach that never quite arrives.\",\"text_overlay\":\"\",\"source_support\":\"Every element is taken from the page-1 analysis: the seated man at 440-680 x, the monitor with its glowing pale-green screen at left, the dark looming silhouette behind him, the thought bubble, and the dim night cubicle environment. The crop follows the asset's own CROP_TO_TEXT_AND_ART strategy and its note that UI is safe to remove, and the push-in plus shadow/foreground parallax are two of its three suggested_motion entries. The asset flags both the bubble icons' meaning and whether the silhouette is a coworker or symbolic as uncertain, so the shot describes them only as shapes and a dark figure without asserting either reading.\",\"still_motion\":{\"scale_from\":1,\"scale_to\":1.17,\"translate_x_from\":0,\"translate_x_to\":-3,\"translate_y_from\":0,\"translate_y_to\":1,\"easing\":\"ease\"},\"fade_in_frames\":18,\"fade_out_frames\":8,\"video_candidate_rank\":3,\"video_motion_intent\":\"A held, almost still frame in which only tiny things live: the man's finger trembling a few millimetres above the keys without landing, the monitor glow breathing faintly across his face, and the silhouette behind him drifting a hair closer. The whole point of the hook is a body refusing to move, which a Ken-Burns push can only imply — real micro-motion makes the frozen finger read as genuinely suspended rather than as a photograph.\"},{\"sequence\":2,\"visual_treatment\":\"SUBTLE_ANIMATION\",\"source_asset_ids\":[\"img_32bc0f72bd41\"],\"shot_goal\":\"Show that the escape route is already real and paid for — six months of night work sitting finished on the screen.\",\"frame_composition\":\"Vertical crop of the page-2 story art, UI removed. The lamp-lit corner of the night desk carries the frame: the open laptop's illuminated screen sits at the visual centre with its rows of list items and a fan of banknotes readable as shapes, the articulated desk lamp above-left throwing a warm cone of light down across it. The bearded man leans in from the right edge, partly cropped, blanket-wrapped shoulder catching the lamp glow. Deep green-teal office recedes behind him with the round wall clock and the night window's city lights small and dim in the upper background. Blurred teal extension pads the vertical sides.\",\"motion_plan\":\"Steady push-in toward the laptop glow, the frame drifting slightly right and up so the screen grows into the centre of the vertical frame. The lamp's light cone blooms almost imperceptibly brighter across the move, and the distant window lights hold a slower parallax than the desk plane so the room feels deep rather than flat.\",\"source_support\":\"The laptop with list rows and a fan of cash, the articulated lamp and its warm cone, the wall clock, the blanketed bearded man and the city-light window are all itemised in the page-2 visual subjects with their regions, and the push-in toward the laptop glow, the lamp bloom and the window parallax are exactly this asset's three suggested_motion entries. The asset notes the small screen icons are legible only as list rows and banknotes, so the composition asks for shapes rather than any readable content.\",\"text_overlay\":\"\",\"still_motion\":{\"scale_from\":1.05,\"scale_to\":1.22,\"translate_x_from\":0,\"translate_x_to\":4,\"translate_y_from\":0,\"translate_y_to\":-2,\"easing\":\"easeOut\"},\"fade_in_frames\":8,\"fade_out_frames\":6,\"video_candidate_rank\":null,\"video_motion_intent\":\"\"},{\"sequence\":3,\"visual_treatment\":\"USE_EXISTING_ART\",\"source_asset_ids\":[\"img_32bc0f72bd41\"],\"shot_goal\":\"Let the pull of safety land — the same night desk, now read as a cocoon rather than a workshop.\",\"frame_composition\":\"The same page-2 illustration held wide in vertical, UI cropped, but recentred on the figure rather than the screen: the bearded man wrapped in the large mustard-yellow blanket occupies the middle of the frame, hunched toward the laptop, the blanket's soft bulk taking up more of the picture than his body does. The lamp cone and laptop glow fall to warm secondary accents at the left; the dark green-teal walls, the round clock and the night window close in around him, the framing kept slightly tight on all sides so the cosiness reads as enclosure. Lower frame stays quiet desk shadow.\",\"motion_plan\":\"Near-stillness — an extremely slow creep inward with a faint downward drift, barely perceptible, so the shot feels like it is settling and warming rather than travelling. The light holds constant; nothing in the frame reaches or opens.\",\"text_overlay\":\"\",\"source_support\":\"Uses the page-2 art as-is per the scene's treatment, drawing on the analysis's mustard-yellow blanket, hunched posture, lamp and laptop light, teal night office and clock. Tightening the frame around the blanketed figure literalises the asset's own 'cozy-but-trapped' emotional tone and its composition note that the figure sits centre-right of the landscape card. The asset flags that whether the blanket is literal or symbolic is unstated, so the shot simply frames the blanket as drawn and lets the narration carry the metaphor.\",\"still_motion\":{\"scale_from\":1.1,\"scale_to\":1.15,\"translate_x_from\":0,\"translate_x_to\":-1,\"translate_y_from\":0,\"translate_y_to\":1.5,\"easing\":\"linear\"},\"fade_in_frames\":6,\"fade_out_frames\":10,\"video_candidate_rank\":null,\"video_motion_intent\":\"\"},{\"sequence\":4,\"visual_treatment\":\"SUBTLE_ANIMATION\",\"source_asset_ids\":[\"img_4298f6afa10b\"],\"shot_goal\":\"Turn the volume up — intrusive worries crowding in one after another around a man who has stopped working.\",\"frame_composition\":\"Vertical crop of the page-3 angular cubist art, UI removed. The hunched man in a blue shirt sits right of centre, seen from behind and side, face in shadow over the boxy bright-screened monitor. The cluster of dark jagged thought bubbles arcs above and around his head across the upper middle of the frame, each holding a small simple icon shape. Hard diagonal beams of orange light cut in from the bright window behind him; the faint wall clock hangs in the dark. The grey-and-orange shard mass is just visible entering frame at the far left edge. Angular dark office planes fill the padding.\",\"motion_plan\":\"Slow zoom toward the hunched figure while the jagged bubbles arrive in a staggered sequence around his head — one, then two more, then the rest — each snapping into place at slightly different speeds and sizes so the crowding accelerates. A faint tremor runs through the shard mass at the frame edge on the later arrivals. The zoom never eases off; it keeps closing as the frame fills.\",\"text_overlay\":\"\",\"source_support\":\"The hunched blue-shirted man, the cluster of dark jagged thought bubbles with icon shapes, the CRT-style monitor, the diagonal orange window light, the wall clock and the grey-orange shard mass are all listed in the page-3 visual subjects with regions. The staggered bubble pop-in, the slow zoom toward the figure and the shard tremor are precisely this asset's three suggested_motion entries. Because the asset states the bubble icons are interpreted rather than labelled, they are framed as small icon shapes with no assigned meaning.\",\"still_motion\":{\"scale_from\":1,\"scale_to\":1.14,\"translate_x_from\":0,\"translate_x_to\":-4,\"translate_y_from\":1,\"translate_y_to\":-1,\"easing\":\"ease\"},\"fade_in_frames\":4,\"fade_out_frames\":3,\"video_candidate_rank\":5,\"video_motion_intent\":\"Anxious thoughts arriving as real staggered events — jagged shapes punching in around his head at uneven intervals, each one jolting the light a little, the room's angular planes seeming to tighten with every arrival. Escalation is a rhythm, and rhythm is something only actual timed motion can carry; a still can show crowding but not the sensation of it getting louder.\"},{\"sequence\":5,\"visual_treatment\":\"CROP_AND_RECOMPOSE\",\"source_asset_ids\":[\"img_4298f6afa10b\"],\"shot_goal\":\"Peak blockage — put the barrier physically between the viewer and the man, so the goal is visibly cut off.\",\"frame_composition\":\"Hard vertical recompose of the left portion of the page-3 art: the mass of grey and orange angular shards fills roughly the near half of the frame as a fractured foreground plane, its cracked edges running top to bottom. Beyond it, small and pushed to the far side, the hunched man at his monitor is glimpsed between shard edges, with a sliver of the orange window light reaching past. Everything else is dark angular office. The shards are near enough to be graphically abstract — flat facets, sharp negative gaps — with the human scale deliberately tiny by comparison.\",\"motion_plan\":\"A lateral slide across the shard plane combined with a slight pull inward: the frame tracks sideways so successive facets pass through the foreground and progressively occlude the distant figure until only a narrow gap of him remains. A low-amplitude tremor runs through the shard facets throughout, out of sync with the camera move.\",\"text_overlay\":\"\",\"source_support\":\"Built entirely from the page-3 asset's own cracked grey-and-orange shard mass (region 150-450 x, 510-880 y) on the left of the landscape card and the hunched figure at 580-760 x, following the composition note that the shattered wall on the left balances the figure on the right — the vertical crop simply isolates that left mass. The asset flags as uncertain whether the shard wall is being built or is shattering, so no growth or collapse is described: the barrier holds and only the camera move changes what it hides.\",\"still_motion\":{\"scale_from\":1.3,\"scale_to\":1.21,\"translate_x_from\":6,\"translate_x_to\":-4,\"translate_y_from\":0,\"translate_y_to\":0,\"easing\":\"ease\"},\"fade_in_frames\":3,\"fade_out_frames\":12,\"video_candidate_rank\":4,\"video_motion_intent\":\"Foreground shards drifting and rotating fractionally against each other as the camera tracks, the gaps between them narrowing until the distant figure is swallowed — a slow, physical shutting-out. The line is four and a half seconds and purely about obstruction, so a barrier that genuinely moves in front of the lens delivers the claustrophobia far better than a pan across a fixed plate.\"},{\"sequence\":6,\"visual_treatment\":\"SUBTLE_ANIMATION\",\"source_asset_ids\":[\"img_00daa58a9bb0\"],\"shot_goal\":\"The turn — pressure releases as the thing that looked like judgement comes apart.\",\"frame_composition\":\"Cut to the warm-toned page-4 art in vertical crop, UI removed, an immediate palette jump from fractured grey to amber. The dark mask-like face sits upper-left of the frame, already breaking into angular shards; the curly-haired figure in a dark long-sleeve top is centred lower-right, eyes closed, hands on the keyboard, face and shoulders bathed in the diagonal orange light shafts that fall from the upper right. The round white clock sits low beside the mask. The monitor with its envelope icon is kept just inside the right edge, small for now. Dim warm office fills the padded sides.\",\"motion_plan\":\"Gentle push-in that favours the mask side of the frame while the mask's fragments separate and drift outward in a slow, uneven bloom, the pieces losing their grip on the face shape and thinning into the warm air. The light shafts brighten a touch as the mask opens. The figure stays still and soft-edged throughout — the only thing coming apart is the dark shape behind them.\",\"text_overlay\":\"fear wearing a mask\",\"source_support\":\"The page-4 analysis supplies the dark mask-like face breaking into shards (270-420 x, 525-640 y), the curly-haired figure with eyes closed, the round clock, the envelope monitor at the right and the warm diagonal light shafts from the window. The animated shatter of the mask fragments and the push-in are two of the asset's three suggested_motion entries. The asset notes the mask motif is inferred and that this figure may not be the page-1 character, so the shot describes only what is drawn and never identifies the figure by name.\",\"still_motion\":{\"scale_from\":1,\"scale_to\":1.18,\"translate_x_from\":0,\"translate_x_to\":3,\"translate_y_from\":1,\"translate_y_to\":0,\"easing\":\"easeOut\"},\"fade_in_frames\":12,\"fade_out_frames\":6,\"video_candidate_rank\":1,\"video_motion_intent\":\"The mask genuinely coming apart: shards peeling off the dark face in staggered order, tumbling and slowing as they drift into the warm light, with the light shafts strengthening through the widening gaps. This is the single beat where something physically happens and the whole reel pivots on it, the narration is short and lands on the image, and a Ken-Burns push can only slide past a shatter that is already frozen in the artwork.\"},{\"sequence\":7,\"visual_treatment\":\"TEXT_LED\",\"source_asset_ids\":[\"img_00daa58a9bb0\",\"img_b54ab1e561ef\"],\"shot_goal\":\"Step out of the story for four seconds and name the mechanism driving all of it.\",\"frame_composition\":\"A darkened, simplified plate: the page-4 warm office pushed down into deep shadow and heavy blur so only the amber light shafts and the vague silhouette of the desk read, with scattered dark mask fragments drifting sparsely across the upper third against that gloom. A thin gold horizontal rule sits near the very top of the frame and a narrow gold vertical strip runs down the right edge, borrowed from the cream reflection page as a framing device. The entire middle and lower two-thirds are held deliberately empty and uncluttered.\",\"motion_plan\":\"Very slow outward drift — the plate easing back and sinking a fraction — while the loose mask fragments float downward at differing speeds with slight rotation, like ash settling. Nothing accelerates; the movement is cool and even, letting the frame feel like a held breath rather than a scene.\",\"text_overlay\":\"The ego hates change\",\"source_support\":\"Reuses the page-4 asset's own mask fragments, warm light shafts and dim office, and the reflection page's only two graphic features — its thin gold rule at the top edge and the narrow gold strip at the right. That second asset's production block records no artwork at all and recommends pairing its text with reused illustration, which is exactly what this darkened page-4 plate provides. Both cited assets belong to this scene. The reflection page's uncertainty about its surrounding context is untouched here, since only its cream-page gold edge treatment is used.\",\"still_motion\":{\"scale_from\":1.16,\"scale_to\":1.08,\"translate_x_from\":0,\"translate_x_to\":-1,\"translate_y_from\":-1,\"translate_y_to\":2,\"easing\":\"ease\"},\"fade_in_frames\":6,\"fade_out_frames\":7,\"video_candidate_rank\":null,\"video_motion_intent\":\"\"},{\"sequence\":8,\"visual_treatment\":\"SUBTLE_ANIMATION\",\"source_asset_ids\":[\"img_00daa58a9bb0\"],\"shot_goal\":\"Land the irreversible act — a breath, then the letter is gone.\",\"frame_composition\":\"Return to the page-4 art, now cropped close: the curly-haired figure's head and shoulders fill the upper-centre of the vertical frame, eyes closed, the visible puff of exhaled breath drawn in front of their face, hands still on the keyboard at the lower edge. Warm orange light shafts rake across from the upper right. The monitor displaying the large envelope icon is brought fully into frame at the right, sized large enough to read clearly as the second focal point. Background office is dim and simple; the mask fragments are gone from this crop.\",\"motion_plan\":\"A close push-in that starts on the exhaling face and drifts steadily leftward-across so the envelope-icon monitor rises into frame and takes the composition by the end of the move. As the envelope arrives, a soft glow pulse swells out from the screen and fades, warming the figure's face and hands. The breath puff expands and dissipates during the first half of the move.\",\"text_overlay\":\"\",\"source_support\":\"Directly follows the page-4 asset's suggested_motion: slow push-in on the exhaling face and a glow pulse on the envelope icon at the moment of send. The exhaling curly-haired figure (390-680 x, 555-880 y), the envelope monitor (730-840 x, 625-755 y), the keyboard and the warm light shafts are all documented visual subjects, and the analysis's composition note that the envelope anchors the payoff on the right is what drives the lateral drift. The figure is again described only as drawn, respecting the asset's uncertainty about their identity.\",\"still_motion\":{\"scale_from\":1.08,\"scale_to\":1.24,\"translate_x_from\":0,\"translate_x_to\":-5,\"translate_y_from\":0,\"translate_y_to\":1,\"easing\":\"easeOut\"},\"fade_in_frames\":7,\"fade_out_frames\":14,\"video_candidate_rank\":2,\"video_motion_intent\":\"A real breath: the chest and shoulders rising and falling once, the exhaled puff forming and dissolving, then a single small hand movement at the keys and the envelope on the screen flaring warm and settling. Short, punchy narration built out of three physical actions — closing, breathing, clicking — and motion is the only way the click reads as a decision rather than a still of someone sitting quietly.\"},{\"sequence\":9,\"visual_treatment\":\"TEXT_LED\",\"source_asset_ids\":[\"img_b54ab1e561ef\"],\"shot_goal\":\"Hand the question to the viewer and hold the frame open long enough for it to land.\",\"frame_composition\":\"The reflection page reduced to its clean plate: a full-frame field of warm cream-ivory paper, generous and completely empty through the centre, with a thin gold horizontal rule running across near the very top and a narrow gold vertical strip along the right edge. The dark sliver at the extreme right is cropped away. A soft warm falloff darkens the outer corners very slightly, and a faint suggestion of warm amber light spills in from the upper right, carrying the tone forward from the previous shot. No figures, no objects, no artwork — just paper, light and the two gold accents.\",\"motion_plan\":\"An almost imperceptible slow drift: the paper field easing inward and rising a fraction, so the frame feels alive without going anywhere. The warm light in the upper right dims gradually across the shot until the whole field cools toward a soft, even calm at the end.\",\"text_overlay\":\"What has your fear disguised as common sense?\",\"source_support\":\"This asset's visual analysis records exactly three things — a plain cream/ivory background, a thin gold rule at the top and a narrow gold strip at the right edge — plus a dark sliver at the far right that its cleanup notes say to crop, and that is precisely the plate described. Its production block lists no story art region and rates vertical suitability low, so the shot is built as an empty typographic ground with the slow vertical drift it suggests, leaving the whole centre clear for composited text. The asset's uncertainty about its relationship to the story pages is irrelevant here, since only its blank page surface is used.\",\"still_motion\":{\"scale_from\":1.04,\"scale_to\":1.1,\"translate_x_from\":0,\"translate_x_to\":0,\"translate_y_from\":1.5,\"translate_y_to\":-1.5,\"easing\":\"linear\"},\"fade_in_frames\":14,\"fade_out_frames\":30,\"video_candidate_rank\":null,\"video_motion_intent\":\"\"}],\"quality_review\":{\"verdict\":\"APPROVE\",\"ready_for_generation\":true,\"confidence\":0.88,\"scores\":{\"source_fidelity\":9,\"generation_mode_appropriateness\":9,\"visual_coherence\":9,\"narrative_alignment\":9,\"internal_consistency\":10}}}",
   "subtype": "success",
   "errors": null
 }

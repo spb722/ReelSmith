@@ -1,0 +1,16 @@
+{
+  "stage_id": "voice_agent",
+  "failed_contract_name": "SubtitleCuesContract",
+  "reason": "Subtitles failed: AlignmentQualityError: word_timing alignment is not accurate enough.\nNormalized match ratio: 0.929; literal match ratio: 0.929",
+  "attempt_count": 1,
+  "timestamp": "2026-09-21T15:24:16.702840+00:00",
+  "partial_artifact_paths": [
+    "metadata/final_story_plan.json",
+    "metadata/visual_plan.json",
+    "audio/narration.wav",
+    "metadata/narration_audio.json",
+    "orchestrator_runs/word_timing_diagnostics.json",
+    "orchestrator_runs/voice_agent_attempt_1.json",
+    "orchestrator_runs/voice_agent_attempt_1_alignment.json"
+  ]
+}

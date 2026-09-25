@@ -1,0 +1,26 @@
+[00:00:00] ▸ Making the Instagram cover
+[00:00:00]   A copy of everything printed here is being saved to orchestrator_runs/run_20260922T203151.log
+[00:00:00]   9 approved shot(s) available: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+[00:00:00]   Try 1 of 3 · choosing the frame and the hook
+[00:00:16]     StructuredOutput
+[00:00:16]   Cover plan: shot 6 · "What has your fear disguised as common sense?"
+[00:00:16]     Why: Shot 6 is the reel's central image and its turn — the thing that looked like judgement visibly coming apart into a mask — so it carries the idea rather than just the mood, and its warm empty lower third gives the text a clean place to sit. Pairing it with the narration's closing question turns the cover from a description of the video into a demand the viewer has to answer about their own hesitation.
+[00:00:17]     Cover: asking Codex to draw it (try 1 of 2)
+[00:00:32]     Cover: Codex is still drawing … 15s
+[00:00:47]     Cover: Codex is still drawing … 30s
+[00:01:02]     Cover: Codex is still drawing … 45s
+[00:01:17]     Cover: Codex is still drawing … 1m00s
+[00:01:32]     Cover: Codex is still drawing … 1m15s
+[00:01:47]     Cover: Codex is still drawing … 1m30s
+[00:02:02]     Cover: Codex is still drawing … 1m45s
+[00:02:17]     Cover: Codex is still drawing … 2m00s
+[00:02:32]     Cover: Codex is still drawing … 2m15s
+[00:02:47]     Cover: Codex is still drawing … 2m30s
+[00:03:02]     Cover: Codex is still drawing … 2m45s
+[00:03:06]     Cover: Codex finished in 2m49s
+[00:03:08]     Saved the text-free 1080×1920 portrait cover as final_image.png.
+[00:03:10]     Cover written to generated/cover/cover.png (font: Arial Bold.ttf, 108px)
+[00:03:11]     Grid preview written to generated/cover/cover_grid.png (1080x1350)
+[00:03:11]   Finished! Your cover is at generated/cover/cover.png
+[00:03:11]     Check generated/cover/cover_grid.png to see what survives the profile grid crop
+[00:03:11]     Claude cost for this cover: $0.07

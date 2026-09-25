@@ -1,0 +1,38 @@
+[00:00:00] ▸ Starting a new reel
+[00:00:00]   A copy of everything printed here is being saved to orchestrator_runs/run_20260921T205050.log
+[00:00:01]   Startup checks passed · reading screenshots from source_images
+[00:00:01]   Recurring character: assets/character/character.png — drawn only into shots whose artwork already shows a person
+[00:00:01] ▸ Step 1 of 7 — Looking at your screenshots
+[00:00:01]   Already done in an earlier run — skipping (metadata/analyzed_assets.json)
+[00:00:01]   Step 1 took 0s
+[00:00:01] ▸ Step 2 of 7 — Writing the narration
+[00:00:01]   Already done in an earlier run — skipping (metadata/final_story_plan.json)
+[00:00:01]   Step 2 took 0s · $0.78 spent so far
+[00:00:01] ▸ Step 3 of 7 — Planning the shots
+[00:00:01]   Try 1 of 4 · $29.22 left to spend
+[00:00:16]     still working … 15s
+[00:00:31]     still working … 30s
+[00:00:46]     still working … 45s
+[00:01:01]     still working … 1m00s
+[00:01:16]     still working … 1m15s
+[00:01:31]     still working … 1m30s
+[00:01:46]     still working … 1m45s
+[00:02:01]     still working … 2m00s
+[00:02:16]     still working … 2m15s
+[00:02:26]     StructuredOutput
+[00:02:27]   Done in 2m26s · cost $0.47 · saved metadata/visual_plan.json
+[00:02:27]   Step 3 took 2m26s · $1.25 spent so far
+[00:02:27] ▸ Step 4 of 7 — Recording the voice and building subtitles
+[00:02:27]   Part 1 of 3: reading the script out loud (voice: Gacrux)
+[00:02:27]     Speaking the script with the Gacrux voice
+[00:02:53]   Part 2 of 3: listening back to find when each word is spoken
+[00:02:53]     Listening to 61s of narration in 2 piece(s) (up to 55s each)
+[00:02:53]     Piece 1 of 2: listening…
+[00:03:21]     Piece 1 of 2: heard 105 words
+[00:03:21]     Piece 2 of 2: listening…
+[00:03:26]     Piece 2 of 2: heard 0 words
+[00:03:26]   Words matched: 93% word for word, 93% allowing for how numbers and hyphens get spoken
+[00:03:26]   Part 3 of 3: splitting the narration into subtitles
+[00:03:26]   STOPPED — Subtitles failed: AlignmentQualityError: word_timing alignment is not accurate enough.
+Normalized match ratio: 0.929; literal match ratio: 0.929
+[00:03:26]   Details of what went wrong: orchestrator_runs/failure_voice_agent_2026-09-21T1524167028400000.json

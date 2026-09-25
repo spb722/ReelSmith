@@ -2,720 +2,354 @@
   "produced_by": "asset_analyst",
   "assets": [
     {
-      "asset_id": "img_87a825c5a858",
-      "source_path": "source_images/IMG_8849.PNG",
-      "original_filename": "IMG_8849.PNG",
+      "asset_id": "img_55d33b8161ef",
+      "source_path": "source_images/IMG_8917.jpg",
+      "original_filename": "IMG_8917.jpg",
       "analysis": {
-        "content_type": "Illustrated narrative slide within a storytelling/learning app, with device status bar and app chrome overlaying the content",
+        "content_type": "In-app story reader screenshot: story page 1 of 4, with title, narrative paragraph and a flat-vector illustration",
         "source_text": {
-          "heading": "Choose Your Struggle",
-          "body_text": "To understand why suffering is inevitable, you have to look back 2,500 years to a young prince in Ancient India.\n\nBorn into a luxury palace where every single desire was met, the prince was kept isolated behind high walls so he would never see sickness, poverty, or death.",
-          "prominent_quote": "",
-          "other_story_text": [
-            "So he ran. He gave up the throne, slept in the dirt, and starved himself for years, sure that"
-          ],
+          "heading": "The False Logic of Fear",
+          "body_text": "\"I just don't think I'm ready,\" Mark said, staring at the draft of his resignation letter. His finger hovered over the delete key. This is a terrible mistake, a loud voice in his head screamed.",
+          "prominent_quote": "\"I just don't think I'm ready,\"",
+          "other_story_text": [],
           "ui_text": [
-            "2:39",
-            "Yet to bat",
-            "166/1 (24.2)",
-            "32",
-            "Choose Your Struggle"
+            "The False Logic of Fear"
           ],
           "verbatim_blocks": [
             {
               "reading_order": 1,
-              "block_type": "HEADING",
-              "text": "Choose Your Struggle",
+              "block_type": "UI",
+              "text": "The False Logic of Fear",
               "region": {
-                "x_min": 54,
-                "y_min": 75,
-                "x_max": 574,
-                "y_max": 115
+                "x_min": 55,
+                "y_min": 45,
+                "x_max": 610,
+                "y_max": 85
               }
             },
             {
               "reading_order": 2,
               "block_type": "HEADING",
-              "text": "Choose Your Struggle",
+              "text": "The False Logic of Fear",
               "region": {
-                "x_min": 54,
-                "y_min": 152,
-                "x_max": 628,
-                "y_max": 190
+                "x_min": 55,
+                "y_min": 175,
+                "x_max": 665,
+                "y_max": 225
               }
             },
             {
               "reading_order": 3,
               "block_type": "BODY",
-              "text": "To understand why suffering is inevitable, you have to look back 2,500 years to a young prince in Ancient India.",
-              "region": {
-                "x_min": 54,
-                "y_min": 205,
-                "x_max": 953,
-                "y_max": 290
-              }
-            },
-            {
-              "reading_order": 4,
-              "block_type": "BODY",
-              "text": "Born into a luxury palace where every single desire was met, the prince was kept isolated behind high walls so he would never see sickness, poverty, or death.",
-              "region": {
-                "x_min": 54,
-                "y_min": 320,
-                "x_max": 953,
-                "y_max": 420
-              }
-            },
-            {
-              "reading_order": 5,
-              "block_type": "OTHER",
-              "text": "So he ran. He gave up the throne, slept in the dirt, and starved himself for years, sure that",
-              "region": {
-                "x_min": 54,
-                "y_min": 985,
-                "x_max": 953,
-                "y_max": 1000
-              }
-            },
-            {
-              "reading_order": 6,
-              "block_type": "UI",
-              "text": "Yet to bat 166/1 (24.2)",
-              "region": {
-                "x_min": 195,
-                "y_min": 15,
-                "x_max": 802,
-                "y_max": 45
-              }
-            }
-          ],
-          "transcription_confidence": 0.95
-        },
-        "visual": {
-          "description": "A minimalist, halftone-textured flat illustration shows a lone bald cartoon prince in a blue sweater standing at the center of an ornate ancient palace courtyard, surrounded by silhouetted servants offering trays of fruit, drinks, and folded cloth beneath arched colonnades draped with hanging leafy vines.",
-          "main_elements": [
-            "Palace courtyard illustration",
-            "Cartoon prince figure",
-            "Silhouetted servants with trays",
-            "Narrative text paragraphs",
-            "App header UI",
-            "Cricket score notification banner",
-            "Slide progress indicator",
-            "Navigation arrows and play button",
-            "Truncated preview text of next slide"
-          ],
-          "visual_subjects": [
-            {
-              "subject_type": "ILLUSTRATED_PERSON",
-              "description": "Bald, round-headed cartoon prince wearing a blue sweater and dark trousers, standing alone with a neutral expression.",
-              "region": {
-                "x_min": 433,
-                "y_min": 540,
-                "x_max": 563,
-                "y_max": 685
-              }
-            },
-            {
-              "subject_type": "ILLUSTRATED_PERSON",
-              "description": "Multiple black silhouette figures (servants) surrounding the prince, each holding trays of fruit, drinks, or cloth.",
-              "region": {
-                "x_min": 54,
-                "y_min": 575,
-                "x_max": 953,
-                "y_max": 700
-              }
-            },
-            {
-              "subject_type": "ENVIRONMENT",
-              "description": "Ornate ancient palace courtyard with stone arches, carved reliefs, and hanging vine garlands lit in warm amber tones.",
-              "region": {
-                "x_min": 54,
-                "y_min": 457,
-                "x_max": 943,
-                "y_max": 702
-              }
-            }
-          ],
-          "real_people_visible": false,
-          "illustrated_or_cartoon_figures_visible": true,
-          "figure_descriptions": [
-            "Bald round-headed cartoon prince wearing a blue sweater and dark trousers, minimalist flat illustration style with black dot eyes and a neutral expression.",
-            "Multiple black silhouette figures (servants) holding trays of fruit, drinks, and folded cloth, depicted without facial features."
-          ],
-          "environment": "Ornate ancient palace courtyard interior with stone arches, wall carvings/reliefs, and hanging vine/leaf garlands, rendered in warm orange/amber tones.",
-          "important_actions": [
-            "Prince standing isolated in the center while servants offer him food and goods on trays."
-          ],
-          "composition_notes": "Symmetrical courtyard composition with a vanishing point down a colonnade; the prince is centered and visually dwarfed by surrounding servants, emphasizing isolation despite abundance."
-        },
-        "semantic_summary": {
-          "core_idea": "Origin story of the Buddha: a sheltered young prince in Ancient India who never encountered hardship, setting up the theme that suffering is inevitable.",
-          "concepts": [
-            "Origin of suffering",
-            "Sheltered upbringing",
-            "Impermanence of pleasure",
-            "Buddhist origin story",
-            "Contrast between luxury and awareness"
-          ],
-          "emotional_tone": [
-            "Contemplative",
-            "Somber",
-            "Curious",
-            "Foreboding"
-          ],
-          "requires_external_context": true,
-          "context_needed": [
-            "Continuation on subsequent slides reveals the prince becomes the Buddha."
-          ]
-        },
-        "named_entities": [
-          {
-            "name": "Ancient India",
-            "entity_type": "Historical setting/location",
-            "evidence": "you have to look back 2,500 years to a young prince in Ancient India."
-          },
-          {
-            "name": "Choose Your Struggle",
-            "entity_type": "Content series/lesson title",
-            "evidence": "Header and heading text 'Choose Your Struggle' displayed at top of screen."
-          }
-        ],
-        "possible_story_roles": [
-          "HOOK",
-          "SETUP",
-          "CONTEXT"
-        ],
-        "production": {
-          "contains_app_ui": true,
-          "story_art_region_present": true,
-          "story_art_region": {
-            "x_min": 54,
-            "y_min": 457,
-            "x_max": 943,
-            "y_max": 702
-          },
-          "story_text_region": {
-            "x_min": 54,
-            "y_min": 152,
-            "x_max": 953,
-            "y_max": 430
-          },
-          "ui_regions": [
-            {
-              "description": "Device status bar with time and cricket score notification banner",
-              "region": {
-                "x_min": 0,
-                "y_min": 0,
-                "x_max": 1000,
-                "y_max": 50
-              }
-            },
-            {
-              "description": "App header with title, translate icon, and close button",
-              "region": {
-                "x_min": 0,
-                "y_min": 70,
-                "x_max": 1000,
-                "y_max": 120
-              }
-            },
-            {
-              "description": "Slide progress indicator (4 segments)",
+              "text": "\"I just don't think I'm ready,\" Mark said, staring at the draft of his resignation letter. His finger hovered over the delete key. This is a terrible mistake, a loud voice in his head screamed.",
               "region": {
                 "x_min": 50,
-                "y_min": 130,
+                "y_min": 265,
                 "x_max": 950,
-                "y_max": 145
-              }
-            },
-            {
-              "description": "Previous/next arrow buttons and play button",
-              "region": {
-                "x_min": 0,
-                "y_min": 900,
-                "x_max": 1000,
-                "y_max": 960
-              }
-            },
-            {
-              "description": "Faded preview of next slide's text peeking at bottom edge",
-              "region": {
-                "x_min": 0,
-                "y_min": 975,
-                "x_max": 1000,
-                "y_max": 1000
+                "y_max": 440
               }
             }
           ],
-          "story_art_description": "Flat, halftone-textured illustration of a lone cartoon prince surrounded by silhouetted servants bearing trays of food and goods inside an ornate ancient palace courtyard.",
-          "vertical_video_suitability": "high",
-          "recommended_crop_strategy": "CROP_TO_TEXT_AND_ART",
-          "safe_to_crop_ui_without_losing_story": true,
-          "suggested_motion": [
-            "Slow zoom-in on the prince figure to emphasize isolation",
-            "Subtle parallax drift across courtyard arches",
-            "Sequential fade-in of paragraphs"
-          ],
-          "visual_cleanup_needed": [
-            "Remove/crop device status bar and cricket score banner (unrelated notification)",
-            "Crop truncated preview text at bottom to avoid confusion",
-            "Remove nav arrows and play button UI chrome for final video"
-          ]
-        },
-        "uncertainties": [
-          "Cricket score banner ('Yet to bat 166/1 (24.2)') is an unrelated phone notification overlay, not story content.",
-          "Bottom preview text is truncated by UI fade and only partially legible.",
-          "Exact app name/brand is not visible in this crop."
-        ]
-      }
-    },
-    {
-      "asset_id": "img_c99892bd2a98",
-      "source_path": "source_images/IMG_8850.PNG",
-      "original_filename": "IMG_8850.PNG",
-      "analysis": {
-        "content_type": "Illustrated narrative slide within a storytelling/learning app, with device status bar and app chrome overlaying the content",
-        "source_text": {
-          "heading": "",
-          "body_text": "So he ran. He gave up the throne, slept in the dirt, and starved himself for years, sure that suffering would hand him the meaning he craved.\n\nIt handed him nothing. Sitting under a tree, he finally saw what he had missed all along: rich or poor, indulgent or starving, everyone suffers.\n\nHe would become the Buddha, and this was his very first teaching.",
-          "prominent_quote": "",
-          "other_story_text": [
-            "If pain is unavoidable, Manson argues, the question is which pain is worth carrying."
-          ],
-          "ui_text": [
-            "2:39",
-            "Yet to bat",
-            "166/1 (24.2)",
-            "32",
-            "Choose Your Struggle"
-          ],
-          "verbatim_blocks": [
-            {
-              "reading_order": 1,
-              "block_type": "HEADING",
-              "text": "Choose Your Struggle",
-              "region": {
-                "x_min": 54,
-                "y_min": 75,
-                "x_max": 574,
-                "y_max": 115
-              }
-            },
-            {
-              "reading_order": 2,
-              "block_type": "BODY",
-              "text": "So he ran. He gave up the throne, slept in the dirt, and starved himself for years, sure that suffering would hand him the meaning he craved.",
-              "region": {
-                "x_min": 54,
-                "y_min": 170,
-                "x_max": 953,
-                "y_max": 260
-              }
-            },
-            {
-              "reading_order": 3,
-              "block_type": "BODY",
-              "text": "It handed him nothing. Sitting under a tree, he finally saw what he had missed all along: rich or poor, indulgent or starving, everyone suffers.",
-              "region": {
-                "x_min": 54,
-                "y_min": 300,
-                "x_max": 953,
-                "y_max": 400
-              }
-            },
-            {
-              "reading_order": 4,
-              "block_type": "BODY",
-              "text": "He would become the Buddha, and this was his very first teaching.",
-              "region": {
-                "x_min": 54,
-                "y_min": 430,
-                "x_max": 953,
-                "y_max": 480
-              }
-            },
-            {
-              "reading_order": 5,
-              "block_type": "OTHER",
-              "text": "If pain is unavoidable, Manson argues, the question is which pain is worth carrying.",
-              "region": {
-                "x_min": 54,
-                "y_min": 985,
-                "x_max": 953,
-                "y_max": 1000
-              }
-            },
-            {
-              "reading_order": 6,
-              "block_type": "UI",
-              "text": "Yet to bat 166/1 (24.2)",
-              "region": {
-                "x_min": 195,
-                "y_min": 15,
-                "x_max": 802,
-                "y_max": 45
-              }
-            }
-          ],
-          "transcription_confidence": 0.96
+          "transcription_confidence": 0.97
         },
         "visual": {
-          "description": "The same minimalist bald cartoon figure, now seated cross-legged in meditation beneath a tree with multicolored heart-shaped leaves, an empty alms bowl beside him, depicting the moment of enlightenment.",
+          "description": "Flat vector illustration of a man in a dark office cubicle at night, sitting at a desk typing on a keyboard in front of a glowing monitor. A pale speech/thought bubble above him contains a clock icon and a crossed-out target-with-arrow icon. A dark shadowy silhouette of a figure looms behind him. Purple and deep-plum palette.",
           "main_elements": [
-            "Seated meditating figure under a tree",
-            "Heart-shaped falling leaves",
-            "Alms bowl",
-            "Narrative text describing enlightenment",
-            "App header UI",
-            "Progress indicator",
-            "Preview text of next slide"
+            "seated man at desk",
+            "glowing computer monitor",
+            "keyboard and mouse",
+            "thought bubble with clock and struck-through target icons",
+            "looming shadow figure",
+            "cubicle partitions"
           ],
           "visual_subjects": [
             {
               "subject_type": "ILLUSTRATED_PERSON",
-              "description": "Bald cartoon figure seated cross-legged in a meditation pose, wearing a blue sweater and dark trousers, calm neutral expression.",
+              "description": "Man with dark hair in a dark button-up shirt, seated in profile, hand on keyboard",
               "region": {
-                "x_min": 325,
-                "y_min": 515,
-                "x_max": 672,
-                "y_max": 710
+                "x_min": 440,
+                "y_min": 600,
+                "x_max": 680,
+                "y_max": 860
+              }
+            },
+            {
+              "subject_type": "SYMBOL",
+              "description": "Thought bubble containing a clock face and a crossed-out target with an arrow",
+              "region": {
+                "x_min": 520,
+                "y_min": 485,
+                "x_max": 740,
+                "y_max": 590
+              }
+            },
+            {
+              "subject_type": "ILLUSTRATED_PERSON",
+              "description": "Dark looming silhouette of a person behind the seated man",
+              "region": {
+                "x_min": 640,
+                "y_min": 585,
+                "x_max": 830,
+                "y_max": 790
               }
             },
             {
               "subject_type": "OBJECT",
-              "description": "Empty alms bowl resting on the ground near the figure's hand.",
+              "description": "Computer monitor with glowing pale-green screen",
               "region": {
-                "x_min": 563,
-                "y_min": 650,
-                "x_max": 704,
-                "y_max": 700
+                "x_min": 195,
+                "y_min": 610,
+                "x_max": 500,
+                "y_max": 810
               }
             },
             {
               "subject_type": "ENVIRONMENT",
-              "description": "Tree with branches bearing multicolored heart-shaped leaves (teal, orange, brown) against a warm gradient sky.",
+              "description": "Dim night office cubicle interior",
               "region": {
-                "x_min": 54,
-                "y_min": 457,
-                "x_max": 943,
-                "y_max": 702
+                "x_min": 55,
+                "y_min": 460,
+                "x_max": 950,
+                "y_max": 845
               }
             }
           ],
           "real_people_visible": false,
           "illustrated_or_cartoon_figures_visible": true,
           "figure_descriptions": [
-            "Same minimalist bald cartoon figure now shown seated cross-legged in meditation pose beneath a tree, wearing the same blue sweater and dark trousers, with a calm neutral expression and an empty bowl beside him."
+            "Illustrated man at a computer, tense posture, looking at screen",
+            "Anonymous dark silhouette standing behind him, suggesting pressure or dread"
           ],
-          "environment": "Illustrated tree with branches bearing multicolored heart-shaped leaves (teal, orange, brown) against a warm gradient sky, with dark teal and amber tones for water/ground.",
+          "environment": "Dark office cubicle at night, lit mainly by the monitor",
           "important_actions": [
-            "Figure sits in meditation under the tree after giving up extreme asceticism, reflecting on the realization that everyone suffers."
+            "typing / hovering at keyboard",
+            "being watched or shadowed by a looming figure",
+            "thinking about time and a blocked goal"
           ],
-          "composition_notes": "Centered symmetrical composition with the tree canopy framing the seated figure, drawing focus to his contemplative posture; the empty bowl signals renunciation of both indulgence and starvation."
+          "composition_notes": "Landscape rounded-corner illustration card fills the lower half; text occupies the upper half; subject is right-of-center with negative space at left."
         },
         "semantic_summary": {
-          "core_idea": "The prince's failed asceticism leads him to realize suffering is universal, becoming the Buddha's first teaching.",
+          "core_idea": "A man named Mark hesitates over his resignation letter as an inner voice tells him it is a terrible mistake.",
           "concepts": [
-            "Buddhist enlightenment",
-            "Universality of suffering",
-            "Middle way between indulgence and asceticism",
-            "Origin of Buddhism"
+            "self-doubt",
+            "quitting a job",
+            "inner critic",
+            "hesitation",
+            "fear of change"
           ],
           "emotional_tone": [
-            "Reflective",
-            "Revelatory",
-            "Calm",
-            "Bittersweet"
+            "anxious",
+            "tense",
+            "hesitant",
+            "claustrophobic"
           ],
           "requires_external_context": false,
           "context_needed": []
         },
         "named_entities": [
           {
-            "name": "Buddha",
-            "entity_type": "Religious/historical figure",
-            "evidence": "He would become the Buddha, and this was his very first teaching."
-          },
-          {
-            "name": "Choose Your Struggle",
-            "entity_type": "Content series/lesson title",
-            "evidence": "Header text 'Choose Your Struggle' displayed at top of screen."
+            "name": "Mark",
+            "entity_type": "PERSON",
+            "evidence": "Body text: \"'I just don't think I'm ready,' Mark said\" with 'Mark' set in bold"
           }
         ],
         "possible_story_roles": [
-          "BUILDUP",
-          "REVEAL",
-          "EXPLANATION"
+          "HOOK",
+          "SETUP",
+          "CONFLICT"
         ],
         "production": {
           "contains_app_ui": true,
           "story_art_region_present": true,
           "story_art_region": {
-            "x_min": 54,
-            "y_min": 457,
-            "x_max": 943,
-            "y_max": 702
+            "x_min": 55,
+            "y_min": 460,
+            "x_max": 950,
+            "y_max": 845
           },
           "story_text_region": {
-            "x_min": 54,
-            "y_min": 170,
-            "x_max": 953,
-            "y_max": 480
+            "x_min": 50,
+            "y_min": 175,
+            "x_max": 950,
+            "y_max": 440
           },
           "ui_regions": [
             {
-              "description": "Device status bar with time and cricket score notification banner",
+              "description": "App header bar with story title, translate button and close (X) button",
               "region": {
                 "x_min": 0,
                 "y_min": 0,
                 "x_max": 1000,
-                "y_max": 50
+                "y_max": 110
               }
             },
             {
-              "description": "App header with title, translate icon, and close button",
-              "region": {
-                "x_min": 0,
-                "y_min": 70,
-                "x_max": 1000,
-                "y_max": 120
-              }
-            },
-            {
-              "description": "Slide progress indicator (4 segments)",
+              "description": "Four-segment page progress indicator; first segment active",
               "region": {
                 "x_min": 50,
-                "y_min": 130,
+                "y_min": 120,
                 "x_max": 950,
-                "y_max": 145
-              }
-            },
-            {
-              "description": "Previous/next arrow buttons and play button",
-              "region": {
-                "x_min": 0,
-                "y_min": 900,
-                "x_max": 1000,
-                "y_max": 960
-              }
-            },
-            {
-              "description": "Faded preview of next slide's text peeking at bottom edge",
-              "region": {
-                "x_min": 0,
-                "y_min": 975,
-                "x_max": 1000,
-                "y_max": 1000
+                "y_max": 140
               }
             }
           ],
-          "story_art_description": "Illustration of the same recurring cartoon figure seated in meditation under a heart-leaved tree, symbolizing the Buddha's enlightenment.",
-          "vertical_video_suitability": "high",
+          "story_art_description": "Night office cubicle; man typing at a glowing monitor with a clock/blocked-goal thought bubble and a looming shadow behind him",
+          "vertical_video_suitability": "medium",
           "recommended_crop_strategy": "CROP_TO_TEXT_AND_ART",
           "safe_to_crop_ui_without_losing_story": true,
           "suggested_motion": [
-            "Gentle falling-leaves animation",
-            "Slow zoom into the seated figure's face",
-            "Sequential fade-in of paragraphs"
+            "slow push-in on the seated man",
+            "subtle parallax between shadow figure and foreground desk",
+            "fade-in of the thought bubble icons"
           ],
           "visual_cleanup_needed": [
-            "Remove/crop device status bar and cricket score banner",
-            "Crop truncated preview text at bottom",
-            "Remove nav arrows and play button UI chrome for final video"
+            "remove header title bar, translate and close buttons",
+            "remove page progress dashes",
+            "landscape art needs padding or background extension for 9:16"
           ]
         },
         "uncertainties": [
-          "Cricket score banner is an unrelated phone notification overlay, not story content.",
-          "Tree leaf shapes (hearts) appear stylized rather than a literal depiction of a Bodhi/fig tree."
+          "The icon inside the thought bubble reads as a target/goal with an arrow struck through, but its exact intended meaning is not stated in text",
+          "Whether the background silhouette is a coworker or a symbolic figure is ambiguous"
         ]
       }
     },
     {
-      "asset_id": "img_7e9bbe598ea9",
-      "source_path": "source_images/IMG_8851.PNG",
-      "original_filename": "IMG_8851.PNG",
+      "asset_id": "img_32bc0f72bd41",
+      "source_path": "source_images/IMG_8918.jpg",
+      "original_filename": "IMG_8918.jpg",
       "analysis": {
-        "content_type": "Illustrated narrative slide within a storytelling/learning app, with device status bar and app chrome overlaying the content",
+        "content_type": "In-app story reader screenshot: story page 2 of 4, narrative paragraph plus flat-vector illustration",
         "source_text": {
           "heading": "",
-          "body_text": "If pain is unavoidable, Manson argues, the question is which pain is worth carrying.\n\nFor half his life, Manson dreamed of being a rock star: the crowds, the noise, the fame. But he never practiced. He loved the daydream of success, not the daily grind of guitar practice.",
+          "body_text": "He had spent six months building a freelance business on nights and weekends. The clients were lined up. The cash was waiting. But suddenly, the secure paycheck at his boring desk job felt like a warm blanket.",
           "prominent_quote": "",
-          "other_story_text": [
-            "Everyone wants the reward, but far fewer want the struggle that earns it."
-          ],
+          "other_story_text": [],
           "ui_text": [
-            "2:39",
-            "Yet to bat",
-            "166/1 (24.2)",
-            "32",
-            "Choose Your Struggle"
+            "The False Logic of Fear"
           ],
           "verbatim_blocks": [
             {
               "reading_order": 1,
-              "block_type": "HEADING",
-              "text": "Choose Your Struggle",
+              "block_type": "UI",
+              "text": "The False Logic of Fear",
               "region": {
-                "x_min": 54,
-                "y_min": 75,
-                "x_max": 574,
-                "y_max": 115
+                "x_min": 50,
+                "y_min": 60,
+                "x_max": 600,
+                "y_max": 100
               }
             },
             {
               "reading_order": 2,
               "block_type": "BODY",
-              "text": "If pain is unavoidable, Manson argues, the question is which pain is worth carrying.",
+              "text": "He had spent six months building a freelance business on nights and weekends. The clients were lined up. The cash was waiting. But suddenly, the secure paycheck at his boring desk job felt like a warm blanket.",
               "region": {
-                "x_min": 54,
-                "y_min": 170,
-                "x_max": 953,
-                "y_max": 240
-              }
-            },
-            {
-              "reading_order": 3,
-              "block_type": "BODY",
-              "text": "For half his life, Manson dreamed of being a rock star: the crowds, the noise, the fame. But he never practiced. He loved the daydream of success, not the daily grind of guitar practice.",
-              "region": {
-                "x_min": 54,
-                "y_min": 265,
-                "x_max": 953,
-                "y_max": 400
-              }
-            },
-            {
-              "reading_order": 4,
-              "block_type": "OTHER",
-              "text": "Everyone wants the reward, but far fewer want the struggle that earns it.",
-              "region": {
-                "x_min": 54,
-                "y_min": 985,
-                "x_max": 953,
-                "y_max": 1000
-              }
-            },
-            {
-              "reading_order": 5,
-              "block_type": "UI",
-              "text": "Yet to bat 166/1 (24.2)",
-              "region": {
-                "x_min": 195,
-                "y_min": 15,
-                "x_max": 802,
-                "y_max": 45
+                "x_min": 45,
+                "y_min": 195,
+                "x_max": 950,
+                "y_max": 410
               }
             }
           ],
-          "transcription_confidence": 0.96
+          "transcription_confidence": 0.97
         },
         "visual": {
-          "description": "A top-down, flat-lay style illustration of an electric guitar, an alarm clock, a spilled coffee mug, and a notebook arranged on a wooden floor lit by a diagonal orange spotlight, with the recurring cartoon figure standing passively at the edge.",
+          "description": "Flat vector illustration in green and teal tones of a bearded man wrapped in a large mustard-yellow blanket, hunched over a glowing laptop at a desk at night. A desk lamp casts a cone of light; the laptop screen shows a client list and a fan of cash. A wall clock and an office window with a night city view are in the background.",
           "main_elements": [
-            "Top-down still-life illustration",
-            "Electric guitar",
-            "Alarm clock",
-            "Spilled coffee mug",
-            "Notebook/book",
-            "Cartoon figure standing beside objects",
-            "Narrative text about rock star dream vs. practice"
+            "man wrapped in a blanket",
+            "glowing laptop with cash and contact-list icons",
+            "desk lamp with light cone",
+            "wall clock",
+            "office chair",
+            "night window with city lights"
           ],
           "visual_subjects": [
             {
-              "subject_type": "OBJECT",
-              "description": "Electric guitar lying diagonally across the wooden floor.",
-              "region": {
-                "x_min": 249,
-                "y_min": 410,
-                "x_max": 899,
-                "y_max": 625
-              }
-            },
-            {
-              "subject_type": "OBJECT",
-              "description": "Alarm clock resting on the floor near the guitar.",
-              "region": {
-                "x_min": 477,
-                "y_min": 425,
-                "x_max": 650,
-                "y_max": 500
-              }
-            },
-            {
-              "subject_type": "OBJECT",
-              "description": "Spilled coffee mug with a coffee ring stain.",
-              "region": {
-                "x_min": 195,
-                "y_min": 490,
-                "x_max": 357,
-                "y_max": 550
-              }
-            },
-            {
-              "subject_type": "OBJECT",
-              "description": "Closed notebook/book on the floor.",
-              "region": {
-                "x_min": 195,
-                "y_min": 540,
-                "x_max": 412,
-                "y_max": 610
-              }
-            },
-            {
               "subject_type": "ILLUSTRATED_PERSON",
-              "description": "Bald cartoon figure in a blue sweater standing at the edge of the scene, looking down at the unused objects.",
+              "description": "Bearded man wrapped in a large yellow-green blanket, leaning toward a laptop",
               "region": {
-                "x_min": 628,
-                "y_min": 410,
-                "x_max": 834,
-                "y_max": 540
+                "x_min": 480,
+                "y_min": 595,
+                "x_max": 690,
+                "y_max": 880
+              }
+            },
+            {
+              "subject_type": "OBJECT",
+              "description": "Open laptop with illuminated screen showing list items and a fan of banknotes",
+              "region": {
+                "x_min": 350,
+                "y_min": 660,
+                "x_max": 500,
+                "y_max": 730
+              }
+            },
+            {
+              "subject_type": "OBJECT",
+              "description": "Articulated desk lamp casting a warm cone of light",
+              "region": {
+                "x_min": 280,
+                "y_min": 575,
+                "x_max": 420,
+                "y_max": 720
+              }
+            },
+            {
+              "subject_type": "OBJECT",
+              "description": "Round wall clock",
+              "region": {
+                "x_min": 315,
+                "y_min": 500,
+                "x_max": 390,
+                "y_max": 560
+              }
+            },
+            {
+              "subject_type": "ENVIRONMENT",
+              "description": "Dark green-teal office at night with window showing city lights",
+              "region": {
+                "x_min": 50,
+                "y_min": 470,
+                "x_max": 950,
+                "y_max": 895
               }
             }
           ],
           "real_people_visible": false,
           "illustrated_or_cartoon_figures_visible": true,
           "figure_descriptions": [
-            "Same minimalist bald cartoon figure in blue sweater and dark trousers standing passively at the edge of a scene, looking down at an unused electric guitar, clock, spilled coffee, and notebook arranged on a wooden floor lit by a diagonal orange spotlight."
+            "Bearded man cocooned in a blanket, working late at a laptop"
           ],
-          "environment": "Top-down view of a wood-plank floor with a diagonal orange/red light band suggesting a stage spotlight or passage of time; muted, moody color palette.",
+          "environment": "Night office/desk space, lamp-lit, city window in background",
           "important_actions": [
-            "Figure stands near an unused guitar and spilled coffee, symbolizing abandoned practice and wasted time while daydreaming of fame."
+            "working late on a laptop",
+            "wrapping himself in a blanket",
+            "reviewing clients and money on screen"
           ],
-          "composition_notes": "Bird's-eye/flat-lay composition emphasizes the objects (guitar, clock, coffee, notebook) as symbolic props while the figure is pushed to the corner, visually secondary to the metaphor of neglected practice."
+          "composition_notes": "Landscape art card in lower ~half; body text above; the blanketed figure sits center-right, lamp glow is the visual focal point."
         },
         "semantic_summary": {
-          "core_idea": "Introduces author Manson's personal anecdote about wanting rock stardom without doing the practice, setting up the idea that people want rewards without the required struggle.",
+          "core_idea": "He had built a viable freelance business in his off-hours, yet the security of his dull day job suddenly felt comforting like a warm blanket.",
           "concepts": [
-            "Desire for reward without effort",
-            "Daydreaming vs. discipline",
-            "Choosing which pain to endure",
-            "Practice/grind"
+            "side hustle",
+            "freelance business",
+            "financial security",
+            "comfort zone",
+            "opportunity vs safety"
           ],
           "emotional_tone": [
-            "Wistful",
-            "Critical",
-            "Relatable",
-            "Cautionary"
+            "wistful",
+            "conflicted",
+            "cozy-but-trapped",
+            "reflective"
           ],
-          "requires_external_context": true,
-          "context_needed": [
-            "Assumes reader knows or will learn 'Manson' refers to author Mark Manson and his book's argument about choosing struggles."
-          ]
+          "requires_external_context": false,
+          "context_needed": []
         },
-        "named_entities": [
-          {
-            "name": "Manson",
-            "entity_type": "Author/person",
-            "evidence": "If pain is unavoidable, Manson argues, the question is which pain is worth carrying. / For half his life, Manson dreamed of being a rock star."
-          },
-          {
-            "name": "Choose Your Struggle",
-            "entity_type": "Content series/lesson title",
-            "evidence": "Header text 'Choose Your Struggle' displayed at top of screen."
-          }
-        ],
+        "named_entities": [],
         "possible_story_roles": [
-          "EXAMPLE",
+          "SETUP",
           "CONTEXT",
           "BUILDUP"
         ],
@@ -723,502 +357,553 @@
           "contains_app_ui": true,
           "story_art_region_present": true,
           "story_art_region": {
-            "x_min": 54,
-            "y_min": 435,
-            "x_max": 943,
-            "y_max": 685
+            "x_min": 50,
+            "y_min": 470,
+            "x_max": 950,
+            "y_max": 895
           },
           "story_text_region": {
-            "x_min": 54,
-            "y_min": 170,
-            "x_max": 953,
-            "y_max": 400
+            "x_min": 45,
+            "y_min": 195,
+            "x_max": 950,
+            "y_max": 410
           },
           "ui_regions": [
             {
-              "description": "Device status bar with time and cricket score notification banner",
+              "description": "App header bar with story title, translate button and close (X) button",
               "region": {
                 "x_min": 0,
                 "y_min": 0,
                 "x_max": 1000,
-                "y_max": 50
+                "y_max": 125
               }
             },
             {
-              "description": "App header with title, translate icon, and close button",
+              "description": "Four-segment page progress indicator; second segment active",
               "region": {
-                "x_min": 0,
-                "y_min": 70,
-                "x_max": 1000,
-                "y_max": 120
-              }
-            },
-            {
-              "description": "Slide progress indicator (4 segments)",
-              "region": {
-                "x_min": 50,
-                "y_min": 130,
+                "x_min": 45,
+                "y_min": 150,
                 "x_max": 950,
-                "y_max": 145
-              }
-            },
-            {
-              "description": "Previous/next arrow buttons and play button",
-              "region": {
-                "x_min": 0,
-                "y_min": 900,
-                "x_max": 1000,
-                "y_max": 960
-              }
-            },
-            {
-              "description": "Faded preview of next slide's text peeking at bottom edge",
-              "region": {
-                "x_min": 0,
-                "y_min": 975,
-                "x_max": 1000,
-                "y_max": 1000
+                "y_max": 170
               }
             }
           ],
-          "story_art_description": "Top-down flat illustration of an abandoned electric guitar, clock, spilled coffee, and notebook with the cartoon figure standing nearby, symbolizing unpracticed ambition.",
-          "vertical_video_suitability": "high",
+          "story_art_description": "Man wrapped in a warm blanket working late on a glowing laptop showing clients and cash, in a dim night office",
+          "vertical_video_suitability": "medium",
           "recommended_crop_strategy": "CROP_TO_TEXT_AND_ART",
           "safe_to_crop_ui_without_losing_story": true,
           "suggested_motion": [
-            "Slow pan across the flat-lay objects",
-            "Subtle zoom on the guitar",
-            "Sequential fade-in of paragraphs"
+            "slow push-in toward the laptop glow",
+            "gentle flicker/bloom on the lamp light",
+            "parallax on the night-window background"
           ],
           "visual_cleanup_needed": [
-            "Remove/crop device status bar and cricket score banner",
-            "Crop truncated preview text at bottom",
-            "Remove nav arrows and play button UI chrome for final video"
+            "remove header title bar, translate and close buttons",
+            "remove page progress dashes",
+            "extend or blur-pad the landscape art for a vertical frame"
           ]
         },
         "uncertainties": [
-          "'Manson' is inferred to refer to author Mark Manson based on context/style, but the full name is not explicitly stated in this slide.",
-          "Cricket score banner is an unrelated phone notification overlay, not story content."
+          "The 'warm blanket' in the art visually literalizes the metaphor; whether it is intended as literal or symbolic is not stated",
+          "Small laptop-screen icons are readable only as list rows and banknotes, no legible words"
         ]
       }
     },
     {
-      "asset_id": "img_d5101d6cfa1e",
-      "source_path": "source_images/IMG_8852.PNG",
-      "original_filename": "IMG_8852.PNG",
+      "asset_id": "img_4298f6afa10b",
+      "source_path": "source_images/IMG_8919.jpg",
+      "original_filename": "IMG_8919.jpg",
       "analysis": {
-        "content_type": "Illustrated narrative slide within a storytelling/learning app, transitioning into an interactive card, with device status bar and app chrome overlaying the content",
+        "content_type": "In-app story reader screenshot: story page 3 of 4, narrative paragraph plus flat-vector illustration",
         "source_text": {
           "heading": "",
-          "body_text": "Everyone wants the reward, but far fewer want the struggle that earns it.\n\nHappiness isn't waiting at a finish line where all your problems disappear. It grows out of the specific problems you actually enjoy solving.\n\nThe people who win aren't the ones who avoid pain, but the ones who fall in love with the process.",
+          "body_text": "The panic got louder. It told him the economy was too shaky. It reminded him about that one time he failed a college project. His brain was working overtime to build a giant wall between him and his bold goal.",
           "prominent_quote": "",
           "other_story_text": [],
           "ui_text": [
-            "2:40",
-            "Yet to bat",
-            "166/1 (24.2)",
-            "31",
-            "Choose Your Struggle",
-            "Drag or tap the card to see it"
+            "The False Logic of Fear"
           ],
           "verbatim_blocks": [
             {
               "reading_order": 1,
-              "block_type": "HEADING",
-              "text": "Choose Your Struggle",
+              "block_type": "UI",
+              "text": "The False Logic of Fear",
               "region": {
-                "x_min": 54,
-                "y_min": 75,
-                "x_max": 574,
-                "y_max": 115
+                "x_min": 60,
+                "y_min": 40,
+                "x_max": 600,
+                "y_max": 80
               }
             },
             {
               "reading_order": 2,
               "block_type": "BODY",
-              "text": "Everyone wants the reward, but far fewer want the struggle that earns it.",
-              "region": {
-                "x_min": 54,
-                "y_min": 170,
-                "x_max": 953,
-                "y_max": 220
-              }
-            },
-            {
-              "reading_order": 3,
-              "block_type": "BODY",
-              "text": "Happiness isn't waiting at a finish line where all your problems disappear. It grows out of the specific problems you actually enjoy solving.",
-              "region": {
-                "x_min": 54,
-                "y_min": 250,
-                "x_max": 953,
-                "y_max": 350
-              }
-            },
-            {
-              "reading_order": 4,
-              "block_type": "BODY",
-              "text": "The people who win aren't the ones who avoid pain, but the ones who fall in love with the process.",
-              "region": {
-                "x_min": 54,
-                "y_min": 380,
-                "x_max": 953,
-                "y_max": 460
-              }
-            },
-            {
-              "reading_order": 5,
-              "block_type": "UI",
-              "text": "Drag or tap the card to see it",
-              "region": {
-                "x_min": 195,
-                "y_min": 860,
-                "x_max": 807,
-                "y_max": 900
-              }
-            },
-            {
-              "reading_order": 6,
-              "block_type": "UI",
-              "text": "Yet to bat 166/1 (24.2)",
-              "region": {
-                "x_min": 195,
-                "y_min": 15,
-                "x_max": 802,
-                "y_max": 45
-              }
-            }
-          ],
-          "transcription_confidence": 0.96
-        },
-        "visual": {
-          "description": "The recurring cartoon figure sits on a wooden stool playing an acoustic guitar, illuminated by a single warm floor lamp, surrounded by rows of empty folding chairs, with a mug, open book, and crumpled papers scattered at his feet.",
-          "main_elements": [
-            "Illustration of figure playing guitar under a floor lamp",
-            "Rows of empty folding chairs",
-            "Crumpled paper/lyrics on floor",
-            "Open book and mug at figure's feet",
-            "Narrative text about happiness and process",
-            "UI instruction 'Drag or tap the card to see it'",
-            "Peek of next interactive card"
-          ],
-          "visual_subjects": [
-            {
-              "subject_type": "ILLUSTRATED_PERSON",
-              "description": "Bald cartoon figure seated on a stool, playing an acoustic guitar, illuminated by a floor lamp.",
-              "region": {
-                "x_min": 357,
-                "y_min": 490,
-                "x_max": 672,
-                "y_max": 660
-              }
-            },
-            {
-              "subject_type": "OBJECT",
-              "description": "Tall floor lamp casting a warm spotlight on the figure.",
-              "region": {
-                "x_min": 130,
-                "y_min": 450,
-                "x_max": 357,
-                "y_max": 650
-              }
-            },
-            {
-              "subject_type": "ENVIRONMENT",
-              "description": "Rows of empty folding chairs on either side of the room, suggesting an empty audience.",
-              "region": {
-                "x_min": 0,
-                "y_min": 490,
-                "x_max": 1000,
-                "y_max": 650
-              }
-            },
-            {
-              "subject_type": "OBJECT",
-              "description": "Crumpled papers, possibly discarded lyric sheets, on the floor near the figure.",
-              "region": {
-                "x_min": 563,
-                "y_min": 625,
-                "x_max": 780,
-                "y_max": 675
-              }
-            }
-          ],
-          "real_people_visible": false,
-          "illustrated_or_cartoon_figures_visible": true,
-          "figure_descriptions": [
-            "The same recurring bald cartoon figure, seated on a wooden stool playing an acoustic guitar, illuminated by a single floor lamp, surrounded by empty folding chairs arranged like an audience."
-          ],
-          "environment": "Dim teal-toned room resembling a rehearsal space or empty small venue, with a wooden floor, rows of empty folding chairs on either side, and a single warm spotlight from a floor lamp on the musician.",
-          "important_actions": [
-            "Figure practices guitar alone in an empty room, illustrating dedication to the process rather than performing for an audience or reward."
-          ],
-          "composition_notes": "The lamp creates a warm spotlight pool contrasting with the cool blue-gray empty chairs, visually isolating the practicing figure and symbolizing solitary dedication ('falling in love with the process') despite no audience."
-        },
-        "semantic_summary": {
-          "core_idea": "Concludes that fulfillment comes from loving the daily process/struggle itself, not from chasing an end reward.",
-          "concepts": [
-            "Fulfillment through process",
-            "Delayed gratification myth",
-            "Loving the grind",
-            "Intrinsic motivation"
-          ],
-          "emotional_tone": [
-            "Inspiring",
-            "Reflective",
-            "Encouraging",
-            "Quietly hopeful"
-          ],
-          "requires_external_context": false,
-          "context_needed": []
-        },
-        "named_entities": [
-          {
-            "name": "Choose Your Struggle",
-            "entity_type": "Content series/lesson title",
-            "evidence": "Header text 'Choose Your Struggle' displayed at top of screen."
-          }
-        ],
-        "possible_story_roles": [
-          "PAYOFF",
-          "REFLECTION",
-          "EXPLANATION"
-        ],
-        "production": {
-          "contains_app_ui": true,
-          "story_art_region_present": true,
-          "story_art_region": {
-            "x_min": 54,
-            "y_min": 490,
-            "x_max": 943,
-            "y_max": 700
-          },
-          "story_text_region": {
-            "x_min": 54,
-            "y_min": 170,
-            "x_max": 953,
-            "y_max": 460
-          },
-          "ui_regions": [
-            {
-              "description": "Device status bar with time and cricket score notification banner",
-              "region": {
-                "x_min": 0,
-                "y_min": 0,
-                "x_max": 1000,
-                "y_max": 50
-              }
-            },
-            {
-              "description": "App header with title, translate icon, and close button",
-              "region": {
-                "x_min": 0,
-                "y_min": 70,
-                "x_max": 1000,
-                "y_max": 120
-              }
-            },
-            {
-              "description": "Slide progress indicator (4 segments, final segment active)",
+              "text": "The panic got louder. It told him the economy was too shaky. It reminded him about that one time he failed a college project. His brain was working overtime to build a giant wall between him and his bold goal.",
               "region": {
                 "x_min": 50,
-                "y_min": 130,
-                "x_max": 950,
-                "y_max": 145
-              }
-            },
-            {
-              "description": "'Drag or tap the card to see it' instructional UI text",
-              "region": {
-                "x_min": 195,
-                "y_min": 860,
-                "x_max": 807,
-                "y_max": 900
-              }
-            },
-            {
-              "description": "Peek of next interactive purple-bordered card at very bottom edge",
-              "region": {
-                "x_min": 50,
-                "y_min": 975,
-                "x_max": 950,
-                "y_max": 1000
-              }
-            }
-          ],
-          "story_art_description": "Illustration of the recurring cartoon figure playing acoustic guitar alone under a lamp, surrounded by empty folding chairs, symbolizing dedication to process over performance.",
-          "vertical_video_suitability": "high",
-          "recommended_crop_strategy": "CROP_TO_TEXT_AND_ART",
-          "safe_to_crop_ui_without_losing_story": true,
-          "suggested_motion": [
-            "Slow zoom on figure playing guitar",
-            "Warm light flicker/glow animation from the lamp",
-            "Sequential fade-in of paragraphs"
-          ],
-          "visual_cleanup_needed": [
-            "Remove/crop status bar and cricket score banner",
-            "Remove 'Drag or tap the card to see it' UI instruction text, not part of story",
-            "Crop peek of next interactive card at bottom edge"
-          ]
-        },
-        "uncertainties": [
-          "Cricket score banner is an unrelated phone notification overlay, not story content.",
-          "The crumpled papers on the floor are ambiguous in exact content (possibly discarded lyrics/sheet music)."
-        ]
-      }
-    },
-    {
-      "asset_id": "img_189adab8f683",
-      "source_path": "source_images/IMG_8853.PNG",
-      "original_filename": "IMG_8853.PNG",
-      "analysis": {
-        "content_type": "Interactive summary/quote card UI within a storytelling/learning app, with device status bar and app chrome overlaying the content",
-        "source_text": {
-          "heading": "Choose Your Struggle",
-          "body_text": "Real fulfillment doesn't come from eliminating problems, but from choosing the specific set of problems you are willing to solve every day.\n\nBefore chasing any goal, stop asking how badly you want the reward. Ask instead whether you can stand the daily grind it demands; commit to it only, if the answer is yes.",
-          "prominent_quote": "Real fulfillment doesn't come from eliminating problems, but from choosing the specific set of problems you are willing to solve every day.",
-          "other_story_text": [],
-          "ui_text": [
-            "2:40",
-            "Yet to bat",
-            "166/1 (24.2)",
-            "31",
-            "Choose Your Struggle",
-            "Continue"
-          ],
-          "verbatim_blocks": [
-            {
-              "reading_order": 1,
-              "block_type": "HEADING",
-              "text": "Choose Your Struggle",
-              "region": {
-                "x_min": 54,
-                "y_min": 75,
-                "x_max": 574,
-                "y_max": 115
-              }
-            },
-            {
-              "reading_order": 2,
-              "block_type": "HEADING",
-              "text": "Choose Your Struggle",
-              "region": {
-                "x_min": 295,
-                "y_min": 278,
-                "x_max": 646,
-                "y_max": 300
-              }
-            },
-            {
-              "reading_order": 3,
-              "block_type": "QUOTE",
-              "text": "Real fulfillment doesn't come from eliminating problems, but from choosing the specific set of problems you are willing to solve every day.",
-              "region": {
-                "x_min": 130,
-                "y_min": 360,
-                "x_max": 880,
-                "y_max": 460
-              }
-            },
-            {
-              "reading_order": 4,
-              "block_type": "BODY",
-              "text": "Before chasing any goal, stop asking how badly you want the reward. Ask instead whether you can stand the daily grind it demands; commit to it only, if the answer is yes.",
-              "region": {
-                "x_min": 130,
-                "y_min": 490,
-                "x_max": 880,
-                "y_max": 610
-              }
-            },
-            {
-              "reading_order": 5,
-              "block_type": "UI",
-              "text": "Continue",
-              "region": {
-                "x_min": 65,
-                "y_min": 860,
-                "x_max": 790,
-                "y_max": 920
-              }
-            },
-            {
-              "reading_order": 6,
-              "block_type": "UI",
-              "text": "Yet to bat 166/1 (24.2)",
-              "region": {
-                "x_min": 195,
-                "y_min": 15,
-                "x_max": 802,
-                "y_max": 45
+                "y_min": 165,
+                "x_max": 910,
+                "y_max": 425
               }
             }
           ],
           "transcription_confidence": 0.97
         },
         "visual": {
-          "description": "A centered white card with a rounded purple border displays a circular abstract logo icon, the title 'Choose Your Struggle', and a two-paragraph pull-quote summarizing the lesson, with share and bookmark icons at the bottom and a large 'Continue' button below the card.",
+          "description": "Angular, cubist-style flat illustration of a man hunched at an old desktop computer in a dark office. A large cracked/shattering wall of grey and orange shards dominates the left side. Dark jagged speech bubbles float around his head containing a gear-and-clock icon, a castle/fortress icon, a broken zigzag and a cracked shape. A faint wall clock and a bright window with orange light are behind him.",
           "main_elements": [
-            "Purple-bordered summary card",
-            "Circular abstract logo icon",
-            "Pull-quote text",
-            "Secondary paragraph text",
-            "Share icon",
-            "Bookmark icon",
-            "Continue button",
-            "Status bar/cricket banner UI"
+            "man at desktop computer",
+            "cracked shattering wall of shards",
+            "jagged thought bubbles with gear, clock, fortress and break icons",
+            "wall clock",
+            "bright window with orange light beams",
+            "office chair and desk clutter"
           ],
           "visual_subjects": [
             {
-              "subject_type": "SYMBOL",
-              "description": "Small circular abstract swirl/leaf-style logo icon at the top of the card.",
+              "subject_type": "ILLUSTRATED_PERSON",
+              "description": "Man in a blue shirt seen from behind/side, hunched over a keyboard",
               "region": {
-                "x_min": 141,
-                "y_min": 270,
-                "x_max": 260,
-                "y_max": 315
+                "x_min": 580,
+                "y_min": 650,
+                "x_max": 760,
+                "y_max": 870
+              }
+            },
+            {
+              "subject_type": "SYMBOL",
+              "description": "Cluster of dark jagged thought bubbles containing gear/clock, fortress-tower and broken-shape icons",
+              "region": {
+                "x_min": 505,
+                "y_min": 540,
+                "x_max": 815,
+                "y_max": 700
+              }
+            },
+            {
+              "subject_type": "OBJECT",
+              "description": "Cracked, fragmenting wall made of grey and orange angular shards",
+              "region": {
+                "x_min": 150,
+                "y_min": 510,
+                "x_max": 450,
+                "y_max": 880
+              }
+            },
+            {
+              "subject_type": "OBJECT",
+              "description": "Boxy CRT-style monitor with a bright screen",
+              "region": {
+                "x_min": 495,
+                "y_min": 690,
+                "x_max": 625,
+                "y_max": 790
+              }
+            },
+            {
+              "subject_type": "ENVIRONMENT",
+              "description": "Dark angular office interior with a glowing window",
+              "region": {
+                "x_min": 60,
+                "y_min": 490,
+                "x_max": 945,
+                "y_max": 890
+              }
+            }
+          ],
+          "real_people_visible": false,
+          "illustrated_or_cartoon_figures_visible": true,
+          "figure_descriptions": [
+            "Hunched man at a computer, face in shadow, surrounded by dark jagged thought bubbles"
+          ],
+          "environment": "Dark, fractured-looking office room with orange light through a window",
+          "important_actions": [
+            "working at a computer under mental pressure",
+            "being surrounded by intrusive anxious thoughts",
+            "a wall visibly cracking/forming beside him"
+          ],
+          "composition_notes": "Landscape art card in lower half; strong diagonal light beams; shattered wall on the left balances the figure on the right; text block above."
+        },
+        "semantic_summary": {
+          "core_idea": "His panic escalated with rationalized excuses — a shaky economy, an old failure — as his mind built a wall between him and his goal.",
+          "concepts": [
+            "catastrophizing",
+            "rationalized excuses",
+            "past failure as evidence",
+            "mental barriers",
+            "escalating panic"
+          ],
+          "emotional_tone": [
+            "anxious",
+            "overwhelmed",
+            "ominous",
+            "agitated"
+          ],
+          "requires_external_context": false,
+          "context_needed": []
+        },
+        "named_entities": [],
+        "possible_story_roles": [
+          "CONFLICT",
+          "BUILDUP",
+          "EXPLANATION"
+        ],
+        "production": {
+          "contains_app_ui": true,
+          "story_art_region_present": true,
+          "story_art_region": {
+            "x_min": 60,
+            "y_min": 490,
+            "x_max": 945,
+            "y_max": 890
+          },
+          "story_text_region": {
+            "x_min": 50,
+            "y_min": 165,
+            "x_max": 910,
+            "y_max": 425
+          },
+          "ui_regions": [
+            {
+              "description": "App header bar with story title, translate button and close (X) button",
+              "region": {
+                "x_min": 0,
+                "y_min": 0,
+                "x_max": 1000,
+                "y_max": 100
+              }
+            },
+            {
+              "description": "Four-segment page progress indicator; third segment active",
+              "region": {
+                "x_min": 50,
+                "y_min": 118,
+                "x_max": 950,
+                "y_max": 135
+              }
+            }
+          ],
+          "story_art_description": "Angular dark office where a hunched man at a computer is encircled by jagged anxious thought bubbles beside a cracking wall",
+          "vertical_video_suitability": "medium",
+          "recommended_crop_strategy": "CROP_TO_TEXT_AND_ART",
+          "safe_to_crop_ui_without_losing_story": true,
+          "suggested_motion": [
+            "staggered pop-in of the jagged thought bubbles",
+            "slow zoom toward the figure",
+            "shake or crack-propagation effect on the wall shards"
+          ],
+          "visual_cleanup_needed": [
+            "remove header title bar, translate and close buttons",
+            "remove page progress dashes",
+            "landscape art requires recomposition or padding for vertical delivery"
+          ]
+        },
+        "uncertainties": [
+          "Icons in the thought bubbles (gear/clock, fortress, breaking shapes) are interpreted, not labeled",
+          "Whether the shard wall is meant as a wall being built or one shattering is visually ambiguous"
+        ]
+      }
+    },
+    {
+      "asset_id": "img_00daa58a9bb0",
+      "source_path": "source_images/IMG_8920.jpg",
+      "original_filename": "IMG_8920.jpg",
+      "analysis": {
+        "content_type": "In-app story reader screenshot: story page 4 of 4, resolution paragraph plus flat-vector illustration",
+        "source_text": {
+          "heading": "",
+          "body_text": "He realized the dread lacked logic. It was simply fear wearing a mask. The ego hates change, so it feeds you doubt to keep you locked inside a familiar box. He closed his eyes, took a breath, and clicked send.",
+          "prominent_quote": "",
+          "other_story_text": [],
+          "ui_text": [
+            "The False Logic of Fear"
+          ],
+          "verbatim_blocks": [
+            {
+              "reading_order": 1,
+              "block_type": "UI",
+              "text": "The False Logic of Fear",
+              "region": {
+                "x_min": 60,
+                "y_min": 75,
+                "x_max": 600,
+                "y_max": 115
+              }
+            },
+            {
+              "reading_order": 2,
+              "block_type": "BODY",
+              "text": "He realized the dread lacked logic. It was simply fear wearing a mask. The ego hates change, so it feeds you doubt to keep you locked inside a familiar box. He closed his eyes, took a breath, and clicked send.",
+              "region": {
+                "x_min": 50,
+                "y_min": 195,
+                "x_max": 900,
+                "y_max": 415
+              }
+            }
+          ],
+          "transcription_confidence": 0.97
+        },
+        "visual": {
+          "description": "Warm-toned flat illustration of a young person with curly hair, eyes closed, exhaling a visible puff of breath while typing at a desk. Behind them on the left a dark mask-like face is shattering into fragments, and a round clock sits nearby. A monitor on the right displays a large envelope icon. Orange light streams diagonally from a window at the top right.",
+          "main_elements": [
+            "person with eyes closed exhaling",
+            "shattering dark mask face",
+            "monitor showing an envelope icon",
+            "keyboard, mouse and desk phone",
+            "round clock",
+            "window with orange light beams"
+          ],
+          "visual_subjects": [
+            {
+              "subject_type": "ILLUSTRATED_PERSON",
+              "description": "Curly-haired person in a dark long-sleeve top, eyes closed, breathing out while hands rest on the keyboard",
+              "region": {
+                "x_min": 390,
+                "y_min": 555,
+                "x_max": 680,
+                "y_max": 880
+              }
+            },
+            {
+              "subject_type": "SYMBOL",
+              "description": "Dark mask-like face breaking apart into shards",
+              "region": {
+                "x_min": 270,
+                "y_min": 525,
+                "x_max": 420,
+                "y_max": 640
+              }
+            },
+            {
+              "subject_type": "OBJECT",
+              "description": "Monitor screen displaying an envelope/email icon",
+              "region": {
+                "x_min": 730,
+                "y_min": 625,
+                "x_max": 840,
+                "y_max": 755
+              }
+            },
+            {
+              "subject_type": "OBJECT",
+              "description": "Round white clock face",
+              "region": {
+                "x_min": 290,
+                "y_min": 650,
+                "x_max": 390,
+                "y_max": 730
+              }
+            },
+            {
+              "subject_type": "ENVIRONMENT",
+              "description": "Dim office at dusk/dawn with warm light shafts from a window",
+              "region": {
+                "x_min": 55,
+                "y_min": 470,
+                "x_max": 945,
+                "y_max": 900
+              }
+            }
+          ],
+          "real_people_visible": false,
+          "illustrated_or_cartoon_figures_visible": true,
+          "figure_descriptions": [
+            "Young person with curly hair, calm expression, eyes shut, exhaling a visible breath at the keyboard"
+          ],
+          "environment": "Office desk at night/early light with warm orange sunbeams",
+          "important_actions": [
+            "closing eyes and exhaling a breath",
+            "typing / clicking send",
+            "a mask shattering behind the figure"
+          ],
+          "composition_notes": "Landscape art card occupies the lower half; warm diagonal light leads the eye from upper right to the figure; email envelope on the right anchors the payoff."
+        },
+        "semantic_summary": {
+          "core_idea": "He recognized the dread as illogical fear in disguise — the ego feeding doubt to keep him in a familiar box — and he sent the letter anyway.",
+          "concepts": [
+            "fear wearing a mask",
+            "ego resists change",
+            "doubt as self-protection",
+            "comfort zone as a box",
+            "taking action despite fear"
+          ],
+          "emotional_tone": [
+            "calm",
+            "resolved",
+            "relieved",
+            "courageous"
+          ],
+          "requires_external_context": false,
+          "context_needed": []
+        },
+        "named_entities": [],
+        "possible_story_roles": [
+          "REVEAL",
+          "REVERSAL",
+          "PAYOFF",
+          "ENDING"
+        ],
+        "production": {
+          "contains_app_ui": true,
+          "story_art_region_present": true,
+          "story_art_region": {
+            "x_min": 55,
+            "y_min": 470,
+            "x_max": 945,
+            "y_max": 900
+          },
+          "story_text_region": {
+            "x_min": 50,
+            "y_min": 195,
+            "x_max": 900,
+            "y_max": 415
+          },
+          "ui_regions": [
+            {
+              "description": "App header bar with story title, translate button and close (X) button",
+              "region": {
+                "x_min": 0,
+                "y_min": 0,
+                "x_max": 1000,
+                "y_max": 130
+              }
+            },
+            {
+              "description": "Four-segment page progress indicator; fourth segment active",
+              "region": {
+                "x_min": 50,
+                "y_min": 145,
+                "x_max": 950,
+                "y_max": 165
+              }
+            }
+          ],
+          "story_art_description": "Calm person exhaling with eyes closed as a dark mask shatters behind them and an email envelope glows on the monitor",
+          "vertical_video_suitability": "medium",
+          "recommended_crop_strategy": "CROP_TO_TEXT_AND_ART",
+          "safe_to_crop_ui_without_losing_story": true,
+          "suggested_motion": [
+            "slow push-in on the exhaling face",
+            "animated shatter of the mask fragments",
+            "glow pulse on the envelope icon at the moment of 'send'"
+          ],
+          "visual_cleanup_needed": [
+            "remove header title bar, translate and close buttons",
+            "remove page progress dashes",
+            "pad or extend landscape art to fill a 9:16 frame"
+          ]
+        },
+        "uncertainties": [
+          "The figure's hair and features differ from the man shown on page 1, so it is unclear whether this is the same character Mark",
+          "The mask motif is inferred to represent the 'fear wearing a mask' line but is not labeled"
+        ]
+      }
+    },
+    {
+      "asset_id": "img_b54ab1e561ef",
+      "source_path": "source_images/IMG_8921.jpg",
+      "original_filename": "IMG_8921.jpg",
+      "analysis": {
+        "content_type": "Text-only screenshot: two paragraphs of reflective/explanatory prose on a cream background, no illustration",
+        "source_text": {
+          "heading": "",
+          "body_text": "You think you are making safe choices, but you are actually letting fear drive the car. The mind builds walls out of past mistakes and fake worries to stop you from taking a leap. It disguises this panic as plain common sense.\n\nTo grow, you must step outside the familiar zone. If you listen to the loud voice telling you to stay put, you will never find out what you can actually build. You must learn to ignore the noise and walk into the unknown.",
+          "prominent_quote": "",
+          "other_story_text": [],
+          "ui_text": [],
+          "verbatim_blocks": [
+            {
+              "reading_order": 1,
+              "block_type": "BODY",
+              "text": "You think you are making safe choices, but you are actually letting fear drive the car. The mind builds walls out of past mistakes and fake worries to stop you from taking a leap. It disguises this panic as plain common sense.",
+              "region": {
+                "x_min": 40,
+                "y_min": 60,
+                "x_max": 925,
+                "y_max": 445
+              }
+            },
+            {
+              "reading_order": 2,
+              "block_type": "BODY",
+              "text": "To grow, you must step outside the familiar zone. If you listen to the loud voice telling you to stay put, you will never find out what you can actually build. You must learn to ignore the noise and walk into the unknown.",
+              "region": {
+                "x_min": 40,
+                "y_min": 535,
+                "x_max": 925,
+                "y_max": 910
+              }
+            }
+          ],
+          "transcription_confidence": 0.98
+        },
+        "visual": {
+          "description": "Plain cream/ivory page containing only dark brown body text in two paragraphs. A thin gold horizontal rule runs across the very top and a narrow gold vertical strip sits along the right edge; a small dark sliver appears at the far right.",
+          "main_elements": [
+            "two paragraphs of body text",
+            "thin gold rule at top",
+            "gold vertical strip at right edge"
+          ],
+          "visual_subjects": [
+            {
+              "subject_type": "OTHER",
+              "description": "Typographic text block on a cream background",
+              "region": {
+                "x_min": 40,
+                "y_min": 60,
+                "x_max": 925,
+                "y_max": 910
+              }
+            },
+            {
+              "subject_type": "OTHER",
+              "description": "Gold border accents at top edge and right edge",
+              "region": {
+                "x_min": 950,
+                "y_min": 0,
+                "x_max": 1000,
+                "y_max": 1000
               }
             }
           ],
           "real_people_visible": false,
           "illustrated_or_cartoon_figures_visible": false,
           "figure_descriptions": [],
-          "environment": "Plain light lavender/pink app background with a centered white card bearing a purple rounded border; minimal, clean UI aesthetic with no illustrated scene.",
+          "environment": "",
           "important_actions": [],
-          "composition_notes": "The card is centered and framed by a purple border, with the logo and title at top, quote text as focal content, and share/bookmark icons at the bottom corners; a large 'Continue' call-to-action button anchors the screen beneath the card."
+          "composition_notes": "Text-only layout with generous margins; no artwork present, so any video use needs generated or reused visuals behind the text."
         },
         "semantic_summary": {
-          "core_idea": "Final takeaway/summary card distilling the lesson: fulfillment comes from consciously choosing which daily problems to embrace, not from avoiding problems altogether.",
+          "core_idea": "Fear disguises itself as common sense and builds walls from past mistakes and fake worries; growth requires ignoring that voice and stepping into the unknown.",
           "concepts": [
-            "Intentional struggle",
-            "Fulfillment philosophy",
-            "Goal-setting reflection",
-            "Commitment to process"
+            "fear disguised as common sense",
+            "mental walls from past mistakes",
+            "comfort zone",
+            "risk-taking",
+            "growth through discomfort"
           ],
           "emotional_tone": [
-            "Motivational",
-            "Instructive",
-            "Empowering"
+            "direct",
+            "exhortative",
+            "sobering",
+            "motivational"
           ],
           "requires_external_context": true,
           "context_needed": [
-            "Builds on the preceding narrative slides (the Buddha's story and Manson's rock star anecdote) to justify this concluding advice."
+            "Which story or article this passage concludes — no title or header is visible in this crop",
+            "Whether the surrounding page contained additional text above or below the visible region"
           ]
         },
-        "named_entities": [
-          {
-            "name": "Choose Your Struggle",
-            "entity_type": "Content series/lesson title",
-            "evidence": "Card title text 'Choose Your Struggle' shown on the summary card and app header."
-          }
-        ],
+        "named_entities": [],
         "possible_story_roles": [
-          "PAYOFF",
+          "EXPLANATION",
           "REFLECTION",
-          "ENDING"
+          "ENDING",
+          "PAYOFF"
         ],
         "production": {
-          "contains_app_ui": true,
+          "contains_app_ui": false,
           "story_art_region_present": false,
           "story_art_region": {
             "x_min": 0,
@@ -1227,76 +912,29 @@
             "y_max": 0
           },
           "story_text_region": {
-            "x_min": 65,
-            "y_min": 230,
-            "x_max": 920,
-            "y_max": 660
+            "x_min": 40,
+            "y_min": 60,
+            "x_max": 925,
+            "y_max": 910
           },
-          "ui_regions": [
-            {
-              "description": "Device status bar with time and cricket score notification banner",
-              "region": {
-                "x_min": 0,
-                "y_min": 0,
-                "x_max": 1000,
-                "y_max": 50
-              }
-            },
-            {
-              "description": "App header with title, translate icon, and close button",
-              "region": {
-                "x_min": 0,
-                "y_min": 70,
-                "x_max": 1000,
-                "y_max": 120
-              }
-            },
-            {
-              "description": "Slide progress indicator (4 segments, final segment active)",
-              "region": {
-                "x_min": 50,
-                "y_min": 130,
-                "x_max": 950,
-                "y_max": 145
-              }
-            },
-            {
-              "description": "Share and bookmark icons at bottom of card",
-              "region": {
-                "x_min": 130,
-                "y_min": 900,
-                "x_max": 880,
-                "y_max": 940
-              }
-            },
-            {
-              "description": "'Continue' call-to-action button",
-              "region": {
-                "x_min": 65,
-                "y_min": 860,
-                "x_max": 790,
-                "y_max": 920
-              }
-            }
-          ],
+          "ui_regions": [],
           "story_art_description": "",
-          "vertical_video_suitability": "medium",
+          "vertical_video_suitability": "low",
           "recommended_crop_strategy": "NEEDS_GENERATION",
           "safe_to_crop_ui_without_losing_story": true,
           "suggested_motion": [
-            "Slow fade/zoom on quote text",
-            "Sequential highlight animation of bolded phrases"
+            "line-by-line text reveal",
+            "slow vertical drift of the text block",
+            "kinetic emphasis on key phrases such as 'letting fear drive the car'"
           ],
           "visual_cleanup_needed": [
-            "Remove status bar and cricket score banner",
-            "Remove 'Continue' button and share/bookmark icons for final video export",
-            "Consider generating supporting background art since no illustrative artwork exists on this slide"
+            "crop out the gold edge strips and the dark sliver at the far right",
+            "no artwork exists — pair the text with generated or reused illustration for video"
           ]
         },
         "uncertainties": [
-          "No illustrative artwork present on this slide, only a text summary card.",
-          "Cricket score banner is an unrelated notification overlay.",
-          "The exact meaning/brand of the circular logo icon is not identifiable."
+          "No title, character name or page indicator is visible, so the connection to the 'The False Logic of Fear' story pages is inferred from theme only",
+          "The crop may omit content above the top gold rule or below the second paragraph"
         ]
       }
     }

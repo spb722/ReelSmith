@@ -1,0 +1,9 @@
+RESULT: IMAGE 1080x1920 -> cover_shot06_poster_202001.png
+shot: 6
+hook: Fear wearing a mask
+brief: poster
+references: ['/Users/sachinpb/PycharmProjects/book_reels/assets/character/character.png']
+codex note: Saved final_image.png at 1080×1920 with the referenced character and exact headline.
+
+--- PROMPT ---
+Design a bold poster-style social media cover from the supplied frame. Simplify the scene into strong flat shapes with high contrast and deep shadow, keeping the original palette. Drop background clutter that does not serve the idea. The headline is: "Fear wearing a mask". Render the headline EXACTLY as written, spelled letter for letter, with no extra words, no duplicated words and no invented text anywhere in the frame. It must be the only text in the image. Set it in a clean, heavy, modern sans-serif. It must be large enough to read as a small thumbnail, and must sit on an area of the artwork quiet enough that every letter stays legible -- darken or simplify that area if you need to. Do not cover the character's face with it. The output must be a single vertical 9:16 portrait image, 1080x1920. Keep the supplied frame's art style, palette, line quality and lighting -- this is a recomposition of that artwork, not a new illustration and not a restyle, and it must not drift toward photorealism. This is a cover thumbnail: it is first seen small, and cropped to a portrait slice around its middle, so keep the subject and the words well inside the central area and away from the extreme top and bottom edges.  The moment this frame carries: The turn — pressure releases as the thing that looked like judgement comes apart.

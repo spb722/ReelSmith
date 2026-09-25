@@ -1,0 +1,37 @@
+{
+  "structured_output": {
+    "produced_by": "veo_agent",
+    "status": "FAILURE",
+    "shot_sequence": 1,
+    "generation_mode": "VEO",
+    "shot_fingerprint": "6f063747968b005adfa7388f804bd370e39edd9a965b29cca831a0c408fbf92b",
+    "result": null,
+    "failure": {
+      "produced_by": "veo_tool",
+      "shot_sequence": 1,
+      "shot_fingerprint": "6f063747968b005adfa7388f804bd370e39edd9a965b29cca831a0c408fbf92b",
+      "stage": "veo_generation",
+      "code": "RAI_FILTERED",
+      "reason": "Veo safety filtering rejected one or more generated media outputs",
+      "retryable": true,
+      "attempt": 1,
+      "operation_name": "projects/gen-lang-client-0240752803/locations/global/publishers/google/models/veo-3.1-fast-generate-001/operations/2a0a4cc7-2d48-46b7-9e41-2fa02b1a798e",
+      "operation_dump_path": "metadata/veo_operations/shot_01_attempt_01.json",
+      "rai_media_filtered_count": 1,
+      "rai_media_filtered_reasons": [
+        "1 videos were filtered out because they violated Vertex AI's usage guidelines. You will not be charged for blocked videos. Try rephrasing the prompt. If you think this was an error, send feedback. Support codes: 15236754"
+      ],
+      "operation_error": null,
+      "partial_artifact_paths": [
+        "metadata/veo_operations/shot_01_attempt_01.json",
+        "generated/veo_seeds/shot_01_seed.png"
+      ],
+      "cost_usd": 1.2
+    }
+  },
+  "result": "{\"produced_by\":\"veo_agent\",\"status\":\"FAILURE\",\"shot_sequence\":1,\"shot_fingerprint\":\"6f063747968b005adfa7388f804bd370e39edd9a965b29cca831a0c408fbf92b\",\"generation_mode\":\"VEO\",\"result\":null,\"failure\":{\"produced_by\":\"veo_tool\",\"shot_sequence\":1,\"shot_fingerprint\":\"6f063747968b005adfa7388f804bd370e39edd9a965b29cca831a0c408fbf92b\",\"stage\":\"veo_generation\",\"code\":\"RAI_FILTERED\",\"reason\":\"Veo safety filtering rejected one or more generated media outputs\",\"retryable\":true,\"attempt\":1,\"operation_name\":\"projects/gen-lang-client-0240752803/locations/global/publishers/google/models/veo-3.1-fast-generate-001/operations/2a0a4cc7-2d48-46b7-9e41-2fa02b1a798e\",\"operation_dump_path\":\"metadata/veo_operations/shot_01_attempt_01.json\",\"rai_media_filtered_count\":1,\"rai_media_filtered_reasons\":[\"1 videos were filtered out because they violated Vertex AI's usage guidelines. You will not be charged for blocked videos. Try rephrasing the prompt. If you think this was an error, send feedback. Support codes: 15236754\"],\"operation_error\":null,\"partial_artifact_paths\":[\"metadata/veo_operations/shot_01_attempt_01.json\",\"generated/veo_seeds/shot_01_seed.png\"],\"cost_usd\":1.2}}",
+  "subtype": "success",
+  "errors": null,
+  "claude_cost_usd": 0.4783569999999999,
+  "paid_tool_cost_usd": 1.2
+}

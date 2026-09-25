@@ -3,138 +3,180 @@
   "shots": {
     "5": {
       "shot_sequence": 5,
-      "shot_fingerprint": "64257670d5597ce44d1d1e5b260cad36a2241d2edd34f98d8e89bdd1f9dae96a",
+      "shot_fingerprint": "00190ed3326d1f50d85f3a62aabdad26d6e7d1c8ff4d5510e9b63994154ddf2f",
       "generation_mode": "VEO",
       "asset_type": "video",
       "local_path": "generated/veo/shot_05.mp4",
-      "asset_sha256": "76e5d58e36971cc370f79d570486d11b71f14acf8fe11c34c5d11f92460c569f",
+      "asset_sha256": "3a6d34fd3661971c78133577c17422b18c52cd5ec5134156c6027ad76faa5621",
       "approved": true,
       "source_asset_ids": [
-        "img_d5101d6cfa1e"
+        "img_4298f6afa10b"
       ],
       "seed_path": "generated/veo_seeds/shot_05_seed.png",
-      "seed_sha256": "4b4b9a5ccacc8a3e75dcb36ecc7a9acc07cb26138b830f4d9da4a868a9cad95a",
+      "seed_sha256": "a24728fb6f6d6f52082a4ecea9944f7334bcc8b291be8109e52d91059984e3a8",
       "generation_model": "veo-3.1-fast-generate-001",
-      "gcs_uri": "gs://sachin-kayaking-video-test/book_reels/veo/12489142529020241446/sample_0.mp4",
-      "operation_name": "projects/gen-lang-client-0240752803/locations/global/publishers/google/models/veo-3.1-fast-generate-001/operations/493111ba-7b9a-4801-80c4-7ca5623daa70",
+      "gcs_uri": "gs://sachin-kayaking-video-test/book_reels/veo/6864976632688551730/sample_0.mp4",
+      "operation_name": "projects/gen-lang-client-0240752803/locations/global/publishers/google/models/veo-3.1-fast-generate-001/operations/c9055451-5de0-4bc6-99d9-ba10c64deaa3",
       "operation_dump_path": "metadata/veo_operations/shot_05_attempt_01.json",
       "preview_paths": [
         "generated/veo/previews/shot_05_01.jpg",
         "generated/veo/previews/shot_05_02.jpg",
         "generated/veo/previews/shot_05_03.jpg"
       ],
-      "qa_summary": "Inspected all three preview frames across the clip: the solitary cartoon figure remains seated on the stool playing acoustic guitar with hands correctly positioned on strings/neck throughout, the warm floor lamp glow is stable and consistent, and rows of empty folding chairs remain visible at both edges as a felt presence without becoming the focal point. Motion across the three previews shows a slow, restrained zoom-in on the figure exactly per the planned motion_plan, with no jitter, warping, morphing limbs, extra/duplicate subjects, added characters, app UI, or legible on-screen text -- the crumpled paper props still show only illustrated scribble marks. Illustration style, palette, and composition remain faithful to the approved seed with no photorealistic drift, so the clip serves the shot goal of contrasting solitary practice against the empty audience.",
-      "cost_usd": 1.24
+      "qa_summary": "Clip approved on all three previews. Preview 1 reproduces the approved seed faithfully: flat-facet grey/orange shard plane across the near left half, the character at his CRT monitor on the far right with face clearly visible and matching the reference (curly black hair, thick dark brows, full black beard and moustache, warm brown skin, blue shirt), jagged thought bubbles (gear/clock, fortress, broken zigzag), wall clock and orange window beams all intact. Preview 2 shows the authored motion executing correctly: a lateral track with a slight inward pull has carried successive facets across the foreground so the figure is narrowed to a gap, seen from behind/side at his keyboard exactly as the source draws him — this is deliberate occlusion by the barrier, not identity failure; the figure keeps the same blue shirt, dark curly hair silhouette and hunched pose with no warping, melting, face-swapping or drift toward a different person. Preview 3 lands the intended endpoint from the motion plan and video_motion_intent, the barrier fully closing over the lens with only a sliver of orange light and a fragment of a thought-bubble icon remaining, delivering the peak-blockage beat for the 'wall between him and his bold goal' line. Across all frames the flat angular cubist editorial style, dark navy/grey/orange palette and hard black crack gaps are preserved with no photorealistic drift; motion is slow, restrained and physically coherent with a low-amplitude facet tremor and no rubbery geometry or popping. No app UI, captions, watermarks, letterforms or signage anywhere; exactly one person, no duplicates or invented subjects, no anatomical distortion.",
+      "cost_usd": 1.2
     },
-    "6": {
-      "shot_sequence": 6,
-      "shot_fingerprint": "6d23bdd80e40c3a3db0dc5a394a92013f9d0e1d662f178839b811845755e363b",
+    "8": {
+      "shot_sequence": 8,
+      "shot_fingerprint": "52156ff9a47b68fc472e8377942ef663f0279cc749e33554aa79a9ab3a0c7aae",
       "generation_mode": "VEO",
       "asset_type": "video",
-      "local_path": "generated/veo/shot_06.mp4",
-      "asset_sha256": "e7a4932cf6284a516e6dd2179ae4b9734aea0521a837c955b396fdd0651333d6",
+      "local_path": "generated/veo/shot_08.mp4",
+      "asset_sha256": "345f5c322dc830b17fd34a8e5ad09cea5b2ff11a1b0d58757b4b6855241c1927",
       "approved": true,
       "source_asset_ids": [
-        "img_d5101d6cfa1e",
-        "img_189adab8f683"
+        "img_00daa58a9bb0"
       ],
-      "seed_path": "generated/veo_seeds/shot_06_seed.png",
-      "seed_sha256": "5f3e701bd97dc66e3d7fee2097a6cec79c8616b3a8b75023fc6477f8da4837f4",
+      "seed_path": "generated/veo_seeds/shot_08_seed.png",
+      "seed_sha256": "524616595c187da1da628b822440211a66f0ded7a257317f354ec412773cd4e7",
       "generation_model": "veo-3.1-fast-generate-001",
-      "gcs_uri": "gs://sachin-kayaking-video-test/book_reels/veo/6578272018256186387/sample_0.mp4",
-      "operation_name": "projects/gen-lang-client-0240752803/locations/global/publishers/google/models/veo-3.1-fast-generate-001/operations/73ab48d3-31a5-4556-b058-d2b3fbb9bc5f",
-      "operation_dump_path": "metadata/veo_operations/shot_06_attempt_03.json",
+      "gcs_uri": "gs://sachin-kayaking-video-test/book_reels/veo/7219458147768513665/sample_0.mp4",
+      "operation_name": "projects/gen-lang-client-0240752803/locations/global/publishers/google/models/veo-3.1-fast-generate-001/operations/c794c307-47f6-4916-9a31-464cdae10e1a",
+      "operation_dump_path": "metadata/veo_operations/shot_08_attempt_01.json",
       "preview_paths": [
-        "generated/veo/previews/shot_06_01.jpg",
-        "generated/veo/previews/shot_06_02.jpg",
-        "generated/veo/previews/shot_06_03.jpg"
+        "generated/veo/previews/shot_08_01.jpg",
+        "generated/veo/previews/shot_08_02.jpg",
+        "generated/veo/previews/shot_08_03.jpg"
       ],
-      "qa_summary": "All three preview frames confirm a clean, coherent slow pull-back/zoom-out from the practicing figure playing guitar under the warm lamp spotlight: framing widens progressively across the sequence to reveal significantly more of the empty folding chairs on both sides and in the foreground/background, exactly matching the specified dolly-out motion intent. Illustrated flat-color style, teal palette, and warm lamp glow are preserved consistently from the seed with no photorealistic drift. No duplicate or extra human figures, no distortion or warping of the figure/guitar/lamp/chairs, no app UI, no watermark, and critically -- zero baked-in text or captions in any frame (the earlier double-caption defect from attempt 2 is fully resolved). Camera movement is gentle and restrained, matching the quiet reflective pace called for by the closing line, and leaves clean, uncluttered space for the short text_overlay to be composited and faded in during post per fade_in_frames/fade_out_frames. Approved.",
-      "cost_usd": 1.24
-    },
-    "1": {
-      "shot_sequence": 1,
-      "shot_fingerprint": "bbeb483095558b493f9337fdcc01a2dac83e55ecb6e8939ffb9ecdc34d0cf449",
-      "generation_mode": "STILL",
-      "asset_type": "still",
-      "local_path": "generated/stills/shot_01.png",
-      "asset_sha256": "0cb1995bf2e7f1da02ce2f71013f1cd45d0ec775fdf77012c81c69fee0850c2b",
-      "approved": true,
-      "source_asset_ids": [
-        "img_87a825c5a858"
-      ],
-      "seed_path": null,
-      "seed_sha256": null,
-      "generation_model": "gemini-3.1-flash-image",
-      "gcs_uri": null,
-      "operation_name": null,
-      "operation_dump_path": null,
-      "preview_paths": [],
-      "qa_summary": "Verified exactly one instance of the focal subject: a single bald, round-headed cartoon prince in a blue sweater and dark trousers, centered in the frame, standing alone amid symmetrical rows of black silhouetted servants bearing trays of fruit, drinks, and folded cloth on either side. Scene is set beneath an arched, vine-draped amber-lit colonnade matching the source art's story_art_region content, with no duplicated prince or duplicated focal scene anywhere in frame. No app UI, status bar, cricket banner, header, progress bar, nav arrows, on-image text, letters, logos, or watermarks are present -- all app chrome was successfully cropped out per the shot's frame_composition. Style remains a flat, halftone-textured illustration consistent with the source asset (no drift to photorealism). Composition matches the shot goal of quiet isolation-amid-abundance: the lone prince is visually dwarfed and flanked by servants, reinforcing foreboding. The plain cream sky band at top and solid amber/brown band at bottom are clean, uncluttered negative space well suited for later Remotion subtitle/typography overlay without occluding the illustrated figures.",
-      "cost_usd": 0.04
+      "qa_summary": "Clip approved on attempt 1 after inspecting all three previews. Motion executes the plan exactly: preview 1 holds on the exhaling face with the breath puff just formed; preview 2 shows the puff expanded and dissipating as the frame begins its push-in and lateral drift; preview 3 completes the move with the envelope-icon monitor risen into frame as the dominant second focal point, a warm glow pulse swelling off the screen and spilling onto the figure's face, hands and desk. Motion is restrained and coherent — no jitter, warping, morphing geometry, or camera whip. Scene and style hold the seed's flat editorial illustration look, navy-and-warm-orange palette and raking light shafts throughout, with no photorealistic drift. No app UI, no rendered text or lettering anywhere (the monitor keeps a plain envelope icon), no extra or duplicated subjects, no background people introduced. Character identity is stable across every preview: the same face shape and jawline, thick dark eyebrows, straight nose, full black beard and moustache, dark curly hair, skin tone and blue rolled-sleeve button-up persist frame to frame; the eyes reopening toward the glowing screen in the final preview is a natural continuation of the beat, not a face swap or drift, and the face never blurs, melts, flattens or becomes generic. Hands remain anatomically clean on the keyboard. The clip lands the shot goal — breath, then the letter is gone.",
+      "cost_usd": 1.2
     },
     "2": {
       "shot_sequence": 2,
-      "shot_fingerprint": "9dd640ee3bdc978527bd4b5ba2a3f9f07a2b2f636c9b05cab281959f955360a8",
+      "shot_fingerprint": "9a01a041868d2d1745c5b9c608394dc54f7edd4e45b578cb2263fd83d6782b08",
       "generation_mode": "STILL",
       "asset_type": "still",
       "local_path": "generated/stills/shot_02.png",
-      "asset_sha256": "2f19f8e5df0804770602e52bdc2bd38e8fe50f9a577d8dafb184aa38563aa5b9",
+      "asset_sha256": "16636fd6e91bcb7a8c17045caa27af6bf74c09895d0b3ce0cc27d392c104fea6",
       "approved": true,
       "source_asset_ids": [
-        "img_c99892bd2a98"
+        "img_32bc0f72bd41"
       ],
       "seed_path": null,
       "seed_sha256": null,
-      "generation_model": "gemini-3.1-flash-image",
+      "generation_model": "codex",
       "gcs_uri": null,
       "operation_name": null,
       "operation_dump_path": null,
       "preview_paths": [],
-      "qa_summary": "Verified exactly one instance of the focal subject: a single minimalist bald cartoon figure seated cross-legged beneath the heart-leaved tree, wearing the same blue sweater and dark trousers, with a single empty alms bowl beside his hand. No duplicate figures, tombstones, or repeated scene elements anywhere in frame. Style remains flat illustrated/vector-cartoon (hatched shading, stylized heart leaves), not photorealistic. No app UI chrome, status bar, progress indicator, banners, visible text, letters, logos, or watermarks are present -- the crop cleanly isolates the story art region. Composition centers the seated figure under the tree canopy matching the shot's frame_composition intent, and the large open tan foreground area at the bottom of frame leaves clean, uncluttered space for later Remotion subtitle/typography overlays without occluding the subject.",
-      "cost_usd": 0.04
+      "qa_summary": "Visual QA passed. Singularity: exactly one instance of every focal element - one bearded man, one open laptop, one articulated desk lamp with a single warm light cone, one round wall clock, one night window; no duplicated subject or mirrored scene anywhere in frame. Cleanliness: no app UI, header bar, page-progress dashes, letters, numerals, logos or watermarks; the laptop screen reads only as abstract avatar-plus-bar list rows and a fan of green banknote shapes with zero legible content, exactly as the asset's uncertainty note requires; the wall clock shows plain hands with no numerals. Style: flat vector illustration with the source's deep green-teal office palette, mustard-olive blanket and warm lamp bloom - no drift to photorealism. Composition/goal: lamp-lit desk corner carries the frame, the illuminated laptop sits at the vertical centre as the brightest focal point with the lamp cone falling across it from above-left, the blanket-wrapped bearded man leans in from the right with his shoulder catching the glow, and the clock plus dim city lights recede small in the upper background - the finished, paid-for escape route is legible as clients-and-cash on screen. Character match: the man is unmistakably the referenced character - same short black curly hair, thick dark eyebrows, deep-set brown eyes, straight nose, full black beard and moustache with the same jawline and warm brown skin tone, wearing the reference's blue collared shirt under the blanket; face is fully visible, in focus and detailed, not blank, dotted or turned away, and only the person is drawn in the character's style while the surrounding scene keeps the source art style. Subtitle safety: the lower third (dark desk plane and cubicle panels) and the upper-left wall are unbusy, low-contrast areas leaving clean room for Remotion subtitles/typography, and the push-in/drift-right-and-up motion keeps the laptop glow and the face inside frame throughout.",
+      "cost_usd": 0.0
     },
     "3": {
       "shot_sequence": 3,
-      "shot_fingerprint": "08727f115e24a96fe87f75297550cb5363336bf110c304d7c621ba25e1d32be5",
+      "shot_fingerprint": "e2ef328d0689e79636dac7dc37a6a51118230095419a047f32365b386e1ce892",
       "generation_mode": "STILL",
       "asset_type": "still",
       "local_path": "generated/stills/shot_03.png",
-      "asset_sha256": "0b38a3365a1b0f1f11a45a9290d9785b4720d1570785ddbec0e97525235327bf",
+      "asset_sha256": "303849e862a3fdab4cc4ec6f708e4a8f04a33d4d15c585321c4d9de03a899d5e",
       "approved": true,
       "source_asset_ids": [
-        "img_c99892bd2a98"
+        "img_32bc0f72bd41"
       ],
       "seed_path": null,
       "seed_sha256": null,
-      "generation_model": "gemini-3.1-flash-image",
+      "generation_model": "codex",
       "gcs_uri": null,
       "operation_name": null,
       "operation_dump_path": null,
       "preview_paths": [],
-      "qa_summary": "Verified exactly one instance of the focal subject: a single bald cartoon figure seated cross-legged in meditation beneath the heart-leaved tree, with a single empty alms bowl beside his hand. The tree's forked trunk is a single tree (not a duplicated scene element). No app UI, status bars, buttons, visible text, letters, logos, or watermarks present. Style remains flat illustrated/stylized (dotted-texture, hand-drawn linework) with no drift toward photorealism. Composition matches the shot goal: centered figure under the canopy, calm/still mood, with generous clean negative space above the tree and below the figure for later Remotion subtitle/typography placement. Approved.",
-      "cost_usd": 0.04
+      "qa_summary": "Visual QA passed. Single-instance check: exactly one bearded man, one mustard-yellow blanket, one laptop, one desk lamp, one wall clock, one office chair and one window band - no duplicated focal subject or mirrored scene element anywhere in frame. No app UI, header bar, page-progress dashes, watermark, logo or legible lettering: the laptop screen carries only abstract contact rows and a banknote glyph, consistent with the asset's note that screen icons have no legible words. Style holds the source's flat-vector illustration look in dark green-teal with warm mustard and lamp-amber accents; no drift to photorealism. Composition matches the shot: the blanketed figure sits mid-frame hunched toward the laptop with the blanket's bulk dominating more area than his body, lamp cone and laptop glow read as warm secondary accents at the left, and clock, teal walls and night city window close in tightly for the cocoon/enclosure read, satisfying the 'safety as cocoon, not workshop' goal. Character match verified against the supplied reference: same face shape and jawline, same thick dark eyebrows, same brown eyes, same nose and mouth, same dense full black beard with moustache, same short curly black hair and same skin tone, plus the reference's blue button shirt, black trousers and black shoes. Face is clearly visible in three-quarter view, in focus and fully detailed - not blank, dotted, blurred or turned away. Only the person is rendered in the character style; the room's art style, palette and lighting remain the source's. No other people present. Ample quiet negative space in the upper frame and the lower desk-shadow band for Remotion subtitles/typography without covering the face or blanket.",
+      "cost_usd": 0.0
     },
     "4": {
       "shot_sequence": 4,
-      "shot_fingerprint": "ce7f8af0cd0f3b1cceda24f6c686bc715b2b86f29ccd208d438546ab710b755c",
+      "shot_fingerprint": "219fffd86309c1c8cbc00d7af40aac88ff20a477dc7fd7907609b76062f1e92a",
       "generation_mode": "STILL",
       "asset_type": "still",
       "local_path": "generated/stills/shot_04.png",
-      "asset_sha256": "47c6a68ef886968ff21969d167c17f7270352fd849b64d4c2294d6d12b65f35d",
+      "asset_sha256": "06d8af0b8256b4422ff4b28ff9b9c7aec6b4c1fa13470b31dc36cf3cd293f702",
       "approved": true,
       "source_asset_ids": [
-        "img_7e9bbe598ea9"
+        "img_4298f6afa10b"
       ],
       "seed_path": null,
       "seed_sha256": null,
-      "generation_model": "gemini-3.1-flash-image",
+      "generation_model": "codex",
       "gcs_uri": null,
       "operation_name": null,
       "operation_dump_path": null,
       "preview_paths": [],
-      "qa_summary": "Verified single instance of each focal element: exactly one electric guitar lying diagonally as the visual centerpiece, one alarm clock, one spilled coffee mug with stain, one closed notebook (with illustrative squiggle marks, not legible real text), and exactly one cartoon figure positioned at the lower-right edge beneath the diagonal orange spotlight band -- no duplicated subjects or scenes anywhere in frame. Illustration style is fully consistent with the source flat-lay art (flat cel-shaded rendering, halftone shadow textures), with no drift toward photorealism. No app UI chrome, status bar, buttons, icons, watermarks, or logos are visible; crop matches the intended story_art_region composition (top-down flat-lay of props with figure at frame edge). Top and side wood-floor areas remain open/uncluttered, leaving clean space for Remotion subtitle and typography overlay. Composition matches shot_goal of using the unused guitar and idle props as evidence of 'dreaming without practicing.'",
-      "cost_usd": 0.04
+      "qa_summary": "Verified exactly one instance of the focal subject: a single hunched man at a single CRT-style monitor, one wall clock, one window, no duplicated figure, desk, screen or scene element anywhere in frame. The four jagged dark thought bubbles arc above and around his head as one cluster with distinct icon shapes (gear, fortress-tower, broken zigzag, cracked shard) - no repeated icon or mirrored copy. Grey-and-orange angular shard mass correctly enters only at the far left edge; hard diagonal orange window beams cut across behind him as specified. No app UI, no header bar or progress dashes, no letters, words, numerals, logos or watermarks anywhere - monitor screen holds only abstract blue geometric shapes and the wall clock is numberless. Style remains flat angular cubist vector illustration with the source's dark navy/grey and orange palette; no photorealistic drift, and the scene was not restyled to match the character. Character match against the supplied reference: same brown skin tone, dense black curly hair with the same volume and hairline, thick dark eyebrows, same eye shape, straight nose, full black beard with connected moustache and defined jawline edge, wearing the blue button shirt and dark trousers - face is turned toward camera, clearly visible, in focus and fully detailed, not blank, dotted, blurred or turned away. Composition matches the shot: man right of centre, bubble cluster upper-middle, and the lower ~25% of the frame is clean dark desk/floor planes leaving unobstructed room for Remotion subtitles.",
+      "cost_usd": 0.0
+    },
+    "6": {
+      "shot_sequence": 6,
+      "shot_fingerprint": "a1a33298d45947b874f03194978ae4ed379b74e68c65c2efb6cfabd8ab750a41",
+      "generation_mode": "STILL",
+      "asset_type": "still",
+      "local_path": "generated/stills/shot_06.png",
+      "asset_sha256": "4e0124a4f3d9aa7fae3c5c1a46b268bf1e918e2df2bf3c62fe80f9c257cd3b06",
+      "approved": true,
+      "source_asset_ids": [
+        "img_00daa58a9bb0"
+      ],
+      "seed_path": null,
+      "seed_sha256": null,
+      "generation_model": "codex",
+      "gcs_uri": null,
+      "operation_name": null,
+      "operation_dump_path": null,
+      "preview_paths": [],
+      "qa_summary": "Approved. Singularity check passed: exactly one focal figure, exactly one dark mask-like face (upper-left, already fracturing into angular shards), one round white clock, one envelope monitor - no duplicated subject or scene element anywhere in frame. No app UI, headers, progress dashes, text, letters, logos or watermarks present. Style holds as flat-vector illustration with no photorealism drift. Composition matches the shot brief: vertical crop with an immediate amber/warm palette jump, mask upper-left mid-shatter, curly-haired figure in centre-lower-right with eyes closed and hands on the keyboard, clock low beside the mask, envelope monitor kept small just inside the right edge, warm diagonal light shafts falling from the upper-right window, dim warm office filling the padded sides - supporting the 'turn' goal and the push-in favouring the mask side. Character match verified against the supplied reference: same face shape, dark curly hair, thick eyebrows, full black beard and moustache, nose and mouth line, medium-brown skin tone and blue button-up shirt with dark trousers; the face is clearly visible in three-quarter view, in focus and fully detailed (not blank, featureless, dotted, blurred or turned away). Only the person is rendered as the character - the surrounding scene retains the source artwork's art style, amber/deep-blue palette and lighting. Subtitle safety: the upper light-shaft band and the lower-left darker desk-side area remain clean and uncluttered for Remotion subtitles and typography.",
+      "cost_usd": 0.0
+    },
+    "7": {
+      "shot_sequence": 7,
+      "shot_fingerprint": "8932bccf8ad9729b213dba43b0584138ab48e0969f51d4d78f59878c3a823353",
+      "generation_mode": "STILL",
+      "asset_type": "still",
+      "local_path": "generated/stills/shot_07.png",
+      "asset_sha256": "df363a49e9a33fe18c16e8a8818d9a50a2a0c0ba577c9fd5afea5701365745ac",
+      "approved": true,
+      "source_asset_ids": [
+        "img_00daa58a9bb0",
+        "img_b54ab1e561ef"
+      ],
+      "seed_path": null,
+      "seed_sha256": null,
+      "generation_model": "codex",
+      "gcs_uri": null,
+      "operation_name": null,
+      "operation_dump_path": null,
+      "preview_paths": [],
+      "qa_summary": "Verified single-instance composition: exactly one seated figure, one keyboard/desk, one monitor with a single envelope icon, one clock, one window light source and one cluster of drifting mask shards in the upper left - no duplicated focal subject or mirrored scene element anywhere in frame. Style remains the source's flat warm vector illustration, not photorealistic. No app UI, header bar, page-progress dashes, letters, words, logos or watermarks appear; the frame is entirely text-free so Remotion typography stays authoritative. Composition matches the brief: dim office sunk into deep shadow with amber diagonal light shafts from the upper-right window, a thin gold horizontal rule near the top edge and a narrow gold vertical strip down the right edge borrowed from the reflection page, and the middle and lower two-thirds held completely empty and uncluttered for subtitles. Character match confirmed against the supplied reference (reference judged for identity only, not background or framing): same medium-brown skin tone, black tightly curly hairstyle with the same volume and hairline, thick dark eyebrows, straight nose, full black beard with connected moustache, and the same royal-blue collared button shirt with rolled sleeves. The face is large, in focus and fully detailed in three-quarter profile - brow, nose bridge, lips, jaw and beard edge all clearly drawn, not blank, dotted, blurred, obscured or turned away - with eyes closed as the source scene requires. Only the person is rendered in the character's style; the office palette, lighting and flat-vector treatment stay as the source drew them.",
+      "cost_usd": 0.0
+    },
+    "9": {
+      "shot_sequence": 9,
+      "shot_fingerprint": "52744787e38bdbb31c8a0d38bcc4785a7cfd1f07bb58239272800b97c5b158d2",
+      "generation_mode": "STILL",
+      "asset_type": "still",
+      "local_path": "generated/stills/shot_09.png",
+      "asset_sha256": "51f2aa91bc796e632e468be3e0407fa5a809c9b96436684ebb2c21e216068e40",
+      "approved": true,
+      "source_asset_ids": [
+        "img_b54ab1e561ef"
+      ],
+      "seed_path": null,
+      "seed_sha256": null,
+      "generation_model": "codex",
+      "gcs_uri": null,
+      "operation_name": null,
+      "operation_dump_path": null,
+      "preview_paths": [],
+      "qa_summary": "Verified the frame is the intended empty typographic plate: a full-frame warm cream-ivory paper field, 1080x1920 vertical, completely empty through the entire centre with no figures, objects or artwork. Exactly one thin gold horizontal rule sits near the very top and exactly one narrow gold vertical strip runs along the right edge - no duplication of either accent and no repeated focal element anywhere in frame. The dark sliver from the source's far right is cropped away as required. A faint warm amber spill reads in the upper-right with a very slight darkening of the outer corners, carrying tone forward from the previous shot while staying flat and even. Confirmed zero text, letters, numerals, logos, watermarks or app UI - the source page's two body paragraphs are fully absent. Art style stays as flat illustrated/paper-plate rendering with no photorealistic drift. No character reference was supplied and the source asset records no people (real_people_visible and illustrated_or_cartoon_figures_visible both false), so the absence of any figure is correct. The full centre and lower two-thirds are clean, low-contrast negative space with ample room for the Remotion subtitle 'What has your fear disguised as common sense?' and the planned 1.04-to-1.10 scale with vertical drift will not push either gold accent into an awkward crop.",
+      "cost_usd": 0.0
     }
   }
 }

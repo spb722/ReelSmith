@@ -1,0 +1,21 @@
+[00:00:00] ▸ Making the Instagram cover
+[00:00:00]   A copy of everything printed here is being saved to orchestrator_runs/run_20260922T203822.log
+[00:00:00]   9 approved shot(s) available: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+[00:00:00]   Try 1 of 3 · choosing the frame and the hook
+[00:00:17]     StructuredOutput
+[00:00:18]   Cover plan: shot 6 · "What has your fear disguised as common sense?"
+[00:00:18]     Why: Shot 6 is the story's turn and holds its central metaphor in one image — the mask that fear was wearing visibly breaking apart above a person who has stopped fighting it. Pairing it with the narration's closing question turns the viewer's attention onto their own hesitation rather than merely describing the video, and the question is answered by the same beat the cover shows.
+[00:00:18]     Cover: asking Codex to draw it (try 1 of 2)
+[00:00:33]     Cover: Codex is still drawing … 15s
+[00:00:48]     Cover: Codex is still drawing … 30s
+[00:01:03]     Cover: Codex is still drawing … 45s
+[00:01:18]     Cover: Codex is still drawing … 1m00s
+[00:01:33]     Cover: Codex is still drawing … 1m15s
+[00:01:48]     Cover: Codex is still drawing … 1m30s
+[00:02:00]     Cover: Codex finished in 1m42s
+[00:02:02]     Saved final_image.png at 1080×1920 with the fracturing mask, referenced character, and exact headline.
+[00:02:02]     Cover written to generated/cover/cover.png (1080x1920)
+[00:02:03]     Grid preview written to generated/cover/cover_grid.png (1080x1350)
+[00:02:03]   Finished! Your cover is at generated/cover/cover.png
+[00:02:03]     Check generated/cover/cover_grid.png to see what survives the profile grid crop
+[00:02:03]     Claude cost for this cover: $0.07

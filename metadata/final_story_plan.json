@@ -1,157 +1,203 @@
 {
   "produced_by": "story_agent",
-  "story_title": "Choose Your Struggle",
-  "core_thesis": "Fulfillment doesn't come from escaping pain but from consciously choosing which struggle is worth carrying.",
-  "narrative_strategy": "Open with the sheltered prince who becomes the Buddha as a concrete, ancient example of suffering's inevitability, reveal his insight as a turning point, then pair it with a smaller, relatable modern anecdote (a writer who dreamed of rock stardom but never practiced) to show the same law of choosing struggle at human scale, closing on a reflective line that hands the idea back to the viewer.",
-  "target_duration_seconds": 42.8,
-  "target_word_count": 107,
-  "hook": "Twenty-five hundred years ago, a prince lived behind palace walls, hidden from all suffering.",
-  "narration_script": "Twenty-five hundred years ago, a prince lived behind palace walls, hidden from all suffering. When he finally saw it, he ran — gave up the throne, slept in the dirt, starved himself, sure that pain itself would hand him meaning. It handed him nothing. Under a tree, he saw the truth: rich or poor, everyone suffers. That became the Buddha's first teaching. Centuries later, a writer named Manson spent half his life dreaming of rock stardom, loving the fame, never the practice. Everyone wants the reward. Few want the struggle that earns it. Happiness isn't a finish line — it grows from the problems you actually choose to solve.",
+  "story_title": "The False Logic of Fear",
+  "core_thesis": "Fear disguises itself as common sense, building walls out of old failures and invented worries — and the only way past it is to recognize the mask and act anyway.",
+  "narrative_strategy": "Carry the abstract lesson on one concrete moment: a man frozen over a finished resignation letter. Move chronologically through the four story pages — hesitation, the built-but-unclaimed business, escalating panic, then the reveal that the dread has no logic — and use the text-only reflection page to turn the insight outward to the viewer in a single closing question.",
+  "target_duration_seconds": 47.5,
+  "target_word_count": 113,
+  "hook": "Mark's finger hovered over the delete key. The resignation letter was already written.",
+  "narration_script": "Mark's finger hovered over the delete key. The resignation letter was already written. Six months of nights and weekends had built his freelance business. The clients were lined up. The cash was waiting. But suddenly, that boring desk job felt like a warm blanket. Then the panic got louder. A shaky economy. That one time he failed a college project. His brain building a wall between him and his bold goal. Then he saw it. The dread lacked logic. It was simply fear wearing a mask. The ego hates change, so it feeds you doubt. He closed his eyes, took a breath, and clicked send. What has your fear disguised as common sense?",
   "voice_direction": {
-    "persona": "A calm, thoughtful narrator sharing a piece of hard-won wisdom, not selling anything",
+    "persona": "Mature, composed narrator speaking close to the microphone — steady, thoughtful, quietly intense, like someone recounting something they have lived through",
     "tone": [
-      "contemplative",
-      "grounded",
-      "quietly intense",
-      "sincere"
+      "calm",
+      "controlled",
+      "intimate",
+      "resolved"
     ],
-    "pace_wpm": 150,
+    "pace_wpm": 143,
     "delivery_notes": [
-      "Start slow and measured on the palace image to build stillness before tension",
-      "Let 'It handed him nothing' land as a flat, weighty beat with a brief pause before and after",
-      "Shift energy slightly warmer and more conversational on the Manson anecdote to signal relatability",
-      "Slow down again on the final line so the reflection breathes"
+      "Open low and unhurried; let the first two sentences sit in tension rather than selling them",
+      "Clip the panic fragments slightly shorter and tighter to simulate escalating thought",
+      "Drop volume, not speed, on 'It was simply fear wearing a mask' — this is the turn",
+      "Soften and slow the final line; ask the question genuinely, do not push it"
     ],
     "emphasis_phrases": [
-      "hidden from all suffering",
-      "It handed him nothing",
-      "everyone suffers",
-      "loving the fame, never the practice",
-      "Few want the struggle that earns it",
-      "Happiness isn't a finish line"
+      "hovered over the delete key",
+      "felt like a warm blanket",
+      "the panic got louder",
+      "fear wearing a mask",
+      "clicked send"
     ],
     "pause_after_phrases": [
-      "It handed him nothing.",
-      "That became the Buddha's first teaching.",
-      "Everyone wants the reward."
+      "The resignation letter was already written.",
+      "The cash was waiting.",
+      "That one time he failed a college project.",
+      "Then he saw it.",
+      "It was simply fear wearing a mask.",
+      "and clicked send."
     ]
   },
   "story_arc": {
-    "opening_tension": "A prince raised in total comfort has never encountered suffering, setting up an inevitable collision with reality.",
-    "human_or_concrete_story": "The prince flees the palace, tries to out-suffer suffering through extreme asceticism, and fails to find meaning in either indulgence or deprivation.",
-    "reversal_or_reveal": "Sitting under a tree, he realizes suffering is universal regardless of wealth or poverty — this becomes the Buddha's first teaching, and echoes in a modern writer who wanted the reward of stardom without the daily grind of practice.",
-    "principle_explanation": "Fulfillment doesn't come from avoiding pain or reaching some reward at a finish line; it comes from choosing which daily struggle you're willing to embrace and grow to love.",
-    "viewer_reflection": "The closing line turns the lesson outward, leaving the viewer to consider which problems they're actually choosing to solve in their own life."
+    "opening_tension": "A man sits over a finished resignation letter he cannot send, his finger poised on delete.",
+    "human_or_concrete_story": "Mark spent six months of nights and weekends building a freelance business with clients lined up and cash waiting, yet his dull, secure desk job suddenly felt like a warm blanket.",
+    "reversal_or_reveal": "The dread he mistook for judgment had no logic in it — it was simply fear wearing a mask, and he sent the letter anyway.",
+    "principle_explanation": "The ego hates change, so it feeds you doubt, building walls out of past mistakes and fake worries and disguising panic as plain common sense.",
+    "viewer_reflection": "The viewer is asked to locate the place where their own fear is currently masquerading as sensible caution."
   },
   "scenes": [
     {
       "sequence": 1,
       "role": "HOOK",
-      "estimated_duration_seconds": 5.6,
-      "narration": "Twenty-five hundred years ago, a prince lived behind palace walls, hidden from all suffering.",
+      "estimated_duration_seconds": 5.5,
+      "narration": "Mark's finger hovered over the delete key. The resignation letter was already written.",
       "source_asset_ids": [
-        "img_87a825c5a858"
+        "img_55d33b8161ef"
       ],
-      "source_support": "Heading 'Choose Your Struggle' and body text: 'To understand why suffering is inevitable, you have to look back 2,500 years to a young prince in Ancient India. Born into a luxury palace where every single desire was met, the prince was kept isolated behind high walls so he would never see sickness, poverty, or death.'",
-      "visual_intent": "Open on the illustrated palace courtyard with the lone prince surrounded by servants, emphasizing isolation amid abundance.",
-      "suggested_visual_treatment": "USE_EXISTING_ART",
-      "impact_text": "",
-      "emotional_goal": "Create quiet curiosity and foreboding about a sheltered life about to be disrupted."
+      "source_support": "Page 1 body text: \"'I just don't think I'm ready,' Mark said, staring at the draft of his resignation letter. His finger hovered over the delete key.\"",
+      "visual_intent": "Tight crop on the illustrated man at the glowing monitor in the dark cubicle, shadow figure looming behind him; slow push-in.",
+      "suggested_visual_treatment": "CROP_AND_RECOMPOSE",
+      "impact_text": "hovered over the delete key",
+      "emotional_goal": "Immediate suspended tension — a decision frozen mid-air."
     },
     {
       "sequence": 2,
-      "role": "BUILDUP",
-      "estimated_duration_seconds": 10.0,
-      "narration": "When he finally saw it, he ran — gave up the throne, slept in the dirt, starved himself, sure that pain itself would hand him meaning.",
+      "role": "SETUP",
+      "estimated_duration_seconds": 8,
+      "narration": "Six months of nights and weekends had built his freelance business. The clients were lined up. The cash was waiting.",
       "source_asset_ids": [
-        "img_c99892bd2a98"
+        "img_32bc0f72bd41"
       ],
-      "source_support": "Body text: 'So he ran. He gave up the throne, slept in the dirt, and starved himself for years, sure that suffering would hand him the meaning he craved.'",
-      "visual_intent": "Show the seated meditating figure beneath the tree as the visual anchor for his renunciation and search.",
-      "suggested_visual_treatment": "USE_EXISTING_ART",
-      "impact_text": "",
-      "emotional_goal": "Build tension around his desperate, extreme search for meaning."
+      "source_support": "Page 2 body text: \"He had spent six months building a freelance business on nights and weekends. The clients were lined up. The cash was waiting.\"",
+      "visual_intent": "Push in on the laptop glow showing the client list and fan of cash, lamp-lit night desk.",
+      "suggested_visual_treatment": "SUBTLE_ANIMATION",
+      "impact_text": "The clients were lined up",
+      "emotional_goal": "Establish that the escape route is real and already built."
     },
     {
       "sequence": 3,
-      "role": "REVEAL",
-      "estimated_duration_seconds": 8.8,
-      "narration": "It handed him nothing. Under a tree, he saw the truth: rich or poor, everyone suffers. That became the Buddha's first teaching.",
+      "role": "CONTEXT",
+      "estimated_duration_seconds": 4.5,
+      "narration": "But suddenly, that boring desk job felt like a warm blanket.",
       "source_asset_ids": [
-        "img_c99892bd2a98"
+        "img_32bc0f72bd41"
       ],
-      "source_support": "Body text: 'It handed him nothing. Sitting under a tree, he finally saw what he had missed all along: rich or poor, indulgent or starving, everyone suffers. He would become the Buddha, and this was his very first teaching.'",
-      "visual_intent": "Hold on the seated figure under the heart-leaved tree with the empty bowl beside him, the moment of realization.",
-      "suggested_visual_treatment": "SUBTLE_ANIMATION",
-      "impact_text": "It handed him nothing",
-      "emotional_goal": "Land the reversal as a calm, weighty revelation rather than a dramatic twist."
+      "source_support": "Page 2 body text: \"But suddenly, the secure paycheck at his boring desk job felt like a warm blanket.\"",
+      "visual_intent": "Hold on the figure cocooned in the mustard-yellow blanket at the desk; warm, cozy, slightly confining framing.",
+      "suggested_visual_treatment": "USE_EXISTING_ART",
+      "impact_text": "felt like a warm blanket",
+      "emotional_goal": "The seductive pull of safety."
     },
     {
       "sequence": 4,
-      "role": "HUMAN_STORY",
-      "estimated_duration_seconds": 8.0,
-      "narration": "Centuries later, a writer named Manson spent half his life dreaming of rock stardom, loving the fame, never the practice.",
+      "role": "BUILDUP",
+      "estimated_duration_seconds": 6.5,
+      "narration": "Then the panic got louder. A shaky economy. That one time he failed a college project.",
       "source_asset_ids": [
-        "img_7e9bbe598ea9"
+        "img_4298f6afa10b"
       ],
-      "source_support": "Body text: 'For half his life, Manson dreamed of being a rock star: the crowds, the noise, the fame. But he never practiced. He loved the daydream of success, not the daily grind of guitar practice.'",
-      "visual_intent": "Cut to the flat-lay of the unused guitar, spilled coffee, and idle clock, with the figure standing passively beside them.",
-      "suggested_visual_treatment": "USE_EXISTING_ART",
-      "impact_text": "loving the fame, never the practice",
-      "emotional_goal": "Shift the abstract lesson into something relatable and self-recognizable."
+      "source_support": "Page 3 body text: \"The panic got louder. It told him the economy was too shaky. It reminded him about that one time he failed a college project.\"",
+      "visual_intent": "Staggered pop-in of the jagged dark thought bubbles around the hunched figure in the angular office.",
+      "suggested_visual_treatment": "SUBTLE_ANIMATION",
+      "impact_text": "the panic got louder",
+      "emotional_goal": "Rising, crowding anxiety."
     },
     {
       "sequence": 5,
-      "role": "EXPLANATION",
-      "estimated_duration_seconds": 4.4,
-      "narration": "Everyone wants the reward. Few want the struggle that earns it.",
+      "role": "BUILDUP",
+      "estimated_duration_seconds": 4.5,
+      "narration": "His brain building a wall between him and his bold goal.",
       "source_asset_ids": [
-        "img_d5101d6cfa1e"
+        "img_4298f6afa10b"
       ],
-      "source_support": "Body text: 'Everyone wants the reward, but far fewer want the struggle that earns it.'",
-      "visual_intent": "Show the figure practicing guitar alone under a lamp among empty chairs, contrasting desire for reward with the solitary grind.",
-      "suggested_visual_treatment": "USE_EXISTING_ART",
-      "impact_text": "Few want the struggle that earns it",
-      "emotional_goal": "Crystallize the core principle plainly and directly."
+      "source_support": "Page 3 body text: \"His brain was working overtime to build a giant wall between him and his bold goal.\"",
+      "visual_intent": "Isolate the grey-and-orange shard wall on the left of the art, growing between the viewer and the figure.",
+      "suggested_visual_treatment": "CROP_AND_RECOMPOSE",
+      "impact_text": "between him and his bold goal",
+      "emotional_goal": "Claustrophobic blockage at its peak."
     },
     {
       "sequence": 6,
-      "role": "REFLECTION",
-      "estimated_duration_seconds": 6.0,
-      "narration": "Happiness isn't a finish line — it grows from the problems you actually choose to solve.",
+      "role": "REVERSAL",
+      "estimated_duration_seconds": 6,
+      "narration": "Then he saw it. The dread lacked logic. It was simply fear wearing a mask.",
       "source_asset_ids": [
-        "img_d5101d6cfa1e",
-        "img_189adab8f683"
+        "img_00daa58a9bb0"
       ],
-      "source_support": "Body text: 'Happiness isn't waiting at a finish line where all your problems disappear. It grows out of the specific problems you actually enjoy solving.' Reinforced by summary card quote: 'Real fulfillment doesn't come from eliminating problems, but from choosing the specific set of problems you are willing to solve every day.'",
-      "visual_intent": "Close on the warm-lit practice scene or the summary quote card, letting the words sit as the final thought.",
-      "suggested_visual_treatment": "MIXED",
-      "impact_text": "Happiness isn't a finish line",
-      "emotional_goal": "Leave the viewer with a calm, reflective sense of ownership over their own struggle."
+      "source_support": "Page 4 body text: \"He realized the dread lacked logic. It was simply fear wearing a mask.\"",
+      "visual_intent": "Cut to the warm-toned page-4 art; animate the dark mask-like face shattering into fragments.",
+      "suggested_visual_treatment": "SUBTLE_ANIMATION",
+      "impact_text": "fear wearing a mask",
+      "emotional_goal": "The click of recognition — pressure releasing."
+    },
+    {
+      "sequence": 7,
+      "role": "EXPLANATION",
+      "estimated_duration_seconds": 4,
+      "narration": "The ego hates change, so it feeds you doubt.",
+      "source_asset_ids": [
+        "img_00daa58a9bb0",
+        "img_b54ab1e561ef"
+      ],
+      "source_support": "Page 4: \"The ego hates change, so it feeds you doubt to keep you locked inside a familiar box.\" Reflection page: \"The mind builds walls out of past mistakes and fake worries... It disguises this panic as plain common sense.\"",
+      "visual_intent": "Mask fragments drifting over a darkened frame with the key line set as kinetic type.",
+      "suggested_visual_treatment": "TEXT_LED",
+      "impact_text": "The ego hates change",
+      "emotional_goal": "Cool, clear understanding of the mechanism."
+    },
+    {
+      "sequence": 8,
+      "role": "REVEAL",
+      "estimated_duration_seconds": 4.5,
+      "narration": "He closed his eyes, took a breath, and clicked send.",
+      "source_asset_ids": [
+        "img_00daa58a9bb0"
+      ],
+      "source_support": "Page 4 body text: \"He closed his eyes, took a breath, and clicked send.\"",
+      "visual_intent": "Push in on the exhaling face, then a glow pulse on the envelope icon on the monitor.",
+      "suggested_visual_treatment": "SUBTLE_ANIMATION",
+      "impact_text": "clicked send",
+      "emotional_goal": "Quiet, irreversible courage."
+    },
+    {
+      "sequence": 9,
+      "role": "REFLECTION",
+      "estimated_duration_seconds": 4,
+      "narration": "What has your fear disguised as common sense?",
+      "source_asset_ids": [
+        "img_b54ab1e561ef"
+      ],
+      "source_support": "Reflection page: \"It disguises this panic as plain common sense\" and \"If you listen to the loud voice telling you to stay put, you will never find out what you can actually build.\"",
+      "visual_intent": "Cream typographic frame, slow line reveal of the closing question, warm light fading out.",
+      "suggested_visual_treatment": "TEXT_LED",
+      "impact_text": "disguised as common sense",
+      "emotional_goal": "Turn the blade gently toward the viewer and leave it there."
     }
   ],
   "unused_assets": [],
   "source_integrity_notes": [
-    "Every screenshot includes an unrelated cricket score notification banner ('Yet to bat 166/1 (24.2)') and app chrome (status bar, nav arrows, 'Continue' button); these were treated purely as UI noise and excluded from narration and visual intent.",
-    "The author's full name is only given as 'Manson' in the source text, with the analysis flagging uncertainty about whether this is Mark Manson; narration uses the source-safe generic phrasing 'a writer named Manson' rather than asserting an unverified full identity.",
-    "Body text describing 'It handed him nothing... rich or poor, indulgent or starving, everyone suffers' was condensed to 'rich or poor, everyone suffers' to keep spoken pacing natural while preserving the core claim.",
-    "The final summary/quote card (img_189adab8f683) has no illustrative art of its own; its text was used only to reinforce the closing line already drawn from img_d5101d6cfa1e's narrative slide, and it is paired as a secondary asset in the final scene rather than a standalone one.",
-    "The next-slide preview text visible faded at the bottom of several slides was ignored as it belongs to a different card than the one being described."
+    "All five supplied assets belong to one continuous four-page story plus a text-only reflection page; narration follows page order 1-4 then the reflection, which is the meaning-derived order rather than any assumed manifest order.",
+    "The header UI text 'The False Logic of Fear' repeats on all four story pages; treated as a single title, not as repeated content.",
+    "Asset img_00daa58a9bb0 flags that the illustrated figure's hair and features differ from page 1, so it may not depict the same character. The narration uses only 'he' in that section, matching the source text's own pronoun, and never re-asserts that the figure is Mark.",
+    "Asset img_b54ab1e561ef has no title or header and its link to the story is inferred from theme. It is used only for the generalized principle and the closing reflection, both of which are verbatim-supported by its own text ('disguises this panic as plain common sense').",
+    "Icon meanings in the thought bubbles (clock, crossed-out target, fortress, gear) and the ambiguity of whether the shard wall is building or shattering are interpretive, so no narration claim rests on them — only on written body text.",
+    "The page-1 quotation \"I just don't think I'm ready\" was dropped for length; no quoted material is paraphrased as if it were verbatim.",
+    "No outside facts, statistics, or names were added; every claim traces to a supplied body-text block."
   ],
   "quality_review": {
     "verdict": "APPROVE",
     "ready_for_voice_generation": true,
-    "confidence": 0.91,
+    "confidence": 0.9,
     "scores": {
-      "source_fidelity": 9,
-      "hook_strength": 8,
+      "source_fidelity": 10,
+      "hook_strength": 9,
       "spoken_naturalness": 9,
       "narrative_coherence": 9,
       "voice_alignment": 9,
-      "pacing": 8,
+      "pacing": 9,
       "scene_structure": 9,
       "visual_support": 9,
-      "internal_consistency": 9
+      "internal_consistency": 10
     }
   }
 }

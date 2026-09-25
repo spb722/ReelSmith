@@ -6,3 +6,16 @@ _bmad/render/
 __pycache__/
 *.pyc
 .env
+
+# Large generated media and per-book project outputs
+projects/
+generated_before_character/
+*.png
+*.PNG
+*.jpg
+*.jpeg
+*.mp4
+*.mov
+*.wav
+*.mp3
+*.webp

@@ -1,0 +1,11 @@
+{
+  "stage_id": "visual_agent",
+  "failed_contract_name": "VisualPlanContract",
+  "reason": "Retry ceiling exhausted: Claude attempt failed: ResultError: Claude Code returned an error result: You've hit your org's monthly spend limit · ask your admin to raise it at claude.ai/settings/usage?from=cc_cli_limit_message · your session limit resets 9:30pm (Asia/Calcutta) (exit code: 1)",
+  "attempt_count": 4,
+  "timestamp": "2026-09-21T15:17:37.997827+00:00",
+  "partial_artifact_paths": [
+    "metadata/final_story_plan.json",
+    "metadata/analyzed_assets.json"
+  ]
+}

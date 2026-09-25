@@ -1,0 +1,21 @@
+[00:00:00] ▸ Making the Instagram cover
+[00:00:00]   A copy of everything printed here is being saved to orchestrator_runs/run_20260922T200650.log
+[00:00:00]   9 approved shot(s) available: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+[00:00:00]   Using the frame and hook you supplied — skipping the planning step
+[00:00:00]   Cover plan: shot 6 · "fear wearing a mask"
+[00:00:00]     Why: Chosen by the operator.
+[00:00:00]     Cover: asking Codex to draw it (try 1 of 2)
+[00:00:15]     Cover: Codex is still drawing … 15s
+[00:00:30]     Cover: Codex is still drawing … 30s
+[00:00:45]     Cover: Codex is still drawing … 45s
+[00:01:00]     Cover: Codex is still drawing … 1m00s
+[00:01:15]     Cover: Codex is still drawing … 1m15s
+[00:01:30]     Cover: Codex is still drawing … 1m30s
+[00:01:45]     Cover: Codex is still drawing … 1m45s
+[00:01:55]     Cover: Codex finished in 1m55s
+[00:01:57]     Saved final_image.png as a text-free 1080×1920 portrait cover with the supplied character.
+[00:01:58]     Cover written to generated/cover/cover.png (font: Arial Bold.ttf, 132px)
+[00:01:59]     Grid preview written to generated/cover/cover_grid.png (1080x1350)
+[00:01:59]   Finished! Your cover is at generated/cover/cover.png
+[00:01:59]     Check generated/cover/cover_grid.png to see what survives the profile grid crop
+[00:01:59]     Claude cost for this cover: $0.00

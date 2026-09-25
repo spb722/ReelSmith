@@ -1,0 +1,2428 @@
+{
+  "locked_narration": "Mark's finger hovered over the delete key. The resignation letter was already written. Six months of nights and weekends had built his freelance business. The clients were lined up. The cash was waiting. But suddenly, that boring desk job felt like a warm blanket. Then the panic got louder. A shaky economy. That one time he failed a college project. His brain building a wall between him and his bold goal. Then he saw it. The dread lacked logic. It was simply fear wearing a mask. The ego hates change, so it feeds you doubt. He closed his eyes, took a breath, and clicked send. What has your fear disguised as common sense?",
+  "recognized_transcript": "Mark's finger hovered over the delete key. The resignation letter was already written. Six months of nights and weekends had built his freelance business. The clients were lined up, the cash was waiting. But suddenly, that boring desk job felt like a warm blanket. Then the panic got louder. A shaky economy, that one time he failed a college project. His brain building a wall between him and his bold goal. Then he saw it. The dread lacked logic. It was simply fear wearing a mask. The ego hates change, so it feeds you doubt. He closed his eyes, took a breath, and click send. What is your fear disguised as common sense?",
+  "recognized_words": [
+    {
+      "word": "Mark's",
+      "start_seconds": 0.24,
+      "end_seconds": 0.72
+    },
+    {
+      "word": "finger",
+      "start_seconds": 0.72,
+      "end_seconds": 1.4
+    },
+    {
+      "word": "hovered",
+      "start_seconds": 1.44,
+      "end_seconds": 2.12
+    },
+    {
+      "word": "over",
+      "start_seconds": 2.16,
+      "end_seconds": 2.44
+    },
+    {
+      "word": "the",
+      "start_seconds": 2.44,
+      "end_seconds": 2.56
+    },
+    {
+      "word": "delete",
+      "start_seconds": 2.56,
+      "end_seconds": 2.96
+    },
+    {
+      "word": "key.",
+      "start_seconds": 2.96,
+      "end_seconds": 3.36
+    },
+    {
+      "word": "The",
+      "start_seconds": 3.88,
+      "end_seconds": 4.0
+    },
+    {
+      "word": "resignation",
+      "start_seconds": 4.0,
+      "end_seconds": 4.68
+    },
+    {
+      "word": "letter",
+      "start_seconds": 4.68,
+      "end_seconds": 5.0
+    },
+    {
+      "word": "was",
+      "start_seconds": 5.0,
+      "end_seconds": 5.32
+    },
+    {
+      "word": "already",
+      "start_seconds": 5.32,
+      "end_seconds": 5.88
+    },
+    {
+      "word": "written.",
+      "start_seconds": 5.88,
+      "end_seconds": 6.36
+    },
+    {
+      "word": "Six",
+      "start_seconds": 7.44,
+      "end_seconds": 7.96
+    },
+    {
+      "word": "months",
+      "start_seconds": 7.96,
+      "end_seconds": 8.36
+    },
+    {
+      "word": "of",
+      "start_seconds": 8.36,
+      "end_seconds": 8.52
+    },
+    {
+      "word": "nights",
+      "start_seconds": 8.52,
+      "end_seconds": 9.12
+    },
+    {
+      "word": "and",
+      "start_seconds": 9.12,
+      "end_seconds": 9.28
+    },
+    {
+      "word": "weekends",
+      "start_seconds": 9.28,
+      "end_seconds": 9.92
+    },
+    {
+      "word": "had",
+      "start_seconds": 9.92,
+      "end_seconds": 10.16
+    },
+    {
+      "word": "built",
+      "start_seconds": 10.16,
+      "end_seconds": 10.48
+    },
+    {
+      "word": "his",
+      "start_seconds": 10.48,
+      "end_seconds": 10.68
+    },
+    {
+      "word": "freelance",
+      "start_seconds": 10.68,
+      "end_seconds": 11.2
+    },
+    {
+      "word": "business.",
+      "start_seconds": 11.2,
+      "end_seconds": 11.76
+    },
+    {
+      "word": "The",
+      "start_seconds": 12.24,
+      "end_seconds": 12.32
+    },
+    {
+      "word": "clients",
+      "start_seconds": 12.32,
+      "end_seconds": 12.84
+    },
+    {
+      "word": "were",
+      "start_seconds": 12.84,
+      "end_seconds": 12.96
+    },
+    {
+      "word": "lined",
+      "start_seconds": 12.96,
+      "end_seconds": 13.4
+    },
+    {
+      "word": "up,",
+      "start_seconds": 13.4,
+      "end_seconds": 13.88
+    },
+    {
+      "word": "the",
+      "start_seconds": 14.04,
+      "end_seconds": 14.16
+    },
+    {
+      "word": "cash",
+      "start_seconds": 14.16,
+      "end_seconds": 14.56
+    },
+    {
+      "word": "was",
+      "start_seconds": 14.56,
+      "end_seconds": 14.76
+    },
+    {
+      "word": "waiting.",
+      "start_seconds": 14.76,
+      "end_seconds": 15.32
+    },
+    {
+      "word": "But",
+      "start_seconds": 16.72,
+      "end_seconds": 16.96
+    },
+    {
+      "word": "suddenly,",
+      "start_seconds": 16.96,
+      "end_seconds": 17.6
+    },
+    {
+      "word": "that",
+      "start_seconds": 17.88,
+      "end_seconds": 18.2
+    },
+    {
+      "word": "boring",
+      "start_seconds": 18.2,
+      "end_seconds": 18.72
+    },
+    {
+      "word": "desk",
+      "start_seconds": 18.72,
+      "end_seconds": 19.08
+    },
+    {
+      "word": "job",
+      "start_seconds": 19.08,
+      "end_seconds": 19.6
+    },
+    {
+      "word": "felt",
+      "start_seconds": 19.76,
+      "end_seconds": 20.04
+    },
+    {
+      "word": "like",
+      "start_seconds": 20.04,
+      "end_seconds": 20.24
+    },
+    {
+      "word": "a",
+      "start_seconds": 20.24,
+      "end_seconds": 20.32
+    },
+    {
+      "word": "warm",
+      "start_seconds": 20.32,
+      "end_seconds": 20.96
+    },
+    {
+      "word": "blanket.",
+      "start_seconds": 20.96,
+      "end_seconds": 21.68
+    },
+    {
+      "word": "Then",
+      "start_seconds": 23.08,
+      "end_seconds": 23.2
+    },
+    {
+      "word": "the",
+      "start_seconds": 23.2,
+      "end_seconds": 23.32
+    },
+    {
+      "word": "panic",
+      "start_seconds": 23.32,
+      "end_seconds": 23.88
+    },
+    {
+      "word": "got",
+      "start_seconds": 23.88,
+      "end_seconds": 24.16
+    },
+    {
+      "word": "louder.",
+      "start_seconds": 24.16,
+      "end_seconds": 24.76
+    },
+    {
+      "word": "A",
+      "start_seconds": 25.32,
+      "end_seconds": 25.4
+    },
+    {
+      "word": "shaky",
+      "start_seconds": 25.4,
+      "end_seconds": 25.84
+    },
+    {
+      "word": "economy,",
+      "start_seconds": 25.84,
+      "end_seconds": 26.52
+    },
+    {
+      "word": "that",
+      "start_seconds": 27.08,
+      "end_seconds": 27.32
+    },
+    {
+      "word": "one",
+      "start_seconds": 27.32,
+      "end_seconds": 27.56
+    },
+    {
+      "word": "time",
+      "start_seconds": 27.56,
+      "end_seconds": 27.88
+    },
+    {
+      "word": "he",
+      "start_seconds": 27.88,
+      "end_seconds": 28.04
+    },
+    {
+      "word": "failed",
+      "start_seconds": 28.04,
+      "end_seconds": 28.48
+    },
+    {
+      "word": "a",
+      "start_seconds": 28.48,
+      "end_seconds": 28.52
+    },
+    {
+      "word": "college",
+      "start_seconds": 28.52,
+      "end_seconds": 29.0
+    },
+    {
+      "word": "project.",
+      "start_seconds": 29.0,
+      "end_seconds": 29.64
+    },
+    {
+      "word": "His",
+      "start_seconds": 30.76,
+      "end_seconds": 31.0
+    },
+    {
+      "word": "brain",
+      "start_seconds": 31.0,
+      "end_seconds": 31.52
+    },
+    {
+      "word": "building",
+      "start_seconds": 31.52,
+      "end_seconds": 31.92
+    },
+    {
+      "word": "a",
+      "start_seconds": 31.92,
+      "end_seconds": 32.0
+    },
+    {
+      "word": "wall",
+      "start_seconds": 32.0,
+      "end_seconds": 32.52
+    },
+    {
+      "word": "between",
+      "start_seconds": 32.52,
+      "end_seconds": 32.96
+    },
+    {
+      "word": "him",
+      "start_seconds": 32.96,
+      "end_seconds": 33.48
+    },
+    {
+      "word": "and",
+      "start_seconds": 33.68,
+      "end_seconds": 33.84
+    },
+    {
+      "word": "his",
+      "start_seconds": 33.84,
+      "end_seconds": 34.04
+    },
+    {
+      "word": "bold",
+      "start_seconds": 34.04,
+      "end_seconds": 34.6
+    },
+    {
+      "word": "goal.",
+      "start_seconds": 34.6,
+      "end_seconds": 35.12
+    },
+    {
+      "word": "Then",
+      "start_seconds": 36.68,
+      "end_seconds": 36.84
+    },
+    {
+      "word": "he",
+      "start_seconds": 36.84,
+      "end_seconds": 36.92
+    },
+    {
+      "word": "saw",
+      "start_seconds": 36.92,
+      "end_seconds": 37.24
+    },
+    {
+      "word": "it.",
+      "start_seconds": 37.24,
+      "end_seconds": 37.52
+    },
+    {
+      "word": "The",
+      "start_seconds": 38.96,
+      "end_seconds": 39.08
+    },
+    {
+      "word": "dread",
+      "start_seconds": 39.08,
+      "end_seconds": 39.76
+    },
+    {
+      "word": "lacked",
+      "start_seconds": 39.88,
+      "end_seconds": 40.36
+    },
+    {
+      "word": "logic.",
+      "start_seconds": 40.36,
+      "end_seconds": 40.96
+    },
+    {
+      "word": "It",
+      "start_seconds": 41.76,
+      "end_seconds": 41.92
+    },
+    {
+      "word": "was",
+      "start_seconds": 41.92,
+      "end_seconds": 42.08
+    },
+    {
+      "word": "simply",
+      "start_seconds": 42.08,
+      "end_seconds": 42.52
+    },
+    {
+      "word": "fear",
+      "start_seconds": 42.52,
+      "end_seconds": 43.16
+    },
+    {
+      "word": "wearing",
+      "start_seconds": 43.48,
+      "end_seconds": 43.8
+    },
+    {
+      "word": "a",
+      "start_seconds": 43.8,
+      "end_seconds": 43.84
+    },
+    {
+      "word": "mask.",
+      "start_seconds": 43.84,
+      "end_seconds": 44.64
+    },
+    {
+      "word": "The",
+      "start_seconds": 46.2,
+      "end_seconds": 46.4
+    },
+    {
+      "word": "ego",
+      "start_seconds": 46.4,
+      "end_seconds": 46.84
+    },
+    {
+      "word": "hates",
+      "start_seconds": 46.84,
+      "end_seconds": 47.4
+    },
+    {
+      "word": "change,",
+      "start_seconds": 47.4,
+      "end_seconds": 48.08
+    },
+    {
+      "word": "so",
+      "start_seconds": 48.32,
+      "end_seconds": 48.44
+    },
+    {
+      "word": "it",
+      "start_seconds": 48.44,
+      "end_seconds": 48.6
+    },
+    {
+      "word": "feeds",
+      "start_seconds": 48.6,
+      "end_seconds": 49.0
+    },
+    {
+      "word": "you",
+      "start_seconds": 49.0,
+      "end_seconds": 49.16
+    },
+    {
+      "word": "doubt.",
+      "start_seconds": 49.16,
+      "end_seconds": 49.76
+    },
+    {
+      "word": "He",
+      "start_seconds": 51.16,
+      "end_seconds": 51.28
+    },
+    {
+      "word": "closed",
+      "start_seconds": 51.28,
+      "end_seconds": 51.64
+    },
+    {
+      "word": "his",
+      "start_seconds": 51.64,
+      "end_seconds": 51.8
+    },
+    {
+      "word": "eyes,",
+      "start_seconds": 51.8,
+      "end_seconds": 52.2
+    },
+    {
+      "word": "took",
+      "start_seconds": 52.72,
+      "end_seconds": 52.88
+    },
+    {
+      "word": "a",
+      "start_seconds": 52.88,
+      "end_seconds": 52.92
+    },
+    {
+      "word": "breath,",
+      "start_seconds": 52.92,
+      "end_seconds": 53.44
+    },
+    {
+      "word": "and",
+      "start_seconds": 53.85,
+      "end_seconds": 54.21
+    },
+    {
+      "word": "click",
+      "start_seconds": 54.21,
+      "end_seconds": 54.61
+    },
+    {
+      "word": "send.",
+      "start_seconds": 54.61,
+      "end_seconds": 55.13
+    },
+    {
+      "word": "What",
+      "start_seconds": 57.25,
+      "end_seconds": 57.49
+    },
+    {
+      "word": "is",
+      "start_seconds": 57.49,
+      "end_seconds": 57.73
+    },
+    {
+      "word": "your",
+      "start_seconds": 57.73,
+      "end_seconds": 58.09
+    },
+    {
+      "word": "fear",
+      "start_seconds": 58.09,
+      "end_seconds": 58.61
+    },
+    {
+      "word": "disguised",
+      "start_seconds": 58.77,
+      "end_seconds": 59.37
+    },
+    {
+      "word": "as",
+      "start_seconds": 59.37,
+      "end_seconds": 59.49
+    },
+    {
+      "word": "common",
+      "start_seconds": 59.49,
+      "end_seconds": 59.97
+    },
+    {
+      "word": "sense?",
+      "start_seconds": 59.97,
+      "end_seconds": 60.49
+    }
+  ],
+  "alignment_stats": {
+    "canonical_word_count": 113,
+    "recognized_word_count": 113,
+    "exact_matches": 111,
+    "equivalent_matches": 0,
+    "substitutions": 2,
+    "canonical_words_missing": 0,
+    "extra_recognized_words": 0,
+    "exact_match_ratio": 0.9823008849557522,
+    "normalized_match_ratio": 0.9823008849557522,
+    "edit_distance": 2,
+    "mismatches": [
+      {
+        "operation": "substitute",
+        "canonical_indices": [
+          104
+        ],
+        "canonical_words": [
+          "clicked"
+        ],
+        "recognized_indices": [
+          104
+        ],
+        "recognized_words": [
+          "click"
+        ]
+      },
+      {
+        "operation": "substitute",
+        "canonical_indices": [
+          107
+        ],
+        "canonical_words": [
+          "has"
+        ],
+        "recognized_indices": [
+          107
+        ],
+        "recognized_words": [
+          "is"
+        ]
+      }
+    ],
+    "timing_errors": []
+  },
+  "words": [
+    {
+      "canonical_word": "Mark's",
+      "recognized_word": "Mark's",
+      "start_seconds": 0.24,
+      "end_seconds": 0.72,
+      "alignment": "exact",
+      "recognized_indices": [
+        1
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 0.24,
+        "end_seconds": 0.72
+      },
+      "index": 1
+    },
+    {
+      "canonical_word": "finger",
+      "recognized_word": "finger",
+      "start_seconds": 0.72,
+      "end_seconds": 1.4,
+      "alignment": "exact",
+      "recognized_indices": [
+        2
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 0.72,
+        "end_seconds": 1.4
+      },
+      "index": 2
+    },
+    {
+      "canonical_word": "hovered",
+      "recognized_word": "hovered",
+      "start_seconds": 1.44,
+      "end_seconds": 2.12,
+      "alignment": "exact",
+      "recognized_indices": [
+        3
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 1.44,
+        "end_seconds": 2.12
+      },
+      "index": 3
+    },
+    {
+      "canonical_word": "over",
+      "recognized_word": "over",
+      "start_seconds": 2.16,
+      "end_seconds": 2.44,
+      "alignment": "exact",
+      "recognized_indices": [
+        4
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 2.16,
+        "end_seconds": 2.44
+      },
+      "index": 4
+    },
+    {
+      "canonical_word": "the",
+      "recognized_word": "the",
+      "start_seconds": 2.44,
+      "end_seconds": 2.56,
+      "alignment": "exact",
+      "recognized_indices": [
+        5
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 2.44,
+        "end_seconds": 2.56
+      },
+      "index": 5
+    },
+    {
+      "canonical_word": "delete",
+      "recognized_word": "delete",
+      "start_seconds": 2.56,
+      "end_seconds": 2.96,
+      "alignment": "exact",
+      "recognized_indices": [
+        6
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 2.56,
+        "end_seconds": 2.96
+      },
+      "index": 6
+    },
+    {
+      "canonical_word": "key",
+      "recognized_word": "key.",
+      "start_seconds": 2.96,
+      "end_seconds": 3.36,
+      "alignment": "exact",
+      "recognized_indices": [
+        7
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 2.96,
+        "end_seconds": 3.36
+      },
+      "index": 7
+    },
+    {
+      "canonical_word": "The",
+      "recognized_word": "The",
+      "start_seconds": 3.88,
+      "end_seconds": 4.0,
+      "alignment": "exact",
+      "recognized_indices": [
+        8
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 3.88,
+        "end_seconds": 4.0
+      },
+      "index": 8
+    },
+    {
+      "canonical_word": "resignation",
+      "recognized_word": "resignation",
+      "start_seconds": 4.0,
+      "end_seconds": 4.68,
+      "alignment": "exact",
+      "recognized_indices": [
+        9
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 4.0,
+        "end_seconds": 4.68
+      },
+      "index": 9
+    },
+    {
+      "canonical_word": "letter",
+      "recognized_word": "letter",
+      "start_seconds": 4.68,
+      "end_seconds": 5.0,
+      "alignment": "exact",
+      "recognized_indices": [
+        10
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 4.68,
+        "end_seconds": 5.0
+      },
+      "index": 10
+    },
+    {
+      "canonical_word": "was",
+      "recognized_word": "was",
+      "start_seconds": 5.0,
+      "end_seconds": 5.32,
+      "alignment": "exact",
+      "recognized_indices": [
+        11
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 5.0,
+        "end_seconds": 5.32
+      },
+      "index": 11
+    },
+    {
+      "canonical_word": "already",
+      "recognized_word": "already",
+      "start_seconds": 5.32,
+      "end_seconds": 5.88,
+      "alignment": "exact",
+      "recognized_indices": [
+        12
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 5.32,
+        "end_seconds": 5.88
+      },
+      "index": 12
+    },
+    {
+      "canonical_word": "written",
+      "recognized_word": "written.",
+      "start_seconds": 5.88,
+      "end_seconds": 6.36,
+      "alignment": "exact",
+      "recognized_indices": [
+        13
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 5.88,
+        "end_seconds": 6.36
+      },
+      "index": 13
+    },
+    {
+      "canonical_word": "Six",
+      "recognized_word": "Six",
+      "start_seconds": 7.44,
+      "end_seconds": 7.96,
+      "alignment": "exact",
+      "recognized_indices": [
+        14
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 7.44,
+        "end_seconds": 7.96
+      },
+      "index": 14
+    },
+    {
+      "canonical_word": "months",
+      "recognized_word": "months",
+      "start_seconds": 7.96,
+      "end_seconds": 8.36,
+      "alignment": "exact",
+      "recognized_indices": [
+        15
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 7.96,
+        "end_seconds": 8.36
+      },
+      "index": 15
+    },
+    {
+      "canonical_word": "of",
+      "recognized_word": "of",
+      "start_seconds": 8.36,
+      "end_seconds": 8.52,
+      "alignment": "exact",
+      "recognized_indices": [
+        16
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 8.36,
+        "end_seconds": 8.52
+      },
+      "index": 16
+    },
+    {
+      "canonical_word": "nights",
+      "recognized_word": "nights",
+      "start_seconds": 8.52,
+      "end_seconds": 9.12,
+      "alignment": "exact",
+      "recognized_indices": [
+        17
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 8.52,
+        "end_seconds": 9.12
+      },
+      "index": 17
+    },
+    {
+      "canonical_word": "and",
+      "recognized_word": "and",
+      "start_seconds": 9.12,
+      "end_seconds": 9.28,
+      "alignment": "exact",
+      "recognized_indices": [
+        18
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 9.12,
+        "end_seconds": 9.28
+      },
+      "index": 18
+    },
+    {
+      "canonical_word": "weekends",
+      "recognized_word": "weekends",
+      "start_seconds": 9.28,
+      "end_seconds": 9.92,
+      "alignment": "exact",
+      "recognized_indices": [
+        19
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 9.28,
+        "end_seconds": 9.92
+      },
+      "index": 19
+    },
+    {
+      "canonical_word": "had",
+      "recognized_word": "had",
+      "start_seconds": 9.92,
+      "end_seconds": 10.16,
+      "alignment": "exact",
+      "recognized_indices": [
+        20
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 9.92,
+        "end_seconds": 10.16
+      },
+      "index": 20
+    },
+    {
+      "canonical_word": "built",
+      "recognized_word": "built",
+      "start_seconds": 10.16,
+      "end_seconds": 10.48,
+      "alignment": "exact",
+      "recognized_indices": [
+        21
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 10.16,
+        "end_seconds": 10.48
+      },
+      "index": 21
+    },
+    {
+      "canonical_word": "his",
+      "recognized_word": "his",
+      "start_seconds": 10.48,
+      "end_seconds": 10.68,
+      "alignment": "exact",
+      "recognized_indices": [
+        22
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 10.48,
+        "end_seconds": 10.68
+      },
+      "index": 22
+    },
+    {
+      "canonical_word": "freelance",
+      "recognized_word": "freelance",
+      "start_seconds": 10.68,
+      "end_seconds": 11.2,
+      "alignment": "exact",
+      "recognized_indices": [
+        23
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 10.68,
+        "end_seconds": 11.2
+      },
+      "index": 23
+    },
+    {
+      "canonical_word": "business",
+      "recognized_word": "business.",
+      "start_seconds": 11.2,
+      "end_seconds": 11.76,
+      "alignment": "exact",
+      "recognized_indices": [
+        24
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 11.2,
+        "end_seconds": 11.76
+      },
+      "index": 24
+    },
+    {
+      "canonical_word": "The",
+      "recognized_word": "The",
+      "start_seconds": 12.24,
+      "end_seconds": 12.32,
+      "alignment": "exact",
+      "recognized_indices": [
+        25
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 12.24,
+        "end_seconds": 12.32
+      },
+      "index": 25
+    },
+    {
+      "canonical_word": "clients",
+      "recognized_word": "clients",
+      "start_seconds": 12.32,
+      "end_seconds": 12.84,
+      "alignment": "exact",
+      "recognized_indices": [
+        26
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 12.32,
+        "end_seconds": 12.84
+      },
+      "index": 26
+    },
+    {
+      "canonical_word": "were",
+      "recognized_word": "were",
+      "start_seconds": 12.84,
+      "end_seconds": 12.96,
+      "alignment": "exact",
+      "recognized_indices": [
+        27
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 12.84,
+        "end_seconds": 12.96
+      },
+      "index": 27
+    },
+    {
+      "canonical_word": "lined",
+      "recognized_word": "lined",
+      "start_seconds": 12.96,
+      "end_seconds": 13.4,
+      "alignment": "exact",
+      "recognized_indices": [
+        28
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 12.96,
+        "end_seconds": 13.4
+      },
+      "index": 28
+    },
+    {
+      "canonical_word": "up",
+      "recognized_word": "up,",
+      "start_seconds": 13.4,
+      "end_seconds": 13.88,
+      "alignment": "exact",
+      "recognized_indices": [
+        29
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 13.4,
+        "end_seconds": 13.88
+      },
+      "index": 29
+    },
+    {
+      "canonical_word": "The",
+      "recognized_word": "the",
+      "start_seconds": 14.04,
+      "end_seconds": 14.16,
+      "alignment": "exact",
+      "recognized_indices": [
+        30
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 14.04,
+        "end_seconds": 14.16
+      },
+      "index": 30
+    },
+    {
+      "canonical_word": "cash",
+      "recognized_word": "cash",
+      "start_seconds": 14.16,
+      "end_seconds": 14.56,
+      "alignment": "exact",
+      "recognized_indices": [
+        31
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 14.16,
+        "end_seconds": 14.56
+      },
+      "index": 31
+    },
+    {
+      "canonical_word": "was",
+      "recognized_word": "was",
+      "start_seconds": 14.56,
+      "end_seconds": 14.76,
+      "alignment": "exact",
+      "recognized_indices": [
+        32
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 14.56,
+        "end_seconds": 14.76
+      },
+      "index": 32
+    },
+    {
+      "canonical_word": "waiting",
+      "recognized_word": "waiting.",
+      "start_seconds": 14.76,
+      "end_seconds": 15.32,
+      "alignment": "exact",
+      "recognized_indices": [
+        33
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 14.76,
+        "end_seconds": 15.32
+      },
+      "index": 33
+    },
+    {
+      "canonical_word": "But",
+      "recognized_word": "But",
+      "start_seconds": 16.72,
+      "end_seconds": 16.96,
+      "alignment": "exact",
+      "recognized_indices": [
+        34
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 16.72,
+        "end_seconds": 16.96
+      },
+      "index": 34
+    },
+    {
+      "canonical_word": "suddenly",
+      "recognized_word": "suddenly,",
+      "start_seconds": 16.96,
+      "end_seconds": 17.6,
+      "alignment": "exact",
+      "recognized_indices": [
+        35
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 16.96,
+        "end_seconds": 17.6
+      },
+      "index": 35
+    },
+    {
+      "canonical_word": "that",
+      "recognized_word": "that",
+      "start_seconds": 17.88,
+      "end_seconds": 18.2,
+      "alignment": "exact",
+      "recognized_indices": [
+        36
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 17.88,
+        "end_seconds": 18.2
+      },
+      "index": 36
+    },
+    {
+      "canonical_word": "boring",
+      "recognized_word": "boring",
+      "start_seconds": 18.2,
+      "end_seconds": 18.72,
+      "alignment": "exact",
+      "recognized_indices": [
+        37
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 18.2,
+        "end_seconds": 18.72
+      },
+      "index": 37
+    },
+    {
+      "canonical_word": "desk",
+      "recognized_word": "desk",
+      "start_seconds": 18.72,
+      "end_seconds": 19.08,
+      "alignment": "exact",
+      "recognized_indices": [
+        38
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 18.72,
+        "end_seconds": 19.08
+      },
+      "index": 38
+    },
+    {
+      "canonical_word": "job",
+      "recognized_word": "job",
+      "start_seconds": 19.08,
+      "end_seconds": 19.6,
+      "alignment": "exact",
+      "recognized_indices": [
+        39
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 19.08,
+        "end_seconds": 19.6
+      },
+      "index": 39
+    },
+    {
+      "canonical_word": "felt",
+      "recognized_word": "felt",
+      "start_seconds": 19.76,
+      "end_seconds": 20.04,
+      "alignment": "exact",
+      "recognized_indices": [
+        40
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 19.76,
+        "end_seconds": 20.04
+      },
+      "index": 40
+    },
+    {
+      "canonical_word": "like",
+      "recognized_word": "like",
+      "start_seconds": 20.04,
+      "end_seconds": 20.24,
+      "alignment": "exact",
+      "recognized_indices": [
+        41
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 20.04,
+        "end_seconds": 20.24
+      },
+      "index": 41
+    },
+    {
+      "canonical_word": "a",
+      "recognized_word": "a",
+      "start_seconds": 20.24,
+      "end_seconds": 20.32,
+      "alignment": "exact",
+      "recognized_indices": [
+        42
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 20.24,
+        "end_seconds": 20.32
+      },
+      "index": 42
+    },
+    {
+      "canonical_word": "warm",
+      "recognized_word": "warm",
+      "start_seconds": 20.32,
+      "end_seconds": 20.96,
+      "alignment": "exact",
+      "recognized_indices": [
+        43
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 20.32,
+        "end_seconds": 20.96
+      },
+      "index": 43
+    },
+    {
+      "canonical_word": "blanket",
+      "recognized_word": "blanket.",
+      "start_seconds": 20.96,
+      "end_seconds": 21.68,
+      "alignment": "exact",
+      "recognized_indices": [
+        44
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 20.96,
+        "end_seconds": 21.68
+      },
+      "index": 44
+    },
+    {
+      "canonical_word": "Then",
+      "recognized_word": "Then",
+      "start_seconds": 23.08,
+      "end_seconds": 23.2,
+      "alignment": "exact",
+      "recognized_indices": [
+        45
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 23.08,
+        "end_seconds": 23.2
+      },
+      "index": 45
+    },
+    {
+      "canonical_word": "the",
+      "recognized_word": "the",
+      "start_seconds": 23.2,
+      "end_seconds": 23.32,
+      "alignment": "exact",
+      "recognized_indices": [
+        46
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 23.2,
+        "end_seconds": 23.32
+      },
+      "index": 46
+    },
+    {
+      "canonical_word": "panic",
+      "recognized_word": "panic",
+      "start_seconds": 23.32,
+      "end_seconds": 23.88,
+      "alignment": "exact",
+      "recognized_indices": [
+        47
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 23.32,
+        "end_seconds": 23.88
+      },
+      "index": 47
+    },
+    {
+      "canonical_word": "got",
+      "recognized_word": "got",
+      "start_seconds": 23.88,
+      "end_seconds": 24.16,
+      "alignment": "exact",
+      "recognized_indices": [
+        48
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 23.88,
+        "end_seconds": 24.16
+      },
+      "index": 48
+    },
+    {
+      "canonical_word": "louder",
+      "recognized_word": "louder.",
+      "start_seconds": 24.16,
+      "end_seconds": 24.76,
+      "alignment": "exact",
+      "recognized_indices": [
+        49
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 24.16,
+        "end_seconds": 24.76
+      },
+      "index": 49
+    },
+    {
+      "canonical_word": "A",
+      "recognized_word": "A",
+      "start_seconds": 25.32,
+      "end_seconds": 25.4,
+      "alignment": "exact",
+      "recognized_indices": [
+        50
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 25.32,
+        "end_seconds": 25.4
+      },
+      "index": 50
+    },
+    {
+      "canonical_word": "shaky",
+      "recognized_word": "shaky",
+      "start_seconds": 25.4,
+      "end_seconds": 25.84,
+      "alignment": "exact",
+      "recognized_indices": [
+        51
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 25.4,
+        "end_seconds": 25.84
+      },
+      "index": 51
+    },
+    {
+      "canonical_word": "economy",
+      "recognized_word": "economy,",
+      "start_seconds": 25.84,
+      "end_seconds": 26.52,
+      "alignment": "exact",
+      "recognized_indices": [
+        52
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 25.84,
+        "end_seconds": 26.52
+      },
+      "index": 52
+    },
+    {
+      "canonical_word": "That",
+      "recognized_word": "that",
+      "start_seconds": 27.08,
+      "end_seconds": 27.32,
+      "alignment": "exact",
+      "recognized_indices": [
+        53
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 27.08,
+        "end_seconds": 27.32
+      },
+      "index": 53
+    },
+    {
+      "canonical_word": "one",
+      "recognized_word": "one",
+      "start_seconds": 27.32,
+      "end_seconds": 27.56,
+      "alignment": "exact",
+      "recognized_indices": [
+        54
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 27.32,
+        "end_seconds": 27.56
+      },
+      "index": 54
+    },
+    {
+      "canonical_word": "time",
+      "recognized_word": "time",
+      "start_seconds": 27.56,
+      "end_seconds": 27.88,
+      "alignment": "exact",
+      "recognized_indices": [
+        55
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 27.56,
+        "end_seconds": 27.88
+      },
+      "index": 55
+    },
+    {
+      "canonical_word": "he",
+      "recognized_word": "he",
+      "start_seconds": 27.88,
+      "end_seconds": 28.04,
+      "alignment": "exact",
+      "recognized_indices": [
+        56
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 27.88,
+        "end_seconds": 28.04
+      },
+      "index": 56
+    },
+    {
+      "canonical_word": "failed",
+      "recognized_word": "failed",
+      "start_seconds": 28.04,
+      "end_seconds": 28.48,
+      "alignment": "exact",
+      "recognized_indices": [
+        57
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 28.04,
+        "end_seconds": 28.48
+      },
+      "index": 57
+    },
+    {
+      "canonical_word": "a",
+      "recognized_word": "a",
+      "start_seconds": 28.48,
+      "end_seconds": 28.52,
+      "alignment": "exact",
+      "recognized_indices": [
+        58
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 28.48,
+        "end_seconds": 28.52
+      },
+      "index": 58
+    },
+    {
+      "canonical_word": "college",
+      "recognized_word": "college",
+      "start_seconds": 28.52,
+      "end_seconds": 29.0,
+      "alignment": "exact",
+      "recognized_indices": [
+        59
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 28.52,
+        "end_seconds": 29.0
+      },
+      "index": 59
+    },
+    {
+      "canonical_word": "project",
+      "recognized_word": "project.",
+      "start_seconds": 29.0,
+      "end_seconds": 29.64,
+      "alignment": "exact",
+      "recognized_indices": [
+        60
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 29.0,
+        "end_seconds": 29.64
+      },
+      "index": 60
+    },
+    {
+      "canonical_word": "His",
+      "recognized_word": "His",
+      "start_seconds": 30.76,
+      "end_seconds": 31.0,
+      "alignment": "exact",
+      "recognized_indices": [
+        61
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 30.76,
+        "end_seconds": 31.0
+      },
+      "index": 61
+    },
+    {
+      "canonical_word": "brain",
+      "recognized_word": "brain",
+      "start_seconds": 31.0,
+      "end_seconds": 31.52,
+      "alignment": "exact",
+      "recognized_indices": [
+        62
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 31.0,
+        "end_seconds": 31.52
+      },
+      "index": 62
+    },
+    {
+      "canonical_word": "building",
+      "recognized_word": "building",
+      "start_seconds": 31.52,
+      "end_seconds": 31.92,
+      "alignment": "exact",
+      "recognized_indices": [
+        63
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 31.52,
+        "end_seconds": 31.92
+      },
+      "index": 63
+    },
+    {
+      "canonical_word": "a",
+      "recognized_word": "a",
+      "start_seconds": 31.92,
+      "end_seconds": 32.0,
+      "alignment": "exact",
+      "recognized_indices": [
+        64
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 31.92,
+        "end_seconds": 32.0
+      },
+      "index": 64
+    },
+    {
+      "canonical_word": "wall",
+      "recognized_word": "wall",
+      "start_seconds": 32.0,
+      "end_seconds": 32.52,
+      "alignment": "exact",
+      "recognized_indices": [
+        65
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 32.0,
+        "end_seconds": 32.52
+      },
+      "index": 65
+    },
+    {
+      "canonical_word": "between",
+      "recognized_word": "between",
+      "start_seconds": 32.52,
+      "end_seconds": 32.96,
+      "alignment": "exact",
+      "recognized_indices": [
+        66
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 32.52,
+        "end_seconds": 32.96
+      },
+      "index": 66
+    },
+    {
+      "canonical_word": "him",
+      "recognized_word": "him",
+      "start_seconds": 32.96,
+      "end_seconds": 33.48,
+      "alignment": "exact",
+      "recognized_indices": [
+        67
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 32.96,
+        "end_seconds": 33.48
+      },
+      "index": 67
+    },
+    {
+      "canonical_word": "and",
+      "recognized_word": "and",
+      "start_seconds": 33.68,
+      "end_seconds": 33.84,
+      "alignment": "exact",
+      "recognized_indices": [
+        68
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 33.68,
+        "end_seconds": 33.84
+      },
+      "index": 68
+    },
+    {
+      "canonical_word": "his",
+      "recognized_word": "his",
+      "start_seconds": 33.84,
+      "end_seconds": 34.04,
+      "alignment": "exact",
+      "recognized_indices": [
+        69
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 33.84,
+        "end_seconds": 34.04
+      },
+      "index": 69
+    },
+    {
+      "canonical_word": "bold",
+      "recognized_word": "bold",
+      "start_seconds": 34.04,
+      "end_seconds": 34.6,
+      "alignment": "exact",
+      "recognized_indices": [
+        70
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 34.04,
+        "end_seconds": 34.6
+      },
+      "index": 70
+    },
+    {
+      "canonical_word": "goal",
+      "recognized_word": "goal.",
+      "start_seconds": 34.6,
+      "end_seconds": 35.12,
+      "alignment": "exact",
+      "recognized_indices": [
+        71
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 34.6,
+        "end_seconds": 35.12
+      },
+      "index": 71
+    },
+    {
+      "canonical_word": "Then",
+      "recognized_word": "Then",
+      "start_seconds": 36.68,
+      "end_seconds": 36.84,
+      "alignment": "exact",
+      "recognized_indices": [
+        72
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 36.68,
+        "end_seconds": 36.84
+      },
+      "index": 72
+    },
+    {
+      "canonical_word": "he",
+      "recognized_word": "he",
+      "start_seconds": 36.84,
+      "end_seconds": 36.92,
+      "alignment": "exact",
+      "recognized_indices": [
+        73
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 36.84,
+        "end_seconds": 36.92
+      },
+      "index": 73
+    },
+    {
+      "canonical_word": "saw",
+      "recognized_word": "saw",
+      "start_seconds": 36.92,
+      "end_seconds": 37.24,
+      "alignment": "exact",
+      "recognized_indices": [
+        74
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 36.92,
+        "end_seconds": 37.24
+      },
+      "index": 74
+    },
+    {
+      "canonical_word": "it",
+      "recognized_word": "it.",
+      "start_seconds": 37.24,
+      "end_seconds": 37.52,
+      "alignment": "exact",
+      "recognized_indices": [
+        75
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 37.24,
+        "end_seconds": 37.52
+      },
+      "index": 75
+    },
+    {
+      "canonical_word": "The",
+      "recognized_word": "The",
+      "start_seconds": 38.96,
+      "end_seconds": 39.08,
+      "alignment": "exact",
+      "recognized_indices": [
+        76
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 38.96,
+        "end_seconds": 39.08
+      },
+      "index": 76
+    },
+    {
+      "canonical_word": "dread",
+      "recognized_word": "dread",
+      "start_seconds": 39.08,
+      "end_seconds": 39.76,
+      "alignment": "exact",
+      "recognized_indices": [
+        77
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 39.08,
+        "end_seconds": 39.76
+      },
+      "index": 77
+    },
+    {
+      "canonical_word": "lacked",
+      "recognized_word": "lacked",
+      "start_seconds": 39.88,
+      "end_seconds": 40.36,
+      "alignment": "exact",
+      "recognized_indices": [
+        78
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 39.88,
+        "end_seconds": 40.36
+      },
+      "index": 78
+    },
+    {
+      "canonical_word": "logic",
+      "recognized_word": "logic.",
+      "start_seconds": 40.36,
+      "end_seconds": 40.96,
+      "alignment": "exact",
+      "recognized_indices": [
+        79
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 40.36,
+        "end_seconds": 40.96
+      },
+      "index": 79
+    },
+    {
+      "canonical_word": "It",
+      "recognized_word": "It",
+      "start_seconds": 41.76,
+      "end_seconds": 41.92,
+      "alignment": "exact",
+      "recognized_indices": [
+        80
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 41.76,
+        "end_seconds": 41.92
+      },
+      "index": 80
+    },
+    {
+      "canonical_word": "was",
+      "recognized_word": "was",
+      "start_seconds": 41.92,
+      "end_seconds": 42.08,
+      "alignment": "exact",
+      "recognized_indices": [
+        81
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 41.92,
+        "end_seconds": 42.08
+      },
+      "index": 81
+    },
+    {
+      "canonical_word": "simply",
+      "recognized_word": "simply",
+      "start_seconds": 42.08,
+      "end_seconds": 42.52,
+      "alignment": "exact",
+      "recognized_indices": [
+        82
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 42.08,
+        "end_seconds": 42.52
+      },
+      "index": 82
+    },
+    {
+      "canonical_word": "fear",
+      "recognized_word": "fear",
+      "start_seconds": 42.52,
+      "end_seconds": 43.16,
+      "alignment": "exact",
+      "recognized_indices": [
+        83
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 42.52,
+        "end_seconds": 43.16
+      },
+      "index": 83
+    },
+    {
+      "canonical_word": "wearing",
+      "recognized_word": "wearing",
+      "start_seconds": 43.48,
+      "end_seconds": 43.8,
+      "alignment": "exact",
+      "recognized_indices": [
+        84
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 43.48,
+        "end_seconds": 43.8
+      },
+      "index": 84
+    },
+    {
+      "canonical_word": "a",
+      "recognized_word": "a",
+      "start_seconds": 43.8,
+      "end_seconds": 43.84,
+      "alignment": "exact",
+      "recognized_indices": [
+        85
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 43.8,
+        "end_seconds": 43.84
+      },
+      "index": 85
+    },
+    {
+      "canonical_word": "mask",
+      "recognized_word": "mask.",
+      "start_seconds": 43.84,
+      "end_seconds": 44.64,
+      "alignment": "exact",
+      "recognized_indices": [
+        86
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 43.84,
+        "end_seconds": 44.64
+      },
+      "index": 86
+    },
+    {
+      "canonical_word": "The",
+      "recognized_word": "The",
+      "start_seconds": 46.2,
+      "end_seconds": 46.4,
+      "alignment": "exact",
+      "recognized_indices": [
+        87
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 46.2,
+        "end_seconds": 46.4
+      },
+      "index": 87
+    },
+    {
+      "canonical_word": "ego",
+      "recognized_word": "ego",
+      "start_seconds": 46.4,
+      "end_seconds": 46.84,
+      "alignment": "exact",
+      "recognized_indices": [
+        88
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 46.4,
+        "end_seconds": 46.84
+      },
+      "index": 88
+    },
+    {
+      "canonical_word": "hates",
+      "recognized_word": "hates",
+      "start_seconds": 46.84,
+      "end_seconds": 47.4,
+      "alignment": "exact",
+      "recognized_indices": [
+        89
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 46.84,
+        "end_seconds": 47.4
+      },
+      "index": 89
+    },
+    {
+      "canonical_word": "change",
+      "recognized_word": "change,",
+      "start_seconds": 47.4,
+      "end_seconds": 48.08,
+      "alignment": "exact",
+      "recognized_indices": [
+        90
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 47.4,
+        "end_seconds": 48.08
+      },
+      "index": 90
+    },
+    {
+      "canonical_word": "so",
+      "recognized_word": "so",
+      "start_seconds": 48.32,
+      "end_seconds": 48.44,
+      "alignment": "exact",
+      "recognized_indices": [
+        91
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 48.32,
+        "end_seconds": 48.44
+      },
+      "index": 91
+    },
+    {
+      "canonical_word": "it",
+      "recognized_word": "it",
+      "start_seconds": 48.44,
+      "end_seconds": 48.6,
+      "alignment": "exact",
+      "recognized_indices": [
+        92
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 48.44,
+        "end_seconds": 48.6
+      },
+      "index": 92
+    },
+    {
+      "canonical_word": "feeds",
+      "recognized_word": "feeds",
+      "start_seconds": 48.6,
+      "end_seconds": 49.0,
+      "alignment": "exact",
+      "recognized_indices": [
+        93
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 48.6,
+        "end_seconds": 49.0
+      },
+      "index": 93
+    },
+    {
+      "canonical_word": "you",
+      "recognized_word": "you",
+      "start_seconds": 49.0,
+      "end_seconds": 49.16,
+      "alignment": "exact",
+      "recognized_indices": [
+        94
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 49.0,
+        "end_seconds": 49.16
+      },
+      "index": 94
+    },
+    {
+      "canonical_word": "doubt",
+      "recognized_word": "doubt.",
+      "start_seconds": 49.16,
+      "end_seconds": 49.76,
+      "alignment": "exact",
+      "recognized_indices": [
+        95
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 49.16,
+        "end_seconds": 49.76
+      },
+      "index": 95
+    },
+    {
+      "canonical_word": "He",
+      "recognized_word": "He",
+      "start_seconds": 51.16,
+      "end_seconds": 51.28,
+      "alignment": "exact",
+      "recognized_indices": [
+        96
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 51.16,
+        "end_seconds": 51.28
+      },
+      "index": 96
+    },
+    {
+      "canonical_word": "closed",
+      "recognized_word": "closed",
+      "start_seconds": 51.28,
+      "end_seconds": 51.64,
+      "alignment": "exact",
+      "recognized_indices": [
+        97
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 51.28,
+        "end_seconds": 51.64
+      },
+      "index": 97
+    },
+    {
+      "canonical_word": "his",
+      "recognized_word": "his",
+      "start_seconds": 51.64,
+      "end_seconds": 51.8,
+      "alignment": "exact",
+      "recognized_indices": [
+        98
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 51.64,
+        "end_seconds": 51.8
+      },
+      "index": 98
+    },
+    {
+      "canonical_word": "eyes",
+      "recognized_word": "eyes,",
+      "start_seconds": 51.8,
+      "end_seconds": 52.2,
+      "alignment": "exact",
+      "recognized_indices": [
+        99
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 51.8,
+        "end_seconds": 52.2
+      },
+      "index": 99
+    },
+    {
+      "canonical_word": "took",
+      "recognized_word": "took",
+      "start_seconds": 52.72,
+      "end_seconds": 52.88,
+      "alignment": "exact",
+      "recognized_indices": [
+        100
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 52.72,
+        "end_seconds": 52.88
+      },
+      "index": 100
+    },
+    {
+      "canonical_word": "a",
+      "recognized_word": "a",
+      "start_seconds": 52.88,
+      "end_seconds": 52.92,
+      "alignment": "exact",
+      "recognized_indices": [
+        101
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 52.88,
+        "end_seconds": 52.92
+      },
+      "index": 101
+    },
+    {
+      "canonical_word": "breath",
+      "recognized_word": "breath,",
+      "start_seconds": 52.92,
+      "end_seconds": 53.44,
+      "alignment": "exact",
+      "recognized_indices": [
+        102
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 52.92,
+        "end_seconds": 53.44
+      },
+      "index": 102
+    },
+    {
+      "canonical_word": "and",
+      "recognized_word": "and",
+      "start_seconds": 53.85,
+      "end_seconds": 54.21,
+      "alignment": "exact",
+      "recognized_indices": [
+        103
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 53.85,
+        "end_seconds": 54.21
+      },
+      "index": 103
+    },
+    {
+      "canonical_word": "clicked",
+      "recognized_word": "click",
+      "start_seconds": 54.21,
+      "end_seconds": 54.61,
+      "alignment": "substitute",
+      "recognized_indices": [
+        104
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 54.21,
+        "end_seconds": 54.61
+      },
+      "index": 104
+    },
+    {
+      "canonical_word": "send",
+      "recognized_word": "send.",
+      "start_seconds": 54.61,
+      "end_seconds": 55.13,
+      "alignment": "exact",
+      "recognized_indices": [
+        105
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 54.61,
+        "end_seconds": 55.13
+      },
+      "index": 105
+    },
+    {
+      "canonical_word": "What",
+      "recognized_word": "What",
+      "start_seconds": 57.25,
+      "end_seconds": 57.49,
+      "alignment": "exact",
+      "recognized_indices": [
+        106
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 57.25,
+        "end_seconds": 57.49
+      },
+      "index": 106
+    },
+    {
+      "canonical_word": "has",
+      "recognized_word": "is",
+      "start_seconds": 57.49,
+      "end_seconds": 57.73,
+      "alignment": "substitute",
+      "recognized_indices": [
+        107
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 57.49,
+        "end_seconds": 57.73
+      },
+      "index": 107
+    },
+    {
+      "canonical_word": "your",
+      "recognized_word": "your",
+      "start_seconds": 57.73,
+      "end_seconds": 58.09,
+      "alignment": "exact",
+      "recognized_indices": [
+        108
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 57.73,
+        "end_seconds": 58.09
+      },
+      "index": 108
+    },
+    {
+      "canonical_word": "fear",
+      "recognized_word": "fear",
+      "start_seconds": 58.09,
+      "end_seconds": 58.61,
+      "alignment": "exact",
+      "recognized_indices": [
+        109
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 58.09,
+        "end_seconds": 58.61
+      },
+      "index": 109
+    },
+    {
+      "canonical_word": "disguised",
+      "recognized_word": "disguised",
+      "start_seconds": 58.77,
+      "end_seconds": 59.37,
+      "alignment": "exact",
+      "recognized_indices": [
+        110
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 58.77,
+        "end_seconds": 59.37
+      },
+      "index": 110
+    },
+    {
+      "canonical_word": "as",
+      "recognized_word": "as",
+      "start_seconds": 59.37,
+      "end_seconds": 59.49,
+      "alignment": "exact",
+      "recognized_indices": [
+        111
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 59.37,
+        "end_seconds": 59.49
+      },
+      "index": 111
+    },
+    {
+      "canonical_word": "common",
+      "recognized_word": "common",
+      "start_seconds": 59.49,
+      "end_seconds": 59.97,
+      "alignment": "exact",
+      "recognized_indices": [
+        112
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 59.49,
+        "end_seconds": 59.97
+      },
+      "index": 112
+    },
+    {
+      "canonical_word": "sense",
+      "recognized_word": "sense?",
+      "start_seconds": 59.97,
+      "end_seconds": 60.49,
+      "alignment": "exact",
+      "recognized_indices": [
+        113
+      ],
+      "timing_source": "observed_span",
+      "observed_span": {
+        "start_seconds": 59.97,
+        "end_seconds": 60.49
+      },
+      "index": 113
+    }
+  ],
+  "attempted_audio_seconds": 60.8,
+  "diagnostics_path": "orchestrator_runs/word_timing_diagnostics.json"
+}

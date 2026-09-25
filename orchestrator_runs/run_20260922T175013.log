@@ -1,0 +1,72 @@
+[00:00:00] ▸ Starting a new reel
+[00:00:00]   A copy of everything printed here is being saved to orchestrator_runs/run_20260922T175013.log
+[00:00:02]   Startup checks passed · reading screenshots from source_images
+[00:00:02]   Recurring character: assets/character/character.png — drawn only into shots whose artwork already shows a person
+[00:00:02] ▸ Step 1 of 7 — Looking at your screenshots
+[00:00:02]   Already done in an earlier run — skipping (metadata/analyzed_assets.json)
+[00:00:02]   Step 1 took 0s
+[00:00:02] ▸ Step 2 of 7 — Writing the narration
+[00:00:02]   Already done in an earlier run — skipping (metadata/final_story_plan.json)
+[00:00:02]   Step 2 took 0s · $7.69 spent so far
+[00:00:02] ▸ Step 3 of 7 — Planning the shots
+[00:00:02]   Already done in an earlier run — skipping (metadata/visual_plan.json)
+[00:00:02]   Step 3 took 0s · $7.69 spent so far
+[00:00:02] ▸ Step 4 of 7 — Recording the voice and building subtitles
+[00:00:02]   Voice and subtitles already done — skipping (metadata/subtitle_cues.json)
+[00:00:02]   Step 4 took 0s · $7.69 spent so far
+[00:00:02] ▸ Step 5 of 7 — Making the moving video clips
+[00:00:02]   All 3 video clip(s) already made — skipping
+[00:00:02]   Step 5 took 0s · $7.69 spent so far
+[00:00:02] ▸ Step 6 of 7 — Making the still pictures
+[00:00:02]   Picture 1 of 4 — shot 4
+[00:00:35]     drawing the still picture
+[00:00:36]     Shot 4: asking Codex to draw it (try 1 of 2)
+[00:00:51]     Shot 4: Codex is still drawing … 15s
+[00:01:06]     Shot 4: Codex is still drawing … 30s
+[00:01:21]     Shot 4: Codex is still drawing … 45s
+[00:01:36]     Shot 4: Codex is still drawing … 1m00s
+[00:01:51]     Shot 4: Codex is still drawing … 1m15s
+[00:02:06]     Shot 4: Codex is still drawing … 1m30s
+[00:02:21]     Shot 4: Codex is still drawing … 1m45s
+[00:02:27]     Shot 4: Codex finished in 1m50s
+[00:02:53]     StructuredOutput
+[00:02:53]     Shot 4: picture approved → generated/stills/shot_04.png
+[00:02:53]   Picture 2 of 4 — shot 6
+[00:03:27]     drawing the still picture
+[00:03:27]     Shot 6: asking Codex to draw it (try 1 of 2)
+[00:03:42]     Shot 6: Codex is still drawing … 15s
+[00:03:57]     Shot 6: Codex is still drawing … 30s
+[00:04:12]     Shot 6: Codex is still drawing … 45s
+[00:04:27]     Shot 6: Codex is still drawing … 1m00s
+[00:04:42]     Shot 6: Codex is still drawing … 1m15s
+[00:04:57]     Shot 6: Codex is still drawing … 1m30s
+[00:05:12]     Shot 6: Codex is still drawing … 1m45s
+[00:05:14]     Shot 6: Codex finished in 1m47s
+[00:05:43]     StructuredOutput
+[00:05:43]     Shot 6: picture approved → generated/stills/shot_06.png
+[00:05:43]   Picture 3 of 4 — shot 7
+[00:06:15]     drawing the still picture
+[00:06:15]     Shot 7: asking Codex to draw it (try 1 of 2)
+[00:06:30]     Shot 7: Codex is still drawing … 15s
+[00:06:45]     Shot 7: Codex is still drawing … 30s
+[00:07:00]     Shot 7: Codex is still drawing … 45s
+[00:07:15]     Shot 7: Codex is still drawing … 1m00s
+[00:07:30]     Shot 7: Codex is still drawing … 1m15s
+[00:07:45]     Shot 7: Codex is still drawing … 1m30s
+[00:07:48]     Shot 7: Codex finished in 1m32s
+[00:08:13]     StructuredOutput
+[00:08:14]     Shot 7: picture approved → generated/stills/shot_07.png
+[00:08:14]   Picture 4 of 4 — shot 9
+[00:08:42]     drawing the still picture
+[00:08:42]     Shot 9: asking Codex to draw it (try 1 of 2)
+[00:08:57]     Shot 9: Codex is still drawing … 15s
+[00:09:12]     Shot 9: Codex is still drawing … 30s
+[00:09:27]     Shot 9: Codex is still drawing … 45s
+[00:09:42]     Shot 9: Codex is still drawing … 1m00s
+[00:09:53]     Shot 9: Codex finished in 1m11s
+[00:10:13]     StructuredOutput
+[00:10:13]     Shot 9: picture approved → generated/stills/shot_09.png
+[00:10:13]   Step 6 took 10m11s · $8.64 spent so far
+[00:10:13] ▸ Step 7 of 7 — Putting the final video together
+[00:10:40]   Finished! Your video is at /Users/sachinpb/PycharmProjects/book_reels/remotion/out/book_reel.mp4
+[00:10:40]   Step 7 took 26s · $8.64 spent so far

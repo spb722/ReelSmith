@@ -1,0 +1,47 @@
+{
+  "provenance": {
+    "version": 1,
+    "narration_script": "Mark's finger hovered over the delete key. The resignation letter was already written. Six months of nights and weekends had built his freelance business. The clients were lined up. The cash was waiting. But suddenly, that boring desk job felt like a warm blanket. Then the panic got louder. A shaky economy. That one time he failed a college project. His brain building a wall between him and his bold goal. Then he saw it. The dread lacked logic. It was simply fear wearing a mask. The ego hates change, so it feeds you doubt. He closed his eyes, took a breath, and clicked send. What has your fear disguised as common sense?",
+    "voice_direction": {
+      "persona": "Mature, composed narrator speaking close to the microphone — steady, thoughtful, quietly intense, like someone recounting something they have lived through",
+      "tone": [
+        "calm",
+        "controlled",
+        "intimate",
+        "resolved"
+      ],
+      "pace_wpm": 143,
+      "delivery_notes": [
+        "Open low and unhurried; let the first two sentences sit in tension rather than selling them",
+        "Clip the panic fragments slightly shorter and tighter to simulate escalating thought",
+        "Drop volume, not speed, on 'It was simply fear wearing a mask' — this is the turn",
+        "Soften and slow the final line; ask the question genuinely, do not push it"
+      ],
+      "emphasis_phrases": [
+        "hovered over the delete key",
+        "felt like a warm blanket",
+        "the panic got louder",
+        "fear wearing a mask",
+        "clicked send"
+      ],
+      "pause_after_phrases": [
+        "The resignation letter was already written.",
+        "The cash was waiting.",
+        "That one time he failed a college project.",
+        "Then he saw it.",
+        "It was simply fear wearing a mask.",
+        "and clicked send."
+      ]
+    },
+    "voice_name": "Gacrux",
+    "model": "gemini-3.1-flash-tts-preview",
+    "audio_sha256": "08160c21660fd2401152e047f63861198f760664a09bf55042a49db0a8d67bdf"
+  },
+  "tts": {
+    "audio_path": "audio/narration.wav",
+    "duration_seconds": 60.8,
+    "model": "gemini-3.1-flash-tts-preview",
+    "voice_name": "Gacrux",
+    "prompt_word_count": 266
+  }
+}

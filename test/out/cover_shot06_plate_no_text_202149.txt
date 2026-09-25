@@ -1,0 +1,9 @@
+RESULT: IMAGE 1080x1920 -> cover_shot06_plate_no_text_202149.png
+shot: 6
+hook: Fear wearing a mask
+brief: plate_no_text
+references: ['/Users/sachinpb/PycharmProjects/book_reels/assets/character/character.png']
+codex note: Saved final_image.png as a text-free 1080×1920 portrait cover using the supplied scene and character.
+
+--- PROMPT ---
+Recompose the supplied frame into a cover image. Leave the upper third calm and uncluttered -- no faces, no busy detail there -- because a line of typography is composited into that area afterwards. The output must be a single vertical 9:16 portrait image, 1080x1920. Keep the supplied frame's art style, palette, line quality and lighting -- this is a recomposition of that artwork, not a new illustration and not a restyle, and it must not drift toward photorealism. This is a cover thumbnail: it is first seen small, and cropped to a portrait slice around its middle, so keep the subject and the words well inside the central area and away from the extreme top and bottom edges. FINAL RULE, overriding anything above: render NO text of any kind -- no words, letters, numbers, captions, logos or watermarks anywhere in the frame. The moment this frame carries: The turn — pressure releases as the thing that looked like judgement comes apart.

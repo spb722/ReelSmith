@@ -1,0 +1,10 @@
+{
+  "stage_id": "stills_agent",
+  "failed_contract_name": "StillOutcomeContract",
+  "reason": "Invalid stills agent outcome: Stills agent reported paid-call cost above the configured per-attempt ceiling",
+  "attempt_count": 1,
+  "timestamp": "2026-09-22T11:50:15.514900+00:00",
+  "partial_artifact_paths": [
+    "orchestrator_runs/stills_agent_shot_4_attempt_1.json"
+  ]
+}
