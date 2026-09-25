@@ -55,6 +55,20 @@ def _tool_payload(tool_response: Any) -> dict:
     return {}
 
 
+def _text_notes(tool_response: Any) -> list[str]:
+    """The response's text blocks that aren't JSON."""
+
+    notes = []
+    for block in tool_response if isinstance(tool_response, list) else []:
+        if isinstance(block, dict) and block.get("type") == "text":
+            text = block.get("text") or ""
+            try:
+                json.loads(text)
+            except ValueError:
+                notes.append(text)
+    return notes
+
+
 def _provider(tool_name: str, tool_input: dict) -> str:
     if tool_name == VEO_CLIP_TOOL:
         return "veo"
@@ -88,6 +102,10 @@ class PaidToolGuard:
         self.billed_usd = 0.0
         self.denial: str | None = None
         self.failures: list[ToolFailure] = []
+        # Every plain-text block a successful image call returned after its
+        # JSON payload -- among them the note naming the likeness-ladder rung
+        # the image was really drawn at, which the Story 4.5 reviewer needs.
+        self.image_notes: list[str] = []
 
     async def _pre_tool_use(self, input_data: dict, tool_use_id: str | None, context: Any) -> dict:
         name = input_data.get("tool_name", "")
@@ -118,6 +136,8 @@ class PaidToolGuard:
         failure = _tool_payload(input_data.get("tool_response")).get("failure")
         if not isinstance(failure, dict):
             self.billed_usd += self.costs[name]
+            if name in IMAGE_TOOLS:
+                self.image_notes.extend(_text_notes(input_data.get("tool_response")))
             return {}
         billed = _failure_billed(name, failure)
         if billed:

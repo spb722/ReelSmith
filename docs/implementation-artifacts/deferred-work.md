@@ -133,3 +133,12 @@
 - source_spec: `docs/implementation-artifacts/spec-4-3-concurrency-safe-shot-plumbing-per-attempt-reservations.md`
   summary: A successful shot attempt whose overshoot drives the pool negative halts before its already-paid asset is upserted, so a resume pays for it again.
   evidence: The budget check before `upsert_production_asset` predates Story 4.3 (it was `_check_budget`); 4.3 kept its position for behaviour parity.
+- source_spec: `docs/implementation-artifacts/spec-4-5-fresh-context-critic-visual-qa-reviewer.md`
+  summary: Persist a draft or shot asset that passed generation but awaits review, so a vendor-limit halt during review resumes by rerunning only the reviewer.
+  evidence: Today a review-time vendor refusal gives the attempt back and discards the paid draft, seed and clip; the resumed attempt regenerates and pays again.
+- source_spec: `docs/implementation-artifacts/spec-4-5-fresh-context-critic-visual-qa-reviewer.md`
+  summary: Give the visual reviewer more than the preview frames for a Veo clip.
+  evidence: The reviewer sees the seed and the preview JPEGs, not the mp4, so motion defects, flicker and face drift between frames are only judged from those frames.
+- source_spec: `docs/implementation-artifacts/spec-4-5-fresh-context-critic-visual-qa-reviewer.md`
+  summary: Report the ladder rung an image was drawn at as structured data rather than matching `describe_ladder_outcome` prose.
+  evidence: `_reviewer_character_context` falls back to the start rung if the tool's note wording changes, so the reviewer could get references at the no-character rung.

@@ -165,6 +165,16 @@ flowchart LR
   - **Halt.** Then the run halts with one report (AD-6).
   - **Resume.** A resume skips every persisted shot (AD-14). The failed, stopped and unstarted shots run again, with their retry counts and ladder state read from their persisted attempt records. A shot that used up its retry ceiling halts again at once, until its ceiling is raised in `config.json` (AD-5). `[ADOPTED 2026-09-24]`
 
+### AD-18 — Approving generative output needs an independent fresh-context reviewer, sequenced in code
+
+- **Binds:** `orchestrator/run.py` (`run_bounded_agent_stage`, `run_narration_stage`, the shot producers), `orchestrator/agents/story_critic.py`, `orchestrator/agents/visual_reviewer.py`, `orchestrator/contracts/review.py`
+- **Prevents:** the generator grading its own work, with a producer's self-QA being the only thing between a flawed narration, seed, clip or still and the reel
+- **Rule:** Refines AD-4. A producing agent's own semantic/quality judgment is necessary but not sufficient. A generative output counts as approved only when a separate top-level `query()` also approves it. The orchestrator sequences that query in code, never as a subagent. It shares none of the producer's session and never sees the producer's QA summary.
+  - **Story.** The story critic (skills story-craft and source-fidelity, Read confined to the plugin) runs through `run_bounded_agent_stage`'s `review_before_persist`, only after a fresh attempt passes `validate_contract`. It never runs on the resume-skip path. It returns a `StoryCritiqueContract`. REVISE is the next attempt's feedback and counts toward the AD-5 ceiling; only APPROVE persists the plan.
+  - **Shots.** The visual-QA reviewer (skills visual-qa and character-likeness-qa, Read confined to the plugin plus that shot's asset files and character references) runs inside the shot task, after the producer approves and before `upsert_production_asset`. It returns a `VisualQAVerdictContract`. A rejection is written into the attempt record as `structured_output.failure` (stage `seed_qa`, `clip_qa` or `still_qa`) and takes the producer-QA-failure path. For Veo, a likeness `seed_qa` rejection (`CHARACTER_LIKENESS`) moves the likeness ladder, and resume reads it back from that record. `ProductionAssetEntry.reviewer_summary` sits next to the producer's `qa_summary`.
+  - **Budget.** Each query runs at `CLAUDE_REVIEWER_CAP_USD`. Each shot attempt's reservation (AD-7) holds one review. The story agent's budget is the remaining budget less that cap, and the critic runs only when the cap is left. Its cost is charged to the run.
+  - **Failures.** A vendor refusal of either query gives back the attempt and halts `vendor_limit` (AD-5). The Veo producer makes the seed and the clip in one session, so a reviewer's seed rejection arrives after the clip is paid for. That is accepted, because the producer's own seed QA still gates the clip. `[ADOPTED 2026-09-24]`
+
 ## Consistency Conventions
 
 | Concern | Convention |

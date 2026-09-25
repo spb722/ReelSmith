@@ -85,6 +85,11 @@ DEFAULT_CODEX_IMAGE_CONCURRENCY = 1
 # Story 4.4: how many shots are in production at once. Each runs its own
 # Claude query; the vendor caps above still bound the paid calls under them.
 DEFAULT_SHOT_CONCURRENCY = 4
+# Story 4.5: the Claude spend one fresh-context story-critic or visual-QA
+# reviewer call may use; it is that query's `max_budget_usd`, and every shot
+# attempt's reservation (and every story attempt's budget) holds one of them.
+# Generous on purpose, like the shot cap, until traced runs show the spread.
+DEFAULT_CLAUDE_REVIEWER_CAP_USD = 1.0
 
 # The Claude model every orchestrator agent runs on. Left unset, the Agent SDK
 # picks its own default (claude-sonnet-5 in the runs before this was pinned),
@@ -144,7 +149,12 @@ class Settings:
     gemini_image_concurrency: int = DEFAULT_GEMINI_IMAGE_CONCURRENCY
     codex_image_concurrency: int = DEFAULT_CODEX_IMAGE_CONCURRENCY
     shot_concurrency: int = DEFAULT_SHOT_CONCURRENCY
+    claude_reviewer_cap_usd: float = DEFAULT_CLAUDE_REVIEWER_CAP_USD
     claude_model: str = DEFAULT_CLAUDE_MODEL
+    # The story critic's and the visual-QA reviewer's models; `load_settings`
+    # defaults both to `claude_model`.
+    critic_model: str = DEFAULT_CLAUDE_MODEL
+    reviewer_model: str = DEFAULT_CLAUDE_MODEL
     character_reference_path: str = DEFAULT_CHARACTER_REFERENCE_PATH
     character_face_reference_path: str = DEFAULT_CHARACTER_FACE_REFERENCE_PATH
     character_turnaround_reference_path: str = DEFAULT_CHARACTER_TURNAROUND_REFERENCE_PATH
@@ -225,6 +235,7 @@ def load_settings() -> Settings:
 
     max_budget_usd = _float_setting("MAX_BUDGET_USD", DEFAULT_MAX_BUDGET_USD)
     image_provider = _image_provider_setting()
+    claude_model = _str_setting("CLAUDE_MODEL", DEFAULT_CLAUDE_MODEL)
 
     return Settings(
         project_id=os.getenv("GOOGLE_CLOUD_PROJECT", DEFAULT_PROJECT_ID),
@@ -260,9 +271,14 @@ def load_settings() -> Settings:
             "CODEX_IMAGE_CONCURRENCY", DEFAULT_CODEX_IMAGE_CONCURRENCY, positive=True
         ),
         shot_concurrency=_int_setting("SHOT_CONCURRENCY", DEFAULT_SHOT_CONCURRENCY, positive=True),
+        claude_reviewer_cap_usd=_float_setting(
+            "CLAUDE_REVIEWER_CAP_USD", DEFAULT_CLAUDE_REVIEWER_CAP_USD, positive=True
+        ),
         # Plain os.getenv, not _str_setting: an empty value is the documented
         # "no character" switch, and _str_setting raises on an empty string.
-        claude_model=_str_setting("CLAUDE_MODEL", DEFAULT_CLAUDE_MODEL),
+        claude_model=claude_model,
+        critic_model=_str_setting("CRITIC_MODEL", claude_model),
+        reviewer_model=_str_setting("REVIEWER_MODEL", claude_model),
         character_reference_path=os.getenv(
             "CHARACTER_REFERENCE_PATH", DEFAULT_CHARACTER_REFERENCE_PATH
         ),

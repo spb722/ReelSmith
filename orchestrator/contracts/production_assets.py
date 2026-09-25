@@ -38,6 +38,9 @@ class ProductionAssetEntry(ContractModel):
     operation_dump_path: str | None = None
     preview_paths: list[str] = Field(default_factory=list)
     qa_summary: Annotated[str, Field(min_length=1)]
+    # Story 4.5: the independent visual-QA reviewer's summary, next to the
+    # producer's own `qa_summary`. Empty on entries written before it existed.
+    reviewer_summary: str = ""
     cost_usd: Annotated[float, Field(ge=0)] = 0.0
 
     @model_validator(mode="after")
@@ -78,7 +81,9 @@ class ProductionAssetEntry(ContractModel):
         return self
 
     @classmethod
-    def from_veo_result(cls, result: VeoResultContract, source_asset_ids: list[str]) -> "ProductionAssetEntry":
+    def from_veo_result(
+        cls, result: VeoResultContract, source_asset_ids: list[str], *, reviewer_summary: str = "",
+    ) -> "ProductionAssetEntry":
         if not result.approved:
             raise ValueError("Only an approved Veo result can become a production asset")
         return cls(
@@ -97,11 +102,14 @@ class ProductionAssetEntry(ContractModel):
             operation_dump_path=result.operation_dump_path,
             preview_paths=list(result.preview_paths),
             qa_summary=result.qa_summary,
+            reviewer_summary=reviewer_summary,
             cost_usd=result.cost_usd + result.seed.cost_usd,
         )
 
     @classmethod
-    def from_still_result(cls, result: StillResultContract, source_asset_ids: list[str]) -> "ProductionAssetEntry":
+    def from_still_result(
+        cls, result: StillResultContract, source_asset_ids: list[str], *, reviewer_summary: str = "",
+    ) -> "ProductionAssetEntry":
         if not result.approved:
             raise ValueError("Only an approved still result can become a production asset")
         return cls(
@@ -114,6 +122,7 @@ class ProductionAssetEntry(ContractModel):
             source_asset_ids=list(source_asset_ids),
             generation_model=result.model,
             qa_summary=result.qa_summary,
+            reviewer_summary=reviewer_summary,
             cost_usd=result.cost_usd,
         )
 

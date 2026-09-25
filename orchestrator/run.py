@@ -44,14 +44,17 @@ from orchestrator.agents._skills import SkillIsolationError
 from orchestrator.agents.asset_analyst import analyze_assets
 from orchestrator.agents.stills_agent import generate_still_asset
 from orchestrator.agents.story_agent import write_story
+from orchestrator.agents.story_critic import critique_story
+from orchestrator.agents.visual_reviewer import review_visual_asset
 from orchestrator.agents.veo_agent import generate_veo_asset
 from orchestrator.agents.visual_agent import plan_visuals
 from orchestrator.contracts.analyzed_assets import AnalyzedAssetsContract
 from orchestrator.contracts.final_story_plan import FinalStoryPlanContract
 from orchestrator.contracts.production_assets import ProductionAssetEntry
-from orchestrator.contracts.stills import StillOutcomeContract
+from orchestrator.contracts.review import CHARACTER_LIKENESS_CODE, StoryCritiqueContract, VisualQAVerdictContract
+from orchestrator.contracts.stills import StillFailureContract, StillOutcomeContract
 from orchestrator.contracts.subtitle_cues import SubtitleCuesContract
-from orchestrator.contracts.veo import VeoOutcomeContract, shot_fingerprint
+from orchestrator.contracts.veo import VeoFailureContract, VeoOutcomeContract, shot_fingerprint
 from orchestrator.contracts.visual_plan import VisualPlanContract
 from orchestrator.progress import banner, format_duration, heartbeat, log, start_run
 from orchestrator.workspace import (
@@ -101,7 +104,10 @@ from orchestrator.tools.deterministic_tools import (
     tokenize,
 )
 from orchestrator.tools.gemini_tools import (
+    CHARACTER_PROMPT_LEVELS,
     NARRATION_WAV,
+    character_reference_paths_for_asset,
+    describe_ladder_outcome,
     generate_narration_audio,
     resolve_character_references,
 )
@@ -170,6 +176,21 @@ def _halt(
     return 1
 
 
+@dataclass
+class StageReview:
+    """What a stage's `review_before_persist` reviewer said about one fresh attempt.
+
+    `result` is the reviewer query's own `ResultMessage`: the stage charges its
+    cost and checks it for a vendor refusal. `feedback` goes to the next
+    attempt when `approved` is false; `record` is written to the run state.
+    """
+
+    result: ResultMessage
+    approved: bool
+    feedback: str
+    record: dict
+
+
 async def run_bounded_agent_stage(
     *,
     stage_id: str,
@@ -184,6 +205,8 @@ async def run_bounded_agent_stage(
     attempt_file_prefix: str,
     call_agent: Callable[[str | None, object, float], Awaitable[ResultMessage]],
     finalize_before_persist: Callable[[object], None] | None = None,
+    review_before_persist: Callable[[object, float], Awaitable[StageReview]] | None = None,
+    review_cap_usd: float = 0.0,
 ) -> int:
     """Shared bounded-retry/resume/halt control flow (Story 1.2's
     `run_screenshot_stage` shape), reused by every stage in this shape:
@@ -197,6 +220,14 @@ async def run_bounded_agent_stage(
     contract in place immediately before it is written to `persisted_file`
     (e.g. `run_visual_stage`'s Story 2.1 shot-timing merge) -- never called
     on the resume-skip path, since that path never rewrites the file.
+
+    `review_before_persist`, when given, is an independent reviewer (Story
+    4.5, AD-18) run on a fresh attempt that has already passed
+    `validate_contract` -- never inside it, since `validate_contract` also
+    runs on the resume-skip path. It is called with the contract and
+    `review_cap_usd`, its query's budget, which each attempt keeps back from
+    the agent's own budget. Its cost is charged to the run; only an approval
+    lets the contract persist, and a rejection is the next attempt's feedback.
     """
     feedback = None
     previous_output = None
@@ -240,10 +271,78 @@ async def run_bounded_agent_stage(
     if type(count) is not int or count < 0:
         return halt(f"Invalid persisted {stage_id} iteration count")
 
+    review_cap = review_cap_usd if review_before_persist is not None else 0.0
+
+    async def run_review(contract) -> int | str | None:
+        """None on approval, the feedback on a rejection, or the halt's exit code."""
+
+        nonlocal count
+        remaining = settings.max_budget_usd - manifest.budget_spent_usd
+        if remaining + 1e-9 < review_cap:
+            return halt(
+                f"Try {count} passed validation, but its independent review needs ${review_cap:.4f} "
+                f"and only ${remaining:.4f} of the budget is left",
+                "budget_exhausted",
+            )
+        review_path = RUN_STATE_DIR / f"{attempt_file_prefix}_{count}_review.json"
+        try:
+            with heartbeat("the reviewer is still working"):
+                review = await review_before_persist(contract, review_cap)
+        except SkillIsolationError as exc:
+            count -= 1
+            manifest.iteration_counts[stage_id] = count
+            save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+            return halt(str(exc))
+        except Exception as exc:
+            refusal = _vendor_refusal(exc=exc)
+            if refusal is not None:
+                vendor_path = RUN_STATE_DIR / f"{attempt_file_prefix}_{count}_review_vendor_limit.json"
+                _atomic_write_json(vendor_path, {
+                    "status": "VENDOR_LIMIT", "vendor_refusal": refusal.kind,
+                    "error": f"{type(exc).__name__}: {exc}",
+                })
+                partial_paths.append(str(vendor_path))
+                return vendor_halt(refusal)
+            # Like a crashed attempt: nothing reported, nothing charged, and
+            # the attempt counts. The draft is not persisted unreviewed.
+            _atomic_write_json(review_path, {"status": "EXCEPTION", "error": f"{type(exc).__name__}: {exc}"})
+            partial_paths.append(str(review_path))
+            return f"The independent review of try {count} failed: {type(exc).__name__}: {exc}"
+        cost = review.result.total_cost_usd
+        if cost is None or not math.isfinite(cost) or cost < 0:
+            return halt("The reviewer returned no usable cost; cannot safely enforce the run budget")
+        manifest.budget_spent_usd += cost
+        save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+        refusal = _vendor_refusal(result=review.result)
+        if refusal is not None:
+            vendor_path = RUN_STATE_DIR / f"{attempt_file_prefix}_{count}_review_vendor_limit.json"
+            _atomic_write_json(vendor_path, {
+                "status": "VENDOR_LIMIT", "vendor_refusal": refusal.kind,
+                "result": review.result.result, "subtype": review.result.subtype,
+                "errors": review.result.errors, "api_error_status": review.result.api_error_status,
+                "claude_cost_usd": cost,
+            })
+            partial_paths.append(str(vendor_path))
+            return vendor_halt(refusal)
+        _atomic_write_json(review_path, {**review.record, "approved": review.approved, "claude_cost_usd": cost})
+        partial_paths.append(str(review_path))
+        budget_failure = _check_budget(settings, manifest.budget_spent_usd)
+        if budget_failure:
+            return halt(budget_failure.reason or "Budget exhausted", "budget_exhausted")
+        return None if review.approved else review.feedback
+
     while count < max_attempts:
         budget_failure = _check_budget(settings, manifest.budget_spent_usd)
         if budget_failure:
             return halt(budget_failure.reason or "Budget exhausted", "budget_exhausted")
+        # Story 4.5: each attempt keeps one review call's cap back from the agent.
+        agent_budget = settings.max_budget_usd - manifest.budget_spent_usd - review_cap
+        if agent_budget <= 0:
+            return halt(
+                f"${settings.max_budget_usd - manifest.budget_spent_usd:.4f} of the budget is left, which "
+                f"can't cover another try plus its independent review (${review_cap:.4f})",
+                "budget_exhausted",
+            )
 
         count += 1
         manifest.iteration_counts[stage_id] = count
@@ -251,9 +350,7 @@ async def run_bounded_agent_stage(
         log(f"Try {count} of {max_attempts} · ${settings.max_budget_usd - manifest.budget_spent_usd:.2f} left to spend")
         try:
             with heartbeat("still working"):
-                result = await call_agent(
-                    feedback, previous_output, settings.max_budget_usd - manifest.budget_spent_usd
-                )
+                result = await call_agent(feedback, previous_output, agent_budget)
         except SkillIsolationError as exc:
             # A leak of developer tooling is not the agent's defect; retrying
             # would only repeat it. No model turn ran, so the attempt goes back.
@@ -313,14 +410,23 @@ async def run_bounded_agent_stage(
             except ValueError as exc:
                 feedback = str(exc)
             else:
-                if finalize_before_persist is not None:
-                    finalize_before_persist(contract)
-                _atomic_write_json(persisted_file, contract.model_dump(mode="json"))
-                log(
-                    f"Done in {format_duration(time.monotonic() - attempt_started)} · "
-                    f"cost ${manifest.budget_spent_usd - spend_before:.2f} · saved {persisted_file}"
-                )
-                return 0
+                rejection = None
+                if review_before_persist is not None:
+                    reviewed = await run_review(contract)
+                    if isinstance(reviewed, int):
+                        return reviewed
+                    rejection = reviewed
+                if rejection is not None:
+                    feedback = rejection
+                else:
+                    if finalize_before_persist is not None:
+                        finalize_before_persist(contract)
+                    _atomic_write_json(persisted_file, contract.model_dump(mode="json"))
+                    log(
+                        f"Done in {format_duration(time.monotonic() - attempt_started)} · "
+                        f"cost ${manifest.budget_spent_usd - spend_before:.2f} · saved {persisted_file}"
+                    )
+                    return 0
 
         log(f"Try {count} of {max_attempts} didn't work: {feedback}", error=True)
 
@@ -384,6 +490,16 @@ async def run_narration_stage(settings: Settings, manifest: RunManifest) -> int:
     def validate_contract(contract: FinalStoryPlanContract) -> None:
         contract.validate_sources(valid_asset_ids)
 
+    async def review(contract: FinalStoryPlanContract, max_budget_usd: float) -> StageReview:
+        # FR11: a fresh session that sees only the draft and the analyses --
+        # not the writer's own quality_review (AD-18).
+        log("Having the draft checked by an independent story critic")
+        result = await critique_story(
+            contract.model_dump(mode="json", exclude={"quality_review"}), assets_bundle,
+            max_budget_usd=max_budget_usd,
+        )
+        return story_critique_review(result)
+
     return await run_bounded_agent_stage(
         stage_id="story_agent",
         failed_contract_name="FinalStoryPlanContract",
@@ -396,6 +512,35 @@ async def run_narration_stage(settings: Settings, manifest: RunManifest) -> int:
         base_partial_paths=[str(ANALYZED_ASSETS_FILE)],
         attempt_file_prefix="story_agent_attempt",
         call_agent=call_agent,
+        review_before_persist=review,
+        review_cap_usd=settings.claude_reviewer_cap_usd,
+    )
+
+
+def story_critique_review(result: ResultMessage) -> StageReview:
+    """The story critic's verdict, as the bounded stage's review.
+
+    A critic that failed or returned an unusable verdict is not an approval:
+    the draft isn't persisted and the attempt counts, like a crashed attempt.
+    """
+
+    record = {"structured_output": result.structured_output, "result": result.result,
+              "subtype": result.subtype, "errors": result.errors}
+    try:
+        if result.is_error:
+            raise ValueError(f"the critic failed ({result.subtype}): {result.errors or result.result}")
+        critique = StoryCritiqueContract.model_validate(result.structured_output)
+    except ValueError as exc:
+        return StageReview(result, False, f"The independent story critic gave no usable verdict: {exc}", record)
+    if critique.verdict == "APPROVE":
+        return StageReview(result, True, "", record)
+    issues = "\n".join(
+        f"- {issue.dimension}: {issue.evidence} Fix: {issue.fix}" for issue in critique.issues
+    )
+    return StageReview(
+        result, False,
+        "An independent story critic asked for a revision. Address every issue:\n" + issues,
+        record,
     )
 
 
@@ -587,15 +732,18 @@ def _promote_video_candidates(visual_plan: VisualPlanContract, settings: Setting
 
 
 def shot_attempt_reservation(settings: Settings, generation_mode: str) -> tuple[float, float]:
-    """(Claude cap, paid-call costs) one attempt of a shot in this mode reserves.
+    """(Claude share, paid-call costs) one attempt of a shot in this mode reserves.
 
-    A Veo attempt draws a seed and a clip, a still attempt one image.
+    A Veo attempt draws a seed and a clip, a still attempt one image. The
+    Claude share is the producer's cap plus one independent visual-QA review
+    at its own cap (Story 4.5); the producer's query still gets only
+    `claude_shot_attempt_cap_usd`.
     """
 
     external = settings.image_call_cost_usd
     if generation_mode == "VEO":
         external += settings.veo_call_cost_usd
-    return settings.claude_shot_attempt_cap_usd, external
+    return settings.claude_shot_attempt_cap_usd + settings.claude_reviewer_cap_usd, external
 
 
 def plan_first_attempt_demotions(
@@ -1692,6 +1840,212 @@ async def _run_shot_production(
     return _halt_for_shot_failures(failures, unfinished, launch.stopped_by)
 
 
+def _reviewer_character_context(asset, guard: PaidToolGuard, start_level: int) -> tuple[list[str], str]:
+    """The character references and ladder note the reviewer judges likeness by.
+
+    The rung is the one the image tool reports it really drew at (its note
+    comes back in the tool result, which the guard kept), falling back to
+    the rung the attempt started on. At the no-character rung the reviewer
+    gets no reference, so it can't reject the source's own figure.
+    """
+
+    references = [str(path) for path in character_reference_paths_for_asset(asset.model_dump(mode="json"))]
+    if not references:
+        return [], ""
+    notes = {describe_ladder_outcome({"level": level}): level for level in range(CHARACTER_PROMPT_LEVELS + 1)}
+    level = next((notes[text] for text in reversed(guard.image_notes) if text in notes), start_level)
+    level = min(max(level, 0), CHARACTER_PROMPT_LEVELS)
+    note = describe_ladder_outcome({"level": level})
+    return ([] if level >= CHARACTER_PROMPT_LEVELS else references), note
+
+
+# The QA stages a reviewer may reject each kind of shot at.
+REVIEW_STAGES = {"veo_agent": {"seed_qa", "clip_qa"}, "stills_agent": {"still_qa"}}
+
+
+def _reviewer_failure_code(code: str) -> str:
+    """The reviewer's free-text code, with any likeness rejection pinned to the
+    one code the likeness ladder recognises (`SEED_QA_CHARACTER_MARKERS`)."""
+
+    code = code.strip()
+    if any(marker in code.upper() for marker in ("LIKENESS", "CHARACTER", "FACE")):
+        return CHARACTER_LIKENESS_CODE
+    return code
+
+
+def _reviewer_rejection(outcome, verdict: VisualQAVerdictContract, *, agent: str, count: int, images: list[str]):
+    """The producer's approved outcome, turned into the reviewer's QA failure.
+
+    Written as the attempt's `structured_output`, so resume, the retry
+    ceiling and the likeness ladder read it like a producer QA failure.
+    """
+
+    what = {"seed_qa": "seed", "clip_qa": "clip", "still_qa": "still"}[verdict.failure_stage]
+    reasons = "; ".join(reason.strip() for reason in verdict.reasons if reason.strip())
+    fields = dict(
+        produced_by="orchestrator",
+        shot_sequence=outcome.shot_sequence,
+        shot_fingerprint=outcome.shot_fingerprint,
+        stage=verdict.failure_stage,
+        code=_reviewer_failure_code(verdict.failure_code),
+        reason=f"Independent visual QA rejected the {what}: {reasons} ({verdict.summary})",
+        retryable=True,
+        attempt=count,
+        partial_artifact_paths=list(images),
+        cost_usd=outcome.cost_usd,
+    )
+    if agent == "veo_agent":
+        return VeoOutcomeContract(
+            produced_by=outcome.produced_by, status="FAILURE", shot_sequence=outcome.shot_sequence,
+            shot_fingerprint=outcome.shot_fingerprint, failure=VeoFailureContract(**fields),
+        )
+    return StillOutcomeContract(
+        produced_by=outcome.produced_by, status="FAILURE", shot_sequence=outcome.shot_sequence,
+        shot_fingerprint=outcome.shot_fingerprint, failure=StillFailureContract(**fields),
+    )
+
+
+async def _review_shot_asset(
+    *, agent: str, shot, asset, subtitle_text: str, outcome, settings: Settings, manifest: RunManifest,
+    launch: _ShotLaunch, reservation: Reservation, stage_id: str, count: int, attempt_path: Path,
+    attempt_record: dict, attempt_paths: list[str], guard: PaidToolGuard, start_level: int,
+) -> ShotFailure | tuple[object, str]:
+    """Independent visual QA of a producer-approved shot asset (Story 4.5, FR12).
+
+    Returns the outcome to act on -- the producer's own on approval, or a
+    FAILURE outcome carrying the reviewer's rejection -- with the reviewer's
+    summary; or the shot's failure when no usable review could be had. The
+    review runs inside the attempt's reservation, which holds one review.
+    """
+
+    fail = functools.partial(ShotFailure, shot.sequence, agent, "VisualQAVerdictContract")
+    ledger = launch.ledger
+    cap = settings.claude_reviewer_cap_usd
+    video = agent == "veo_agent"
+    if video:
+        images = [outcome.result.seed.local_path, *outcome.result.preview_paths]
+    else:
+        images = [outcome.result.local_image_path]
+    references, ladder_note = _reviewer_character_context(asset, guard, start_level)
+
+    def save_review(review: dict) -> None:
+        attempt_record["review"] = review
+        _atomic_write_json(attempt_path, attempt_record)
+
+    log(f"Shot {shot.sequence}: having the result checked by an independent reviewer", indent=2)
+    try:
+        result = await review_visual_asset(
+            generation_mode="VEO" if video else "STILL",
+            shot=shot.model_dump(mode="json"),
+            subtitle_text=subtitle_text,
+            images_under_review=images,
+            character_reference_paths=references,
+            ladder_note=ladder_note,
+            max_budget_usd=cap,
+        )
+    except SkillIsolationError as exc:
+        # Before any review turn: nothing to charge. Systemic, like a producer
+        # leak, and the attempt goes back as the story critic's does.
+        save_review({"status": "SKILL_ISOLATION", "error": str(exc)})
+        manifest.iteration_counts[stage_id] = count - 1
+        save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+        return fail(str(exc), attempt_count=count - 1, partial_artifact_paths=attempt_paths)
+    except Exception as exc:
+        refusal = _vendor_refusal(exc=exc)
+        if refusal is not None:
+            return _reviewer_vendor_limit(
+                refusal, agent=agent, shot=shot, manifest=manifest, stage_id=stage_id, count=count,
+                claude_cost=0.0, save_review=save_review, attempt_paths=attempt_paths,
+            )
+        # No cost was ever reported, so charge the review's whole cap.
+        ledger.debit(reservation, cap)
+        save_review({"status": "EXCEPTION", "error": f"{type(exc).__name__}: {exc}", "charged_cost_usd": cap})
+        return fail(
+            f"Shot {shot.sequence}: the independent visual review crashed: {type(exc).__name__}: {exc}",
+            attempt_count=count, partial_artifact_paths=attempt_paths,
+        )
+
+    cost = result.total_cost_usd
+    if cost is None or not math.isfinite(cost) or cost < 0:
+        ledger.debit(reservation, cap)
+        save_review({"status": "NO_COST", "charged_cost_usd": cap})
+        return fail(
+            f"Shot {shot.sequence}: the visual reviewer returned no usable Claude cost",
+            attempt_count=count, partial_artifact_paths=attempt_paths,
+        )
+    ledger.debit(reservation, cost)
+    refusal = _vendor_refusal(result=result)
+    if refusal is not None:
+        return _reviewer_vendor_limit(
+            refusal, agent=agent, shot=shot, manifest=manifest, stage_id=stage_id, count=count,
+            claude_cost=cost, save_review=save_review, attempt_paths=attempt_paths,
+        )
+    try:
+        if result.is_error:
+            raise ValueError(f"Claude failed ({result.subtype}): {result.errors or result.result}")
+        verdict = VisualQAVerdictContract.model_validate(result.structured_output)
+        if not verdict.approved and verdict.failure_stage not in REVIEW_STAGES[agent]:
+            raise ValueError(f"failure_stage {verdict.failure_stage!r} does not apply to this kind of shot")
+    except ValueError as exc:
+        save_review({
+            "status": "INVALID_VERDICT", "error": str(exc), "agent_output": result.structured_output,
+            "result": result.result, "subtype": result.subtype, "claude_cost_usd": cost,
+        })
+        return fail(
+            f"Shot {shot.sequence}: invalid visual reviewer verdict: {exc}",
+            attempt_count=count, partial_artifact_paths=attempt_paths,
+        )
+
+    review = {"verdict": verdict.model_dump(mode="json"), "claude_cost_usd": cost}
+    if verdict.approved:
+        save_review(review)
+        return outcome, verdict.summary
+    rejected = _reviewer_rejection(outcome, verdict, agent=agent, count=count, images=images)
+    attempt_record["producer_outcome"] = attempt_record["structured_output"]
+    attempt_record["structured_output"] = rejected.model_dump(mode="json")
+    save_review(review)
+    return rejected, verdict.summary
+
+
+def _reviewer_vendor_limit(
+    refusal: VendorRefusal, *, agent: str, shot, manifest: RunManifest, stage_id: str, count: int,
+    claude_cost: float, save_review: Callable[[dict], None], attempt_paths: list[str],
+) -> ShotFailure:
+    """A vendor refusal of the review: the attempt goes back and the run stops (FR10).
+
+    The Claude CLI already retried any 429, so a transient one stops too.
+    """
+
+    save_review({
+        "status": "VENDOR_LIMIT", "vendor_refusal": refusal.kind, "detail": refusal.detail,
+        "claude_cost_usd": claude_cost,
+    })
+    manifest.iteration_counts[stage_id] = count - 1
+    save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+    return ShotFailure(
+        shot.sequence, agent, "VisualQAVerdictContract",
+        f"Blocked by a vendor limit ({refusal.kind}) reviewing shot {shot.sequence}: {refusal.detail}",
+        attempt_count=count - 1, partial_artifact_paths=attempt_paths, reason_code="vendor_limit",
+    )
+
+
+async def _review_overshoot(
+    launch: _ShotLaunch, reservation: Reservation, agent: str, sequence: int, count: int,
+    attempt_paths: list[str],
+) -> ShotFailure | None:
+    """The overdraw check again, once the review has been charged too (FR7)."""
+
+    if not await launch.overdrawn(reservation):
+        return None
+    return ShotFailure(
+        sequence, agent, "Budget",
+        f"Shot {sequence}: try {count} and its review cost ${reservation.debited_usd:.4f}, "
+        f"${reservation.debited_usd - reservation.amount_usd:.4f} more than it reserved, "
+        "and the run budget can't cover the overshoot",
+        attempt_count=count, partial_artifact_paths=attempt_paths, reason_code="budget_exhausted",
+    )
+
+
 async def _produce_veo_shot(
     shot, *, asset, subtitle_text: str, settings: Settings, manifest: RunManifest, launch: _ShotLaunch,
 ) -> ShotFailure | str:
@@ -1773,7 +2127,7 @@ async def _produce_veo_shot(
                     subtitle_text=subtitle_text,
                     settings={**settings_payload, "seed_prompt_level": seed_prompt_level},
                     attempt=count,
-                    max_budget_usd=claude_cap,
+                    max_budget_usd=settings.claude_shot_attempt_cap_usd,
                     correction=correction,
                     previous_outcome=previous_outcome,
                     guard=guard,
@@ -1910,7 +2264,7 @@ async def _produce_veo_shot(
             manifest.session_id = agent_result.session_id
             ledger.debit(reservation, claude_cost + outcome.cost_usd)
             attempt_path = RUN_STATE_DIR / f"veo_agent_shot_{shot.sequence}_attempt_{count}.json"
-            _atomic_write_json(attempt_path, {
+            attempt_record = {
                 "structured_output": outcome.model_dump(mode="json"),
                 "result": agent_result.result,
                 "subtype": agent_result.subtype,
@@ -1921,7 +2275,8 @@ async def _produce_veo_shot(
                 # refused, not how many refusals there were: three rejections
                 # of the same wording mean "try the next rung", not "skip three".
                 "seed_prompt_level": seed_prompt_level,
-            })
+            }
+            _atomic_write_json(attempt_path, attempt_record)
             attempt_paths.append(str(attempt_path))
             previous_outcome = outcome.model_dump(mode="json")
 
@@ -1937,11 +2292,31 @@ async def _produce_veo_shot(
                     reason_code="budget_exhausted",
                 )
 
+            reviewer_summary = ""
+            if outcome.status == "SUCCESS":
+                # FR12: approved only once an independent reviewer approves
+                # too, and before the upsert. The clip is already paid for.
+                reviewed = await _review_shot_asset(
+                    agent="veo_agent", shot=shot, asset=asset, subtitle_text=subtitle_text,
+                    outcome=outcome, settings=settings, manifest=manifest, launch=launch,
+                    reservation=reservation, stage_id=stage_id, count=count,
+                    attempt_path=attempt_path, attempt_record=attempt_record,
+                    attempt_paths=attempt_paths, guard=guard, start_level=seed_prompt_level,
+                )
+                if isinstance(reviewed, ShotFailure):
+                    return reviewed
+                outcome, reviewer_summary = reviewed
+                previous_outcome = outcome.model_dump(mode="json")
+                overshoot = await _review_overshoot(launch, reservation, "veo_agent", shot.sequence, count, attempt_paths)
+                if overshoot is not None:
+                    return overshoot
+
             if outcome.status == "SUCCESS":
                 try:
                     entry = ProductionAssetEntry.from_veo_result(
                         outcome.result,
                         source_asset_ids=shot.source_asset_ids,
+                        reviewer_summary=reviewer_summary,
                     )
                     upsert_production_asset(
                         entry,
@@ -2092,7 +2467,7 @@ async def _produce_still_shot(
                     subtitle_text=subtitle_text,
                     settings=settings_payload,
                     attempt=count,
-                    max_budget_usd=claude_cap,
+                    max_budget_usd=settings.claude_shot_attempt_cap_usd,
                     correction=correction,
                     previous_outcome=previous_outcome,
                     guard=guard,
@@ -2230,14 +2605,15 @@ async def _produce_still_shot(
             manifest.session_id = agent_result.session_id
             ledger.debit(reservation, claude_cost + outcome.cost_usd)
             attempt_path = RUN_STATE_DIR / f"stills_agent_shot_{shot.sequence}_attempt_{count}.json"
-            _atomic_write_json(attempt_path, {
+            attempt_record = {
                 "structured_output": outcome.model_dump(mode="json"),
                 "result": agent_result.result,
                 "subtype": agent_result.subtype,
                 "errors": agent_result.errors,
                 "claude_cost_usd": claude_cost,
                 "paid_tool_cost_usd": outcome.cost_usd,
-            })
+            }
+            _atomic_write_json(attempt_path, attempt_record)
             attempt_paths.append(str(attempt_path))
             previous_outcome = outcome.model_dump(mode="json")
 
@@ -2253,11 +2629,30 @@ async def _produce_still_shot(
                     reason_code="budget_exhausted",
                 )
 
+            reviewer_summary = ""
+            if outcome.status == "SUCCESS":
+                # FR12: approved only once an independent reviewer approves too.
+                reviewed = await _review_shot_asset(
+                    agent="stills_agent", shot=shot, asset=asset, subtitle_text=subtitle_text,
+                    outcome=outcome, settings=settings, manifest=manifest, launch=launch,
+                    reservation=reservation, stage_id=stage_id, count=count,
+                    attempt_path=attempt_path, attempt_record=attempt_record,
+                    attempt_paths=attempt_paths, guard=guard, start_level=0,
+                )
+                if isinstance(reviewed, ShotFailure):
+                    return reviewed
+                outcome, reviewer_summary = reviewed
+                previous_outcome = outcome.model_dump(mode="json")
+                overshoot = await _review_overshoot(launch, reservation, "stills_agent", shot.sequence, count, attempt_paths)
+                if overshoot is not None:
+                    return overshoot
+
             if outcome.status == "SUCCESS":
                 try:
                     entry = ProductionAssetEntry.from_still_result(
                         outcome.result,
                         source_asset_ids=shot.source_asset_ids,
+                        reviewer_summary=reviewer_summary,
                     )
                     upsert_production_asset(
                         entry,

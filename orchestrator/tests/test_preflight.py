@@ -16,6 +16,10 @@ def make_settings(**overrides) -> Settings:
         max_budget_usd=10.0,
         veo_model="veo-model",
         gemini_model="gemini-model",
+        # Story 4.5: the reviewers are stubbed free (conftest), and a zero cap
+        # keeps every earlier story's budget arithmetic as it was. The
+        # reviewer's share is tested with a real cap in test_reviewers.
+        claude_reviewer_cap_usd=0.0,
     )
     base.update(overrides)
     return Settings(**base)

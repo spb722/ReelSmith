@@ -44,25 +44,64 @@ def plugin_read_rule() -> str:
     return f"Read(/{PLUGIN_DIR}/**)"
 
 
-async def _deny_read_outside_plugin(input_data: dict, tool_use_id: str | None, context: Any) -> dict:
+def _read_decision(input_data: dict, allowed_files: frozenset[Path]) -> dict:
     raw = (input_data.get("tool_input") or {}).get("file_path") or ""
     path = Path(raw).expanduser()
     if not path.is_absolute():
         path = Path(input_data.get("cwd") or Path.cwd()) / path
     path = path.resolve()
-    if raw and (path == PLUGIN_DIR or PLUGIN_DIR in path.parents):
+    if raw and (path == PLUGIN_DIR or PLUGIN_DIR in path.parents or path in allowed_files):
         return {}
+    scope = f"the skills plugin folder {PLUGIN_DIR}"
+    if allowed_files:
+        scope += " and the files under review: " + ", ".join(sorted(map(str, allowed_files)))
     return {
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "permissionDecision": "deny",
-            "permissionDecisionReason": f"Read is limited to the skills plugin folder {PLUGIN_DIR}",
+            "permissionDecisionReason": f"Read is limited to {scope}",
         }
     }
 
 
+async def _deny_read_outside_plugin(input_data: dict, tool_use_id: str | None, context: Any) -> dict:
+    return _read_decision(input_data, frozenset())
+
+
 def plugin_read_guard() -> dict:
     return {"PreToolUse": [HookMatcher(matcher="Read", hooks=[_deny_read_outside_plugin])]}
+
+
+def resolved_files(paths) -> list[Path]:
+    """Absolute, resolved paths, deduplicated in order; relative ones against the cwd."""
+
+    files: list[Path] = []
+    for raw in paths:
+        path = Path(raw).expanduser()
+        path = (path if path.is_absolute() else Path.cwd() / path).resolve()
+        if path not in files:
+            files.append(path)
+    return files
+
+
+def file_read_rules(files: list[Path]) -> list[str]:
+    # A granting rule for each exact file; the hook below is what confines Read.
+    return [f"Read(/{path})" for path in files]
+
+
+def plugin_and_files_read_guard(files: list[Path]) -> dict:
+    """The plugin Read guard, also letting through exactly these files (Story 4.5).
+
+    For the visual-QA reviewer, which must open the shot's own asset files and
+    the character references, and nothing else outside its skills.
+    """
+
+    allowed = frozenset(files)
+
+    async def deny_other_reads(input_data: dict, tool_use_id: str | None, context: Any) -> dict:
+        return _read_decision(input_data, allowed)
+
+    return {"PreToolUse": [HookMatcher(matcher="Read", hooks=[deny_other_reads])]}
 
 
 def merge_hooks(*hook_maps: dict) -> dict:
