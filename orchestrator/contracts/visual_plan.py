@@ -94,6 +94,12 @@ class Shot(ContractModel):
     # top-ranked nominations whose real duration fits one Veo clip.
     video_candidate_rank: Annotated[int, Field(ge=1)] | None = None
     video_motion_intent: str = ""
+    # SOURCE_MODE=content only: true when this shot's focal subject is the
+    # story's main person, who is then drawn as the recurring character. With
+    # screenshot artwork the character instead replaces a figure the source
+    # already draws, so this is ignored there. `shot_fingerprint` leaves it
+    # out while False, so plans written before it existed keep their prints.
+    shows_character: bool = False
     # AD-7 content-staleness snapshot. `SkipJsonSchema` keeps this out of the
     # schema shown to `visual_agent` entirely, so a freshly generated shot
     # always parses with the "" default (never a stray agent-supplied
@@ -166,6 +172,13 @@ class VisualPlanContract(ContractModel):
     overall_visual_style: Annotated[str, Field(min_length=1)]
     shots: Annotated[list[Shot], Field(min_length=1)]
     quality_review: QualityReview
+    # The SOURCE_MODE this plan was made for, stamped by the orchestrator (never
+    # agent output). A plan saved before the setting existed was made from
+    # screenshot artwork, which is exactly what the default says.
+    source_mode: SkipJsonSchema[Literal["content_and_images", "content"]] = "content_and_images"
+    # SOURCE_MODE=content only: the `styles/<name>.json` whose text the
+    # orchestrator wrote into `overall_visual_style`. "" when none was used.
+    style_name: SkipJsonSchema[str] = ""
 
     @model_validator(mode="after")
     def shot_sequence_is_continuous(self) -> "VisualPlanContract":

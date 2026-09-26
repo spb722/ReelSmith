@@ -141,7 +141,8 @@ def _retarget_positional_references(
 
 
 def build_codex_prompt(
-    prompt: str, reference_filenames: Sequence[str], *, output_filename: str = OUTPUT_FILENAME
+    prompt: str, reference_filenames: Sequence[str], *, output_filename: str = OUTPUT_FILENAME,
+    has_scene: bool = True,
 ) -> str:
     """Wrap a shot's prompt in the file-role framing Codex needs.
 
@@ -160,22 +161,35 @@ def build_codex_prompt(
         scene_part, _, final_rule = before_character.partition(FINAL_RULE_MARKER)
         character_part = ""
 
-    lines = [
-        "$imagegen",
-        "",
-        "Create one new image from the image files in this directory.",
-        "",
-        f'- "{SCENE_FILENAME}" is the scene. Reproduce its composition, art style, palette,'
-        " lighting, background and props -- everything except the person in it.",
-    ]
-    for filename in reference_filenames:
-        lines.append(
-            f'- "{filename}" is the character sheet, and the person is the exception:'
-            f' whoever appears in "{SCENE_FILENAME}" must be redrawn as this character.'
-            " Their face, hair, beard, build, colouring and clothing come from here, not"
-            " from the scene. Never copy this sheet's own background, standing pose, crop"
-            " or framing."
-        )
+    if has_scene:
+        lines = [
+            "$imagegen",
+            "",
+            "Create one new image from the image files in this directory.",
+            "",
+            f'- "{SCENE_FILENAME}" is the scene. Reproduce its composition, art style, palette,'
+            " lighting, background and props -- everything except the person in it.",
+        ]
+        for filename in reference_filenames:
+            lines.append(
+                f'- "{filename}" is the character sheet, and the person is the exception:'
+                f' whoever appears in "{SCENE_FILENAME}" must be redrawn as this character.'
+                " Their face, hair, beard, build, colouring and clothing come from here, not"
+                " from the scene. Never copy this sheet's own background, standing pose, crop"
+                " or framing."
+            )
+    else:
+        # SOURCE_MODE=content: no scene file, only character sheets, if any.
+        lines = ["$imagegen", "", "Create one new image from the description below."]
+        if reference_filenames:
+            lines.append("")
+        for filename in reference_filenames:
+            lines.append(
+                f'- "{filename}" is the character sheet. The scene\'s main person must be drawn'
+                " as this character: their face, hair, beard, build, colouring and clothing"
+                " come from here. Never copy this sheet's own background, standing pose, crop"
+                " or framing."
+            )
     lines += ["", "THE SCENE TO DRAW:", scene_part.strip()]
     if character_part:
         lines += [
@@ -196,13 +210,14 @@ def build_codex_prompt(
 
 
 def _stage_workspace(
-    workspace: Path, source_image_path: Path, reference_image_paths: Sequence[Path]
+    workspace: Path, source_image_path: Path | None, reference_image_paths: Sequence[Path]
 ) -> list[str]:
-    """Copy the scene and references in under predictable names."""
+    """Copy the scene (None: there is none) and references in under predictable names."""
 
-    if not source_image_path.is_file():
-        raise FileNotFoundError(f"Source image does not exist: {source_image_path}")
-    Image.open(source_image_path).convert("RGB").save(workspace / SCENE_FILENAME, format="PNG")
+    if source_image_path is not None:
+        if not source_image_path.is_file():
+            raise FileNotFoundError(f"Source image does not exist: {source_image_path}")
+        Image.open(source_image_path).convert("RGB").save(workspace / SCENE_FILENAME, format="PNG")
 
     reference_filenames: list[str] = []
     for index, reference_path in enumerate(reference_image_paths, start=1):
@@ -250,7 +265,7 @@ def _validate_aspect_ratio(image: Image.Image) -> None:
 
 def run_codex_image_edit(
     *,
-    source_image_path: Path,
+    source_image_path: Path | None,
     prompt: str,
     reference_image_paths: Sequence[Path] = (),
     timeout_seconds: float,
@@ -260,7 +275,7 @@ def run_codex_image_edit(
     """Run one Codex image generation and return the image plus its closing note."""
 
     executable = codex_executable()
-    source_image_path = Path(source_image_path)
+    source_image_path = Path(source_image_path) if source_image_path is not None else None
     diagnosis = ""
 
     for attempt in range(1, max_attempts + 1):
@@ -272,7 +287,9 @@ def run_codex_image_edit(
             (workspace / SCHEMA_FILENAME).write_text(
                 json.dumps(OUTCOME_SCHEMA), encoding="utf-8"
             )
-            codex_prompt = build_codex_prompt(prompt, reference_filenames)
+            codex_prompt = build_codex_prompt(
+                prompt, reference_filenames, has_scene=source_image_path is not None
+            )
 
             command = [
                 executable,
@@ -290,7 +307,8 @@ def run_codex_image_edit(
             ]
             # Attaching the files makes the model actually see them, rather
             # than only reading a filename and having to open it itself.
-            for filename in [SCENE_FILENAME, *reference_filenames]:
+            scene_files = [SCENE_FILENAME] if source_image_path is not None else []
+            for filename in [*scene_files, *reference_filenames]:
                 command += ["--image", str(workspace / filename)]
             # The prompt goes in on stdin, not as the trailing argument:
             # `--image` takes a variadic <FILE>..., so a positional prompt

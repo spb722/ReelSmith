@@ -501,18 +501,18 @@ def test_any_likeness_code_is_pinned_to_the_one_the_ladder_reads(code, expected)
 
 def test_the_reviewer_is_told_the_rung_the_image_was_really_drawn_at(chain, monkeypatch):
     source, asset_id = chain
-    monkeypatch.setattr(run, "character_reference_paths_for_asset", lambda asset: [Path("/refs/turnaround.png")])
+    monkeypatch.setattr(run, "character_reference_paths_for_shot", lambda asset, sequence: [Path("/refs/turnaround.png")])
     guard = PaidToolGuard(limit_usd=5.0, costs={})
     asset = type("A", (), {"model_dump": lambda self, mode=None: {}})()
 
-    assert run._reviewer_character_context(asset, guard, 0) == (
+    assert run._reviewer_character_context(asset, 1, guard, 0) == (
         ["/refs/turnaround.png"], describe_ladder_outcome({"level": 0}),
     )
     guard.image_notes.append(describe_ladder_outcome({"level": 1}))
-    assert run._reviewer_character_context(asset, guard, 0)[1] == describe_ladder_outcome({"level": 1})
+    assert run._reviewer_character_context(asset, 1, guard, 0)[1] == describe_ladder_outcome({"level": 1})
     # The no-character rung: nothing to compare the source's own figure to.
     guard.image_notes.append(describe_ladder_outcome({"level": 2}))
-    assert run._reviewer_character_context(asset, guard, 0) == ([], describe_ladder_outcome({"level": 2}))
+    assert run._reviewer_character_context(asset, 1, guard, 0) == ([], describe_ladder_outcome({"level": 2}))
 
 
 def test_the_guard_keeps_the_ladder_note_an_image_tool_returned():

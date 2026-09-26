@@ -29,6 +29,10 @@ def shot_fingerprint(shot: Shot | dict) -> str:
         payload = shot.model_dump(mode="json")
     else:
         payload = Shot.model_validate(shot).model_dump(mode="json")
+    # Added after reels were already made: leaving the default out keeps every
+    # earlier shot's fingerprint, so their approved assets are not called stale.
+    if not payload.get("shows_character"):
+        payload.pop("shows_character", None)
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 

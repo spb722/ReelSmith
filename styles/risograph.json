@@ -1,0 +1,19 @@
+{
+  "name": "risograph",
+  "description": "Risograph print illustration: two to three overlapping ink layers with slight misregistration, coarse grain, halftone dot shading, bold simple shapes",
+  "palette": [
+    "fluorescent pink",
+    "federal blue",
+    "sunflower yellow",
+    "off-white paper"
+  ],
+  "lighting": "flat graphic light, shading built only from halftone dots",
+  "mood": "bold, graphic, energetic",
+  "avoid": [
+    "photorealism",
+    "any text, letters, numbers or logos",
+    "the name or look of a real artist",
+    "smooth gradients",
+    "more than four colours"
+  ]
+}

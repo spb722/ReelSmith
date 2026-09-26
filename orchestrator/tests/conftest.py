@@ -61,6 +61,19 @@ def _no_repo_dotenv(tmp_path):
         yield
 
 
+@pytest.fixture(autouse=True)
+def _no_pipeline_switches_from_the_shell():
+    """`STORY_SKILL` and `SOURCE_MODE` change which skills load and how images
+    are drawn, so one exported in the operator's shell would change every
+    test; tests that need one set it themselves. A private MonkeyPatch, for
+    the same teardown-order reason as `_no_live_claude_calls`."""
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.delenv("STORY_SKILL", raising=False)
+        patch.delenv("SOURCE_MODE", raising=False)
+        yield
+
+
 def _approving_result(output: dict) -> ResultMessage:
     return ResultMessage(
         subtype="success", duration_ms=1, duration_api_ms=1, is_error=False,

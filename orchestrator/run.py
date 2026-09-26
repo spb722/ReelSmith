@@ -58,6 +58,7 @@ from orchestrator.contracts.subtitle_cues import SubtitleCuesContract
 from orchestrator.contracts.veo import VeoFailureContract, VeoOutcomeContract, shot_fingerprint
 from orchestrator.contracts.visual_plan import VisualPlanContract
 from orchestrator import tracing
+from orchestrator.styles import DEFAULT_STYLE, StyleError, load_style
 from orchestrator.progress import banner, format_duration, heartbeat, log, run_progress, start_run
 from orchestrator.workspace import (
     SOURCE_IMAGES_DIR_NAME,
@@ -69,6 +70,7 @@ from orchestrator.preflight import _check_budget, check_remotion_delivery_toolch
 from orchestrator.settings import (
     image_call_cost_for_provider,
     load_dotenv_file,
+    source_mode_setting,
     GEMINI_TTS_AUDIO_TOKENS_PER_SECOND,
     GEMINI_TTS_INPUT_TOKEN_COST_USD,
     GEMINI_TTS_OUTPUT_TOKEN_COST_USD,
@@ -111,7 +113,7 @@ from orchestrator.tools.deterministic_tools import (
 from orchestrator.tools.gemini_tools import (
     CHARACTER_PROMPT_LEVELS,
     NARRATION_WAV,
-    character_reference_paths_for_asset,
+    character_reference_paths_for_shot,
     describe_ladder_outcome,
     generate_narration_audio,
     resolve_character_references,
@@ -874,6 +876,43 @@ async def run_visual_stage(settings: Settings, manifest: RunManifest) -> int:
     Read tool and never re-derives it itself (AD-2: no independent timing
     source exists pre-audio, so shots map 1:1 onto scenes by sequence).
     """
+    # A reel is made in one SOURCE_MODE. Resuming under the other would draw
+    # the remaining shots the other way and leave the saved ones as they are,
+    # so stop and say so instead.
+    source_mode = source_mode_setting()
+    try:
+        saved = json.loads(VISUAL_PLAN_FILE.read_text(encoding="utf-8"))
+        saved_mode = saved.get("source_mode", "content_and_images")
+        saved_style = saved.get("style_name", "")
+    except (FileNotFoundError, ValueError, OSError, AttributeError):
+        saved_mode, saved_style = source_mode, ""
+    if saved_mode != source_mode:
+        return _halt(
+            "visual_agent",
+            "VisualPlanContract",
+            f"This project's shots were planned with SOURCE_MODE={saved_mode}, but this run has "
+            f"SOURCE_MODE={source_mode}. Re-run with SOURCE_MODE={saved_mode}, or make the reel "
+            "the other way in a fresh project folder.",
+            partial_artifact_paths=[str(VISUAL_PLAN_FILE)],
+        )
+    # Same for the art style. A plan with no recorded style (made before
+    # --style existed) keeps the style it was drawn in.
+    style = None
+    if source_mode == "content":
+        if saved_style and saved_style != settings.visual_style:
+            return _halt(
+                "visual_agent",
+                "VisualPlanContract",
+                f"This project's shots were planned in the {saved_style} style, but this run asks "
+                f"for --style {settings.visual_style}. Re-run with --style {saved_style}, or make "
+                "the reel in the other style in a fresh project folder.",
+                partial_artifact_paths=[str(VISUAL_PLAN_FILE)],
+            )
+        try:
+            style = load_style(settings.visual_style)
+        except StyleError as exc:
+            return _halt("visual_agent", "Style", str(exc))
+
     try:
         story_plan = FinalStoryPlanContract.model_validate_json(
             FINAL_STORY_PLAN_FILE.read_text(encoding="utf-8")
@@ -893,10 +932,19 @@ async def run_visual_stage(settings: Settings, manifest: RunManifest) -> int:
         return await plan_visuals(
             story_plan_bundle, assets_bundle, max_budget_usd=remaining_budget,
             feedback=feedback, previous_output=previous_output,
+            style_guide=style.guide() if style is not None else None,
         )
 
     def validate_contract(contract: VisualPlanContract) -> None:
         contract.validate_sources(story_plan)
+        contract.source_mode = source_mode
+        # Written by code, not trusted from the agent, so every image request
+        # carries the chosen style word for word. On a resume that skips
+        # planning the saved file is only checked, never rewritten, so a plan
+        # from before --style keeps the style it was drawn in.
+        if style is not None:
+            contract.overall_visual_style = style.guide()
+            contract.style_name = style.name
 
     return await run_bounded_agent_stage(
         stage_id="visual_agent",
@@ -1971,7 +2019,9 @@ async def _run_shot_production(
     return _halt_for_shot_failures(failures, unfinished, launch.stopped_by)
 
 
-def _reviewer_character_context(asset, guard: PaidToolGuard, start_level: int) -> tuple[list[str], str]:
+def _reviewer_character_context(
+    asset, sequence: int, guard: PaidToolGuard, start_level: int,
+) -> tuple[list[str], str]:
     """The character references and ladder note the reviewer judges likeness by.
 
     The rung is the one the image tool reports it really drew at (its note
@@ -1980,12 +2030,18 @@ def _reviewer_character_context(asset, guard: PaidToolGuard, start_level: int) -
     gets no reference, so it can't reject the source's own figure.
     """
 
-    references = [str(path) for path in character_reference_paths_for_asset(asset.model_dump(mode="json"))]
+    references = [
+        str(path) for path in character_reference_paths_for_shot(asset.model_dump(mode="json"), sequence)
+    ]
     if not references:
         return [], ""
     notes = {describe_ladder_outcome({"level": level}): level for level in range(CHARACTER_PROMPT_LEVELS + 1)}
     level = next((notes[text] for text in reversed(guard.image_notes) if text in notes), start_level)
     level = min(max(level, 0), CHARACTER_PROMPT_LEVELS)
+    # A content-mode ladder has only two rungs, with and without the character,
+    # so any rung past the first drew no character.
+    if level >= 1 and source_mode_setting() == "content":
+        level = CHARACTER_PROMPT_LEVELS
     note = describe_ladder_outcome({"level": level})
     return ([] if level >= CHARACTER_PROMPT_LEVELS else references), note
 
@@ -2057,7 +2113,7 @@ async def _review_shot_asset(
         images = [outcome.result.seed.local_path, *outcome.result.preview_paths]
     else:
         images = [outcome.result.local_image_path]
-    references, ladder_note = _reviewer_character_context(asset, guard, start_level)
+    references, ladder_note = _reviewer_character_context(asset, shot.sequence, guard, start_level)
 
     def save_review(review: dict) -> None:
         attempt_record["review"] = review
@@ -2965,6 +3021,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
              "source_images/ supplies the screenshots, and every artifact this "
              "run writes stays inside it.",
     )
+    parser.add_argument(
+        "--style",
+        default=None,
+        help="SOURCE_MODE=content only: the art style, a file name in styles/ without "
+             f".json (default {DEFAULT_STYLE}).",
+    )
     parser.add_argument("--retry-voice", action="store_true",
                         help="Archive previous voice evidence and reset only its bounded retry ceiling; keep cumulative spend.")
     args = parser.parse_args(argv)
@@ -3005,6 +3067,18 @@ def _run_after_start(args: argparse.Namespace, project: Path, log_path: Path | N
         settings = load_settings()
     except SettingsError as exc:
         return _halt("settings", "Settings", str(exc))
+    # The style only matters when pictures are invented; checked here so a
+    # misspelt name stops the run before any paid call.
+    if source_mode_setting() == "content":
+        style_name = args.style or DEFAULT_STYLE
+        try:
+            load_style(style_name)
+        except StyleError as exc:
+            return _halt("settings", "Style", str(exc))
+        settings = dataclasses.replace(settings, visual_style=style_name)
+        log(f"Art style: {style_name} (styles/{style_name}.json)")
+    elif args.style:
+        log(f"--style {args.style} is ignored: the pictures come from the screenshots' own artwork")
 
     with tracing.span("preflight") as preflight_span:
         result = run_preflight(
@@ -3028,7 +3102,9 @@ def _run_after_start(args: argparse.Namespace, project: Path, log_path: Path | N
         log(
             "Recurring character: "
             + ", ".join(str(path) for path in character_references)
-            + " — drawn only into shots whose artwork already shows a person"
+            + (" — drawn into shots the visual plan marks shows_character"
+               if source_mode_setting() == "content"
+               else " — drawn only into shots whose artwork already shows a person")
         )
     else:
         log("No recurring character set — people stay as the source drew them")

@@ -36,6 +36,7 @@ from orchestrator.tests.test_story_agent import stage  # noqa: F401 -- fixture
 SKILLS_DIR = PLUGIN_DIR / "skills"
 EXPECTED_SKILLS = {
     "asset-analysis", "story-craft", "story-craft-easy", "visual-planning", "source-fidelity",
+    "visual-planning-content", "source-fidelity-content",
     "veo-production", "still-production", "visual-qa", "character-likeness-qa",
 }
 AGENT_SKILLS = {
@@ -92,7 +93,7 @@ def test_plugin_manifest_names_book_reels():
     assert PLUGIN_DIR.is_absolute()
 
 
-def test_plugin_holds_exactly_the_nine_skills():
+def test_plugin_holds_exactly_the_eleven_skills():
     assert {p.name for p in SKILLS_DIR.iterdir() if p.is_dir()} == EXPECTED_SKILLS
     for name in EXPECTED_SKILLS:
         assert (SKILLS_DIR / name / "SKILL.md").is_file()

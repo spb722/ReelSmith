@@ -1,0 +1,20 @@
+{
+  "name": "childrens_gouache",
+  "description": "Children's-book gouache illustration: matte opaque paint, rounded friendly forms, playful scale, visible brush texture, simplified shapes",
+  "palette": [
+    "butter yellow",
+    "tomato red",
+    "sky blue",
+    "leaf green",
+    "warm cream"
+  ],
+  "lighting": "warm morning light, soft rounded shadows",
+  "mood": "warm, hopeful, playful but sincere",
+  "avoid": [
+    "photorealism",
+    "any text, letters, numbers or logos",
+    "the name or look of a real artist",
+    "sharp realistic detail",
+    "dark gritty tones"
+  ]
+}

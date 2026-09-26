@@ -1,109 +1,113 @@
 {
   "produced_by": "visual_agent",
-  "overall_visual_style": "Flat editorial illustration throughout, taken from one continuous four-page illustrated story so the vocabulary never breaks: matte cream, slate-blue and tan planes, soft hand-drawn line work, gentle grain, no gloss or photographic depth, with a single warm red-orange or amber accent allowed to be the brightest thing in any frame. Every shot is reframed from the story artwork region alone, cropped clear of application chrome, and composed vertically with unhurried headroom in the upper third so overlaid words can sit on clean plate. Motion language is slow and observational to match the calm, wry, quietly intense narrator: long Ken-Burns pushes and lateral drifts measured in a few percent per second, easing rather than snapping, letting objects be studied rather than presented. The arc moves from daylight and domestic clutter, through a dim machine-room interlude lit only by amber, and back into daylight — the same desk, warmer and calmer, so the close reads as permission rather than resolution.",
+  "overall_visual_style": "Flat editorial illustration with a soft gouache grain: confident dark-cocoa outlines of even weight, large simple shapes, visible paper tooth over every fill, no gradients beyond one soft light wash per frame. Strictly limited palette — warm cream (pale butter) for all backgrounds and negative space, deep cocoa brown for linework and shadow, muted teal as the single cool accent object in each frame, dusty terracotta for skin and warm props, soft sage for secondary props and fabric. Lighting is one warm directional source, low contrast, with long soft shadows pooling to one side of the subject. Mood is calm, wry and unhurried: ordinary domestic-office and corridor objects treated with quiet dignity, generous empty cream space around a single focal subject. The recurring character is the same person in every shot they appear in — a person in their mid-thirties, medium build, short dark-brown hair tucked behind the ears, a loose olive-sage crew-neck sweater with sleeves pushed to the elbows, dark trousers, no accessories, face calm and unexaggerated.",
   "shots": [
     {
       "sequence": 1,
-      "generation_mode": "VEO",
-      "visual_treatment": "SUBTLE_ANIMATION",
+      "generation_mode": "STILL",
+      "visual_treatment": "AI_VIDEO_CANDIDATE",
       "source_asset_ids": [
-        "img_6efadeef1501"
+        "img_0b1a97f297f3"
       ],
-      "shot_goal": "Open on the viewer's own nagging pile so the first image is instantly recognisable as their desk, and let its height do the accusing before the narration names the guilt.",
-      "frame_composition": "Vertical crop of the illustrated desk scene, weighted to the left so the very tall, leaning stack of loose white sheets interleaved with tan folders stands slightly off-centre and runs from the desk surface to well up the frame. The wooden desk top is otherwise bare beneath it, with faint coffee-cup rings on the grain; the angled desk lamp with its conical shade sits at the right edge, a stapler with a red top on the surface below it. Behind, a large window frame opens onto a stylised skyline of flat blue and tan buildings, and a pale diagonal shaft of daylight crosses the desk. Muted cream, slate-blue and tan palette, flat illustration, clean empty air above the stack.",
-      "motion_plan": "Slow continuous push-in toward the stack, easing out as it goes, so the papers grow taller in frame than they first appeared; a faint parallax holds the skyline nearly still while the desk and stack advance, and the diagonal shaft of light shimmers almost imperceptibly across the wood.",
-      "text_overlay": "growing for weeks",
-      "source_support": "The asset's art region shows exactly this desk, window skyline, lamp, stapler, coffee rings and the towering stack of papers and folders, and its own suggested motion lists a slow push-in on the paper stack, window-to-desk parallax and a light-ray shimmer. Framing stays inside the story art region and above the bottom screen clip, and excludes the top bar, translate and close buttons and the progress indicator.",
-      "video_candidate_rank": 2,
-      "video_motion_intent": "Real ambient motion would make the opening frame feel lived-in rather than posed: dust turning slowly in the shaft of daylight, the light creeping a few degrees across the desk, and the top sheets of the stack lifting a millimetre as if breathed on, so the pile reads as precarious and ongoing. No camera whip — just a steady push-in with the air alive inside it, which is what converts a recognisable illustration into a nagging presence.",
-      "scene_content_fingerprint": "96f08f3ee794969424b0e0e63c42d764423e0775a4327b7425aa8e7cf5c558ed",
+      "shot_goal": "Open inside the viewer's own overstuffed day: a person busily clearing small things while the one big thing waits.",
+      "frame_composition": "Medium shot of the recurring character seated at a small pale-wood desk in a plain cream-walled room, seen three-quarters from the front. They are dropping one more opened envelope onto a loose fan of already-opened envelopes spread across the desktop, a ring of keys hooked on one finger, a folded paper shopping bag and a muted teal mug crowding the desk edge. On the floor beside the desk sits a large sealed cardboard box, its tape unbroken, untouched. Bright midday light comes from a window off frame left, laying a long soft shadow of the box across the floorboards. Upper third of the frame is empty cream wall.",
+      "motion_plan": "Very slow push-in on the character's hands and the spreading fan of envelopes, drifting a touch left so the sealed box on the floor stays in frame the whole time.",
+      "text_overlay": "",
+      "source_support": "Scene 1's narration lists a day of small cleared tasks (emails, an appointment, errands) while one big project went untouched, matching Card 1's body text. Envelopes, keys and a shopping bag stand in for the small tasks as ordinary objects; the sealed box is the untouched project. No study, result or fact beyond the card is pictured.",
+      "video_candidate_rank": 5,
+      "video_motion_intent": "One continuous slow dolly-in toward the desk while the character's hand lays a single envelope down onto the pile — one small natural action plus one steady camera move, so the busyness reads as ongoing rather than posed.",
+      "shows_character": true,
+      "scene_content_fingerprint": "0ef9688d10870440721cb07834ced1faa1712fa4c14ffe2693cf26da011d83e6",
       "start_seconds": 0.2,
-      "end_seconds": 8.24,
+      "end_seconds": 10.48,
       "primary_subtitle_cue_ids": [
         "cue_001",
         "cue_002",
         "cue_003",
         "cue_004"
       ],
-      "fade_in_frames": 24,
+      "fade_in_frames": 18,
       "fade_out_frames": 8,
       "still_motion": {
-        "scale_from": 1.02,
-        "scale_to": 1.2,
-        "translate_x_from": 6.0,
-        "translate_x_to": 2.0,
+        "scale_from": 1.0,
+        "scale_to": 1.09,
+        "translate_x_from": 0.0,
+        "translate_x_to": -2.5,
         "translate_y_from": 0.0,
-        "translate_y_to": 2.0,
+        "translate_y_to": 0.0,
         "easing": "easeOut"
       },
       "video_promotion_decided": true
     },
     {
       "sequence": 2,
-      "generation_mode": "STILL",
-      "visual_treatment": "CROP_AND_RECOMPOSE",
+      "generation_mode": "VEO",
+      "visual_treatment": "AI_VIDEO_CANDIDATE",
       "source_asset_ids": [
-        "img_d2cc74ba7e3f"
+        "img_0b1a97f297f3"
       ],
-      "shot_goal": "Give the received organizing advice a single unmoving image of orthodoxy, so three recited rules land against one tidy, slightly airless frame.",
-      "frame_composition": "Tight vertical recompose on the left, orderly half of the illustration: a slate-blue metal filing cabinet with its top drawer pulled fully open, packed edge to edge with upright tan and cream hanging folders whose tabs align in an even rank across the drawer. The small metal label holder on the drawer front sits low in frame. The messy desk corner is pushed out of the crop entirely. Flat illustration, cool slate and tan palette, even light, nothing in motion, quiet negative space above the cabinet.",
-      "motion_plan": "Almost still — a barely perceptible drift inward of a few percent across the whole shot, held steady on the ranks of folder tabs so the frame feels held rather than explored, matching the flat, mechanical recital of rules.",
-      "text_overlay": "",
-      "source_support": "The asset explicitly stages an order-versus-clutter contrast with the open drawer of neatly aligned tabbed folders occupying the left of the art region, and its recommended crop strategy supports recomposing to that half. The asset's uncertainties flag that the drawer's label plate may be intentionally blank or merely too small to read, so the frame names only the label holder and never asserts what it does or does not carry; the ambiguous red element belongs to the pile half and is outside this crop.",
-      "video_candidate_rank": null,
-      "video_motion_intent": "",
-      "scene_content_fingerprint": "2ad6a56bae9233c4cdd935e254730891e7ab95515e513729f4d6fde211d5eeac",
-      "start_seconds": 8.24,
-      "end_seconds": 18.2,
+      "shot_goal": "Land the sting: the day is over, the desk is clear, and the thing that mattered has not been opened.",
+      "frame_composition": "Wide, still shot of the same room at dusk, now empty of people. The desk is tidied — the envelopes gone, only the muted teal mug left — and the chair is pushed back at an angle. The large sealed cardboard box sits alone on the floor in the centre-right of the frame, tape still unbroken, a faint ring of dust around its base. Low amber six-o'clock light rakes in from the window off frame left across the floorboards, and the far side of the room falls into soft cocoa shadow. Large area of dim empty cream wall fills the upper half of the frame.",
+      "motion_plan": "Almost imperceptible push-in toward the sealed box, holding long and quiet, with a slight downward drift so the empty chair leaves the top of frame.",
+      "text_overlay": "The thing that mattered? Untouched.",
+      "source_support": "Scene 2 says that by six the day felt hard-worked yet the one thing that mattered is untouched, straight from Card 1. The unbroken tape and settled dust show only the absence of work on the box; nothing is added about why.",
+      "video_candidate_rank": 3,
+      "video_motion_intent": "Hold the camera nearly locked and let only the light change — the amber window light creeping a few degrees dimmer and longer across the floor over the shot. Atmosphere carries this beat entirely, and a still frame would feel inert where a slow dying light feels like the end of a day.",
+      "shows_character": false,
+      "scene_content_fingerprint": "c4134e4f256f09f23bc0e374f890fd7ed05a36dc1352b85a991ad6240a89ce16",
+      "start_seconds": 10.48,
+      "end_seconds": 17.36,
       "primary_subtitle_cue_ids": [
         "cue_005",
         "cue_006",
         "cue_007",
-        "cue_008",
-        "cue_009"
+        "cue_008"
       ],
-      "fade_in_frames": 10,
-      "fade_out_frames": 6,
+      "fade_in_frames": 8,
+      "fade_out_frames": 16,
       "still_motion": {
-        "scale_from": 1.15,
-        "scale_to": 1.1,
-        "translate_x_from": 12.0,
-        "translate_x_to": 10.0,
-        "translate_y_from": 0.0,
-        "translate_y_to": 0.0,
-        "easing": "linear"
+        "scale_from": 1.02,
+        "scale_to": 1.08,
+        "translate_x_from": 0.0,
+        "translate_x_to": 0.0,
+        "translate_y_from": -1.5,
+        "translate_y_to": 1.5,
+        "easing": "ease"
       },
       "video_promotion_decided": true
     },
     {
       "sequence": 3,
-      "generation_mode": "VEO",
+      "generation_mode": "STILL",
       "visual_treatment": "SUBTLE_ANIMATION",
       "source_asset_ids": [
-        "img_d2cc74ba7e3f"
+        "img_c3520a740522"
       ],
-      "shot_goal": "Deliver the reversal geometrically — leave the tidy drawer behind and settle on the heap, so the frame praises the thing the last shot was judging.",
-      "frame_composition": "The same flat illustration, opened out so both halves share the frame: at the left edge the slate-blue cabinet with its open drawer of upright folders, at the right a pale desk corner carrying a loose, sprawling heap of scattered white sheets fanned at broken angles, no two aligned. The crop ends on the heap, with the drawer only clipping the frame's edge. Muted slate, cream and tan flat illustration, soft shadowless light, open desk surface below the papers.",
-      "motion_plan": "A lateral pan that leaves the drawer and travels right across the desk, decelerating as it arrives on the sprawling heap and coming to rest there with a slight inward settle — the move itself performs the reversal, abandoning order mid-frame and stopping on the mess.",
-      "text_overlay": "smarter than any filing system",
-      "source_support": "The asset's own suggested motion is a slow pan from the tidy drawer to the messy pile with a gentle push-in on the loose papers, and its composition notes describe exactly this left-right order-versus-disorder staging. The asset's uncertainties note the red or orange object in the pile could be a marker, a folder edge or a highlighted document, so no such element is described or singled out; framing stays within the story art region and clear of the app chrome.",
-      "video_candidate_rank": 4,
-      "video_motion_intent": "A genuine camera move rather than a slid still: a short, slightly handheld glide off the cabinet onto the desk, with the loose sheets settling and one top corner drifting as the air moves past, ending stopped on the heap. The narration here is one short punchy line, well suited to a brief clip, and real parallax between the near desk edge and the cabinet behind would make the abandonment of the tidy half feel decisive.",
-      "scene_content_fingerprint": "60baf0cfa3ef28c4743120315a2c3b5e3e76132329874f3c0c1aa6ac4db5d23a",
-      "start_seconds": 18.2,
-      "end_seconds": 23.96,
+      "shot_goal": "Separate a shrunken list from a finished job: real progress on the small things, zero on the big one.",
+      "frame_composition": "Close-medium overhead-angled shot of the desktop only, warm lamp light from frame right. The clutter of small objects has dwindled to a neat, tidy remainder at the left edge — three flattened envelopes squared into a stack and the ring of keys hung on a hook — leaving a wide sweep of bare pale wood. Occupying the right two thirds and the focal centre sits the same large cardboard box, lifted onto the desk now, its teal packing tape still running unbroken across the lid. Soft cocoa shadow under the box, cream wall visible along the top edge.",
+      "motion_plan": "Gentle drift from the tidy stack at the left across the bare wood and settling on the sealed lid of the box, with a slight scale-up as it settles.",
+      "text_overlay": "aren't the same thing",
+      "source_support": "Scene 3 and Card 2 state the day was not laziness and the list genuinely shrank, but a short list and a finished project are not the same. The tidied remainder shows the shrinking; the unbroken tape shows the unfinished project. No cause is pictured, since the card only announces one.",
+      "video_candidate_rank": null,
+      "video_motion_intent": "",
+      "shows_character": false,
+      "scene_content_fingerprint": "12ee11f229486e5bc9d42ec446bc65fcd3ff115ec35e8deed8b34a32655c564d",
+      "start_seconds": 17.36,
+      "end_seconds": 27.84,
       "primary_subtitle_cue_ids": [
+        "cue_009",
         "cue_010",
         "cue_011",
-        "cue_012"
+        "cue_012",
+        "cue_013"
       ],
-      "fade_in_frames": 6,
-      "fade_out_frames": 10,
+      "fade_in_frames": 14,
+      "fade_out_frames": 6,
       "still_motion": {
-        "scale_from": 1.14,
-        "scale_to": 1.1,
-        "translate_x_from": 10.0,
-        "translate_x_to": -10.0,
+        "scale_from": 1.0,
+        "scale_to": 1.07,
+        "translate_x_from": 3.0,
+        "translate_x_to": -3.0,
         "translate_y_from": 0.0,
         "translate_y_to": 0.0,
         "easing": "ease"
@@ -113,72 +117,75 @@
     {
       "sequence": 4,
       "generation_mode": "STILL",
-      "visual_treatment": "SUBTLE_ANIMATION",
+      "visual_treatment": "AI_VIDEO_CANDIDATE",
       "source_asset_ids": [
-        "img_147f6f9dc35d"
+        "img_544417835e97"
       ],
-      "shot_goal": "Show the viewer their own habit as a mechanism — contact with the top of the stack, then the sense of layers rising and sinking beneath it.",
-      "frame_composition": "Vertical crop on the right of the wooden-table illustration: a pale illustrated hand and forearm entering from the right edge, fingers at the corner of a sheet at the top of a modest stack of loose white papers, held at the moment of contact. The layered cut edges of the stack are visible along its near side against the light wood-grain tabletop, whose diagonal edge leads toward the hand. At the far left of frame a pale plate holding a layered sandwich sits softly at the crop boundary. Flat illustration, warm wood tones with slate-blue line work, clean tabletop space above the stack.",
-      "motion_plan": "Push in gently toward the point of contact while a soft band of light travels upward through the layered edges of the stack, passing sheet by sheet from the bottom of the stack to the top and fading as it reaches the surface — the rising and sinking suggested by light alone, the hand itself holding its position.",
-      "text_overlay": "What you never need sinks",
-      "source_support": "The asset shows the illustrated hand and forearm entering from the right with fingers pinching the corner of a page at the top of a paper stack on a light wooden table, with plates at the left, and its suggested motion includes a push-in on the stack edge and a subtle highlight travelling up the stack to show a sheet rising. The asset's uncertainties note it is ambiguous whether the hand is removing or replacing a page, so the frame describes only contact at the top of the stack and never a completed pull or drop; the orange-red element at the page corner is flagged as ambiguous and is not described.",
-      "video_candidate_rank": 1,
-      "video_motion_intent": "This is the only beat where the mechanism is a physical action, and a still can only imply it. I want the hand to complete one unhurried cycle — the top sheet lifting free, hovering, then settling back down onto the surface of the stack with the sheets beneath shifting fractionally to absorb it — so the audience sees the sorting happen instead of being told about it. Modest amplitude, one repetition, camera nearly locked so all the motion belongs to the paper.",
-      "scene_content_fingerprint": "e872ddccf7fdcf8572eb0f3a4b1b7e3ec7235497e350e0ee3a665ee43bd18097",
-      "start_seconds": 23.96,
-      "end_seconds": 35.76,
+      "shot_goal": "Set up the experiment as a small physical puzzle: two heavy buckets, one underfoot, one far down the hall.",
+      "frame_composition": "Wide, symmetrical eye-level shot down a plain, bare corridor with cream walls, a pale grey floor and a simple open doorway at the far end. In the immediate foreground, bottom-left of frame, a heavy muted-teal bucket sits squat on the floor, close enough to read as within arm's reach. Far down the corridor, small in the distance and just short of the doorway, an identical teal bucket waits. No people, no furniture, nothing else in the corridor. Cool even daylight spills from the far doorway toward the camera, each bucket casting one short soft shadow.",
+      "motion_plan": "Slow, steady push straight down the centre of the corridor, so the far bucket grows slightly while the near bucket stays anchored at the bottom edge of frame.",
+      "text_overlay": "",
+      "source_support": "Scene 4 and Card 3 describe researchers asking people to carry one of two heavy buckets down a hallway, one beside them and one waiting near the finish. The corridor and two identical buckets are exactly that setup and nothing more; no researchers, institution or outcome is shown, since the card names none and its own illustration is clipped and unidentifiable.",
+      "video_candidate_rank": 2,
+      "video_motion_intent": "A single slow forward dolly down the empty corridor with nothing else moving — the creeping distance to the far bucket is the whole point of the beat, and only real motion makes that stretch of hallway feel long.",
+      "shows_character": false,
+      "scene_content_fingerprint": "6b5ea52127067f69c8fb2f98b4c4135de23566a7f4cc76ba75b4b150fadaf35c",
+      "start_seconds": 27.84,
+      "end_seconds": 37.52,
       "primary_subtitle_cue_ids": [
-        "cue_013",
         "cue_014",
         "cue_015",
         "cue_016",
-        "cue_017"
+        "cue_017",
+        "cue_018"
       ],
-      "fade_in_frames": 10,
-      "fade_out_frames": 9,
+      "fade_in_frames": 6,
+      "fade_out_frames": 5,
       "still_motion": {
-        "scale_from": 1.06,
-        "scale_to": 1.22,
-        "translate_x_from": -8.0,
-        "translate_x_to": -4.0,
+        "scale_from": 1.0,
+        "scale_to": 1.1,
+        "translate_x_from": 0.0,
+        "translate_x_to": 0.0,
         "translate_y_from": 0.0,
-        "translate_y_to": -2.0,
-        "easing": "easeOut"
+        "translate_y_to": -1.0,
+        "easing": "linear"
       },
       "video_promotion_decided": true
     },
     {
       "sequence": 5,
-      "generation_mode": "STILL",
-      "visual_treatment": "SUBTLE_ANIMATION",
+      "generation_mode": "VEO",
+      "visual_treatment": "AI_VIDEO_CANDIDATE",
       "source_asset_ids": [
-        "img_dfbe58da82c4"
+        "img_544417835e97"
       ],
-      "shot_goal": "State the machine parallel visually — the glowing hardware and the drawer of files made equivalent by a line drawn between them.",
-      "frame_composition": "The darkest frame of the set: a dim interior with a boxy cream-and-dark chassis on the left, its front panel covered in ventilation slots with a glowing amber strip running down the middle, and on the right an open metal drawer densely packed with upright tan and cream tabbed folders. A pale desk or shelf plane catches a little light in the lower left; a thin red-orange diagonal line runs across the lower part of the frame between the two objects. Flat illustration, near-black background, the amber glow and the red-orange line the only bright accents.",
-      "motion_plan": "Hold wide and dim while the amber strip pulses slowly, brightening and falling like a slow breath; the thin red-orange line draws itself from the chassis across the gap toward the drawer, and the frame drifts gently rightward along that line so the move ends resting on the packed folders.",
-      "text_overlay": "",
-      "source_support": "The asset's art pairs the slotted chassis and its glowing amber bar with an open drawer of tabbed folders joined by a thin red diagonal line, and its suggested motion lists pulsing the amber indicator and animating the red line drawing from the machine to the drawer. The asset's uncertainties note the left device could be read as a vintage computer, a server or a tape or disk unit, so the frame describes only its physical form — a boxy slotted chassis with an amber strip — and does not identify what kind of machine it is.",
-      "video_candidate_rank": 3,
-      "video_motion_intent": "Atmosphere carries this beat: I want the amber strip to genuinely glow and pulse with light spilling onto the surrounding dark surfaces, faint flicker across the ventilation slots, and the thin red-orange line actually drawing itself across the gap toward the folder tabs in one continuous stroke. Live light is the whole point of the shot — a moving still cannot make the machine feel powered — and the two-sentence narration is short enough to fit a generated clip.",
-      "scene_content_fingerprint": "2bc1a9c7bbc6ec48398471b0565c259f4b269be9c3ddf6f7d06100cac867b198",
-      "start_seconds": 35.76,
-      "end_seconds": 44.2,
+      "shot_goal": "Deliver the reversal physically: the near bucket gets grabbed and hauled the entire length anyway.",
+      "frame_composition": "Medium-wide shot from behind, in the same bare cream corridor. An anonymous study participant — a broad-shouldered stranger in a plain grey work shirt and dark trousers, back fully to camera, face never visible, clearly not the person from the desk scenes — trudges away down the middle of the corridor, body leaning to counterweight the heavy muted-teal bucket dragging down their right arm. Their near-side shoulder is dropped and their gait is laboured. Ahead of them, still untouched beside the far doorway, the second identical teal bucket waits. The empty patch of floor they started from is visible at the bottom of frame. Flat daylight from the far doorway, long shadow trailing back toward camera.",
+      "motion_plan": "Camera holds steady while the frame drifts forward a little behind the walking figure, keeping the untouched far bucket visible ahead of them the whole way.",
+      "text_overlay": "lugged it the whole way",
+      "source_support": "Scene 5 and Card 3 state the far bucket was the easier carry yet almost everyone grabbed the near one and lugged it the whole way. The strain and the still-untouched far bucket show only that. The participant is anonymous and faceless because the card names no individual and no likeness may be drawn.",
+      "video_candidate_rank": 1,
+      "video_motion_intent": "The figure takes a few slow laboured steps away from camera, bucket swinging slightly at their side, camera easing forward behind them. One simple natural action in one direction — the physical waste of effort is the reversal, and it only truly reads when you watch the carry continue.",
+      "shows_character": false,
+      "scene_content_fingerprint": "5c9805e73045d6b933196c069c6632d951ba2b5b48cd1cb2214422f3365a81a4",
+      "start_seconds": 37.52,
+      "end_seconds": 45.32,
       "primary_subtitle_cue_ids": [
-        "cue_018",
         "cue_019",
         "cue_020",
-        "cue_021"
+        "cue_021",
+        "cue_022",
+        "cue_023"
       ],
-      "fade_in_frames": 14,
-      "fade_out_frames": 7,
+      "fade_in_frames": 5,
+      "fade_out_frames": 10,
       "still_motion": {
-        "scale_from": 1.08,
-        "scale_to": 1.14,
-        "translate_x_from": 6.0,
-        "translate_x_to": -5.0,
-        "translate_y_from": 0.0,
-        "translate_y_to": 0.0,
+        "scale_from": 1.04,
+        "scale_to": 1.12,
+        "translate_x_from": 0.0,
+        "translate_x_to": 0.0,
+        "translate_y_from": 1.0,
+        "translate_y_to": -1.0,
         "easing": "ease"
       },
       "video_promotion_decided": true
@@ -186,68 +193,112 @@
     {
       "sequence": 6,
       "generation_mode": "STILL",
-      "visual_treatment": "CROP_AND_RECOMPOSE",
+      "visual_treatment": "MIXED",
       "source_asset_ids": [
-        "img_dfbe58da82c4"
+        "img_544417835e97",
+        "img_ea8d31906663"
       ],
-      "shot_goal": "Reframe the tidy filing drawer as labour rather than order, so the cost of a full sort registers before the closing line.",
-      "frame_composition": "Tight vertical recompose on the right portion of the same dim illustration: the open metal drawer filling most of the frame, its upright tan and cream folders pressed together in a dense unbroken rank of tabs receding into the drawer, each tab a small blank plane. The chassis and the connecting line are cropped away; only the drawer, its metal front edge and the dark surround remain. Flat illustration, low-key lighting, cool metal against warm folder tones, faint amber spill from off frame at the left edge.",
-      "motion_plan": "Slow, steady push-in on the ranks of folder tabs, accelerating very slightly so the rows seem to multiply and press toward the lens, with no lateral drift — the move should start as admiration and end as fatigue.",
-      "text_overlay": "hours to save seconds",
-      "source_support": "The asset's art region includes the open filing drawer densely packed with upright tabbed folders, and its suggested motion explicitly lists a slow push-in on the folder tabs; its recommended crop strategy supports recomposing to that side of the frame. The tabs are described as blank planes only in the sense of form and no label wording is asserted; the crop stays inside the story art region, clear of the app chrome and above the bottom screen clip where the red line runs off frame.",
+      "shot_goal": "Name the reflex on the exact instant it happens — the hand closing on whatever is nearest.",
+      "frame_composition": "Tight close-up, low to the floor, of one hand clamped hard around the wire handle of the muted-teal bucket, knuckles tight and the handle already lifting so the bucket's base has just cleared the ground. Only the hand and forearm in a plain grey sleeve are in frame; no face, no body. Behind the hand the corridor falls away shallow and softly blurred, with the second teal bucket a small unfocused shape far down the hall. Cool daylight from the far end rims the top of the handle. Wide soft-focus cream space above the hand.",
+      "motion_plan": "Hold nearly static on the gripping hand with the faintest scale-up, letting the blurred far bucket stay small and unreachable behind it.",
+      "text_overlay": "pre-crastination",
+      "source_support": "Scene 6 pairs Card 3's 'extra effort just to start doing something a few seconds sooner' with Card 4's naming of the reflex. The grabbing hand pictures the urge to begin immediately; the term itself is delivered as overlay and narration. No author is depicted, since the source card shows only surnames and establishes no identity.",
       "video_candidate_rank": null,
       "video_motion_intent": "",
-      "scene_content_fingerprint": "1396a50d1eb9ab3604fce432dfa2e3d18ec752f449446ec59ebac9ba03534fd8",
-      "start_seconds": 44.2,
-      "end_seconds": 50.2,
+      "shows_character": false,
+      "scene_content_fingerprint": "9d8c5f5a00006ca8a78ce57810f256125d0391c8fcf36e934825acc6fbefce5c",
+      "start_seconds": 45.32,
+      "end_seconds": 54.59,
       "primary_subtitle_cue_ids": [
-        "cue_022",
-        "cue_023",
-        "cue_024"
+        "cue_024",
+        "cue_025",
+        "cue_026",
+        "cue_027",
+        "cue_028"
       ],
-      "fade_in_frames": 7,
+      "fade_in_frames": 5,
       "fade_out_frames": 12,
       "still_motion": {
-        "scale_from": 1.1,
-        "scale_to": 1.32,
-        "translate_x_from": -8.0,
-        "translate_x_to": -11.0,
+        "scale_from": 1.0,
+        "scale_to": 1.05,
+        "translate_x_from": 0.0,
+        "translate_x_to": 0.0,
         "translate_y_from": 0.0,
-        "translate_y_to": -1.0,
-        "easing": "ease"
+        "translate_y_to": 0.5,
+        "easing": "easeOut"
       },
       "video_promotion_decided": true
     },
     {
       "sequence": 7,
-      "generation_mode": "VEO",
-      "visual_treatment": "USE_EXISTING_ART",
+      "generation_mode": "STILL",
+      "visual_treatment": "SUBTLE_ANIMATION",
       "source_asset_ids": [
-        "img_6efadeef1501"
+        "img_ea8d31906663"
       ],
-      "shot_goal": "Return to the opening desk unchanged and let the widened, warmer frame hand the guilt back — same object, read differently.",
-      "frame_composition": "The opening desk illustration shown whole and wide: the wooden desk with its tall stack of white sheets and tan folders standing calmly at the left, the angled lamp and red-topped stapler at the right, faint coffee rings on the grain, and behind it the window with its flat blue and tan skyline. The pale diagonal shaft of daylight lies broadly across the desk and the stack. Nothing is moved or tidied. Flat illustration, muted cream and slate-blue palette, generous quiet space above the desk.",
-      "motion_plan": "A slow, settling pull-back from the slightly closer framing of the previous desk imagery to the full scene, decelerating to a near stop as the daylight broadens across the desk — an exhale rather than a reveal, ending completely still before the fade.",
-      "text_overlay": "Your mess was already a system",
-      "source_support": "This is the first asset's own artwork, returned to unaltered: the towering stack of papers and folders, the lamp, the stapler, the city window and the shaft of daylight are all in its visual description, and its vertical video suitability is high with the art region sitting clear of the app chrome. Only this asset is cited because it is the only artwork on screen; the closing line's idea comes from the other page's body text rather than from any image, so that page is not credited with visuals it does not contain.",
-      "video_candidate_rank": 5,
-      "video_motion_intent": "A very short beat, which suits generation well: I want only the daylight to move — the shaft broadening and warming across the desk and up the side of the stack as the frame comes to rest, with the faintest settle in the topmost sheets. Nothing is cleared or straightened. Real light movement over a static desk is what makes the final image feel forgiven rather than merely repeated.",
-      "scene_content_fingerprint": "32c270534b0723078dabbadcc631bd9c2115f8f691c12a936b7541a38713d35b",
-      "start_seconds": 50.2,
-      "end_seconds": 53.32,
+      "shot_goal": "Carry the reflex back to the desk: many light things counted, one heavy thing never weighed.",
+      "frame_composition": "Close-medium shot of the recurring character at the pale-wood desk, cropped from chest to hands, head slightly bowed and out of the top of frame's focus. Both cupped hands are full of a heap of small smooth pale pebbles, a few spilling over the edge of their palms and scattering across the desktop. Resting alone on the bare wood to their right, ignored and untouched by either hand, sits one large dark river stone, heavy enough to press a shadow into the wood. Warm lamp light from frame right, cream wall behind, wide empty space at the top of the frame.",
+      "motion_plan": "Slow drift right from the overflowing handful of pebbles toward the single heavy stone, easing to a stop on the stone.",
+      "text_overlay": "counting tasks, not weighing them",
+      "source_support": "Scene 7 and Card 4 say the busy day ran on the same instinct because it optimised for the number of tasks instead of their weight. Many light pebbles gathered versus one heavy stone untouched pictures count against weight as physical objects, with no chart, figure or added claim.",
+      "video_candidate_rank": null,
+      "video_motion_intent": "",
+      "shows_character": true,
+      "scene_content_fingerprint": "bfb49ad625edf0e9f096b399fcfee7ebbbe5f3fee780dfb3568463e6a8dcde2f",
+      "start_seconds": 54.59,
+      "end_seconds": 61.51,
       "primary_subtitle_cue_ids": [
-        "cue_025"
+        "cue_029",
+        "cue_030",
+        "cue_031",
+        "cue_032"
       ],
-      "fade_in_frames": 16,
-      "fade_out_frames": 30,
+      "fade_in_frames": 12,
+      "fade_out_frames": 8,
       "still_motion": {
-        "scale_from": 1.14,
-        "scale_to": 1.02,
-        "translate_x_from": 3.0,
-        "translate_x_to": 0.0,
-        "translate_y_from": 2.0,
+        "scale_from": 1.06,
+        "scale_to": 1.0,
+        "translate_x_from": -4.0,
+        "translate_x_to": 4.0,
+        "translate_y_from": 0.0,
         "translate_y_to": 0.0,
-        "easing": "ease"
+        "easing": "easeOut"
+      },
+      "video_promotion_decided": true
+    },
+    {
+      "sequence": 8,
+      "generation_mode": "VEO",
+      "visual_treatment": "AI_VIDEO_CANDIDATE",
+      "source_asset_ids": [
+        "img_ea8d31906663"
+      ],
+      "shot_goal": "Close on the repeatable decision: choose the heavy thing first, deliberately, before the day starts.",
+      "frame_composition": "Medium shot of the recurring character at the same desk the next morning, seen three-quarters from the front, calm and unhurried. They have swept the small objects — the flattened envelopes, the keys, the muted teal mug — to the far left edge of the desk, and with both hands they are setting the large cardboard box down squarely in the clear centre of the desktop, directly in front of themselves, fingers resting on its still-sealed lid. Clean early-morning light comes from the window frame left, pale and even, with a short soft shadow under the box. Generous empty cream wall across the top third of the frame.",
+      "motion_plan": "Slow steady push-in on the character and the centred box, settling and holding on their hands resting on the lid.",
+      "text_overlay": "the easy wins eat your day",
+      "source_support": "Scene 8 and Card 4 close on deciding what you are actually trying to win before choosing what to do first, or the easy wins eat the day. Placing the big sealed box at the centre and the small objects aside shows that single decision, using props already established in earlier shots; no outcome or reward is depicted.",
+      "video_candidate_rank": 4,
+      "video_motion_intent": "The character lowers the box the last few inches onto the desk and rests both hands on the lid, camera easing in slightly as they settle. One short, decisive natural action that turns the closing line into something the viewer watches someone actually do.",
+      "shows_character": true,
+      "scene_content_fingerprint": "bb71299eb1eb45194e65a9b7fb509c6c7a5ad2f8ea31a2bdde9cf1a70bfb32e3",
+      "start_seconds": 61.51,
+      "end_seconds": 67.19,
+      "primary_subtitle_cue_ids": [
+        "cue_033",
+        "cue_034",
+        "cue_035"
+      ],
+      "fade_in_frames": 8,
+      "fade_out_frames": 24,
+      "still_motion": {
+        "scale_from": 1.0,
+        "scale_to": 1.08,
+        "translate_x_from": 0.0,
+        "translate_x_to": 0.0,
+        "translate_y_from": 1.0,
+        "translate_y_to": -1.0,
+        "easing": "easeOut"
       },
       "video_promotion_decided": true
     }
@@ -255,13 +306,14 @@
   "quality_review": {
     "verdict": "APPROVE",
     "ready_for_generation": true,
-    "confidence": 0.9,
+    "confidence": 0.87,
     "scores": {
       "source_fidelity": 9,
       "generation_mode_appropriateness": 9,
       "visual_coherence": 9,
       "narrative_alignment": 9,
-      "internal_consistency": 9
+      "internal_consistency": 10
     }
-  }
+  },
+  "source_mode": "content"
 }

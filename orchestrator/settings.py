@@ -130,6 +130,14 @@ DEFAULT_CLAUDE_MODEL = "claude-opus-5"
 STORY_SKILLS = ("story-craft", "story-craft-easy")
 DEFAULT_STORY_SKILL = "story-craft"
 
+# What the source screenshots provide. "content_and_images" (default) is
+# today's pipeline: stills and Veo seeds are recomposed from the screenshots'
+# own artwork. "content" treats them as text only: the visual agent invents
+# every picture, and images are drawn from its descriptions, never from the
+# screenshot pixels.
+SOURCE_MODES = ("content_and_images", "content")
+DEFAULT_SOURCE_MODE = "content_and_images"
+
 # Recurring-character reference images. Empty string disables the feature and
 # reproduces the pre-character behaviour exactly (one image per Gemini edit).
 DEFAULT_CHARACTER_REFERENCE_PATH = "assets/character/character.png"
@@ -192,7 +200,14 @@ class Settings:
     # defaults both to `claude_model`.
     critic_model: str = DEFAULT_CLAUDE_MODEL
     reviewer_model: str = DEFAULT_CLAUDE_MODEL
+    # Loaded here so a bad value stops the run at startup. Code reads them with
+    # `story_skill_setting()` / `source_mode_setting()`, the one source the
+    # agents, contracts and image tools share.
     story_skill: str = DEFAULT_STORY_SKILL
+    source_mode: str = DEFAULT_SOURCE_MODE
+    # SOURCE_MODE=content only: the file in styles/ the reel is drawn in. Set
+    # from `run --style`, not from the environment.
+    visual_style: str = "flat_editorial"
     character_reference_path: str = DEFAULT_CHARACTER_REFERENCE_PATH
     character_face_reference_path: str = DEFAULT_CHARACTER_FACE_REFERENCE_PATH
     character_turnaround_reference_path: str = DEFAULT_CHARACTER_TURNAROUND_REFERENCE_PATH
@@ -274,6 +289,19 @@ def story_skill_setting() -> str:
     return raw
 
 
+def source_mode_setting() -> str:
+    """What the screenshots provide, named by `SOURCE_MODE`, validated.
+
+    A plain function for the same reason as `story_skill_setting`: the image
+    tools read it without a full settings load.
+    """
+
+    raw = _str_setting("SOURCE_MODE", DEFAULT_SOURCE_MODE).strip().lower()
+    if raw not in SOURCE_MODES:
+        raise SettingsError(f"SOURCE_MODE={raw!r} is not one of {', '.join(SOURCE_MODES)}")
+    return raw
+
+
 def image_call_cost_for_provider(provider: str) -> float:
     """Per-image budget reservation for the selected provider.
 
@@ -345,6 +373,7 @@ def load_settings() -> Settings:
         critic_model=_str_setting("CRITIC_MODEL", claude_model),
         reviewer_model=_str_setting("REVIEWER_MODEL", claude_model),
         story_skill=story_skill_setting(),
+        source_mode=source_mode_setting(),
         character_reference_path=os.getenv(
             "CHARACTER_REFERENCE_PATH", DEFAULT_CHARACTER_REFERENCE_PATH
         ),

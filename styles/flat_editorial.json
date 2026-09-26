@@ -1,0 +1,20 @@
+{
+  "name": "flat_editorial",
+  "description": "Flat editorial illustration: clean vector shapes, even confident outlines, large simple forms, one clear visual metaphor per frame, soft paper grain over flat fills",
+  "palette": [
+    "warm cream",
+    "deep navy",
+    "muted teal",
+    "soft tan",
+    "one coral accent"
+  ],
+  "lighting": "one soft directional light source, gentle shadows, no gradients beyond a single light wash",
+  "mood": "calm, thoughtful, quietly confident, with generous empty space around one focal subject",
+  "avoid": [
+    "photorealism",
+    "any text, letters, numbers or logos",
+    "the name or look of a real artist",
+    "heavy texture",
+    "busy backgrounds"
+  ]
+}

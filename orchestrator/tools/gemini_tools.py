@@ -32,7 +32,7 @@ from orchestrator.progress import log
 from orchestrator.contracts.stills import STILLS_DIR, StillFailureContract, StillResultContract
 from orchestrator.contracts.veo import VeoFailureContract, VeoSeedContract, sha256_file, shot_fingerprint
 from orchestrator.contracts.visual_plan import Shot
-from orchestrator.settings import load_settings
+from orchestrator.settings import load_settings, source_mode_setting
 from orchestrator.workspace import resolve_shared_asset
 from orchestrator.state.voice_cache import TTS_MODEL, TTS_VOICE_NAME, selected_voice_name
 from orchestrator.tools.deterministic_tools import tokenize
@@ -248,6 +248,72 @@ def extract_generated_image(response) -> tuple[Image.Image | None, str]:
     return None, "\n".join(text_parts).strip()
 
 
+VISUAL_PLAN_FILE = Path("metadata/visual_plan.json")
+
+
+def persisted_shot_direction(sequence: int) -> tuple[str, bool]:
+    """The reel's style guide and this shot's `shows_character`, from the saved plan.
+
+    Read from the file the visual agent's validated plan was written to, not
+    from the shot the agent relays into the tool call -- same rule as
+    `authoritative_asset`: what decides the picture is not agent output. The
+    plan always exists by the time a shot is made, so a missing one is an
+    error rather than a silent reel with no style.
+    """
+
+    plan = json.loads(VISUAL_PLAN_FILE.read_text(encoding="utf-8"))
+    for shot in plan.get("shots") or []:
+        if shot.get("sequence") == sequence:
+            return str(plan.get("overall_visual_style") or ""), bool(shot.get("shows_character"))
+    raise ValueError(f"Shot {sequence} is not in {VISUAL_PLAN_FILE}")
+
+
+def build_content_prompt(shot: Shot, subtitle_text: str, style: str, *, purpose: str) -> str:
+    """The SOURCE_MODE=content request: draw the planned scene from scratch.
+
+    No screenshot description goes in: the screenshots are text pages, and
+    describing one invites the model to draw a phone, a page, or its words.
+    """
+
+    return (
+        f"Create a brand-new {purpose}. There is no source picture: draw the scene "
+        "described below from scratch. "
+        f"Style guide for the whole reel, follow it exactly: {style.strip().rstrip('.')}. "
+        "Do not drift to photorealism unless the style guide asks for it. Show exactly one "
+        "instance of the focal subject -- do not duplicate the same subject or scene twice in "
+        "frame. Do not include any visible text, letters, numbers, logos, or watermarks. "
+        f"Shot goal: {shot.shot_goal}. "
+        f"Required composition: {shot.frame_composition}. "
+        f"Planned motion context: {shot.motion_plan}. "
+        f"Narration context (for mood and meaning only, never to be written into the image): "
+        f"{subtitle_text.strip()}. "
+    )
+
+
+def _image_spec(
+    shot: Shot, asset: dict, source_path: Path, ladder: list[dict], *,
+    send_source_image: bool, output_path: Path,
+) -> dict:
+    """The request both image tools hand to `run_image_edit_ladder`.
+
+    `source_image_path` stays the cited screenshot even when its pixels are
+    not sent, because the seed and still records name the page each picture
+    came from.
+    """
+
+    return {
+        "shot_sequence": shot.sequence,
+        "shot_fingerprint": shot_fingerprint(shot),
+        "source_asset_id": asset["asset_id"],
+        "source_image_path": str(source_path),
+        "send_source_image": send_source_image,
+        "output_image_path": str(output_path),
+        "prompt": ladder[0]["prompt"],
+        "character_reference_paths": list(ladder[0]["reference_image_paths"]),
+        "prompt_ladder": ladder,
+    }
+
+
 def build_seed_spec(
     shot: dict, asset: dict, subtitle_text: str, start_level: int = 0
 ) -> dict:
@@ -265,6 +331,17 @@ def build_seed_spec(
     source_path = Path(str(asset.get("source_path", "")))
     if not source_path.is_file():
         raise FileNotFoundError(f"Seed source image does not exist: {source_path}")
+
+    if source_mode_setting() == "content":
+        style, _ = persisted_shot_direction(validated_shot.sequence)
+        prompt = build_content_prompt(
+            validated_shot, subtitle_text, style,
+            purpose="clean, complete 9:16 production frame for image-to-video generation",
+        )
+        full_ladder = build_prompt_ladder(prompt, asset, content_sequence=validated_shot.sequence)
+        ladder = full_ladder[min(max(start_level, 0), len(full_ladder) - 1):]
+        return _image_spec(validated_shot, asset, source_path, ladder, send_source_image=False,
+                           output_path=VEO_SEED_DIR / f"shot_{validated_shot.sequence:02d}_seed.png")
 
     analysis = asset.get("analysis", {})
     visual = analysis.get("visual", {})
@@ -485,6 +562,21 @@ def character_reference_paths_for_asset(asset: dict) -> list[Path]:
     return resolve_character_references()
 
 
+def character_reference_paths_for_shot(asset: dict, sequence: int) -> list[Path]:
+    """Character references for this shot, by the rule its SOURCE_MODE uses.
+
+    With screenshot artwork the character replaces a person the asset already
+    draws; with content only, the saved plan's `shows_character` decides. The
+    image tools and the independent reviewer both ask here, so they can never
+    disagree about whether a shot carries the character.
+    """
+
+    if source_mode_setting() == "content":
+        _, shows_character = persisted_shot_direction(sequence)
+        return resolve_character_references() if shows_character else []
+    return character_reference_paths_for_asset(asset)
+
+
 def describe_empty_image_response(response, model_text: str) -> str:
     """Summarise why an image-edit call came back without an image."""
 
@@ -553,7 +645,36 @@ FINAL_NO_TEXT_RULE = (
 CHARACTER_PROMPT_LEVELS = 2
 
 
-def build_prompt_ladder(base_prompt: str, asset: dict) -> list[dict]:
+def build_content_character_block(reference_count: int) -> str:
+    """SOURCE_MODE=content: the scene's main person is the character.
+
+    There is no scene image, so the references are the only images sent and
+    are named as references, not by position. Starts with the same marker as
+    `build_character_prompt_block`, which the Codex prompt splits on.
+    """
+
+    face = (
+        "The second reference is a close-up of that same character's face and is the "
+        "authority on their facial features -- follow it exactly for the face. "
+        if reference_count >= 2 else ""
+    )
+    return (
+        "CHARACTER SUBSTITUTION. The attached image(s) are character references only, not a "
+        "scene -- never copy their plain background, standing pose, framing, crop, or layout. "
+        + face
+        + "The main person in the scene above is this character. Draw them with the character's "
+        "exact face: same face shape, eyes, eyebrows, nose, mouth, beard, hairstyle, hair colour "
+        "and skin tone. The face must be clearly visible, in focus, and detailed enough to "
+        "recognise -- never faceless, blank, featureless, blurred, hidden, or turned away, and "
+        "never simplified into dots or a plain oval. Draw the character in the character "
+        "reference's own illustration style and everything else in the reel's style guide. "
+        "Show the character once only; add no duplicate of them anywhere in the frame. "
+    )
+
+
+def build_prompt_ladder(
+    base_prompt: str, asset: dict, *, content_sequence: int | None = None,
+) -> list[dict]:
     """Prompt variants to try in order, strongest first.
 
     The image model's likeness filter refuses some combinations outright
@@ -566,6 +687,23 @@ def build_prompt_ladder(base_prompt: str, asset: dict) -> list[dict]:
       1  character + the source's own pose      (no face invented)
       2  no character                           (scene still renders)
     """
+
+    if content_sequence is not None:
+        # SOURCE_MODE=content: the plan, not the screenshot, says whether the
+        # character is in this shot. Rungs: with the character, then without.
+        character_paths = character_reference_paths_for_shot(asset, content_sequence)
+        ladder = [{
+            "level": 0,
+            "prompt": base_prompt + build_content_character_block(len(character_paths))
+            + FINAL_NO_TEXT_RULE,
+            "reference_image_paths": [str(path) for path in character_paths],
+        }] if character_paths else []
+        ladder.append({
+            "level": CHARACTER_PROMPT_LEVELS,
+            "prompt": base_prompt + FINAL_NO_TEXT_RULE,
+            "reference_image_paths": [],
+        })
+        return ladder
 
     character_paths = character_reference_paths_for_asset(asset)
     description = focal_figure_description(authoritative_asset(asset))
@@ -590,7 +728,7 @@ def build_prompt_ladder(base_prompt: str, asset: dict) -> list[dict]:
 def run_gemini_image_edit(
     client: genai.Client,
     *,
-    source_image_path: Path,
+    source_image_path: Path | None,
     prompt: str,
     model: str,
     reference_image_paths: Sequence[Path] = (),
@@ -602,9 +740,12 @@ def run_gemini_image_edit(
     never drift between them.
     """
 
-    if not source_image_path.is_file():
-        raise FileNotFoundError(f"Source image does not exist: {source_image_path}")
-    source_image = Image.open(source_image_path).convert("RGB")
+    # None for SOURCE_MODE=content: the picture is drawn from the prompt alone.
+    scene_images = []
+    if source_image_path is not None:
+        if not source_image_path.is_file():
+            raise FileNotFoundError(f"Source image does not exist: {source_image_path}")
+        scene_images.append(Image.open(source_image_path).convert("RGB"))
     # Scene first: Gemini image-edit treats the leading image as the plate being
     # edited, so a reference in front of it invites an edited portrait instead
     # of an edited scene.
@@ -626,7 +767,7 @@ def run_gemini_image_edit(
                 _pace_image_call()
                 response = client.models.generate_content(
                     model=model,
-                    contents=[source_image, *reference_images, prompt],
+                    contents=[*scene_images, *reference_images, prompt],
                     config=types.GenerateContentConfig(
                         response_modalities=[types.Modality.TEXT, types.Modality.IMAGE],
                     ),
@@ -734,6 +875,17 @@ def build_still_spec(shot: dict, asset: dict, subtitle_text: str) -> dict:
     if not source_path.is_file():
         raise FileNotFoundError(f"Still source image does not exist: {source_path}")
 
+    if source_mode_setting() == "content":
+        style, _ = persisted_shot_direction(validated_shot.sequence)
+        prompt = build_content_prompt(
+            validated_shot, subtitle_text, style,
+            purpose="standalone vertical 9:16 editorial illustration for a cinematic short-form "
+            "reel. Leave clean visual space for later Remotion subtitles and typography",
+        )
+        ladder = build_prompt_ladder(prompt, asset, content_sequence=validated_shot.sequence)
+        return _image_spec(validated_shot, asset, source_path, ladder, send_source_image=False,
+                           output_path=STILLS_DIR / f"shot_{validated_shot.sequence:02d}.png")
+
     analysis = asset.get("analysis", {})
     visual = analysis.get("visual", {})
     production = analysis.get("production", {})
@@ -775,7 +927,7 @@ def _run_image_edit(
     provider: str,
     *,
     client: genai.Client | None,
-    source_image_path: Path,
+    source_image_path: Path | None,
     prompt: str,
     model: str,
     reference_image_paths: Sequence[Path],
@@ -822,7 +974,8 @@ def run_image_edit_ladder(
     retried inside `run_gemini_image_edit`, and any other error propagates.
     """
 
-    source_path = Path(spec["source_image_path"])
+    # Absent on specs built before SOURCE_MODE existed, which always sent it.
+    source_path = Path(spec["source_image_path"]) if spec.get("send_source_image", True) else None
     ladder = spec.get("prompt_ladder") or [{
         "level": 0,
         "prompt": spec["prompt"],
@@ -835,7 +988,7 @@ def run_image_edit_ladder(
         # One span per vendor call: the exact prompt and references this rung sent (FR14).
         with tracing.span("image_edit", as_type="tool", input={
             "prompt": rung["prompt"],
-            "source_image_path": str(source_path),
+            "source_image_path": str(source_path) if source_path is not None else None,
             "reference_image_paths": [str(p) for p in rung["reference_image_paths"]],
         }, metadata={
             "provider": provider, "model": recorded_model_name(provider, model),

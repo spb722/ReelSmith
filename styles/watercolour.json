@@ -1,0 +1,20 @@
+{
+  "name": "watercolour",
+  "description": "Loose watercolour illustration: layered translucent washes, soft bleeding edges, pigment blooms, visible cold-press paper texture, light pencil underdrawing showing through",
+  "palette": [
+    "warm paper white",
+    "indigo",
+    "sap green",
+    "burnt sienna",
+    "pale rose"
+  ],
+  "lighting": "soft diffuse daylight, luminous highlights left as bare paper",
+  "mood": "gentle, reflective, airy",
+  "avoid": [
+    "photorealism",
+    "any text, letters, numbers or logos",
+    "the name or look of a real artist",
+    "hard vector edges",
+    "saturated neon colour"
+  ]
+}

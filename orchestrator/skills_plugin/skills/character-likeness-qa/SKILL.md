@@ -7,6 +7,11 @@ description: How to judge whether a generated image shows the referenced charact
 
 "The generated image" below is the seed or still your tool just returned.
 
+"The source" below means the scene the shot describes: recomposed from a
+screenshot, or, in a reel with no source art, drawn new from the shot's own
+description and the reel's style guide. Either way, a returned reference means
+the shot's main person must be drawn as that character.
+
 ## When the tool result includes character reference image(s)
 
 When the tool result includes character reference image(s) after the generated

@@ -8,8 +8,12 @@ and walk away:
 ```bash
 python -m orchestrator.run --project <name>
 ```
-mkdir -p projects/37rule/source_images
+
 The most recent run produced a 53-second, 1080×1920, 30fps reel from 5 screenshots: 6 shots (4 Gemini-composed stills, 2 Veo clips), 28 subtitle cues, for about $3.83 of API spend.
+
+> **Just want to make a reel?** [USAGE.md](USAGE.md) has every command and setting in one
+> place: creating a reel, where the screenshots go, the modes, the cover, and the providers.
+> This README explains how the pipeline works.
 
 ## How it works
 
@@ -103,6 +107,23 @@ There is no `requirements.txt` or `pyproject.toml` — the conda environment is 
 
 ## Running
 
+### Modes of operation
+
+Three independent choices decide what kind of reel a run makes:
+
+| Choice | Set with | Options (default first) | Details |
+| --- | --- | --- | --- |
+| Where the pictures come from | `SOURCE_MODE` | `content_and_images`: recompose the screenshots' artwork · `content`: text-only screenshots, pictures invented | [Content-only sources](#content-only-sources) |
+| How the story is told | `STORY_SKILL` | `story-craft`: 90–115 words · `story-craft-easy`: one clear lesson, 90–140 words | [Two narration styles](#two-narration-styles) |
+| Art style (content mode only) | `--style` | `flat_editorial` · `watercolour` · `childrens_gouache` · `risograph` | [Art styles](#art-styles) |
+
+The image provider (`IMAGE_PROVIDER`: `gemini` or `codex`, plus an optional
+`IMAGE_FALLBACK_PROVIDER`) is independent of all three.
+
+A reel keeps its mode and style: a rerun with a different `SOURCE_MODE` or `--style`
+stops before any paid call. `STORY_SKILL` is not recorded yet, so repeat it on every
+command for that reel, including `orchestrator.cover`.
+
 Settings can live in a `.env` file at the repo root (git-ignored), one `KEY=value` per line. It is read at the start of every run and cover command; a variable already set in your shell wins. Put `IMAGE_PROVIDER` (`gemini` or `codex`), `IMAGE_FALLBACK_PROVIDER` and the `LANGFUSE_*` keys there. Write one setting per line, with no comment on the same line.
 
 **Run with the `kayak-video` Python.** Plain `python` in the `(base)` conda env has older packages (langfuse 3.15.0, claude-agent-sdk 0.2.147) the pipeline was not built for. Tracing then turns itself off with `Tracing problem ... unexpected keyword argument 'span_exporter'`. Run `conda activate kayak-video` first, or call `/opt/homebrew/anaconda3/envs/kayak-video/bin/python` directly.
@@ -169,6 +190,7 @@ PY=/opt/homebrew/anaconda3/envs/kayak-video/bin/python
 | --- | --- |
 | A new reel, Codex images | `IMAGE_PROVIDER=codex $PY -m orchestrator.run --project <name>` |
 | A new reel, Gemini images | `$PY -m orchestrator.run --project <name>` |
+| A new reel from text-only screenshots | `SOURCE_MODE=content $PY -m orchestrator.run --project <name>` (see [Content-only sources](#content-only-sources)) |
 | A new reel, easy-to-follow narration | `STORY_SKILL=story-craft-easy $PY -m orchestrator.run --project <name>_easy` (see [Two narration styles](#two-narration-styles)) |
 | Resume a halted reel | same command again — finished stages print `Already done` and cost nothing |
 | More headroom | `MAX_BUDGET_USD=30 IMAGE_PROVIDER=codex $PY -m orchestrator.run --project <name>` |
@@ -186,6 +208,7 @@ Flags:
 | Command | Flag | Meaning |
 | --- | --- | --- |
 | `run` | `--project <name>` | **required** — the folder under `projects/` |
+| `run` | `--style <name>` | `SOURCE_MODE=content` only: the art style, a file in `styles/` (default `flat_editorial`). See [Art styles](#art-styles) |
 | `run` | `--retry-voice` | archive voice attempts and reset only the voice counter |
 | `cover` | `--project <name>` | **required** |
 | `cover` | `--hook "..."` | use these exact words instead of asking Claude |
@@ -238,6 +261,90 @@ STORY_SKILL=story-craft-easy $PY -m orchestrator.run --project 37rule_easy
   `metadata/final_story_plan.json` when step 2 finishes, before any image or
   video call. Stop with Ctrl+C there if it isn't better.
 - A 60-second reel usually has more shots than a 50-second one, so it costs more.
+
+### Content-only sources
+
+By default each screenshot gives two things: the **content** (words and ideas)
+and the **picture** (the book's illustration), and every still and Veo seed is
+recomposed from the screenshot's own artwork. `SOURCE_MODE=content` is for
+screenshots with no usable art, such as text pages or highlights: they give only
+the content, and every picture is invented from the story.
+
+| | `content_and_images` (default) | `content` |
+| --- | --- | --- |
+| Visual agent skills | `visual-planning` + `source-fidelity` | `visual-planning-content` + `source-fidelity-content` |
+| Each shot's picture | a part of the screenshot, recomposed | a scene the visual agent describes |
+| Sent to Gemini / Codex | the screenshot + character references | the description + character references only; never the screenshot |
+| Style consistency | the book's own art | the style file picked with `--style`, sent word for word with every image request |
+| Recurring character | replaces a person the screenshot already draws | appears in shots the plan marks `shows_character: true` |
+
+Everything else is unchanged: the analyst reads the content, the story is
+written from it (`STORY_SKILL` still applies), and voice, Veo and the render work
+as before. Each shot still cites the page its idea came from.
+
+```bash
+SOURCE_MODE=content $PY -m orchestrator.run --project <name>
+SOURCE_MODE=content STORY_SKILL=story-craft-easy $PY -m orchestrator.run --project <name>_easy
+```
+
+- **One mode per reel.** The saved `metadata/visual_plan.json` records the mode it
+  was planned in (`source_mode`; plans from before this setting count as
+  `content_and_images`). A re-run in the other mode stops at step 3, before any
+  paid call, and says which `SOURCE_MODE` to use. To make the same book the
+  other way, use a fresh project folder.
+- The style guide and each shot's `shows_character` are read from the saved
+  `metadata/visual_plan.json`, not from what an agent relays, the same rule as the
+  shot fingerprint. The image tools and the independent visual reviewer decide
+  the character through the same function, so the reviewer always checks
+  likeness exactly when the character was drawn.
+- The content skill asks for simple video motion (one slow camera move or one
+  natural action), because clips with long camera travel past repeated objects,
+  or anything that opens or multiplies, kept failing QA.
+- `shows_character` was added to shots after reels already existed. The shot
+  fingerprint leaves it out while it is `false`, so existing projects' approved
+  shots are not called stale.
+
+#### Art styles
+
+A content-mode reel is drawn in one named style from `styles/` at the repo root.
+Pick it with `--style` (without `.json`); leave it out for `flat_editorial`:
+
+```bash
+SOURCE_MODE=content $PY -m orchestrator.run --project <name>                      # flat_editorial
+SOURCE_MODE=content $PY -m orchestrator.run --project <name> --style watercolour
+```
+
+| Style | Look |
+| --- | --- |
+| `flat_editorial` (default) | clean vector shapes, even outlines, soft paper grain; cream, navy, teal, tan, one coral accent |
+| `watercolour` | translucent washes, soft bleeding edges, paper texture; indigo, sap green, burnt sienna |
+| `childrens_gouache` | matte opaque paint, rounded friendly forms; butter yellow, tomato red, sky blue |
+| `risograph` | 2–3 misregistered ink layers, halftone grain; fluorescent pink, federal blue, yellow |
+
+The orchestrator writes the style into `overall_visual_style` itself, so the agent
+cannot change it, and the visual agent is told to plan every shot to suit it. The
+plan records the style's name (`style_name`), and a re-run with a different
+`--style` stops before any paid call and says which one to use. A content-mode plan
+made before `--style` existed records no style, so it resumes in the style it was
+drawn in. In `content_and_images` mode `--style` is ignored, and the run says so.
+
+To add a style, drop a JSON file into `styles/`. The file name and its `name` must
+match, and an unknown field is refused, so a typo can't be silently ignored:
+
+```json
+{
+  "name": "ink_wash",
+  "description": "Monochrome ink wash illustration, confident brush strokes, soft grey gradations",
+  "palette": ["ink black", "warm grey", "paper white", "one vermilion accent"],
+  "lighting": "soft side light, deep ink shadows",
+  "mood": "quiet, contemplative",
+  "avoid": ["photorealism", "any text, letters, numbers or logos", "the name or look of a real artist"]
+}
+```
+
+Keep the character's looks out of a style: the reference sheet decides how they
+look. Avoid styles built on typography, and photorealistic ones (Veo refuses seeds
+whose person looks like a real individual).
 
 ### When a run halts, and the config file
 
@@ -562,6 +669,7 @@ Everything is environment-variable overridable, with defaults in `orchestrator/s
 | `CLAUDE_REVIEWER_CAP_USD` | `1.0` | Claude spend one independent review may use: the story critic that checks each fresh narration draft, and the visual-QA reviewer that checks each shot the producer approved. Every shot attempt reserves one review on top of `CLAUDE_SHOT_ATTEMPT_CAP_USD`, and each story attempt leaves one review's worth of the budget unspent for its critic. Expect up to (1 + story retries) x this, plus (shot attempts) x this, added per run. Because every shot attempt reserves it, a larger cap can turn planned video shots into stills under the same `MAX_BUDGET_USD` |
 | `CRITIC_MODEL` | `CLAUDE_MODEL` | Model for the story critic |
 | `REVIEWER_MODEL` | `CLAUDE_MODEL` | Model for the visual-QA reviewer |
+| `SOURCE_MODE` | `content_and_images` | `content`: the screenshots give only content, and every still and Veo seed is drawn from the visual plan, never from the screenshot pixels. See [Content-only sources](#content-only-sources) |
 | `STORY_SKILL` | `story-craft` | Which writing skill the story agent and critic load. `story-craft`: 90–115 words, 40–50 s. `story-craft-easy`: one lesson a first-time viewer can follow, 90–140 words, 40–60 s. Use a fresh project folder per skill: a project that already has a story plan keeps it |
 | `TTS_VOICE_NAME` | `Gacrux` | The narrator. Empty is an error, not a default |
 | `CLAUDE_MODEL` | `claude-opus-5` | Pinned so a reel's cost and quality cannot drift |

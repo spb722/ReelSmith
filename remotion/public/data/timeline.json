@@ -2,71 +2,72 @@
   "shots": [
     {
       "sequence": 1,
-      "type": "video",
-      "src": "video/shot_01.mp4",
+      "type": "still",
+      "src": "stills/shot_01.png",
       "start_seconds": 0.2,
-      "end_seconds": 8.24,
+      "end_seconds": 10.48,
       "primary_subtitle_cue_ids": [
         "cue_001",
         "cue_002",
         "cue_003",
         "cue_004"
       ],
-      "fade_in_frames": 24,
+      "fade_in_frames": 18,
       "fade_out_frames": 8,
       "still_motion": {
-        "scale_from": 1.02,
-        "scale_to": 1.2,
-        "translate_x_from": 6.0,
-        "translate_x_to": 2.0,
+        "scale_from": 1.0,
+        "scale_to": 1.09,
+        "translate_x_from": 0.0,
+        "translate_x_to": -2.5,
         "translate_y_from": 0.0,
-        "translate_y_to": 2.0,
+        "translate_y_to": 0.0,
         "easing": "easeOut"
       }
     },
     {
       "sequence": 2,
-      "type": "still",
-      "src": "stills/shot_02.png",
-      "start_seconds": 8.24,
-      "end_seconds": 18.2,
+      "type": "video",
+      "src": "video/shot_02.mp4",
+      "start_seconds": 10.48,
+      "end_seconds": 17.36,
       "primary_subtitle_cue_ids": [
         "cue_005",
         "cue_006",
         "cue_007",
-        "cue_008",
-        "cue_009"
+        "cue_008"
       ],
-      "fade_in_frames": 10,
-      "fade_out_frames": 6,
+      "fade_in_frames": 8,
+      "fade_out_frames": 16,
       "still_motion": {
-        "scale_from": 1.15,
-        "scale_to": 1.1,
-        "translate_x_from": 12.0,
-        "translate_x_to": 10.0,
-        "translate_y_from": 0.0,
-        "translate_y_to": 0.0,
-        "easing": "linear"
+        "scale_from": 1.02,
+        "scale_to": 1.08,
+        "translate_x_from": 0.0,
+        "translate_x_to": 0.0,
+        "translate_y_from": -1.5,
+        "translate_y_to": 1.5,
+        "easing": "ease"
       }
     },
     {
       "sequence": 3,
-      "type": "video",
-      "src": "video/shot_03.mp4",
-      "start_seconds": 18.2,
-      "end_seconds": 23.96,
+      "type": "still",
+      "src": "stills/shot_03.png",
+      "start_seconds": 17.36,
+      "end_seconds": 27.84,
       "primary_subtitle_cue_ids": [
+        "cue_009",
         "cue_010",
         "cue_011",
-        "cue_012"
+        "cue_012",
+        "cue_013"
       ],
-      "fade_in_frames": 6,
-      "fade_out_frames": 10,
+      "fade_in_frames": 14,
+      "fade_out_frames": 6,
       "still_motion": {
-        "scale_from": 1.14,
-        "scale_to": 1.1,
-        "translate_x_from": 10.0,
-        "translate_x_to": -10.0,
+        "scale_from": 1.0,
+        "scale_to": 1.07,
+        "translate_x_from": 3.0,
+        "translate_x_to": -3.0,
         "translate_y_from": 0.0,
         "translate_y_to": 0.0,
         "easing": "ease"
@@ -76,48 +77,49 @@
       "sequence": 4,
       "type": "still",
       "src": "stills/shot_04.png",
-      "start_seconds": 23.96,
-      "end_seconds": 35.76,
+      "start_seconds": 27.84,
+      "end_seconds": 37.52,
       "primary_subtitle_cue_ids": [
-        "cue_013",
         "cue_014",
         "cue_015",
         "cue_016",
-        "cue_017"
+        "cue_017",
+        "cue_018"
       ],
-      "fade_in_frames": 10,
-      "fade_out_frames": 9,
+      "fade_in_frames": 6,
+      "fade_out_frames": 5,
       "still_motion": {
-        "scale_from": 1.06,
-        "scale_to": 1.22,
-        "translate_x_from": -8.0,
-        "translate_x_to": -4.0,
+        "scale_from": 1.0,
+        "scale_to": 1.1,
+        "translate_x_from": 0.0,
+        "translate_x_to": 0.0,
         "translate_y_from": 0.0,
-        "translate_y_to": -2.0,
-        "easing": "easeOut"
+        "translate_y_to": -1.0,
+        "easing": "linear"
       }
     },
     {
       "sequence": 5,
-      "type": "still",
-      "src": "stills/shot_05.png",
-      "start_seconds": 35.76,
-      "end_seconds": 44.2,
+      "type": "video",
+      "src": "video/shot_05.mp4",
+      "start_seconds": 37.52,
+      "end_seconds": 45.32,
       "primary_subtitle_cue_ids": [
-        "cue_018",
         "cue_019",
         "cue_020",
-        "cue_021"
+        "cue_021",
+        "cue_022",
+        "cue_023"
       ],
-      "fade_in_frames": 14,
-      "fade_out_frames": 7,
+      "fade_in_frames": 5,
+      "fade_out_frames": 10,
       "still_motion": {
-        "scale_from": 1.08,
-        "scale_to": 1.14,
-        "translate_x_from": 6.0,
-        "translate_x_to": -5.0,
-        "translate_y_from": 0.0,
-        "translate_y_to": 0.0,
+        "scale_from": 1.04,
+        "scale_to": 1.12,
+        "translate_x_from": 0.0,
+        "translate_x_to": 0.0,
+        "translate_y_from": 1.0,
+        "translate_y_to": -1.0,
         "easing": "ease"
       }
     },
@@ -125,44 +127,72 @@
       "sequence": 6,
       "type": "still",
       "src": "stills/shot_06.png",
-      "start_seconds": 44.2,
-      "end_seconds": 50.2,
+      "start_seconds": 45.32,
+      "end_seconds": 54.59,
       "primary_subtitle_cue_ids": [
-        "cue_022",
-        "cue_023",
-        "cue_024"
+        "cue_024",
+        "cue_025",
+        "cue_026",
+        "cue_027",
+        "cue_028"
       ],
-      "fade_in_frames": 7,
+      "fade_in_frames": 5,
       "fade_out_frames": 12,
       "still_motion": {
-        "scale_from": 1.1,
-        "scale_to": 1.32,
-        "translate_x_from": -8.0,
-        "translate_x_to": -11.0,
+        "scale_from": 1.0,
+        "scale_to": 1.05,
+        "translate_x_from": 0.0,
+        "translate_x_to": 0.0,
         "translate_y_from": 0.0,
-        "translate_y_to": -1.0,
-        "easing": "ease"
+        "translate_y_to": 0.5,
+        "easing": "easeOut"
       }
     },
     {
       "sequence": 7,
-      "type": "video",
-      "src": "video/shot_07.mp4",
-      "start_seconds": 50.2,
-      "end_seconds": 53.32,
+      "type": "still",
+      "src": "stills/shot_07.png",
+      "start_seconds": 54.59,
+      "end_seconds": 61.51,
       "primary_subtitle_cue_ids": [
-        "cue_025"
+        "cue_029",
+        "cue_030",
+        "cue_031",
+        "cue_032"
       ],
-      "fade_in_frames": 16,
-      "fade_out_frames": 30,
+      "fade_in_frames": 12,
+      "fade_out_frames": 8,
       "still_motion": {
-        "scale_from": 1.14,
-        "scale_to": 1.02,
-        "translate_x_from": 3.0,
-        "translate_x_to": 0.0,
-        "translate_y_from": 2.0,
+        "scale_from": 1.06,
+        "scale_to": 1.0,
+        "translate_x_from": -4.0,
+        "translate_x_to": 4.0,
+        "translate_y_from": 0.0,
         "translate_y_to": 0.0,
-        "easing": "ease"
+        "easing": "easeOut"
+      }
+    },
+    {
+      "sequence": 8,
+      "type": "video",
+      "src": "video/shot_08.mp4",
+      "start_seconds": 61.51,
+      "end_seconds": 67.19,
+      "primary_subtitle_cue_ids": [
+        "cue_033",
+        "cue_034",
+        "cue_035"
+      ],
+      "fade_in_frames": 8,
+      "fade_out_frames": 24,
+      "still_motion": {
+        "scale_from": 1.0,
+        "scale_to": 1.08,
+        "translate_x_from": 0.0,
+        "translate_x_to": 0.0,
+        "translate_y_from": 1.0,
+        "translate_y_to": -1.0,
+        "easing": "easeOut"
       }
     }
   ]
