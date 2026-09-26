@@ -86,3 +86,33 @@ def test_heartbeat_is_silent_for_fast_work(capsys):
     with progress.heartbeat("working", interval=5.0):
         pass
     assert "working" not in capsys.readouterr().out
+
+
+def test_run_progress_weights_steps_and_counts_shots():
+    tracker = progress.RunProgress()
+    assert tracker.percent() == 0
+    tracker.step_finished(1)
+    assert tracker.percent() == 9
+    tracker.step_finished(4)
+    assert tracker.percent() == 49  # 9 + 26 + 10 + 4
+    tracker.shots_planned(done=0, total=8)
+    for _ in range(3):
+        tracker.shot_finished()
+    assert tracker.percent() == 67  # 49 + 49 * 3/8
+    tracker.step_finished(5)
+    assert tracker.percent() == 98
+    tracker.step_finished(6)
+    assert tracker.percent() == 100
+
+
+def test_run_progress_counts_shots_made_in_an_earlier_run():
+    tracker = progress.RunProgress()
+    tracker.step_finished(4)
+    tracker.shots_planned(done=4, total=8)
+    assert tracker.percent() == 74  # 49 + 49 * 4/8, rounded
+
+
+def test_start_run_resets_progress():
+    progress.run_progress.step_finished(3)
+    progress.start_run()
+    assert progress.run_progress.percent() == 0

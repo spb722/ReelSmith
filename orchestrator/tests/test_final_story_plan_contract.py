@@ -198,3 +198,29 @@ def test_missing_produced_by_rejected():
 def test_deep_copy_of_valid_contract_still_passes():
     # Sanity check that base_contract() itself is a stable, reusable fixture.
     FinalStoryPlanContract.model_validate(copy.deepcopy(base_contract()))
+
+
+def _plan(word_count: int, duration: float) -> dict:
+    data = base_contract()
+    data["narration_script"], data["scenes"] = _scenes(word_count, duration=duration)
+    return data
+
+
+def test_easy_story_skill_allows_a_longer_reel(monkeypatch):
+    # 140 words in 7 scenes of 8.5s = 59.5s: over story-craft's 115 words / 50s.
+    longer = _plan(140, duration=8.5)
+    monkeypatch.delenv("STORY_SKILL", raising=False)
+    with pytest.raises(ValidationError, match="words"):
+        FinalStoryPlanContract.model_validate(longer)
+    monkeypatch.setenv("STORY_SKILL", "story-craft-easy")
+    FinalStoryPlanContract.model_validate(longer)
+
+
+@pytest.mark.parametrize(("word_count", "duration", "match"), [
+    (150, 8.0, "words"),  # 150 words is past the easy cap of 140
+    (120, 11.0, "Scene durations"),  # 6 scenes x 11s = 66s, past 60s
+])
+def test_easy_story_skill_still_has_limits(monkeypatch, word_count, duration, match):
+    monkeypatch.setenv("STORY_SKILL", "story-craft-easy")
+    with pytest.raises(ValidationError, match=match):
+        FinalStoryPlanContract.model_validate(_plan(word_count, duration))

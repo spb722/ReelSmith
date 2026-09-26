@@ -58,7 +58,7 @@ from orchestrator.contracts.subtitle_cues import SubtitleCuesContract
 from orchestrator.contracts.veo import VeoFailureContract, VeoOutcomeContract, shot_fingerprint
 from orchestrator.contracts.visual_plan import VisualPlanContract
 from orchestrator import tracing
-from orchestrator.progress import banner, format_duration, heartbeat, log, start_run
+from orchestrator.progress import banner, format_duration, heartbeat, log, run_progress, start_run
 from orchestrator.workspace import (
     SOURCE_IMAGES_DIR_NAME,
     ProjectError,
@@ -1878,6 +1878,7 @@ async def _run_shot_production(
             f"Validated analyzed assets and subtitle cues are required: {exc}",
         )
 
+    run_progress.shots_planned(len(shots) - len(pending), len(shots))
     assets_by_id = {asset.asset_id: asset for asset in analyzed.assets}
     cues_by_id = {cue.cue_id: cue.text for cue in subtitle_cues.cues}
     # Veo clips take longest, so they go first; each mode in sequence order.
@@ -2461,7 +2462,10 @@ async def _produce_veo_shot(
                         attempt_count=count,
                         partial_artifact_paths=attempt_paths,
                     )
-                log(f"Shot {shot.sequence}: video clip approved → {entry.local_path}", indent=2)
+                run_progress.shot_finished()
+                log(f"Shot {shot.sequence}: video clip approved → {entry.local_path}"
+                    f" · {run_progress.shots_done} of {run_progress.shots_total} shots · ~{run_progress.percent()}%",
+                    indent=2)
                 return "done"
 
             failure = outcome.failure
@@ -2797,7 +2801,10 @@ async def _produce_still_shot(
                         attempt_count=count,
                         partial_artifact_paths=attempt_paths,
                     )
-                log(f"Shot {shot.sequence}: picture approved → {entry.local_path}", indent=2)
+                run_progress.shot_finished()
+                log(f"Shot {shot.sequence}: picture approved → {entry.local_path}"
+                    f" · {run_progress.shots_done} of {run_progress.shots_total} shots · ~{run_progress.percent()}%",
+                    indent=2)
                 return "done"
 
             failure = outcome.failure
@@ -3050,23 +3057,26 @@ async def run_stages(source_images_dir: Path, settings: Settings, manifest: RunM
         gemini_image=settings.gemini_image_concurrency,
         codex_image=settings.codex_image_concurrency,
     )
-    banner(f"Step 1 of {total} — Looking at your screenshots")
+    banner(f"Step 1 of {total} — Looking at your screenshots · ~{run_progress.percent()}%")
     started = time.monotonic()
     with tracing.span("asset_analyst") as stage_span:
         result = await run_screenshot_stage(source_images_dir, settings, manifest)
         tracing.mark_stage_result(stage_span, result, budget_spent_usd=manifest.budget_spent_usd)
     if result:
         return result
-    log(f"Step 1 took {format_duration(time.monotonic() - started)}")
+    run_progress.step_finished(1)
+    log(f"Step 1 took {format_duration(time.monotonic() - started)} · ~{run_progress.percent()}% done")
     for index, (name, span_name, stage) in enumerate(steps, start=2):
-        banner(f"Step {index} of {total} — {name}")
+        banner(f"Step {index} of {total} — {name} · ~{run_progress.percent()}%")
         started = time.monotonic()
         with tracing.span(span_name) as stage_span:
             result = await stage(settings, manifest, retry_voice=True) if stage is run_voice_stage and retry_voice else await stage(settings, manifest)
             tracing.mark_stage_result(stage_span, result, budget_spent_usd=manifest.budget_spent_usd)
         if result:
             return result
-        log(f"Step {index} took {format_duration(time.monotonic() - started)} · ${manifest.budget_spent_usd:.2f} spent so far")
+        run_progress.step_finished(index)
+        log(f"Step {index} took {format_duration(time.monotonic() - started)} · ${manifest.budget_spent_usd:.2f} spent so far"
+            f" · ~{run_progress.percent()}% done")
     return 0
 
 

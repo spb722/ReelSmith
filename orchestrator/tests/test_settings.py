@@ -38,6 +38,7 @@ ENV_VARS = (
     "VEO_CALL_COST_USD",
     "IMAGE_PROVIDER",
     "CODEX_IMAGE_TIMEOUT_SECONDS",
+    "STORY_SKILL",
 )
 
 
@@ -227,4 +228,16 @@ def test_codex_image_timeout_is_overridable(monkeypatch):
 
     monkeypatch.setenv("CODEX_IMAGE_TIMEOUT_SECONDS", "0")
     with pytest.raises(SettingsError):
+        load_settings()
+
+
+def test_story_skill_defaults_to_story_craft_and_accepts_easy(monkeypatch):
+    assert load_settings().story_skill == "story-craft"
+    monkeypatch.setenv("STORY_SKILL", "story-craft-easy")
+    assert load_settings().story_skill == "story-craft-easy"
+
+
+def test_unknown_story_skill_is_rejected(monkeypatch):
+    monkeypatch.setenv("STORY_SKILL", "story-craft-hard")
+    with pytest.raises(SettingsError, match="STORY_SKILL"):
         load_settings()

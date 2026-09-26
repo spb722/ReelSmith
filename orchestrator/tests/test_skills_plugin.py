@@ -35,7 +35,7 @@ from orchestrator.tests.test_story_agent import stage  # noqa: F401 -- fixture
 
 SKILLS_DIR = PLUGIN_DIR / "skills"
 EXPECTED_SKILLS = {
-    "asset-analysis", "story-craft", "visual-planning", "source-fidelity",
+    "asset-analysis", "story-craft", "story-craft-easy", "visual-planning", "source-fidelity",
     "veo-production", "still-production", "visual-qa", "character-likeness-qa",
 }
 AGENT_SKILLS = {
@@ -92,7 +92,7 @@ def test_plugin_manifest_names_book_reels():
     assert PLUGIN_DIR.is_absolute()
 
 
-def test_plugin_holds_exactly_the_eight_skills():
+def test_plugin_holds_exactly_the_nine_skills():
     assert {p.name for p in SKILLS_DIR.iterdir() if p.is_dir()} == EXPECTED_SKILLS
     for name in EXPECTED_SKILLS:
         assert (SKILLS_DIR / name / "SKILL.md").is_file()
@@ -170,6 +170,28 @@ def test_agent_options_carry_exactly_its_skills_and_the_plugin(module_name, monk
     prompt = options.system_prompt
     for skill in AGENT_SKILLS[module_name]:
         assert skill in prompt, f"{module_name} prompt does not tell the agent to use {skill}"
+
+
+@pytest.mark.parametrize(("module_name", "function_name", "kwargs"), [
+    ("story_agent", "write_story", {"analyzed_assets": []}),
+    ("story_critic", "critique_story", {"draft_plan": {}, "analyzed_assets": []}),
+])
+def test_story_skill_setting_swaps_the_writing_skill(module_name, function_name, kwargs, monkeypatch):
+    monkeypatch.setenv("STORY_SKILL", "story-craft-easy")
+    module = importlib.import_module(f"orchestrator.agents.{module_name}")
+    monkeypatch.setattr(module, "load_settings",
+                        lambda: SimpleNamespace(claude_model="m", critic_model="m"))
+    captured = []
+
+    async def fake_query(*, prompt, options):
+        captured.append(options)
+        yield result_message()
+
+    monkeypatch.setattr(module, "query", fake_query)
+    asyncio.run(getattr(module, function_name)(max_budget_usd=1.0, **kwargs))
+    options = captured[0]
+    assert options.skills == ["book-reels:story-craft-easy", "book-reels:source-fidelity"]
+    assert "load book-reels:story-craft-easy and" in options.system_prompt
 
 
 @pytest.mark.parametrize("module_name", sorted(AGENT_SKILLS))

@@ -29,11 +29,55 @@ _log_file: TextIO | None = None
 _write_lock = threading.Lock()
 
 
+# Share of a typical reel run, in percent, for each of the six steps --
+# measured on the complete self-org-desk run of 2026-09-25 (20m10s). An
+# estimate: retries and slow vendor calls stretch a step, so the percentage
+# can pause, but it never goes backwards.
+STEP_WEIGHTS = (9, 26, 10, 4, 49, 2)
+
+
+class RunProgress:
+    """Turns step and shot events into an estimated percent complete.
+
+    Only numbers, no display: the console adds them to its lines today, and a
+    UI can read the same numbers later.
+    """
+
+    def __init__(self) -> None:
+        self.reset()
+
+    def reset(self) -> None:
+        self.steps_done = 0
+        self.shots_done = 0
+        self.shots_total = 0
+
+    def step_finished(self, step: int) -> None:
+        self.steps_done = step
+        self.shots_done = self.shots_total = 0
+
+    def shots_planned(self, done: int, total: int) -> None:
+        """The current step makes `total` shots, `done` of them already made."""
+        self.shots_done, self.shots_total = done, total
+
+    def shot_finished(self) -> None:
+        self.shots_done += 1
+
+    def percent(self) -> int:
+        done = sum(STEP_WEIGHTS[:self.steps_done])
+        if self.shots_total and self.steps_done < len(STEP_WEIGHTS):
+            done += STEP_WEIGHTS[self.steps_done] * self.shots_done / self.shots_total
+        return min(100, round(done))
+
+
+run_progress = RunProgress()
+
+
 def start_run(log_dir: Path | None = None) -> Path | None:
     """Reset the run clock and open the run log, returning its path."""
 
     global _run_start, _log_file
     _run_start = time.monotonic()
+    run_progress.reset()
     if log_dir is None:
         return None
     log_dir.mkdir(parents=True, exist_ok=True)

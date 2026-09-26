@@ -15,6 +15,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from orchestrator.contracts.text_normalization import normalize_text
+from orchestrator.settings import story_skill_setting
 
 
 class ContractModel(BaseModel):
@@ -30,6 +31,13 @@ TARGET_MAX_SECONDS = 50
 DURATION_TOLERANCE_SECONDS = 0
 TARGET_MIN_WORDS = 90
 TARGET_MAX_WORDS = 115
+
+# (min words, max words, min seconds, max seconds) per STORY_SKILL. The easy
+# reel explains more, so it may run longer at the same speaking pace.
+STORY_LIMITS = {
+    "story-craft": (TARGET_MIN_WORDS, TARGET_MAX_WORDS, TARGET_MIN_SECONDS, TARGET_MAX_SECONDS),
+    "story-craft-easy": (90, 140, 40, 60),
+}
 
 MIN_APPROVAL_SCORE = 8
 MIN_SOURCE_FIDELITY_SCORE = 9
@@ -159,21 +167,23 @@ class FinalStoryPlanContract(ContractModel):
     @model_validator(mode="after")
     def word_count_in_range(self) -> "FinalStoryPlanContract":
         word_count = _count_words(self.narration_script)
-        if not (TARGET_MIN_WORDS <= word_count <= TARGET_MAX_WORDS):
+        min_words, max_words, _, _ = STORY_LIMITS[story_skill_setting()]
+        if not (min_words <= word_count <= max_words):
             raise ValueError(
-                f"narration_script has {word_count} words; target is {TARGET_MIN_WORDS}-{TARGET_MAX_WORDS}."
+                f"narration_script has {word_count} words; target is {min_words}-{max_words}."
             )
         return self
 
     @model_validator(mode="after")
     def duration_in_range(self) -> "FinalStoryPlanContract":
         total = sum(scene.estimated_duration_seconds for scene in self.scenes)
-        low = TARGET_MIN_SECONDS - DURATION_TOLERANCE_SECONDS
-        high = TARGET_MAX_SECONDS + DURATION_TOLERANCE_SECONDS
+        _, _, min_seconds, max_seconds = STORY_LIMITS[story_skill_setting()]
+        low = min_seconds - DURATION_TOLERANCE_SECONDS
+        high = max_seconds + DURATION_TOLERANCE_SECONDS
         if not (low <= total <= high):
             raise ValueError(
                 f"Scene durations total {total:.1f}s; target is approximately "
-                f"{TARGET_MIN_SECONDS}-{TARGET_MAX_SECONDS}s."
+                f"{min_seconds}-{max_seconds}s."
             )
         return self
 

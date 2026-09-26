@@ -124,6 +124,12 @@ DEFAULT_CLAUDE_REVIEWER_CAP_USD = 1.0
 # which is not something a reel's cost or quality should depend on silently.
 DEFAULT_CLAUDE_MODEL = "claude-opus-5"
 
+# Which writing skill the story agent and its critic load. "story-craft" is
+# today's dense reel; "story-craft-easy" is a longer, easier-to-follow one
+# (its own word and duration limits live in the story plan contract).
+STORY_SKILLS = ("story-craft", "story-craft-easy")
+DEFAULT_STORY_SKILL = "story-craft"
+
 # Recurring-character reference images. Empty string disables the feature and
 # reproduces the pre-character behaviour exactly (one image per Gemini edit).
 DEFAULT_CHARACTER_REFERENCE_PATH = "assets/character/character.png"
@@ -186,6 +192,7 @@ class Settings:
     # defaults both to `claude_model`.
     critic_model: str = DEFAULT_CLAUDE_MODEL
     reviewer_model: str = DEFAULT_CLAUDE_MODEL
+    story_skill: str = DEFAULT_STORY_SKILL
     character_reference_path: str = DEFAULT_CHARACTER_REFERENCE_PATH
     character_face_reference_path: str = DEFAULT_CHARACTER_FACE_REFERENCE_PATH
     character_turnaround_reference_path: str = DEFAULT_CHARACTER_TURNAROUND_REFERENCE_PATH
@@ -251,6 +258,19 @@ def _image_fallback_provider_setting(image_provider: str) -> str:
         )
     if raw == image_provider:
         raise SettingsError(f"IMAGE_FALLBACK_PROVIDER={raw!r} is the same as IMAGE_PROVIDER")
+    return raw
+
+
+def story_skill_setting() -> str:
+    """The story-writing skill named by `STORY_SKILL`, validated.
+
+    A plain function, not only a `Settings` field, so the story plan contract
+    can read it while validating a plan.
+    """
+
+    raw = _str_setting("STORY_SKILL", DEFAULT_STORY_SKILL).strip()
+    if raw not in STORY_SKILLS:
+        raise SettingsError(f"STORY_SKILL={raw!r} is not one of {', '.join(STORY_SKILLS)}")
     return raw
 
 
@@ -324,6 +344,7 @@ def load_settings() -> Settings:
         claude_model=claude_model,
         critic_model=_str_setting("CRITIC_MODEL", claude_model),
         reviewer_model=_str_setting("REVIEWER_MODEL", claude_model),
+        story_skill=story_skill_setting(),
         character_reference_path=os.getenv(
             "CHARACTER_REFERENCE_PATH", DEFAULT_CHARACTER_REFERENCE_PATH
         ),

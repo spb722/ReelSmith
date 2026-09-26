@@ -169,6 +169,7 @@ PY=/opt/homebrew/anaconda3/envs/kayak-video/bin/python
 | --- | --- |
 | A new reel, Codex images | `IMAGE_PROVIDER=codex $PY -m orchestrator.run --project <name>` |
 | A new reel, Gemini images | `$PY -m orchestrator.run --project <name>` |
+| A new reel, easy-to-follow narration | `STORY_SKILL=story-craft-easy $PY -m orchestrator.run --project <name>_easy` (see [Two narration styles](#two-narration-styles)) |
 | Resume a halted reel | same command again — finished stages print `Already done` and cost nothing |
 | More headroom | `MAX_BUDGET_USD=30 IMAGE_PROVIDER=codex $PY -m orchestrator.run --project <name>` |
 | A different narrator | `TTS_VOICE_NAME=Algieba IMAGE_PROVIDER=codex $PY -m orchestrator.run --project <name>` |
@@ -195,6 +196,48 @@ Flags:
 Every knob is an environment variable — see [Configuration](#configuration). The ones
 you will reach for: `IMAGE_PROVIDER`, `MAX_BUDGET_USD`, `TTS_VOICE_NAME`,
 `CHARACTER_REFERENCE_PATH` (set it empty to turn the character off for a run).
+
+### Two narration styles
+
+The story agent and its critic write with one of two skills, picked by
+`STORY_SKILL`. Everything after the narration (plan, voice, shots, render) is
+the same for both.
+
+| | `story-craft` (default) | `story-craft-easy` |
+| --- | --- | --- |
+| For | the original dense, punchy reel | a viewer who never read the book |
+| Words | 90–115 | 90–140 |
+| Length | 40–50 s | 40–60 s |
+| Skill file | `orchestrator/skills_plugin/skills/story-craft/` | `orchestrator/skills_plugin/skills/story-craft-easy/` |
+
+`story-craft-easy` keeps the hook, the concrete story, the reversal and the
+reflection, and adds: one lesson per reel; the story carries the lesson; say the
+"how" out loud; explain every term, name or metaphor in everyday words, or drop
+it; name the lesson once in one short memorable line; spend the extra words on
+clarity, not more ideas. Its self-review adds a *newcomer test*: re-read only
+the script as someone who never saw the book. If you can't say what happened
+and what the lesson is, or a word trips you, the clarity score is capped and
+the draft is revised.
+
+To compare the two on one book, give each its own folder with the same
+screenshots:
+
+```bash
+mkdir -p projects/37rule_easy/source_images
+cp projects/37rule/source_images/* projects/37rule_easy/source_images/
+STORY_SKILL=story-craft-easy $PY -m orchestrator.run --project 37rule_easy
+```
+
+- **Use a fresh folder per style.** A project that already has a saved story
+  plan keeps it, so switching `STORY_SKILL` on an old project changes nothing.
+- **Keep `STORY_SKILL` on every re-run of an easy project.** The length limits
+  are checked again on resume. Without the setting, a saved easy script over
+  115 words is rejected, a new story is written, and the voice, plan and shots
+  already paid for are redone.
+- **Read the script before paying for shots.** It is saved to
+  `metadata/final_story_plan.json` when step 2 finishes, before any image or
+  video call. Stop with Ctrl+C there if it isn't better.
+- A 60-second reel usually has more shots than a 50-second one, so it costs more.
 
 ### When a run halts, and the config file
 
@@ -236,6 +279,14 @@ ls -t projects/<name>/orchestrator_runs/failure_*.json | head -1
 | `Budget exhausted: spent 30.0 of max 30.0` at startup, when you know you have not | set `usage.budget_spent_usd` to the real figure |
 | `You've hit your session limit` / `usage limit` | nothing — a vendor limit gives its attempt back and the report says `reason_code: vendor_limit`; wait for the reset and re-run |
 | A shot's images keep failing on Gemini (`still_qa`, `seed_qa`, …) | nothing, if `IMAGE_FALLBACK_PROVIDER=codex` is set — the re-run moves that shot to Codex with fresh tries (see [Automatic fallback](#automatic-fallback-to-another-image-provider)) |
+
+**A shot's review feedback does not carry over into a new run.** Within one run,
+each retry gets the previous try's correction. After you reset a counter and
+re-run, the first new try starts with no correction, so it may repeat the
+earlier fault; the tries after it get feedback again. Feedback is not a
+guaranteed fix either: when a clip keeps failing the same way (for example
+doors that swing open although the correction forbids it), the shot's motion
+is probably too hard for Veo, and more tries rarely help.
 
 A ceiling left out of the file falls back to its built-in default, so a partial
 edit still runs. A corrupt file falls back to a fresh config rather than
@@ -396,6 +447,31 @@ cp projects/<name>/generated/cover/cover_v1.png projects/<name>/generated/cover/
 
 `--feedback` makes no Claude call and needs an existing cover; make one first without it. Codex draws it whatever `IMAGE_PROVIDER` says.
 
+#### When the new cover isn't good: rephrase and regenerate
+
+Each `--feedback` run edits the **latest** `cover.png`. So if a revision came out
+wrong, rephrasing and running again builds on the bad result. To retry from the
+version you liked, put it back first, then run with the reworded feedback:
+
+```bash
+cp projects/<name>/generated/cover/cover_v2.png projects/<name>/generated/cover/cover.png
+python -m orchestrator.cover --project <name> --feedback "make only the headline larger; keep the picture exactly as it is"
+```
+
+`generated/cover/feedback_history.json` lists each round's feedback and which
+`cover_v<N>.png` was saved before it, so you can see which version to go back to.
+
+Feedback that is specific works better than feedback that is vague: say what to
+change and what to keep ("move the headline up so it clears the character's
+head; keep the colours and the font"), not only "make it better".
+
+| What's wrong | What to run |
+| --- | --- |
+| The edit went wrong | restore the earlier `cover_v<N>.png` as above, then rerun with reworded `--feedback` |
+| The headline wording | `--feedback "..." --hook "new words"`. Your `--hook` words are used as typed and, unlike a headline Claude picks, are not checked against the narration, so keep them to the reel's own words |
+| The whole design | `--feedback "..." --shot <n>` redraws from that shot's artwork instead of editing the current cover |
+| Start over completely | `--force` (without `--feedback`) makes a brand-new cover; add `--hook` and `--shot` to skip the Claude call. It overwrites `cover.png` **without** saving a `cover_v<N>.png`, so copy the current one aside first if you might want it back |
+
 ### Watching a run
 
 Every stage reports as it goes, timestamped with elapsed time since the run started:
@@ -410,6 +486,24 @@ Every stage reports as it goes, timestamped with elapsed time since the run star
 [00:01:13]   Part 1 of 3: reading the script out loud (voice: Algieba)
 [00:01:58]   Part 2 of 3: listening back to find when each word is spoken
 ```
+
+Step banners, step-finished lines and each approved shot also show an
+estimated percent complete:
+
+```
+[00:09:59] ▸ Step 5 of 6 — Making the video clips and still pictures · ~49%
+[00:11:16]     Shot 2: picture approved → generated/stills/shot_02.png · 1 of 8 shots · ~55%
+[00:20:10]   Step 6 took 24s · $12.22 spent so far · ~100% done
+```
+
+Each of the six steps has a fixed share of a run, measured on a complete
+20-minute run: 9 / 26 / 10 / 4 / 49 / 2 %. Steps move the number when they
+finish. Step 5, about half the run, moves it with every approved shot, and
+shots made in an earlier run count as done. It is an estimate: it can pause
+during retries or a long writing step, but it never goes backwards. The
+calculation is `RunProgress` in `orchestrator/progress.py`, which returns
+numbers only, so a UI can read the same values later. To follow a run from
+another terminal: `tail -f projects/<name>/orchestrator_runs/run_*.log`.
 
 The long waits — a Claude agent turn, a Veo poll, a Codex image call — print a
 heartbeat rather than going silent, so a stalled run is distinguishable from a slow
@@ -468,6 +562,7 @@ Everything is environment-variable overridable, with defaults in `orchestrator/s
 | `CLAUDE_REVIEWER_CAP_USD` | `1.0` | Claude spend one independent review may use: the story critic that checks each fresh narration draft, and the visual-QA reviewer that checks each shot the producer approved. Every shot attempt reserves one review on top of `CLAUDE_SHOT_ATTEMPT_CAP_USD`, and each story attempt leaves one review's worth of the budget unspent for its critic. Expect up to (1 + story retries) x this, plus (shot attempts) x this, added per run. Because every shot attempt reserves it, a larger cap can turn planned video shots into stills under the same `MAX_BUDGET_USD` |
 | `CRITIC_MODEL` | `CLAUDE_MODEL` | Model for the story critic |
 | `REVIEWER_MODEL` | `CLAUDE_MODEL` | Model for the visual-QA reviewer |
+| `STORY_SKILL` | `story-craft` | Which writing skill the story agent and critic load. `story-craft`: 90–115 words, 40–50 s. `story-craft-easy`: one lesson a first-time viewer can follow, 90–140 words, 40–60 s. Use a fresh project folder per skill: a project that already has a story plan keeps it |
 | `TTS_VOICE_NAME` | `Gacrux` | The narrator. Empty is an error, not a default |
 | `CLAUDE_MODEL` | `claude-opus-5` | Pinned so a reel's cost and quality cannot drift |
 | `CHARACTER_REFERENCE_PATH` | `assets/character/character.png` | Project's own copy wins; falls back to the repo root. Set empty to turn the character off |

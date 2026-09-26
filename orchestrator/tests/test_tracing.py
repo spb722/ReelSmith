@@ -403,8 +403,8 @@ def test_the_instrumentation_takes_effect_on_an_agent_imported_before_it(trace, 
     assert attr(sdk_span, "llm.cost.total") == 0.42
     # Our own attributes: the system prompt and the skills.
     assert meta(agent_span, "system_prompt") == story_agent_module.story_agent.prompt
-    assert meta(agent_span, "skills_requested") == list(story_agent_module.SKILLS)
-    assert meta(agent_span, "skills_loaded") == list(story_agent_module.SKILLS)
+    assert meta(agent_span, "skills_requested") == story_agent_module.skills()
+    assert meta(agent_span, "skills_loaded") == story_agent_module.skills()
     assert meta(agent_span, "total_cost_usd") == 0.42
     assert json.loads(attr(agent_span, "langfuse.observation.output")) == {"produced_by": "story_agent"}
     # Uninstrumented again once the run ends.
