@@ -19,6 +19,7 @@ import orchestrator.agents.veo_agent as veo_agent_module
 import orchestrator.run as run
 from orchestrator.agents._guard import STILL_TOOL, VEO_CLIP_TOOL, VEO_SEED_TOOL, PaidToolGuard
 from orchestrator.agents._skills import PLUGIN_DIR
+from orchestrator.contracts.visual_plan import Shot
 from orchestrator.state.production_assets import load_production_assets
 from orchestrator.state.run_manifest import FailureReport, RunManifest, load_run_manifest
 from orchestrator.tests.test_full_chain_resume import (  # noqa: F401 -- `chain` is a fixture
@@ -136,6 +137,16 @@ def test_transient_markers(text):
 @pytest.mark.parametrize("status,expected", [(429, "transient"), (401, "hard"), (403, "hard"), (500, "none")])
 def test_http_statuses(status, expected):
     assert run.classify_vendor_refusal("something went wrong", status) == expected
+
+
+def test_google_shared_capacity_429_is_transient_despite_saying_quota():
+    text = (
+        "SEED_GENERATION_FAILED: ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, "
+        "'message': 'Resource has been exhausted (e.g. check quota).', 'status': 'RESOURCE_EXHAUSTED'}}"
+    )
+    assert run.classify_vendor_refusal(text, 429) == "transient"
+    # a spent fixed quota stays hard
+    assert run.classify_vendor_refusal("429 RESOURCE_EXHAUSTED. Quota exceeded for aiplatform", 429) == "hard"
 
 
 def test_a_hard_marker_beats_a_429():
@@ -563,26 +574,33 @@ def test_transient_codex_refusal_that_clears_consumes_no_attempt(chain, monkeypa
     assert list(load_production_assets(run.PRODUCTION_ASSETS_FILE).shots) == ["1"]
 
 
-def test_transient_gemini_image_refusal_is_not_retried_twice(chain, monkeypatch, no_wait):
-    """The Gemini image path already backed off with QUOTA_RETRY_SECONDS."""
+def test_gemini_image_contention_is_backed_off_and_consumes_no_attempt(chain, monkeypatch, no_wait):
+    """The image path's own minute of backoff is too short for Google's
+    shared-capacity 429, which halted two live runs; the stage backs off too."""
 
     _, asset_id = chain
     shot = setup_stills(asset_id)
     calls = []
+    contention = (
+        "ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': "
+        "'Resource has been exhausted (e.g. check quota).', 'status': 'RESOURCE_EXHAUSTED'}}"
+    )
 
     async def agent(**kwargs):
-        calls.append(1)
-        await call_paid(
-            kwargs["guard"], STILL_TOOL, image_failure("ClientError: 429 RESOURCE_EXHAUSTED. Try later."),
-            tool_input={"image_provider": "gemini"},
-        )
-        return result_message(failed_still_outcome_for(shot, retryable=True).model_dump(mode="json"), cost=0.1)
+        calls.append(kwargs["attempt"])
+        if len(calls) == 1:
+            await call_paid(
+                kwargs["guard"], STILL_TOOL, image_failure(contention),
+                tool_input={"image_provider": "gemini"},
+            )
+            return result_message(failed_still_outcome_for(shot, retryable=True).model_dump(mode="json"), cost=0.1)
+        return result_message(approved_still_outcome_for(shot).model_dump(mode="json"), cost=0.1)
 
     monkeypatch.setattr(run, "generate_still_asset", agent)
     manifest = load_run_manifest(run.RUN_STATE_DIR)
-    assert asyncio.run(run.run_stills_stage(make_settings(), manifest)) == 1
-    assert len(calls) == 1 and no_wait == []
-    assert reports("stills_agent")[0]["reason_code"] == "vendor_limit"
+    assert asyncio.run(run.run_stills_stage(make_settings(), manifest)) == 0
+    assert calls == [1, 1] and no_wait == [run.TRANSIENT_BACKOFF_SECONDS[0]]
+    assert manifest.iteration_counts["stills_agent_shot_1"] == 1
 
 
 # --- failure report --------------------------------------------------------
@@ -653,16 +671,21 @@ def test_stills_pre_reservation_budget_halt_is_resumable_after_raising_the_ceili
     assert "MAX_BUDGET_USD" in report["reason"]
 
 
-def test_veo_retry_ceiling_halt_is_not_resumable(chain, monkeypatch):
+def test_a_shot_that_fails_as_video_and_still_halts_not_resumable(chain, monkeypatch):
     _, asset_id = chain
     shot = setup_veo(asset_id)
 
     async def agent(**kwargs):
         return result_message(failed_outcome_for(shot, retryable=True, reason="QA keeps failing").model_dump(mode="json"))
 
+    async def still_agent(**kwargs):
+        still = Shot.model_validate(kwargs["shot"])
+        return result_message(failed_still_outcome_for(still, retryable=True, reason="still QA keeps failing").model_dump(mode="json"))
+
     monkeypatch.setattr(run, "generate_veo_asset", agent)
+    monkeypatch.setattr(run, "generate_still_asset", still_agent)
     assert asyncio.run(run.run_veo_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 1
-    [report] = reports("veo_agent")
+    [report] = reports("stills_agent")
     assert (report["reason_code"], report["resumable"]) == ("retry_ceiling", False)
 
 

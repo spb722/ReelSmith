@@ -23,6 +23,15 @@ const HIGHLIGHT_TRAIL_FRAMES = 4;
 const BASE_COLOR = "#F7F3EA";
 const HIGHLIGHT_COLOR = "#FFC24B";
 
+// interpolate() throws on a range that is not strictly increasing, and one
+// short cue then fails the whole render. Callers shape their ranges to fit;
+// this is the backstop for whatever rounding still leaves tied.
+const strictlyIncreasing = (points: number[]): number[] =>
+  points.reduce<number[]>((out, point) => {
+    out.push(out.length ? Math.max(point, out[out.length - 1] + 0.001) : point);
+    return out;
+  }, []);
+
 export type ImpactWord = {
   text: string;
   // Both already converted to frames relative to this cue's Sequence by the
@@ -42,12 +51,19 @@ type ImpactTypographyProps = {
 export const ImpactTypography: React.FC<ImpactTypographyProps> = ({ words, durationInFrames }) => {
   const frame = useCurrentFrame();
 
-  const fadeInEnd = ENTER_DELAY_FRAMES + FADE_IN_FRAMES;
-  const fadeOutStart = Math.max(fadeInEnd, durationInFrames - FADE_OUT_FRAMES);
+  // A cue shorter than the full entrance-and-exit (a 0.6s "just to start"
+  // crashed a render) compresses both to fit, keeping a frame at full opacity.
+  const fit = Math.min(
+    1,
+    Math.max(0, durationInFrames - 1) / (ENTER_DELAY_FRAMES + FADE_IN_FRAMES + FADE_OUT_FRAMES),
+  );
+  const enterDelay = ENTER_DELAY_FRAMES * fit;
+  const fadeInEnd = enterDelay + FADE_IN_FRAMES * fit;
+  const fadeOutStart = durationInFrames - FADE_OUT_FRAMES * fit;
 
   const opacity = interpolate(
     frame,
-    [ENTER_DELAY_FRAMES, fadeInEnd, fadeOutStart, durationInFrames],
+    strictlyIncreasing([enterDelay, fadeInEnd, fadeOutStart, durationInFrames]),
     [0, 1, 1, 0],
     {
       extrapolateLeft: "clamp",
@@ -56,7 +72,7 @@ export const ImpactTypography: React.FC<ImpactTypographyProps> = ({ words, durat
     },
   );
 
-  const entrance = interpolate(frame, [ENTER_DELAY_FRAMES, fadeInEnd], [0, 1], {
+  const entrance = interpolate(frame, strictlyIncreasing([enterDelay, fadeInEnd]), [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.quad),
@@ -89,14 +105,15 @@ export const ImpactTypography: React.FC<ImpactTypographyProps> = ({ words, durat
         {words.map((word, index) => {
           // Driven entirely by the frame, never a CSS transition, which does
           // not render.
+          // A word shorter than a frame rounds to the same start and end frame.
           const lit = interpolate(
             frame,
-            [
+            strictlyIncreasing([
               word.fromFrame - HIGHLIGHT_LEAD_FRAMES,
               word.fromFrame,
               word.toFrame,
               word.toFrame + HIGHLIGHT_TRAIL_FRAMES,
-            ],
+            ]),
             [0, 1, 1, 0],
             {
               extrapolateLeft: "clamp",

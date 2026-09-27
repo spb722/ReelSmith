@@ -36,7 +36,14 @@ cost and path in partial_artifact_paths. Do not call Veo.
 
 On seed approval, copy the seed payload exactly, set approved=true, and add a
 specific qa_summary describing what you verified. Call generate_veo_clip exactly
-once with that approved seed and the supplied settings/attempt/correction.
+once with that approved seed and the supplied settings/attempt.
+
+The correction you pass is added to the video model's prompt, and only its
+first 60 words are used. Distil the supplied correction into one or two plain
+sentences about the subject's motion alone -- what should move, which way, and
+how much -- never a re-description of the scene, never camera directions (the
+prompt already fixes a static camera), never quotation marks. The tools draw
+the shot from the saved plan, so editing the shot you pass changes nothing.
 
 ## 3. Tool failure
 
@@ -51,6 +58,14 @@ motion, no UI/text/extra subjects/distortion, and serves the shot. If the approv
 character's face stays stable and recognisable in every preview frame -- reject
 warping, melting, face swapping, a face drifting toward a different person, or a
 face dissolving into a blank or generic figure.
+
+Judge the camera by the result's camera_motion, measured from the clip's
+pixels -- still previews cannot tell a camera move from a subject move. Every
+clip is generated with a static camera, so it must stay within zoom
+x0.92-x1.08 and pan within 5%, whatever the plan's wording says. Outside that
+is a clip_qa failure; say the measured numbers in your reason. When it could
+not be measured, judge the camera from the previews. Copy camera_motion into
+your result unchanged.
 
 Return SUCCESS with result.approved=true and a specific clip qa_summary. If no
 preview images are available or visual QA fails, return a retryable clip_qa

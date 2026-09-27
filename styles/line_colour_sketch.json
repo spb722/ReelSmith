@@ -1,0 +1,20 @@
+{
+  "name": "line_colour_sketch",
+  "description": "Loose line-and-colour sketch with expressive ink lines, light colour washes, and a spontaneous hand-drawn feel",
+  "palette": [
+    "ink black",
+    "sky blue",
+    "soft peach",
+    "sage green",
+    "warm beige"
+  ],
+  "lighting": "light natural daylight, delicate washes, minimal shadows",
+  "mood": "fresh, spontaneous, relaxed",
+  "avoid": [
+    "photorealism",
+    "any text, letters, numbers or logos",
+    "the name or look of a real artist",
+    "heavy rendering",
+    "fully flat vector shapes"
+  ]
+}

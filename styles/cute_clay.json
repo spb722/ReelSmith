@@ -1,0 +1,20 @@
+{
+  "name": "cute_clay",
+  "description": "Cute clay-style illustration with soft rounded 3D forms, toy-like proportions, matte clay textures, and handcrafted charm",
+  "palette": [
+    "peach",
+    "caramel brown",
+    "cream",
+    "sage green",
+    "powder blue"
+  ],
+  "lighting": "soft studio lighting, gentle shadows, subtle ambient bounce",
+  "mood": "cute, friendly, cozy, wholesome",
+  "avoid": [
+    "photorealism",
+    "any text, letters, numbers or logos",
+    "the name or look of a real artist",
+    "hard sharp edges",
+    "dark gritty mood"
+  ]
+}

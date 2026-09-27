@@ -160,6 +160,17 @@ def test_character_follows_the_plan_in_content_mode(builder, mode, tmp_path, mon
     assert "CHARACTER SUBSTITUTION" not in without["prompt"]
 
 
+def test_only_the_seed_is_composed_to_be_animated(tmp_path, content_mode):
+    """Whatever sits at the seed's edges is what motion pushes out of frame."""
+    from orchestrator.tools.gemini_tools import SEED_ANIMATION_COMPOSITION
+
+    write_plan()
+    seed = build_seed_spec(shot_dict(), text_page(tmp_path), "Narration.")
+    still = build_still_spec(shot_dict(generation_mode="STILL"), text_page(tmp_path), "Narration.")
+    assert SEED_ANIMATION_COMPOSITION in seed["prompt"]
+    assert SEED_ANIMATION_COMPOSITION not in still["prompt"]
+
+
 def test_seed_start_level_skips_to_the_rung_without_the_character(tmp_path, monkeypatch, content_mode):
     """After Veo refuses the character's face, the retry must drop the character."""
     body, face = _write_character(tmp_path)
@@ -418,3 +429,12 @@ def test_style_is_ignored_when_pictures_come_from_the_screenshots(stage, monkeyp
     saved = json.loads(run.VISUAL_PLAN_FILE.read_text())
     assert saved["style_name"] == ""
     assert saved["overall_visual_style"] == output["overall_visual_style"]
+
+
+def test_a_style_name_typed_with_its_file_extension_works(stage, monkeypatch, content_mode):
+    import orchestrator.run as run
+
+    _, _, output = stage
+    mock_query(monkeypatch, [sdk_result(output)])
+    assert _run(stage, "--style", "watercolour.json") == 0
+    assert json.loads(run.VISUAL_PLAN_FILE.read_text())["style_name"] == "watercolour"

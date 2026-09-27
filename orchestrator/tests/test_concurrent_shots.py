@@ -17,7 +17,7 @@ import pytest
 
 import orchestrator.run as run
 from orchestrator.contracts.veo import VeoFailureContract, VeoOutcomeContract, shot_fingerprint
-from orchestrator.contracts.visual_plan import VisualPlanContract
+from orchestrator.contracts.visual_plan import Shot, VisualPlanContract
 from orchestrator.settings import DEFAULT_SHOT_CONCURRENCY, load_settings
 from orchestrator.state.production_assets import load_production_assets
 from orchestrator.state.run_manifest import load_run_manifest, save_run_manifest
@@ -372,6 +372,12 @@ def test_several_shot_specific_failures_make_one_combined_report(chain, monkeypa
     async def agent(**kwargs):
         sequence = kwargs["shot"]["sequence"]
         shot = plan.shots[sequence - 1]
+        if sequence == 1 and kwargs["shot"]["generation_mode"] == "STILL":
+            # the video failed, so shot 1 became a still -- which fails too
+            return result_message(
+                failed_still_outcome_for(Shot.model_validate(kwargs["shot"]), retryable=False,
+                                         reason="still defect").model_dump(mode="json"), cost=0.1,
+            )
         if sequence == 1:
             return result_message(
                 failed_outcome_for(shot, retryable=False, reason="seed defect").model_dump(mode="json"), cost=0.1,
@@ -390,15 +396,15 @@ def test_several_shot_specific_failures_make_one_combined_report(chain, monkeypa
     [report] = all_reports()
     assert report["stage_id"] == "production"
     assert [(e["sequence"], e["stage_id"], e["scope"], e["reason_code"]) for e in report["failed_shots"]] == [
-        (1, "veo_agent", "shot", "unclassified"),
+        (1, "stills_agent", "shot", "unclassified"),
         (2, "stills_agent", "shot", "retry_ceiling"),
     ]
     assert report["attempt_count"] == 1 + 2
-    assert "seed defect" in report["reason"] and "still failing" in report["reason"]
+    assert "still defect" in report["reason"] and "still failing" in report["reason"]
 
 
 
-def test_a_veo_shot_that_exhausts_its_retries_lets_its_siblings_finish(chain, monkeypatch):
+def test_a_veo_shot_that_exhausts_its_retries_becomes_a_still_and_its_siblings_finish(chain, monkeypatch):
     _, asset_id = chain
     plan = mixed_plan(asset_id, veo=1, stills=2)
     manifest = load_run_manifest(run.RUN_STATE_DIR)
@@ -407,24 +413,28 @@ def test_a_veo_shot_that_exhausts_its_retries_lets_its_siblings_finish(chain, mo
     calls = []
 
     async def agent(**kwargs):
-        sequence = kwargs["shot"]["sequence"]
-        calls.append((sequence, kwargs["attempt"]))
-        if sequence == 1:
+        sequence, mode = kwargs["shot"]["sequence"], kwargs["shot"]["generation_mode"]
+        calls.append((sequence, mode, kwargs["attempt"]))
+        if sequence == 1 and mode == "VEO":
             return result_message(
                 failed_outcome_for(plan.shots[0], retryable=True, reason="clip QA failed").model_dump(mode="json"),
                 cost=0.1,
             )
         await asyncio.sleep(0.02)
+        if mode == "STILL":
+            return result_message(
+                approved_still_outcome_for(Shot.model_validate(kwargs["shot"])).model_dump(mode="json"), cost=0.1,
+            )
         return success(plan, sequence)
 
     install(monkeypatch, agent)
-    assert asyncio.run(run.run_production_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 1
-    assert sorted(calls) == [(1, 1), (1, 2), (2, 1), (3, 1)]
-    assert made() == {"2", "3"}
-    [report] = all_reports()
-    [entry] = report["failed_shots"]
-    assert (entry["sequence"], entry["scope"], entry["reason_code"], entry["failure_stage"]) == (
-        1, "shot", "retry_ceiling", "veo_generation")
+    assert asyncio.run(run.run_production_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 0
+    assert sorted(calls) == [
+        (1, "STILL", 1), (1, "VEO", 1), (1, "VEO", 2), (2, "STILL", 1), (3, "STILL", 1),
+    ]
+    assert made() == {"1", "2", "3"}
+    assert load_production_assets(run.PRODUCTION_ASSETS_FILE).shots["1"].generation_mode == "STILL"
+    assert all_reports() == []
 
 
 def test_a_mixed_report_is_led_by_the_systemic_failure(chain, monkeypatch):
@@ -622,9 +632,11 @@ def test_a_resume_redoes_only_the_failed_shot_with_its_ladder_rung(chain, monkey
         if sequence == 2:
             if kwargs["attempt"] == 1:
                 return result_message(likeness_rejection(), cost=0.1)
-            return result_message(
-                failed_outcome_for(shot_two, retryable=False, reason="seed defect").model_dump(mode="json"), cost=0.1,
-            )
+            # A shot-specific failure would now make shot 2 a still; a vendor
+            # limit stops the run with shot 2 still a video, for a resume --
+            # once its siblings are done, so they are not stopped with it.
+            await asyncio.sleep(0.05)
+            return vendor_hard_refusal()
         await asyncio.sleep(0.01)
         return success(plan, sequence)
 
@@ -632,7 +644,7 @@ def test_a_resume_redoes_only_the_failed_shot_with_its_ladder_rung(chain, monkey
     assert asyncio.run(run.run_production_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 1
     assert made() == {"1", "3"}
     [report] = all_reports()
-    assert [(e["sequence"], e["scope"]) for e in report["failed_shots"]] == [(2, "shot")]
+    assert [e["sequence"] for e in report["failed_shots"]] == [2]
 
     calls = []
 
@@ -642,8 +654,9 @@ def test_a_resume_redoes_only_the_failed_shot_with_its_ladder_rung(chain, monkey
 
     install(monkeypatch, resumed)
     assert asyncio.run(run.run_production_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 0
-    # Only shot 2, on its third try, starting past the refused rung.
-    assert calls == [(2, 3, 1)]
+    # Only shot 2, on its second try (the refused one was given back),
+    # starting past the refused rung.
+    assert calls == [(2, 2, 1)]
     assert made() == {"1", "2", "3"}
 
 

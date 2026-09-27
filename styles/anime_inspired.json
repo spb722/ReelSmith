@@ -1,0 +1,20 @@
+{
+  "name": "anime_inspired",
+  "description": "Stylised anime-inspired illustration with expressive eyes, clean line art, cel shading, dynamic compositions, and polished modern character design",
+  "palette": [
+    "sky blue",
+    "peach",
+    "cream",
+    "navy",
+    "leaf green"
+  ],
+  "lighting": "clean cinematic light, cel-shaded shadows, bright highlights",
+  "mood": "youthful, emotive, cinematic, polished",
+  "avoid": [
+    "photorealism",
+    "any text, letters, numbers or logos",
+    "the name or look of a real artist",
+    "hyper-detailed skin texture",
+    "messy painterly strokes"
+  ]
+}

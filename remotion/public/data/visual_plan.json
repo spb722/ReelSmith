@@ -1,116 +1,120 @@
 {
   "produced_by": "visual_agent",
-  "overall_visual_style": "Flat editorial illustration with a soft gouache grain: confident dark-cocoa outlines of even weight, large simple shapes, visible paper tooth over every fill, no gradients beyond one soft light wash per frame. Strictly limited palette — warm cream (pale butter) for all backgrounds and negative space, deep cocoa brown for linework and shadow, muted teal as the single cool accent object in each frame, dusty terracotta for skin and warm props, soft sage for secondary props and fabric. Lighting is one warm directional source, low contrast, with long soft shadows pooling to one side of the subject. Mood is calm, wry and unhurried: ordinary domestic-office and corridor objects treated with quiet dignity, generous empty cream space around a single focal subject. The recurring character is the same person in every shot they appear in — a person in their mid-thirties, medium build, short dark-brown hair tucked behind the ears, a loose olive-sage crew-neck sweater with sleeves pushed to the elbows, dark trousers, no accessories, face calm and unexaggerated.",
+  "overall_visual_style": "Stylised anime-inspired illustration with expressive eyes, clean line art, cel shading, dynamic compositions, and polished modern character design. Palette: sky blue, peach, cream, navy, leaf green. Lighting: clean cinematic light, cel-shaded shadows, bright highlights. Mood: youthful, emotive, cinematic, polished. Avoid: photorealism, any text, letters, numbers or logos, the name or look of a real artist, hyper-detailed skin texture, messy painterly strokes.",
   "shots": [
     {
       "sequence": 1,
       "generation_mode": "STILL",
       "visual_treatment": "AI_VIDEO_CANDIDATE",
       "source_asset_ids": [
-        "img_0b1a97f297f3"
+        "img_f2a854c34981"
       ],
-      "shot_goal": "Open inside the viewer's own overstuffed day: a person busily clearing small things while the one big thing waits.",
-      "frame_composition": "Medium shot of the recurring character seated at a small pale-wood desk in a plain cream-walled room, seen three-quarters from the front. They are dropping one more opened envelope onto a loose fan of already-opened envelopes spread across the desktop, a ring of keys hooked on one finger, a folded paper shopping bag and a muted teal mug crowding the desk edge. On the floor beside the desk sits a large sealed cardboard box, its tape unbroken, untouched. Bright midday light comes from a window off frame left, laying a long soft shadow of the box across the floorboards. Upper third of the frame is empty cream wall.",
-      "motion_plan": "Very slow push-in on the character's hands and the spreading fan of envelopes, drifting a touch left so the sealed box on the floor stays in frame the whole time.",
-      "text_overlay": "",
-      "source_support": "Scene 1's narration lists a day of small cleared tasks (emails, an appointment, errands) while one big project went untouched, matching Card 1's body text. Envelopes, keys and a shopping bag stand in for the small tasks as ordinary objects; the sealed box is the untouched project. No study, result or fact beyond the card is pictured.",
-      "video_candidate_rank": 5,
-      "video_motion_intent": "One continuous slow dolly-in toward the desk while the character's hand lays a single envelope down onto the pile — one small natural action plus one steady camera move, so the busyness reads as ongoing rather than posed.",
+      "shot_goal": "Name the viewer's own quiet plateau in a single recognisable image: a fine job, a fine routine, and no movement in it.",
+      "frame_composition": "Interior of a calm, tidy office in early morning. Medium shot from slightly behind and to one side of the reel's recurring character, who sits motionless at a plain cream desk, shoulders lowered, chin propped on one hand, gaze aimed past the desk at nothing in particular. The desk is bare except for a cold mug and a small leaf-green potted plant; no screens, papers, boards or signage anywhere in the room. A tall window on the left throws clean cinematic sky-blue daylight across cream walls, cel-shaded shadow pooling under the desk and along the navy chair back. The upper third of the frame is open empty wall.",
+      "motion_plan": "Very slow push in on the seated figure, closing gently from medium to medium-close over the whole shot, so the room quietly tightens around a person who is not moving.",
+      "text_overlay": "You're just stuck",
+      "source_support": "The cited card describes being plateaued in a job and routine that are fine, with every small change looking worse, so the person stays put exactly where they are. The picture shows only that: an ordinary workplace and a person holding still, adding no event or outcome the card does not state.",
+      "video_candidate_rank": 4,
+      "video_motion_intent": "The seated figure breathes out and their shoulders slump slightly lower, then settle and hold still.",
       "shows_character": true,
-      "scene_content_fingerprint": "0ef9688d10870440721cb07834ced1faa1712fa4c14ffe2693cf26da011d83e6",
+      "scene_content_fingerprint": "8b485877d45a22944e5502a04b6a0b36bb4662a17bec5547c2e6fe1e321d738e",
       "start_seconds": 0.2,
-      "end_seconds": 10.48,
+      "end_seconds": 12.08,
       "primary_subtitle_cue_ids": [
         "cue_001",
         "cue_002",
         "cue_003",
-        "cue_004"
+        "cue_004",
+        "cue_005",
+        "cue_006"
       ],
-      "fade_in_frames": 18,
+      "fade_in_frames": 12,
       "fade_out_frames": 8,
       "still_motion": {
         "scale_from": 1.0,
-        "scale_to": 1.09,
+        "scale_to": 1.08,
         "translate_x_from": 0.0,
-        "translate_x_to": -2.5,
+        "translate_x_to": -0.01,
         "translate_y_from": 0.0,
         "translate_y_to": 0.0,
-        "easing": "easeOut"
+        "easing": "ease"
       },
       "video_promotion_decided": true
     },
     {
       "sequence": 2,
-      "generation_mode": "VEO",
+      "generation_mode": "STILL",
       "visual_treatment": "AI_VIDEO_CANDIDATE",
       "source_asset_ids": [
-        "img_0b1a97f297f3"
+        "img_db36560c2f08"
       ],
-      "shot_goal": "Land the sting: the day is over, the desk is clear, and the thing that mattered has not been opened.",
-      "frame_composition": "Wide, still shot of the same room at dusk, now empty of people. The desk is tidied — the envelopes gone, only the muted teal mug left — and the chair is pushed back at an angle. The large sealed cardboard box sits alone on the floor in the centre-right of the frame, tape still unbroken, a faint ring of dust around its base. Low amber six-o'clock light rakes in from the window off frame left across the floorboards, and the far side of the room falls into soft cocoa shadow. Large area of dim empty cream wall fills the upper half of the frame.",
-      "motion_plan": "Almost imperceptible push-in toward the sealed box, holding long and quiet, with a slight downward drift so the empty chair leaves the top of frame.",
-      "text_overlay": "The thing that mattered? Untouched.",
-      "source_support": "Scene 2 says that by six the day felt hard-worked yet the one thing that mattered is untouched, straight from Card 1. The unbroken tape and settled dust show only the absence of work on the box; nothing is added about why.",
-      "video_candidate_rank": 3,
-      "video_motion_intent": "Hold the camera nearly locked and let only the light change — the amber window light creeping a few degrees dimmer and longer across the floor over the shot. Atmosphere carries this beat entirely, and a still frame would feel inert where a slow dying light feels like the end of a day.",
+      "shot_goal": "Hand the idea to one concrete creature and make the direction of travel physical: the exit begins by going deeper in.",
+      "frame_composition": "Underwater, inside a slatted wooden lobster trap resting on pale sand. Medium-close, fully side-on framing: a single peach-shelled lobster low in the frame, body angled toward the shadowed centre of the cage on the left, legs mid-stride, antennae trailing behind it. To the right, the funnel entrance glows with bright sky-blue open water; the cage interior the lobster faces is deep navy, banded by hard cel-shaded slat shadows falling across the sand. Clean cinematic underwater light, crisp line art on the shell, bright highlights along its back. No lettering, markings or buoys anywhere in frame.",
+      "motion_plan": "Slow lateral drift of the frame from right to left, travelling with the lobster away from the bright opening and into the banded shadow at the cage's centre.",
+      "text_overlay": "",
+      "source_support": "The cited card states the lobster must move deeper into the cage first, back toward the centre, before it can ever reach the opening. The frame stages exactly that geometry — bright opening behind, dark centre ahead — and shows no escape, which the card does not grant.",
+      "video_candidate_rank": 2,
+      "video_motion_intent": "The lobster walks steadily sideways across the frame into the darker part of the cage, legs stepping in rhythm, antennae trailing.",
       "shows_character": false,
-      "scene_content_fingerprint": "c4134e4f256f09f23bc0e374f890fd7ed05a36dc1352b85a991ad6240a89ce16",
-      "start_seconds": 10.48,
-      "end_seconds": 17.36,
+      "scene_content_fingerprint": "4df15bb36e1ef9a82c0ca26fd764365ca6f9e47427e02eb07f6b28b7af6d765f",
+      "start_seconds": 12.08,
+      "end_seconds": 22.44,
       "primary_subtitle_cue_ids": [
-        "cue_005",
-        "cue_006",
         "cue_007",
-        "cue_008"
+        "cue_008",
+        "cue_009",
+        "cue_010",
+        "cue_011"
       ],
       "fade_in_frames": 8,
-      "fade_out_frames": 16,
+      "fade_out_frames": 6,
       "still_motion": {
-        "scale_from": 1.02,
-        "scale_to": 1.08,
-        "translate_x_from": 0.0,
-        "translate_x_to": 0.0,
-        "translate_y_from": -1.5,
-        "translate_y_to": 1.5,
-        "easing": "ease"
+        "scale_from": 1.04,
+        "scale_to": 1.04,
+        "translate_x_from": 0.05,
+        "translate_x_to": -0.05,
+        "translate_y_from": 0.0,
+        "translate_y_to": 0.0,
+        "easing": "linear"
       },
       "video_promotion_decided": true
     },
     {
       "sequence": 3,
       "generation_mode": "STILL",
-      "visual_treatment": "SUBTLE_ANIMATION",
+      "visual_treatment": "AI_VIDEO_CANDIDATE",
       "source_asset_ids": [
-        "img_c3520a740522"
+        "img_db36560c2f08"
       ],
-      "shot_goal": "Separate a shrunken list from a finished job: real progress on the small things, zero on the big one.",
-      "frame_composition": "Close-medium overhead-angled shot of the desktop only, warm lamp light from frame right. The clutter of small objects has dwindled to a neat, tidy remainder at the left edge — three flattened envelopes squared into a stack and the ring of keys hung on a hook — leaving a wide sweep of bare pale wood. Occupying the right two thirds and the focal centre sits the same large cardboard box, lifted onto the desk now, its teal packing tape still running unbroken across the lid. Soft cocoa shadow under the box, cream wall visible along the top edge.",
-      "motion_plan": "Gentle drift from the tidy stack at the left across the bare wood and settling on the sealed lid of the box, with a slight scale-up as it settles.",
-      "text_overlay": "aren't the same thing",
-      "source_support": "Scene 3 and Card 2 state the day was not laziness and the list genuinely shrank, but a short list and a finished project are not the same. The tidied remainder shows the shrinking; the unbroken tape shows the unfinished project. No cause is pictured, since the card only announces one.",
-      "video_candidate_rank": null,
-      "video_motion_intent": "",
+      "shot_goal": "Land the reversal: the instinct toward the light is sensible, and it is exactly what keeps the creature caught.",
+      "frame_composition": "Close side-on shot inside the same slatted wooden trap. The peach-shelled lobster is pressed up against the bright wall of the cage, claws raised against the slats, its whole body leaning toward the glow. Behind and around it the cage interior falls away into navy shadow. Sky-blue light blooms hard through the gaps between the slats, cutting bright cel-shaded bars across the shell and the sand below and throwing long stripes into the dark behind. Fine silt hangs in the beams. Clean cinematic underwater light, bright rim highlights on the raised claws. No lettering or markings anywhere.",
+      "motion_plan": "Slow push in past the lobster's raised claws toward the blooming light between the slats, so the glow steadily fills more of the frame while the creature stays exactly where it is.",
+      "text_overlay": "the one direction that feels wrong",
+      "source_support": "The cited card states every instinct pulls the lobster away from the tight space and toward the light, so it stays trapped by its own good sense. The picture shows the creature still pressed to the lit wall and still inside the trap, asserting no escape.",
+      "video_candidate_rank": 3,
+      "video_motion_intent": "Light through the slats ripples and shifts gently across the lobster's shell and the sand, as the water above slowly moves.",
       "shows_character": false,
-      "scene_content_fingerprint": "12ee11f229486e5bc9d42ec446bc65fcd3ff115ec35e8deed8b34a32655c564d",
-      "start_seconds": 17.36,
-      "end_seconds": 27.84,
+      "scene_content_fingerprint": "6a1682d9e50c02f9da71cb71f809e1fe57d25ccdea4621f717e0490891955929",
+      "start_seconds": 22.44,
+      "end_seconds": 34.52,
       "primary_subtitle_cue_ids": [
-        "cue_009",
-        "cue_010",
-        "cue_011",
         "cue_012",
-        "cue_013"
+        "cue_013",
+        "cue_014",
+        "cue_015",
+        "cue_016",
+        "cue_017"
       ],
-      "fade_in_frames": 14,
-      "fade_out_frames": 6,
+      "fade_in_frames": 6,
+      "fade_out_frames": 10,
       "still_motion": {
         "scale_from": 1.0,
-        "scale_to": 1.07,
-        "translate_x_from": 3.0,
-        "translate_x_to": -3.0,
+        "scale_to": 1.1,
+        "translate_x_from": 0.0,
+        "translate_x_to": 0.03,
         "translate_y_from": 0.0,
         "translate_y_to": 0.0,
-        "easing": "ease"
+        "easing": "easeOut"
       },
       "video_promotion_decided": true
     },
@@ -119,73 +123,73 @@
       "generation_mode": "STILL",
       "visual_treatment": "AI_VIDEO_CANDIDATE",
       "source_asset_ids": [
-        "img_544417835e97"
+        "img_4fd6d502d4ff"
       ],
-      "shot_goal": "Set up the experiment as a small physical puzzle: two heavy buckets, one underfoot, one far down the hall.",
-      "frame_composition": "Wide, symmetrical eye-level shot down a plain, bare corridor with cream walls, a pale grey floor and a simple open doorway at the far end. In the immediate foreground, bottom-left of frame, a heavy muted-teal bucket sits squat on the floor, close enough to read as within arm's reach. Far down the corridor, small in the distance and just short of the doorway, an identical teal bucket waits. No people, no furniture, nothing else in the corridor. Cool even daylight spills from the far doorway toward the camera, each bucket casting one short soft shadow.",
-      "motion_plan": "Slow, steady push straight down the centre of the corridor, so the far bucket grows slightly while the near bucket stays anchored at the bottom edge of frame.",
+      "shot_goal": "Turn the metaphor toward the viewer: a small rise in fog that feels, from inside it, like the summit.",
+      "frame_composition": "Wide exterior shot of a low grassy rise swallowed in thick pale fog. The reel's recurring character stands near the crest, small in the frame and seen from behind, facing out into blank white. Leaf-green grass and a few bent stems show at their feet, and the ground falls gently away on every visible side before dissolving into cream-white fog within a few metres. Cool sky-blue daylight comes diffuse from above with soft cel-shaded shadow under the grass tufts; a faint peach warmth glows somewhere high in the murk. Nothing else is visible — no path, marker, structure or signage.",
+      "motion_plan": "Begin slightly tight on the figure and ease outward to a wider frame, letting the featureless fog grow around them until the small rise reads as the only ground there is.",
       "text_overlay": "",
-      "source_support": "Scene 4 and Card 3 describe researchers asking people to carry one of two heavy buckets down a hallway, one beside them and one waiting near the finish. The corridor and two identical buckets are exactly that setup and nothing more; no researchers, institution or outcome is shown, since the card names none and its own illustration is clipped and unidentifiable.",
-      "video_candidate_rank": 2,
-      "video_motion_intent": "A single slow forward dolly down the empty corridor with nothing else moving — the creeping distance to the far bucket is the whole point of the beat, and only real motion makes that stretch of hallway feel long.",
-      "shows_character": false,
-      "scene_content_fingerprint": "6b5ea52127067f69c8fb2f98b4c4135de23566a7f4cc76ba75b4b150fadaf35c",
-      "start_seconds": 27.84,
-      "end_seconds": 37.52,
+      "source_support": "The cited card describes standing on a hill in thick fog where the ground falls away in every direction so it feels like the very top. The frame illustrates that described situation and nothing more.",
+      "video_candidate_rank": 1,
+      "video_motion_intent": "Thick fog drifts slowly and continuously sideways across the slope, thinning and thickening as it passes the standing figure.",
+      "shows_character": true,
+      "scene_content_fingerprint": "04ca29559cce98f77b8ea8789b10c6e0fab9222bcf8c6749dceedb185f8d11ad",
+      "start_seconds": 34.52,
+      "end_seconds": 43.04,
       "primary_subtitle_cue_ids": [
-        "cue_014",
-        "cue_015",
-        "cue_016",
-        "cue_017",
-        "cue_018"
+        "cue_018",
+        "cue_019",
+        "cue_020",
+        "cue_021",
+        "cue_022"
       ],
-      "fade_in_frames": 6,
-      "fade_out_frames": 5,
+      "fade_in_frames": 14,
+      "fade_out_frames": 8,
       "still_motion": {
-        "scale_from": 1.0,
-        "scale_to": 1.1,
+        "scale_from": 1.14,
+        "scale_to": 1.0,
         "translate_x_from": 0.0,
         "translate_x_to": 0.0,
-        "translate_y_from": 0.0,
-        "translate_y_to": -1.0,
-        "easing": "linear"
+        "translate_y_from": 0.02,
+        "translate_y_to": -0.01,
+        "easing": "ease"
       },
       "video_promotion_decided": true
     },
     {
       "sequence": 5,
-      "generation_mode": "VEO",
+      "generation_mode": "STILL",
       "visual_treatment": "AI_VIDEO_CANDIDATE",
       "source_asset_ids": [
-        "img_544417835e97"
+        "img_4fd6d502d4ff"
       ],
-      "shot_goal": "Deliver the reversal physically: the near bucket gets grabbed and hauled the entire length anyway.",
-      "frame_composition": "Medium-wide shot from behind, in the same bare cream corridor. An anonymous study participant — a broad-shouldered stranger in a plain grey work shirt and dark trousers, back fully to camera, face never visible, clearly not the person from the desk scenes — trudges away down the middle of the corridor, body leaning to counterweight the heavy muted-teal bucket dragging down their right arm. Their near-side shoulder is dropped and their gait is laboured. Ahead of them, still untouched beside the far doorway, the second identical teal bucket waits. The empty patch of floor they started from is visible at the bottom of frame. Flat daylight from the far doorway, long shadow trailing back toward camera.",
-      "motion_plan": "Camera holds steady while the frame drifts forward a little behind the walking figure, keeping the untouched far bucket visible ahead of them the whole way.",
-      "text_overlay": "lugged it the whole way",
-      "source_support": "Scene 5 and Card 3 state the far bucket was the easier carry yet almost everyone grabbed the near one and lugged it the whole way. The strain and the still-untouched far bucket show only that. The participant is anonymous and faceless because the card names no individual and no likeness may be drawn.",
-      "video_candidate_rank": 1,
-      "video_motion_intent": "The figure takes a few slow laboured steps away from camera, bucket swinging slightly at their side, camera easing forward behind them. One simple natural action in one direction — the physical waste of effort is the reversal, and it only truly reads when you watch the carry continue.",
-      "shows_character": false,
-      "scene_content_fingerprint": "5c9805e73045d6b933196c069c6632d951ba2b5b48cd1cb2214422f3365a81a4",
-      "start_seconds": 37.52,
-      "end_seconds": 45.32,
+      "shot_goal": "Open the trapped feeling into possibility: something far higher exists across the valley, reachable only by going down first.",
+      "frame_composition": "Wide exterior shot from just behind and to one side of the same rise. The recurring character stands in profile at the crest's edge, one foot already set on the ground sloping downward, body turned toward a deep fog-filled valley. Across that valley the thinning cloud shows the faint navy silhouette of a far larger mountain, its upper flank catching clean peach light, its base still buried in cream-white fog. Leaf-green grass at the crest, sky-blue sky brightening above the cloud layer, crisp cel-shaded shadow along the slope. No path, markers or structures anywhere.",
+      "motion_plan": "Gentle lateral drift across the valley from the figure at the crest toward the distant peak, with a barely perceptible lift, so the far summit slides into view as the frame travels.",
+      "text_overlay": "",
+      "source_support": "The cited card states a far higher peak could be sitting just across the valley, hidden in the clouds, and that you would never find it while you refuse to walk downhill. The peak is drawn faint and half-hidden and the figure has only begun to step down — the card promises no arrival.",
+      "video_candidate_rank": 5,
+      "video_motion_intent": "Fog drifts steadily across the valley, thinning and gathering so the distant peak's silhouette firms and softens again.",
+      "shows_character": true,
+      "scene_content_fingerprint": "43d2a500e80e8188eabdfa454ceaab353bc63e936a4c7bab042c79ed9d07c09c",
+      "start_seconds": 43.04,
+      "end_seconds": 51.69,
       "primary_subtitle_cue_ids": [
-        "cue_019",
-        "cue_020",
-        "cue_021",
-        "cue_022",
-        "cue_023"
+        "cue_023",
+        "cue_024",
+        "cue_025",
+        "cue_026",
+        "cue_027"
       ],
-      "fade_in_frames": 5,
-      "fade_out_frames": 10,
+      "fade_in_frames": 8,
+      "fade_out_frames": 12,
       "still_motion": {
-        "scale_from": 1.04,
-        "scale_to": 1.12,
-        "translate_x_from": 0.0,
-        "translate_x_to": 0.0,
-        "translate_y_from": 1.0,
-        "translate_y_to": -1.0,
+        "scale_from": 1.02,
+        "scale_to": 1.06,
+        "translate_x_from": 0.04,
+        "translate_x_to": -0.04,
+        "translate_y_from": 0.01,
+        "translate_y_to": -0.01,
         "easing": "ease"
       },
       "video_promotion_decided": true
@@ -195,109 +199,35 @@
       "generation_mode": "STILL",
       "visual_treatment": "MIXED",
       "source_asset_ids": [
-        "img_544417835e97",
-        "img_ea8d31906663"
+        "img_6f249baebdba"
       ],
-      "shot_goal": "Name the reflex on the exact instant it happens — the hand closing on whatever is nearest.",
-      "frame_composition": "Tight close-up, low to the floor, of one hand clamped hard around the wire handle of the muted-teal bucket, knuckles tight and the handle already lifting so the bucket's base has just cleared the ground. Only the hand and forearm in a plain grey sleeve are in frame; no face, no body. Behind the hand the corridor falls away shallow and softly blurred, with the second teal bucket a small unfocused shape far down the hall. Cool daylight from the far end rims the top of the handle. Wide soft-focus cream space above the hand.",
-      "motion_plan": "Hold nearly static on the gripping hand with the faintest scale-up, letting the blurred far bucket stay small and unreachable behind it.",
-      "text_overlay": "pre-crastination",
-      "source_support": "Scene 6 pairs Card 3's 'extra effort just to start doing something a few seconds sooner' with Card 4's naming of the reflex. The grabbing hand pictures the urge to begin immediately; the term itself is delivered as overlay and narration. No author is depicted, since the source card shows only surnames and establishes no identity.",
-      "video_candidate_rank": null,
-      "video_motion_intent": "",
-      "shows_character": false,
-      "scene_content_fingerprint": "9d8c5f5a00006ca8a78ce57810f256125d0391c8fcf36e934825acc6fbefce5c",
-      "start_seconds": 45.32,
-      "end_seconds": 54.59,
-      "primary_subtitle_cue_ids": [
-        "cue_024",
-        "cue_025",
-        "cue_026",
-        "cue_027",
-        "cue_028"
-      ],
-      "fade_in_frames": 5,
-      "fade_out_frames": 12,
-      "still_motion": {
-        "scale_from": 1.0,
-        "scale_to": 1.05,
-        "translate_x_from": 0.0,
-        "translate_x_to": 0.0,
-        "translate_y_from": 0.0,
-        "translate_y_to": 0.5,
-        "easing": "easeOut"
-      },
-      "video_promotion_decided": true
-    },
-    {
-      "sequence": 7,
-      "generation_mode": "STILL",
-      "visual_treatment": "SUBTLE_ANIMATION",
-      "source_asset_ids": [
-        "img_ea8d31906663"
-      ],
-      "shot_goal": "Carry the reflex back to the desk: many light things counted, one heavy thing never weighed.",
-      "frame_composition": "Close-medium shot of the recurring character at the pale-wood desk, cropped from chest to hands, head slightly bowed and out of the top of frame's focus. Both cupped hands are full of a heap of small smooth pale pebbles, a few spilling over the edge of their palms and scattering across the desktop. Resting alone on the bare wood to their right, ignored and untouched by either hand, sits one large dark river stone, heavy enough to press a shadow into the wood. Warm lamp light from frame right, cream wall behind, wide empty space at the top of the frame.",
-      "motion_plan": "Slow drift right from the overflowing handful of pebbles toward the single heavy stone, easing to a stop on the stone.",
-      "text_overlay": "counting tasks, not weighing them",
-      "source_support": "Scene 7 and Card 4 say the busy day ran on the same instinct because it optimised for the number of tasks instead of their weight. Many light pebbles gathered versus one heavy stone untouched pictures count against weight as physical objects, with no chart, figure or added claim.",
+      "shot_goal": "Settle the payoff and leave the question with the viewer: the descent already begun, the cost accepted.",
+      "frame_composition": "Medium-wide exterior seen from slightly below, on the descending hillside. The recurring character stands a few steps down from the crest, fog now at waist height around them, body half-turned toward the valley and head lifted toward the far ridge. The crest they left sits small and pale behind and above them. Warm peach light spreads along the distant ridgeline and catches the top of the fog; cool sky-blue shadow fills the slope below. Leaf-green grass breaks through the fog near the figure's feet. Generous empty fog in the lower third of the frame. No path, structures, markers or signage.",
+      "motion_plan": "Slow, steady push in on the figure standing below the crest, easing to a near stop on the held frame so the shot settles rather than arrives.",
+      "text_overlay": "What's the step back you keep refusing?",
+      "source_support": "The cited card's closing line is that a worse move today can be exactly the price of a better peak tomorrow, reached by accepting a step backward on purpose. The picture shows a figure who has taken a lower position on the slope with the far ridge lit ahead — the card's own payoff, with no author, book or named term depicted, since that card's uncertainties leave their identity unestablished.",
       "video_candidate_rank": null,
       "video_motion_intent": "",
       "shows_character": true,
-      "scene_content_fingerprint": "bfb49ad625edf0e9f096b399fcfee7ebbbe5f3fee780dfb3568463e6a8dcde2f",
-      "start_seconds": 54.59,
-      "end_seconds": 61.51,
+      "scene_content_fingerprint": "59589ab462ad1bf570bf8487ab485a68f17861c65e55e8c09a1c9ca6f2e22602",
+      "start_seconds": 51.69,
+      "end_seconds": 59.37,
       "primary_subtitle_cue_ids": [
+        "cue_028",
         "cue_029",
         "cue_030",
         "cue_031",
         "cue_032"
       ],
-      "fade_in_frames": 12,
-      "fade_out_frames": 8,
-      "still_motion": {
-        "scale_from": 1.06,
-        "scale_to": 1.0,
-        "translate_x_from": -4.0,
-        "translate_x_to": 4.0,
-        "translate_y_from": 0.0,
-        "translate_y_to": 0.0,
-        "easing": "easeOut"
-      },
-      "video_promotion_decided": true
-    },
-    {
-      "sequence": 8,
-      "generation_mode": "VEO",
-      "visual_treatment": "AI_VIDEO_CANDIDATE",
-      "source_asset_ids": [
-        "img_ea8d31906663"
-      ],
-      "shot_goal": "Close on the repeatable decision: choose the heavy thing first, deliberately, before the day starts.",
-      "frame_composition": "Medium shot of the recurring character at the same desk the next morning, seen three-quarters from the front, calm and unhurried. They have swept the small objects — the flattened envelopes, the keys, the muted teal mug — to the far left edge of the desk, and with both hands they are setting the large cardboard box down squarely in the clear centre of the desktop, directly in front of themselves, fingers resting on its still-sealed lid. Clean early-morning light comes from the window frame left, pale and even, with a short soft shadow under the box. Generous empty cream wall across the top third of the frame.",
-      "motion_plan": "Slow steady push-in on the character and the centred box, settling and holding on their hands resting on the lid.",
-      "text_overlay": "the easy wins eat your day",
-      "source_support": "Scene 8 and Card 4 close on deciding what you are actually trying to win before choosing what to do first, or the easy wins eat the day. Placing the big sealed box at the centre and the small objects aside shows that single decision, using props already established in earlier shots; no outcome or reward is depicted.",
-      "video_candidate_rank": 4,
-      "video_motion_intent": "The character lowers the box the last few inches onto the desk and rests both hands on the lid, camera easing in slightly as they settle. One short, decisive natural action that turns the closing line into something the viewer watches someone actually do.",
-      "shows_character": true,
-      "scene_content_fingerprint": "bb71299eb1eb45194e65a9b7fb509c6c7a5ad2f8ea31a2bdde9cf1a70bfb32e3",
-      "start_seconds": 61.51,
-      "end_seconds": 67.19,
-      "primary_subtitle_cue_ids": [
-        "cue_033",
-        "cue_034",
-        "cue_035"
-      ],
-      "fade_in_frames": 8,
+      "fade_in_frames": 10,
       "fade_out_frames": 24,
       "still_motion": {
-        "scale_from": 1.0,
-        "scale_to": 1.08,
+        "scale_from": 1.02,
+        "scale_to": 1.12,
         "translate_x_from": 0.0,
         "translate_x_to": 0.0,
-        "translate_y_from": 1.0,
-        "translate_y_to": -1.0,
+        "translate_y_from": -0.01,
+        "translate_y_to": 0.01,
         "easing": "easeOut"
       },
       "video_promotion_decided": true
@@ -306,7 +236,7 @@
   "quality_review": {
     "verdict": "APPROVE",
     "ready_for_generation": true,
-    "confidence": 0.87,
+    "confidence": 0.88,
     "scores": {
       "source_fidelity": 9,
       "generation_mode_appropriateness": 9,
@@ -315,5 +245,6 @@
       "internal_consistency": 10
     }
   },
-  "source_mode": "content"
+  "source_mode": "content",
+  "style_name": "anime_inspired"
 }

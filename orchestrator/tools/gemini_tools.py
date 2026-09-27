@@ -268,6 +268,29 @@ def persisted_shot_direction(sequence: int) -> tuple[str, bool]:
     raise ValueError(f"Shot {sequence} is not in {VISUAL_PLAN_FILE}")
 
 
+def authoritative_shot(shot: dict) -> dict:
+    """The saved plan's copy of the shot the agent relayed into a tool call.
+
+    Same rule as `authoritative_asset`. A live Veo agent rewrote the relayed
+    shot's frame_composition to steer the seed, then rewrote it again for the
+    clip; the two fingerprints no longer matched, the clip was refused and the
+    run halted. The plan the orchestrator validated is what gets drawn, so
+    only its sequence is taken from the agent. Without a saved plan (unit
+    tests) the relayed shot is used as-is.
+    """
+
+    if not VISUAL_PLAN_FILE.is_file():
+        return shot
+    try:
+        plan = json.loads(VISUAL_PLAN_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return shot
+    for candidate in plan.get("shots") or []:
+        if candidate.get("sequence") == shot.get("sequence"):
+            return candidate
+    return shot
+
+
 def build_content_prompt(shot: Shot, subtitle_text: str, style: str, *, purpose: str) -> str:
     """The SOURCE_MODE=content request: draw the planned scene from scratch.
 
@@ -314,6 +337,17 @@ def _image_spec(
     }
 
 
+# The seed is the clip's first frame, and whatever sits at its edges is what
+# motion pushes out of frame or drags into the foreground: a live clip lost its
+# second bucket that way, and hands with nothing to hold grew extra fingers.
+SEED_ANIMATION_COMPOSITION = (
+    "Compose this frame to be animated: one clear focal subject with room around it and space "
+    "above the head, nothing important in the outer tenth of the frame, any secondary object "
+    "standing on a surface well inside the frame, and hands resting on or holding something "
+    "visible. "
+)
+
+
 def build_seed_spec(
     shot: dict, asset: dict, subtitle_text: str, start_level: int = 0
 ) -> dict:
@@ -337,7 +371,7 @@ def build_seed_spec(
         prompt = build_content_prompt(
             validated_shot, subtitle_text, style,
             purpose="clean, complete 9:16 production frame for image-to-video generation",
-        )
+        ) + SEED_ANIMATION_COMPOSITION
         full_ladder = build_prompt_ladder(prompt, asset, content_sequence=validated_shot.sequence)
         ladder = full_ladder[min(max(start_level, 0), len(full_ladder) - 1):]
         return _image_spec(validated_shot, asset, source_path, ladder, send_source_image=False,
@@ -362,6 +396,7 @@ def build_seed_spec(
         f"Narration context (for mood and meaning only, never to be written into the image): "
         f"{subtitle_text.strip()}. "
     )
+    prompt += SEED_ANIMATION_COMPOSITION
     # FINAL RULE always lands last, after any character block, so a plan that
     # asks for on-screen text cannot win.
     #
@@ -1187,6 +1222,7 @@ def _traced_image_tool(name: str, body, args: dict) -> dict:
 
 
 def _generate_veo_seed(args: dict) -> dict:
+    args = {**args, "shot": authoritative_shot(args["shot"])}
     try:
         spec = build_seed_spec(
             args["shot"],
@@ -1275,6 +1311,7 @@ async def generate_still(args: dict) -> dict:
 
 
 def _generate_still(args: dict) -> dict:
+    args = {**args, "shot": authoritative_shot(args["shot"])}
     try:
         spec = build_still_spec(args["shot"], args["asset"], args.get("subtitle_text", ""))
         provider = str(args.get("image_provider") or "gemini")

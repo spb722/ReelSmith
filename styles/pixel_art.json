@@ -1,0 +1,20 @@
+{
+  "name": "pixel_art",
+  "description": "Retro pixel-art illustration with crisp pixel blocks, a limited palette, simplified forms, and game-like environments",
+  "palette": [
+    "azure blue",
+    "teal green",
+    "sun yellow",
+    "orange",
+    "cream"
+  ],
+  "lighting": "simple sprite-style lighting with limited shading",
+  "mood": "playful, nostalgic, compact",
+  "avoid": [
+    "photorealism",
+    "any text, letters, numbers or logos",
+    "the name or look of a real artist",
+    "blurry edges",
+    "smooth gradients"
+  ]
+}

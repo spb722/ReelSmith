@@ -117,6 +117,9 @@ class VeoResultContract(ContractModel):
     operation_name: str | None = None
     operation_dump_path: Annotated[str, Field(min_length=1)]
     preview_paths: list[str] = Field(default_factory=list)
+    # Measured by the tool from the clip's pixels, for clip QA: previews alone
+    # cannot tell a camera move from a subject move.
+    camera_motion: str = ""
     model: Annotated[str, Field(min_length=1)]
     approved: bool = False
     qa_summary: str = ""

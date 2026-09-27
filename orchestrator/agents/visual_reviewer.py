@@ -62,6 +62,12 @@ only on those files and your skills' files.
 - A VEO shot lists its seed first, then preview frames of the clip made from it.
   A defect in the seed is failure_stage "seed_qa"; a defect that appears only in
   the clip's frames is "clip_qa".
+- A VEO shot's input also carries "camera_motion", measured from the clip's
+  pixels. Still frames cannot tell a camera move from a subject move, so judge
+  the camera by this number. Every clip is generated with a static camera, so
+  it must stay within zoom x0.92-x1.08 and pan within 5%, whatever the plan's
+  wording says; outside that is a "clip_qa" defect. When it says it could not
+  be measured, judge the camera from the frames.
 - A STILL shot lists one image; any defect is "still_qa".
 The input's "ladder_note", when present, says which character wording the image
 model actually accepted. Follow it: never reject for something it says was not
@@ -87,6 +93,7 @@ async def review_visual_asset(
     character_reference_paths: list[str],
     ladder_note: str,
     max_budget_usd: float,
+    camera_motion: str = "",
 ) -> ResultMessage:
     files = resolved_files([*images_under_review, *character_reference_paths])
     payload = {
@@ -97,6 +104,8 @@ async def review_visual_asset(
         "character_reference_paths": [str(path) for path in resolved_files(character_reference_paths)],
         "ladder_note": ladder_note,
     }
+    if camera_motion:
+        payload["camera_motion"] = camera_motion
     prompt = "Review the generated images for this one shot:\n" + json.dumps(payload, ensure_ascii=False)
     options = ClaudeAgentOptions(
         model=load_settings().reviewer_model,

@@ -1,1234 +1,1203 @@
 {
   "produced_by": "voice_agent",
-  "source_narration_script": "You had one big project today. Instead you answered twelve emails, booked a dentist appointment, cleared three errands. By six you feel like you worked hard. The thing that mattered? Untouched. That wasn't laziness. Your list did get shorter. But a short list and a finished project aren't the same thing. Researchers once asked people to carry one of two heavy buckets down a hallway. One sat beside them. The other waited near the finish. The far bucket was the easier carry. Almost everyone grabbed the near one and lugged it the whole way. Extra effort, just to start doing something a few seconds sooner. There's a name for it: pre-crastination. Your busy day ran on the same instinct. You were counting tasks, not weighing them. Decide what you're trying to win. Or the easy wins eat your day.",
-  "alignment_ratio": 0.9856115107913669,
+  "source_narration_script": "You're not unhappy at work. You're just stuck. Every small change you can think of makes things a little worse, so you stay put. Picture a lobster in a trap. To get out, it has to crawl deeper into the cage, back toward the center, before it can reach the opening. But every instinct pulls it toward the light. So it stays trapped by its own good sense, because the way out is the one direction that feels wrong. That's you on a hill in thick fog. The ground falls away in every direction, so it feels like the top. But a far higher peak could be hidden across the valley. You'll never find it unless you walk downhill. A worse move today can be the price of a better peak tomorrow. What's the step back you keep refusing?",
+  "alignment_ratio": 1.0,
   "audio_provenance": {
     "version": 1,
-    "narration_script": "You had one big project today. Instead you answered twelve emails, booked a dentist appointment, cleared three errands. By six you feel like you worked hard. The thing that mattered? Untouched. That wasn't laziness. Your list did get shorter. But a short list and a finished project aren't the same thing. Researchers once asked people to carry one of two heavy buckets down a hallway. One sat beside them. The other waited near the finish. The far bucket was the easier carry. Almost everyone grabbed the near one and lugged it the whole way. Extra effort, just to start doing something a few seconds sooner. There's a name for it: pre-crastination. Your busy day ran on the same instinct. You were counting tasks, not weighing them. Decide what you're trying to win. Or the easy wins eat your day.",
+    "narration_script": "You're not unhappy at work. You're just stuck. Every small change you can think of makes things a little worse, so you stay put. Picture a lobster in a trap. To get out, it has to crawl deeper into the cage, back toward the center, before it can reach the opening. But every instinct pulls it toward the light. So it stays trapped by its own good sense, because the way out is the one direction that feels wrong. That's you on a hill in thick fog. The ground falls away in every direction, so it feels like the top. But a far higher peak could be hidden across the valley. You'll never find it unless you walk downhill. A worse move today can be the price of a better peak tomorrow. What's the step back you keep refusing?",
     "voice_direction": {
-      "persona": "A warm, level-headed friend explaining something that quietly changed how they plan their days",
+      "persona": "A warm, grounded friend explaining an idea that quietly rearranged how they think",
       "tone": [
-        "warm",
         "calm",
-        "wry",
-        "confident",
-        "unhurried"
+        "warm",
+        "curious",
+        "quietly certain"
       ],
       "pace_wpm": 150,
       "delivery_notes": [
-        "Open conversationally, as if recounting the listener's own day back to them, with no accusation.",
-        "Let 'Untouched.' land flat and quiet — it is the sting, not a punchline.",
-        "Soften on 'That wasn't laziness.' — this is the reassurance beat.",
-        "Tell the bucket experiment like a small story: slightly brighter, curious, slower on the setup so the two bucket positions are clear.",
-        "Say 'pre-crastination' slowly and cleanly; it is a new word for the listener.",
-        "End steady and direct, turning toward the viewer rather than lifting into a sales pitch."
+        "Open flat and familiar, almost a shrug — this is a feeling the listener already knows.",
+        "Lean gently on 'small' and 'a little' in the opening; the smallness of the failed moves is the setup for the whole idea.",
+        "Slow down on the lobster's movement so the listener can picture the direction of travel.",
+        "Say 'the one direction that feels wrong' softly, as a realization, not a punchline.",
+        "Let 'That's you' land as a gentle turn toward the listener, not an accusation.",
+        "Deliver the closing line as the settled truth of the piece, then ask the final question quietly."
       ],
       "emphasis_phrases": [
-        "The thing that mattered? Untouched.",
-        "aren't the same thing",
-        "the near one",
-        "a few seconds sooner",
-        "pre-crastination",
-        "the easy wins eat your day"
+        "just stuck",
+        "a little worse",
+        "deeper into the cage",
+        "its own good sense",
+        "the one direction that feels wrong",
+        "That's you",
+        "walk downhill",
+        "a better peak tomorrow"
       ],
       "pause_after_phrases": [
-        "cleared three errands.",
-        "Untouched.",
-        "aren't the same thing.",
-        "The other waited near the finish.",
-        "lugged it the whole way.",
-        "pre-crastination.",
-        "Decide what you're trying to win."
+        "You're just stuck.",
+        "before it can reach the opening.",
+        "the one direction that feels wrong.",
+        "so it feels like the top.",
+        "the price of a better peak tomorrow."
       ]
     },
     "voice_name": "Gacrux",
     "model": "gemini-3.1-flash-tts-preview",
-    "audio_sha256": "dbfd49fa3be2c7977e117f14018605749efe18f940500bea71fe4dbf0126fb53"
+    "audio_sha256": "f23bf12770bf5af5cb774b64605bbc7bbc93dbedb756f72ae9955c26c3b7695d"
   },
   "cues": [
     {
       "cue_id": "cue_001",
       "start_seconds": 0.2,
-      "end_seconds": 3.21,
-      "word_count": 6,
-      "text": "You had one big project today.",
+      "end_seconds": 2.61,
+      "word_count": 5,
+      "text": "You're not unhappy at work.",
       "words": [
         {
           "index": 1,
-          "word": "You",
+          "word": "You're",
           "start_seconds": 0.24,
-          "end_seconds": 0.52
+          "end_seconds": 0.44
         },
         {
           "index": 2,
-          "word": "had",
-          "start_seconds": 0.52,
-          "end_seconds": 0.92
+          "word": "not",
+          "start_seconds": 0.44,
+          "end_seconds": 0.96
         },
         {
           "index": 3,
-          "word": "one",
-          "start_seconds": 0.92,
-          "end_seconds": 1.6
+          "word": "unhappy",
+          "start_seconds": 0.96,
+          "end_seconds": 1.72
         },
         {
           "index": 4,
-          "word": "big",
-          "start_seconds": 1.68,
-          "end_seconds": 2.04
+          "word": "at",
+          "start_seconds": 1.72,
+          "end_seconds": 1.88
         },
         {
           "index": 5,
-          "word": "project",
-          "start_seconds": 2.04,
-          "end_seconds": 2.6
-        },
-        {
-          "index": 6,
-          "word": "today",
-          "start_seconds": 2.6,
-          "end_seconds": 2.96
+          "word": "work",
+          "start_seconds": 1.88,
+          "end_seconds": 2.36
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_002",
-      "start_seconds": 3.68,
-      "end_seconds": 6.31,
-      "word_count": 5,
-      "text": "Instead you answered twelve emails,",
+      "start_seconds": 2.88,
+      "end_seconds": 4.65,
+      "word_count": 3,
+      "text": "You're just stuck.",
       "words": [
         {
+          "index": 6,
+          "word": "You're",
+          "start_seconds": 2.92,
+          "end_seconds": 3.04
+        },
+        {
           "index": 7,
-          "word": "Instead",
-          "start_seconds": 3.72,
-          "end_seconds": 4.52
+          "word": "just",
+          "start_seconds": 3.04,
+          "end_seconds": 3.68
         },
         {
           "index": 8,
-          "word": "you",
-          "start_seconds": 4.56,
-          "end_seconds": 4.76
-        },
-        {
-          "index": 9,
-          "word": "answered",
-          "start_seconds": 4.76,
-          "end_seconds": 5.12
-        },
-        {
-          "index": 10,
-          "word": "twelve",
-          "start_seconds": 5.12,
-          "end_seconds": 5.44
-        },
-        {
-          "index": 11,
-          "word": "emails",
-          "start_seconds": 5.44,
-          "end_seconds": 6.08
+          "word": "stuck",
+          "start_seconds": 3.68,
+          "end_seconds": 4.4
         }
       ],
-      "style_hint": "NORMAL"
+      "style_hint": "IMPACT"
     },
     {
       "cue_id": "cue_003",
-      "start_seconds": 6.32,
-      "end_seconds": 8.01,
-      "word_count": 4,
-      "text": "booked a dentist appointment,",
+      "start_seconds": 5.48,
+      "end_seconds": 6.91,
+      "word_count": 5,
+      "text": "Every small change you can",
       "words": [
         {
+          "index": 9,
+          "word": "Every",
+          "start_seconds": 5.52,
+          "end_seconds": 5.96
+        },
+        {
+          "index": 10,
+          "word": "small",
+          "start_seconds": 5.96,
+          "end_seconds": 6.32
+        },
+        {
+          "index": 11,
+          "word": "change",
+          "start_seconds": 6.32,
+          "end_seconds": 6.72
+        },
+        {
           "index": 12,
-          "word": "booked",
-          "start_seconds": 6.36,
-          "end_seconds": 6.64
+          "word": "you",
+          "start_seconds": 6.72,
+          "end_seconds": 6.8
         },
         {
           "index": 13,
-          "word": "a",
-          "start_seconds": 6.64,
-          "end_seconds": 6.68
-        },
-        {
-          "index": 14,
-          "word": "dentist",
-          "start_seconds": 6.68,
-          "end_seconds": 7.08
-        },
-        {
-          "index": 15,
-          "word": "appointment",
-          "start_seconds": 7.08,
-          "end_seconds": 7.76
+          "word": "can",
+          "start_seconds": 6.8,
+          "end_seconds": 6.96
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_004",
-      "start_seconds": 8.04,
-      "end_seconds": 9.69,
-      "word_count": 3,
-      "text": "cleared three errands.",
+      "start_seconds": 6.92,
+      "end_seconds": 8.43,
+      "word_count": 4,
+      "text": "think of makes things",
       "words": [
         {
+          "index": 14,
+          "word": "think",
+          "start_seconds": 6.96,
+          "end_seconds": 7.28
+        },
+        {
+          "index": 15,
+          "word": "of",
+          "start_seconds": 7.28,
+          "end_seconds": 7.72
+        },
+        {
           "index": 16,
-          "word": "cleared",
-          "start_seconds": 8.08,
-          "end_seconds": 8.52
+          "word": "makes",
+          "start_seconds": 7.88,
+          "end_seconds": 8.16
         },
         {
           "index": 17,
-          "word": "three",
-          "start_seconds": 8.52,
-          "end_seconds": 8.88
-        },
-        {
-          "index": 18,
-          "word": "errands",
-          "start_seconds": 8.88,
-          "end_seconds": 9.44
+          "word": "things",
+          "start_seconds": 8.16,
+          "end_seconds": 8.48
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_005",
-      "start_seconds": 10.48,
-      "end_seconds": 11.75,
-      "word_count": 4,
-      "text": "By six you feel",
+      "start_seconds": 8.44,
+      "end_seconds": 9.73,
+      "word_count": 3,
+      "text": "a little worse,",
       "words": [
         {
+          "index": 18,
+          "word": "a",
+          "start_seconds": 8.48,
+          "end_seconds": 8.52
+        },
+        {
           "index": 19,
-          "word": "By",
-          "start_seconds": 10.52,
-          "end_seconds": 10.68
+          "word": "little",
+          "start_seconds": 8.52,
+          "end_seconds": 8.92
         },
         {
           "index": 20,
-          "word": "six",
-          "start_seconds": 10.68,
-          "end_seconds": 11.32
-        },
-        {
-          "index": 21,
-          "word": "you",
-          "start_seconds": 11.32,
-          "end_seconds": 11.48
-        },
-        {
-          "index": 22,
-          "word": "feel",
-          "start_seconds": 11.48,
-          "end_seconds": 11.8
+          "word": "worse",
+          "start_seconds": 8.92,
+          "end_seconds": 9.48
         }
       ],
-      "style_hint": "NORMAL"
+      "style_hint": "EMPHASIS"
     },
     {
       "cue_id": "cue_006",
-      "start_seconds": 11.76,
-      "end_seconds": 13.17,
+      "start_seconds": 9.92,
+      "end_seconds": 11.21,
       "word_count": 4,
-      "text": "like you worked hard.",
+      "text": "so you stay put.",
       "words": [
         {
+          "index": 21,
+          "word": "so",
+          "start_seconds": 9.96,
+          "end_seconds": 10.12
+        },
+        {
+          "index": 22,
+          "word": "you",
+          "start_seconds": 10.12,
+          "end_seconds": 10.24
+        },
+        {
           "index": 23,
-          "word": "like",
-          "start_seconds": 11.8,
-          "end_seconds": 12.04
+          "word": "stay",
+          "start_seconds": 10.24,
+          "end_seconds": 10.48
         },
         {
           "index": 24,
-          "word": "you",
-          "start_seconds": 12.04,
-          "end_seconds": 12.16
-        },
-        {
-          "index": 25,
-          "word": "worked",
-          "start_seconds": 12.16,
-          "end_seconds": 12.44
-        },
-        {
-          "index": 26,
-          "word": "hard",
-          "start_seconds": 12.44,
-          "end_seconds": 12.92
+          "word": "put",
+          "start_seconds": 10.48,
+          "end_seconds": 10.96
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_007",
-      "start_seconds": 13.68,
-      "end_seconds": 14.97,
-      "word_count": 4,
-      "text": "The thing that mattered?",
+      "start_seconds": 12.08,
+      "end_seconds": 14.53,
+      "word_count": 6,
+      "text": "Picture a lobster in a trap.",
       "words": [
         {
+          "index": 25,
+          "word": "Picture",
+          "start_seconds": 12.12,
+          "end_seconds": 12.68
+        },
+        {
+          "index": 26,
+          "word": "a",
+          "start_seconds": 12.68,
+          "end_seconds": 12.76
+        },
+        {
           "index": 27,
-          "word": "The",
-          "start_seconds": 13.72,
-          "end_seconds": 13.84
+          "word": "lobster",
+          "start_seconds": 12.76,
+          "end_seconds": 13.48
         },
         {
           "index": 28,
-          "word": "thing",
-          "start_seconds": 13.84,
-          "end_seconds": 14.0
+          "word": "in",
+          "start_seconds": 13.48,
+          "end_seconds": 13.64
         },
         {
           "index": 29,
-          "word": "that",
-          "start_seconds": 14.0,
-          "end_seconds": 14.16
+          "word": "a",
+          "start_seconds": 13.64,
+          "end_seconds": 13.68
         },
         {
           "index": 30,
-          "word": "mattered",
-          "start_seconds": 14.16,
-          "end_seconds": 14.72
-        }
-      ],
-      "style_hint": "IMPACT"
-    },
-    {
-      "cue_id": "cue_008",
-      "start_seconds": 15.48,
-      "end_seconds": 16.57,
-      "word_count": 1,
-      "text": "Untouched.",
-      "words": [
-        {
-          "index": 31,
-          "word": "Untouched",
-          "start_seconds": 15.52,
-          "end_seconds": 16.32
-        }
-      ],
-      "style_hint": "IMPACT"
-    },
-    {
-      "cue_id": "cue_009",
-      "start_seconds": 17.36,
-      "end_seconds": 19.05,
-      "word_count": 3,
-      "text": "That wasn't laziness.",
-      "words": [
-        {
-          "index": 32,
-          "word": "That",
-          "start_seconds": 17.4,
-          "end_seconds": 17.68
-        },
-        {
-          "index": 33,
-          "word": "wasn't",
-          "start_seconds": 17.68,
-          "end_seconds": 18.04
-        },
-        {
-          "index": 34,
-          "word": "laziness",
-          "start_seconds": 18.04,
-          "end_seconds": 18.8
+          "word": "trap",
+          "start_seconds": 13.68,
+          "end_seconds": 14.28
         }
       ],
       "style_hint": "NORMAL"
     },
     {
-      "cue_id": "cue_010",
-      "start_seconds": 19.4,
-      "end_seconds": 21.33,
-      "word_count": 5,
-      "text": "Your list did get shorter.",
+      "cue_id": "cue_008",
+      "start_seconds": 14.8,
+      "end_seconds": 16.39,
+      "word_count": 6,
+      "text": "To get out, it has to",
       "words": [
         {
+          "index": 31,
+          "word": "To",
+          "start_seconds": 14.84,
+          "end_seconds": 15.0
+        },
+        {
+          "index": 32,
+          "word": "get",
+          "start_seconds": 15.0,
+          "end_seconds": 15.24
+        },
+        {
+          "index": 33,
+          "word": "out",
+          "start_seconds": 15.24,
+          "end_seconds": 15.8
+        },
+        {
+          "index": 34,
+          "word": "it",
+          "start_seconds": 15.96,
+          "end_seconds": 16.08
+        },
+        {
           "index": 35,
-          "word": "Your",
-          "start_seconds": 19.44,
-          "end_seconds": 19.64
+          "word": "has",
+          "start_seconds": 16.08,
+          "end_seconds": 16.32
         },
         {
           "index": 36,
-          "word": "list",
-          "start_seconds": 19.64,
-          "end_seconds": 20.08
-        },
+          "word": "to",
+          "start_seconds": 16.32,
+          "end_seconds": 16.44
+        }
+      ],
+      "style_hint": "NORMAL"
+    },
+    {
+      "cue_id": "cue_009",
+      "start_seconds": 16.4,
+      "end_seconds": 18.55,
+      "word_count": 5,
+      "text": "crawl deeper into the cage,",
+      "words": [
         {
           "index": 37,
-          "word": "did",
-          "start_seconds": 20.08,
-          "end_seconds": 20.36
+          "word": "crawl",
+          "start_seconds": 16.44,
+          "end_seconds": 16.76
         },
         {
           "index": 38,
-          "word": "get",
-          "start_seconds": 20.36,
-          "end_seconds": 20.6
+          "word": "deeper",
+          "start_seconds": 16.76,
+          "end_seconds": 17.36
         },
         {
           "index": 39,
-          "word": "shorter",
-          "start_seconds": 20.6,
-          "end_seconds": 21.08
+          "word": "into",
+          "start_seconds": 17.36,
+          "end_seconds": 17.6
+        },
+        {
+          "index": 40,
+          "word": "the",
+          "start_seconds": 17.6,
+          "end_seconds": 17.68
+        },
+        {
+          "index": 41,
+          "word": "cage",
+          "start_seconds": 17.68,
+          "end_seconds": 18.36
+        }
+      ],
+      "style_hint": "IMPACT"
+    },
+    {
+      "cue_id": "cue_010",
+      "start_seconds": 18.56,
+      "end_seconds": 20.09,
+      "word_count": 4,
+      "text": "back toward the center,",
+      "words": [
+        {
+          "index": 42,
+          "word": "back",
+          "start_seconds": 18.6,
+          "end_seconds": 18.88
+        },
+        {
+          "index": 43,
+          "word": "toward",
+          "start_seconds": 18.88,
+          "end_seconds": 19.16
+        },
+        {
+          "index": 44,
+          "word": "the",
+          "start_seconds": 19.16,
+          "end_seconds": 19.28
+        },
+        {
+          "index": 45,
+          "word": "center",
+          "start_seconds": 19.28,
+          "end_seconds": 19.84
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_011",
-      "start_seconds": 21.84,
-      "end_seconds": 23.31,
-      "word_count": 4,
-      "text": "But a short list",
+      "start_seconds": 20.16,
+      "end_seconds": 22.05,
+      "word_count": 6,
+      "text": "before it can reach the opening.",
       "words": [
         {
-          "index": 40,
-          "word": "But",
-          "start_seconds": 21.88,
-          "end_seconds": 22.08
+          "index": 46,
+          "word": "before",
+          "start_seconds": 20.2,
+          "end_seconds": 20.68
         },
         {
-          "index": 41,
-          "word": "a",
-          "start_seconds": 22.08,
-          "end_seconds": 22.12
+          "index": 47,
+          "word": "it",
+          "start_seconds": 20.68,
+          "end_seconds": 20.76
         },
         {
-          "index": 42,
-          "word": "short",
-          "start_seconds": 22.12,
-          "end_seconds": 22.6
+          "index": 48,
+          "word": "can",
+          "start_seconds": 20.76,
+          "end_seconds": 20.92
         },
         {
-          "index": 43,
-          "word": "list",
-          "start_seconds": 22.6,
-          "end_seconds": 23.2
+          "index": 49,
+          "word": "reach",
+          "start_seconds": 20.92,
+          "end_seconds": 21.16
+        },
+        {
+          "index": 50,
+          "word": "the",
+          "start_seconds": 21.16,
+          "end_seconds": 21.32
+        },
+        {
+          "index": 51,
+          "word": "opening",
+          "start_seconds": 21.32,
+          "end_seconds": 21.8
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_012",
-      "start_seconds": 23.32,
-      "end_seconds": 25.25,
+      "start_seconds": 22.44,
+      "end_seconds": 24.47,
       "word_count": 4,
-      "text": "and a finished project",
+      "text": "But every instinct pulls",
       "words": [
         {
-          "index": 44,
-          "word": "and",
-          "start_seconds": 23.36,
-          "end_seconds": 23.52
+          "index": 52,
+          "word": "But",
+          "start_seconds": 22.48,
+          "end_seconds": 22.8
         },
         {
-          "index": 45,
-          "word": "a",
-          "start_seconds": 23.52,
-          "end_seconds": 23.6
+          "index": 53,
+          "word": "every",
+          "start_seconds": 22.84,
+          "end_seconds": 23.4
         },
         {
-          "index": 46,
-          "word": "finished",
-          "start_seconds": 23.6,
-          "end_seconds": 24.24
+          "index": 54,
+          "word": "instinct",
+          "start_seconds": 23.4,
+          "end_seconds": 24.08
         },
         {
-          "index": 47,
-          "word": "project",
-          "start_seconds": 24.24,
-          "end_seconds": 25.0
+          "index": 55,
+          "word": "pulls",
+          "start_seconds": 24.08,
+          "end_seconds": 24.52
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_013",
-      "start_seconds": 25.4,
-      "end_seconds": 26.77,
+      "start_seconds": 24.48,
+      "end_seconds": 25.77,
       "word_count": 4,
-      "text": "aren't the same thing.",
+      "text": "it toward the light.",
       "words": [
         {
-          "index": 48,
-          "word": "aren't",
-          "start_seconds": 25.44,
-          "end_seconds": 25.72
+          "index": 56,
+          "word": "it",
+          "start_seconds": 24.52,
+          "end_seconds": 24.68
         },
         {
-          "index": 49,
+          "index": 57,
+          "word": "toward",
+          "start_seconds": 24.68,
+          "end_seconds": 24.92
+        },
+        {
+          "index": 58,
           "word": "the",
-          "start_seconds": 25.72,
-          "end_seconds": 25.8
+          "start_seconds": 24.92,
+          "end_seconds": 25.04
         },
         {
-          "index": 50,
-          "word": "same",
-          "start_seconds": 25.8,
-          "end_seconds": 26.04
-        },
-        {
-          "index": 51,
-          "word": "thing",
-          "start_seconds": 26.04,
-          "end_seconds": 26.52
+          "index": 59,
+          "word": "light",
+          "start_seconds": 25.04,
+          "end_seconds": 25.52
         }
       ],
-      "style_hint": "IMPACT"
+      "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_014",
-      "start_seconds": 27.84,
-      "end_seconds": 29.51,
+      "start_seconds": 26.04,
+      "end_seconds": 27.73,
       "word_count": 4,
-      "text": "Researchers once asked people",
+      "text": "So it stays trapped",
       "words": [
         {
-          "index": 52,
-          "word": "Researchers",
-          "start_seconds": 27.88,
-          "end_seconds": 28.64
+          "index": 60,
+          "word": "So",
+          "start_seconds": 26.08,
+          "end_seconds": 26.28
         },
         {
-          "index": 53,
-          "word": "once",
-          "start_seconds": 28.64,
-          "end_seconds": 28.92
+          "index": 61,
+          "word": "it",
+          "start_seconds": 26.28,
+          "end_seconds": 26.4
         },
         {
-          "index": 54,
-          "word": "asked",
-          "start_seconds": 28.92,
-          "end_seconds": 29.24
+          "index": 62,
+          "word": "stays",
+          "start_seconds": 26.4,
+          "end_seconds": 26.8
         },
         {
-          "index": 55,
-          "word": "people",
-          "start_seconds": 29.24,
-          "end_seconds": 29.56
+          "index": 63,
+          "word": "trapped",
+          "start_seconds": 26.8,
+          "end_seconds": 27.48
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_015",
-      "start_seconds": 29.52,
-      "end_seconds": 31.07,
+      "start_seconds": 27.84,
+      "end_seconds": 29.49,
       "word_count": 5,
-      "text": "to carry one of two",
+      "text": "by its own good sense,",
       "words": [
-        {
-          "index": 56,
-          "word": "to",
-          "start_seconds": 29.56,
-          "end_seconds": 29.68
-        },
-        {
-          "index": 57,
-          "word": "carry",
-          "start_seconds": 29.68,
-          "end_seconds": 30.12
-        },
-        {
-          "index": 58,
-          "word": "one",
-          "start_seconds": 30.12,
-          "end_seconds": 30.52
-        },
-        {
-          "index": 59,
-          "word": "of",
-          "start_seconds": 30.52,
-          "end_seconds": 30.72
-        },
-        {
-          "index": 60,
-          "word": "two",
-          "start_seconds": 30.72,
-          "end_seconds": 31.12
-        }
-      ],
-      "style_hint": "NORMAL"
-    },
-    {
-      "cue_id": "cue_016",
-      "start_seconds": 31.08,
-      "end_seconds": 32.93,
-      "word_count": 5,
-      "text": "heavy buckets down a hallway.",
-      "words": [
-        {
-          "index": 61,
-          "word": "heavy",
-          "start_seconds": 31.12,
-          "end_seconds": 31.48
-        },
-        {
-          "index": 62,
-          "word": "buckets",
-          "start_seconds": 31.48,
-          "end_seconds": 31.84
-        },
-        {
-          "index": 63,
-          "word": "down",
-          "start_seconds": 31.84,
-          "end_seconds": 32.08
-        },
         {
           "index": 64,
-          "word": "a",
-          "start_seconds": 32.08,
-          "end_seconds": 32.12
+          "word": "by",
+          "start_seconds": 27.88,
+          "end_seconds": 28.04
         },
         {
           "index": 65,
-          "word": "hallway",
-          "start_seconds": 32.12,
-          "end_seconds": 32.68
+          "word": "its",
+          "start_seconds": 28.04,
+          "end_seconds": 28.24
+        },
+        {
+          "index": 66,
+          "word": "own",
+          "start_seconds": 28.24,
+          "end_seconds": 28.44
+        },
+        {
+          "index": 67,
+          "word": "good",
+          "start_seconds": 28.44,
+          "end_seconds": 28.68
+        },
+        {
+          "index": 68,
+          "word": "sense",
+          "start_seconds": 28.68,
+          "end_seconds": 29.24
+        }
+      ],
+      "style_hint": "EMPHASIS"
+    },
+    {
+      "cue_id": "cue_016",
+      "start_seconds": 29.8,
+      "end_seconds": 31.31,
+      "word_count": 5,
+      "text": "because the way out is",
+      "words": [
+        {
+          "index": 69,
+          "word": "because",
+          "start_seconds": 29.84,
+          "end_seconds": 30.08
+        },
+        {
+          "index": 70,
+          "word": "the",
+          "start_seconds": 30.08,
+          "end_seconds": 30.2
+        },
+        {
+          "index": 71,
+          "word": "way",
+          "start_seconds": 30.2,
+          "end_seconds": 30.48
+        },
+        {
+          "index": 72,
+          "word": "out",
+          "start_seconds": 30.48,
+          "end_seconds": 31.0
+        },
+        {
+          "index": 73,
+          "word": "is",
+          "start_seconds": 31.2,
+          "end_seconds": 31.36
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_017",
-      "start_seconds": 33.24,
-      "end_seconds": 34.65,
-      "word_count": 4,
-      "text": "One sat beside them.",
-      "words": [
-        {
-          "index": 66,
-          "word": "One",
-          "start_seconds": 33.28,
-          "end_seconds": 33.52
-        },
-        {
-          "index": 67,
-          "word": "sat",
-          "start_seconds": 33.52,
-          "end_seconds": 33.8
-        },
-        {
-          "index": 68,
-          "word": "beside",
-          "start_seconds": 33.8,
-          "end_seconds": 34.12
-        },
-        {
-          "index": 69,
-          "word": "them",
-          "start_seconds": 34.12,
-          "end_seconds": 34.4
-        }
-      ],
-      "style_hint": "NORMAL"
-    },
-    {
-      "cue_id": "cue_018",
-      "start_seconds": 34.84,
-      "end_seconds": 37.01,
+      "start_seconds": 31.32,
+      "end_seconds": 33.77,
       "word_count": 6,
-      "text": "The other waited near the finish.",
+      "text": "the one direction that feels wrong.",
       "words": [
-        {
-          "index": 70,
-          "word": "The",
-          "start_seconds": 34.88,
-          "end_seconds": 35.08
-        },
-        {
-          "index": 71,
-          "word": "other",
-          "start_seconds": 35.08,
-          "end_seconds": 35.44
-        },
-        {
-          "index": 72,
-          "word": "waited",
-          "start_seconds": 35.44,
-          "end_seconds": 35.84
-        },
-        {
-          "index": 73,
-          "word": "near",
-          "start_seconds": 35.84,
-          "end_seconds": 36.08
-        },
         {
           "index": 74,
           "word": "the",
-          "start_seconds": 36.08,
-          "end_seconds": 36.16
+          "start_seconds": 31.36,
+          "end_seconds": 31.48
         },
         {
           "index": 75,
-          "word": "finish",
-          "start_seconds": 36.16,
-          "end_seconds": 36.76
-        }
-      ],
-      "style_hint": "NORMAL"
-    },
-    {
-      "cue_id": "cue_019",
-      "start_seconds": 37.52,
-      "end_seconds": 38.51,
-      "word_count": 3,
-      "text": "The far bucket",
-      "words": [
+          "word": "one",
+          "start_seconds": 31.48,
+          "end_seconds": 31.8
+        },
         {
           "index": 76,
-          "word": "The",
-          "start_seconds": 37.56,
-          "end_seconds": 37.68
+          "word": "direction",
+          "start_seconds": 31.8,
+          "end_seconds": 32.32
         },
         {
           "index": 77,
-          "word": "far",
-          "start_seconds": 37.68,
-          "end_seconds": 38.08
+          "word": "that",
+          "start_seconds": 32.32,
+          "end_seconds": 32.48
         },
         {
           "index": 78,
-          "word": "bucket",
-          "start_seconds": 38.08,
-          "end_seconds": 38.56
+          "word": "feels",
+          "start_seconds": 32.48,
+          "end_seconds": 33.0
+        },
+        {
+          "index": 79,
+          "word": "wrong",
+          "start_seconds": 33.0,
+          "end_seconds": 33.52
+        }
+      ],
+      "style_hint": "IMPACT"
+    },
+    {
+      "cue_id": "cue_018",
+      "start_seconds": 34.52,
+      "end_seconds": 36.07,
+      "word_count": 5,
+      "text": "That's you on a hill",
+      "words": [
+        {
+          "index": 80,
+          "word": "That's",
+          "start_seconds": 34.56,
+          "end_seconds": 34.88
+        },
+        {
+          "index": 81,
+          "word": "you",
+          "start_seconds": 34.88,
+          "end_seconds": 35.28
+        },
+        {
+          "index": 82,
+          "word": "on",
+          "start_seconds": 35.52,
+          "end_seconds": 35.68
+        },
+        {
+          "index": 83,
+          "word": "a",
+          "start_seconds": 35.68,
+          "end_seconds": 35.72
+        },
+        {
+          "index": 84,
+          "word": "hill",
+          "start_seconds": 35.72,
+          "end_seconds": 36.12
+        }
+      ],
+      "style_hint": "EMPHASIS"
+    },
+    {
+      "cue_id": "cue_019",
+      "start_seconds": 36.08,
+      "end_seconds": 37.37,
+      "word_count": 3,
+      "text": "in thick fog.",
+      "words": [
+        {
+          "index": 85,
+          "word": "in",
+          "start_seconds": 36.12,
+          "end_seconds": 36.24
+        },
+        {
+          "index": 86,
+          "word": "thick",
+          "start_seconds": 36.24,
+          "end_seconds": 36.56
+        },
+        {
+          "index": 87,
+          "word": "fog",
+          "start_seconds": 36.56,
+          "end_seconds": 37.12
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_020",
-      "start_seconds": 38.52,
-      "end_seconds": 39.97,
+      "start_seconds": 37.88,
+      "end_seconds": 39.07,
       "word_count": 4,
-      "text": "was the easier carry.",
+      "text": "The ground falls away",
       "words": [
         {
-          "index": 79,
-          "word": "was",
-          "start_seconds": 38.56,
-          "end_seconds": 38.72
+          "index": 88,
+          "word": "The",
+          "start_seconds": 37.92,
+          "end_seconds": 38.04
         },
         {
-          "index": 80,
-          "word": "the",
-          "start_seconds": 38.72,
-          "end_seconds": 38.84
+          "index": 89,
+          "word": "ground",
+          "start_seconds": 38.04,
+          "end_seconds": 38.48
         },
         {
-          "index": 81,
-          "word": "easier",
-          "start_seconds": 38.84,
-          "end_seconds": 39.2
+          "index": 90,
+          "word": "falls",
+          "start_seconds": 38.48,
+          "end_seconds": 38.8
         },
         {
-          "index": 82,
-          "word": "carry",
-          "start_seconds": 39.2,
-          "end_seconds": 39.72
+          "index": 91,
+          "word": "away",
+          "start_seconds": 38.8,
+          "end_seconds": 39.12
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_021",
-      "start_seconds": 40.32,
-      "end_seconds": 41.91,
-      "word_count": 3,
-      "text": "Almost everyone grabbed",
+      "start_seconds": 39.08,
+      "end_seconds": 41.07,
+      "word_count": 4,
+      "text": "in every direction, so",
       "words": [
         {
-          "index": 83,
-          "word": "Almost",
-          "start_seconds": 40.36,
-          "end_seconds": 40.88
+          "index": 92,
+          "word": "in",
+          "start_seconds": 39.12,
+          "end_seconds": 39.4
         },
         {
-          "index": 84,
-          "word": "everyone",
-          "start_seconds": 40.88,
-          "end_seconds": 41.48
+          "index": 93,
+          "word": "every",
+          "start_seconds": 39.44,
+          "end_seconds": 39.84
         },
         {
-          "index": 85,
-          "word": "grabbed",
-          "start_seconds": 41.48,
-          "end_seconds": 41.96
+          "index": 94,
+          "word": "direction",
+          "start_seconds": 39.84,
+          "end_seconds": 40.48
+        },
+        {
+          "index": 95,
+          "word": "so",
+          "start_seconds": 40.96,
+          "end_seconds": 41.12
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_022",
-      "start_seconds": 41.92,
-      "end_seconds": 43.19,
-      "word_count": 4,
-      "text": "the near one and",
-      "words": [
-        {
-          "index": 86,
-          "word": "the",
-          "start_seconds": 41.96,
-          "end_seconds": 42.08
-        },
-        {
-          "index": 87,
-          "word": "near",
-          "start_seconds": 42.08,
-          "end_seconds": 42.44
-        },
-        {
-          "index": 88,
-          "word": "one",
-          "start_seconds": 42.44,
-          "end_seconds": 42.8
-        },
-        {
-          "index": 89,
-          "word": "and",
-          "start_seconds": 43.0,
-          "end_seconds": 43.24
-        }
-      ],
-      "style_hint": "EMPHASIS"
-    },
-    {
-      "cue_id": "cue_023",
-      "start_seconds": 43.2,
-      "end_seconds": 44.77,
+      "start_seconds": 41.08,
+      "end_seconds": 42.53,
       "word_count": 5,
-      "text": "lugged it the whole way.",
+      "text": "it feels like the top.",
       "words": [
         {
-          "index": 90,
-          "word": "lugged",
-          "start_seconds": 43.24,
-          "end_seconds": 43.56
-        },
-        {
-          "index": 91,
+          "index": 96,
           "word": "it",
-          "start_seconds": 43.56,
-          "end_seconds": 43.64
+          "start_seconds": 41.12,
+          "end_seconds": 41.24
         },
         {
-          "index": 92,
+          "index": 97,
+          "word": "feels",
+          "start_seconds": 41.24,
+          "end_seconds": 41.48
+        },
+        {
+          "index": 98,
+          "word": "like",
+          "start_seconds": 41.48,
+          "end_seconds": 41.64
+        },
+        {
+          "index": 99,
           "word": "the",
-          "start_seconds": 43.64,
-          "end_seconds": 43.76
+          "start_seconds": 41.64,
+          "end_seconds": 41.72
         },
         {
-          "index": 93,
-          "word": "whole",
-          "start_seconds": 43.76,
-          "end_seconds": 44.12
-        },
-        {
-          "index": 94,
-          "word": "way",
-          "start_seconds": 44.12,
-          "end_seconds": 44.52
+          "index": 100,
+          "word": "top",
+          "start_seconds": 41.72,
+          "end_seconds": 42.28
         }
       ],
       "style_hint": "IMPACT"
     },
     {
-      "cue_id": "cue_024",
-      "start_seconds": 45.32,
-      "end_seconds": 46.59,
-      "word_count": 2,
-      "text": "Extra effort,",
+      "cue_id": "cue_023",
+      "start_seconds": 43.04,
+      "end_seconds": 44.35,
+      "word_count": 4,
+      "text": "But a far higher",
       "words": [
         {
-          "index": 95,
-          "word": "Extra",
-          "start_seconds": 45.36,
-          "end_seconds": 45.8
+          "index": 101,
+          "word": "But",
+          "start_seconds": 43.08,
+          "end_seconds": 43.28
         },
         {
-          "index": 96,
-          "word": "effort",
-          "start_seconds": 45.8,
-          "end_seconds": 46.36
+          "index": 102,
+          "word": "a",
+          "start_seconds": 43.28,
+          "end_seconds": 43.32
+        },
+        {
+          "index": 103,
+          "word": "far",
+          "start_seconds": 43.32,
+          "end_seconds": 43.92
+        },
+        {
+          "index": 104,
+          "word": "higher",
+          "start_seconds": 43.92,
+          "end_seconds": 44.4
+        }
+      ],
+      "style_hint": "NORMAL"
+    },
+    {
+      "cue_id": "cue_024",
+      "start_seconds": 44.36,
+      "end_seconds": 45.39,
+      "word_count": 3,
+      "text": "peak could be",
+      "words": [
+        {
+          "index": 105,
+          "word": "peak",
+          "start_seconds": 44.4,
+          "end_seconds": 44.96
+        },
+        {
+          "index": 106,
+          "word": "could",
+          "start_seconds": 45.12,
+          "end_seconds": 45.28
+        },
+        {
+          "index": 107,
+          "word": "be",
+          "start_seconds": 45.28,
+          "end_seconds": 45.44
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_025",
-      "start_seconds": 46.6,
-      "end_seconds": 48.11,
-      "word_count": 5,
-      "text": "just to start doing something",
+      "start_seconds": 45.4,
+      "end_seconds": 47.01,
+      "word_count": 4,
+      "text": "hidden across the valley.",
       "words": [
         {
-          "index": 97,
-          "word": "just",
-          "start_seconds": 46.64,
-          "end_seconds": 47.08
+          "index": 108,
+          "word": "hidden",
+          "start_seconds": 45.44,
+          "end_seconds": 45.8
         },
         {
-          "index": 98,
-          "word": "to",
-          "start_seconds": 47.08,
-          "end_seconds": 47.16
+          "index": 109,
+          "word": "across",
+          "start_seconds": 45.8,
+          "end_seconds": 46.16
         },
         {
-          "index": 99,
-          "word": "start",
-          "start_seconds": 47.16,
-          "end_seconds": 47.48
+          "index": 110,
+          "word": "the",
+          "start_seconds": 46.16,
+          "end_seconds": 46.28
         },
         {
-          "index": 100,
-          "word": "doing",
-          "start_seconds": 47.48,
-          "end_seconds": 47.76
-        },
-        {
-          "index": 101,
-          "word": "something",
-          "start_seconds": 47.76,
-          "end_seconds": 48.16
+          "index": 111,
+          "word": "valley",
+          "start_seconds": 46.28,
+          "end_seconds": 46.76
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_026",
-      "start_seconds": 48.12,
-      "end_seconds": 49.81,
+      "start_seconds": 47.45,
+      "end_seconds": 49.0,
       "word_count": 4,
-      "text": "a few seconds sooner.",
+      "text": "You'll never find it",
       "words": [
         {
-          "index": 102,
-          "word": "a",
-          "start_seconds": 48.16,
-          "end_seconds": 48.24
+          "index": 112,
+          "word": "You'll",
+          "start_seconds": 47.49,
+          "end_seconds": 47.77
         },
         {
-          "index": 103,
-          "word": "few",
-          "start_seconds": 48.24,
-          "end_seconds": 48.72
+          "index": 113,
+          "word": "never",
+          "start_seconds": 47.77,
+          "end_seconds": 48.05
         },
         {
-          "index": 104,
-          "word": "seconds",
-          "start_seconds": 48.72,
-          "end_seconds": 49.12
+          "index": 114,
+          "word": "find",
+          "start_seconds": 48.05,
+          "end_seconds": 48.41
         },
         {
-          "index": 105,
-          "word": "sooner",
-          "start_seconds": 49.12,
-          "end_seconds": 49.56
-        }
-      ],
-      "style_hint": "EMPHASIS"
-    },
-    {
-      "cue_id": "cue_027",
-      "start_seconds": 50.11,
-      "end_seconds": 51.68,
-      "word_count": 5,
-      "text": "There's a name for it:",
-      "words": [
-        {
-          "index": 106,
-          "word": "There's",
-          "start_seconds": 50.15,
-          "end_seconds": 50.71
-        },
-        {
-          "index": 107,
-          "word": "a",
-          "start_seconds": 50.71,
-          "end_seconds": 50.75
-        },
-        {
-          "index": 108,
-          "word": "name",
-          "start_seconds": 50.75,
-          "end_seconds": 51.03
-        },
-        {
-          "index": 109,
-          "word": "for",
-          "start_seconds": 51.03,
-          "end_seconds": 51.27
-        },
-        {
-          "index": 110,
+          "index": 115,
           "word": "it",
-          "start_seconds": 51.27,
-          "end_seconds": 51.43
+          "start_seconds": 48.41,
+          "end_seconds": 48.89
         }
       ],
       "style_hint": "NORMAL"
     },
     {
-      "cue_id": "cue_028",
-      "start_seconds": 52.07,
-      "end_seconds": 53.72,
-      "word_count": 1,
-      "text": "pre-crastination.",
+      "cue_id": "cue_027",
+      "start_seconds": 49.01,
+      "end_seconds": 51.06,
+      "word_count": 4,
+      "text": "unless you walk downhill.",
       "words": [
         {
-          "index": 111,
-          "word": "pre-crastination",
-          "start_seconds": 52.11,
-          "end_seconds": 53.47
+          "index": 116,
+          "word": "unless",
+          "start_seconds": 49.05,
+          "end_seconds": 49.41
+        },
+        {
+          "index": 117,
+          "word": "you",
+          "start_seconds": 49.41,
+          "end_seconds": 49.57
+        },
+        {
+          "index": 118,
+          "word": "walk",
+          "start_seconds": 49.57,
+          "end_seconds": 50.05
+        },
+        {
+          "index": 119,
+          "word": "downhill",
+          "start_seconds": 50.05,
+          "end_seconds": 50.81
         }
       ],
       "style_hint": "IMPACT"
     },
     {
-      "cue_id": "cue_029",
-      "start_seconds": 54.59,
-      "end_seconds": 55.82,
-      "word_count": 4,
-      "text": "Your busy day ran",
-      "words": [
-        {
-          "index": 112,
-          "word": "Your",
-          "start_seconds": 54.63,
-          "end_seconds": 54.91
-        },
-        {
-          "index": 113,
-          "word": "busy",
-          "start_seconds": 54.91,
-          "end_seconds": 55.19
-        },
-        {
-          "index": 114,
-          "word": "day",
-          "start_seconds": 55.19,
-          "end_seconds": 55.51
-        },
-        {
-          "index": 115,
-          "word": "ran",
-          "start_seconds": 55.51,
-          "end_seconds": 55.87
-        }
-      ],
-      "style_hint": "NORMAL"
-    },
-    {
-      "cue_id": "cue_030",
-      "start_seconds": 55.83,
-      "end_seconds": 57.4,
-      "word_count": 4,
-      "text": "on the same instinct.",
-      "words": [
-        {
-          "index": 116,
-          "word": "on",
-          "start_seconds": 55.87,
-          "end_seconds": 55.99
-        },
-        {
-          "index": 117,
-          "word": "the",
-          "start_seconds": 55.99,
-          "end_seconds": 56.07
-        },
-        {
-          "index": 118,
-          "word": "same",
-          "start_seconds": 56.07,
-          "end_seconds": 56.55
-        },
-        {
-          "index": 119,
-          "word": "instinct",
-          "start_seconds": 56.55,
-          "end_seconds": 57.15
-        }
-      ],
-      "style_hint": "NORMAL"
-    },
-    {
-      "cue_id": "cue_031",
-      "start_seconds": 57.71,
-      "end_seconds": 57.94,
-      "word_count": 2,
-      "text": "You were",
+      "cue_id": "cue_028",
+      "start_seconds": 51.69,
+      "end_seconds": 53.52,
+      "word_count": 6,
+      "text": "A worse move today can be",
       "words": [
         {
           "index": 120,
-          "word": "You",
-          "start_seconds": 57.75,
-          "end_seconds": 57.87
+          "word": "A",
+          "start_seconds": 51.73,
+          "end_seconds": 51.85
         },
         {
           "index": 121,
-          "word": "were",
-          "start_seconds": 57.87,
-          "end_seconds": 57.99
+          "word": "worse",
+          "start_seconds": 51.85,
+          "end_seconds": 52.21
+        },
+        {
+          "index": 122,
+          "word": "move",
+          "start_seconds": 52.21,
+          "end_seconds": 52.45
+        },
+        {
+          "index": 123,
+          "word": "today",
+          "start_seconds": 52.45,
+          "end_seconds": 52.97
+        },
+        {
+          "index": 124,
+          "word": "can",
+          "start_seconds": 53.29,
+          "end_seconds": 53.45
+        },
+        {
+          "index": 125,
+          "word": "be",
+          "start_seconds": 53.45,
+          "end_seconds": 53.57
+        }
+      ],
+      "style_hint": "NORMAL"
+    },
+    {
+      "cue_id": "cue_029",
+      "start_seconds": 53.53,
+      "end_seconds": 54.72,
+      "word_count": 5,
+      "text": "the price of a better",
+      "words": [
+        {
+          "index": 126,
+          "word": "the",
+          "start_seconds": 53.57,
+          "end_seconds": 53.65
+        },
+        {
+          "index": 127,
+          "word": "price",
+          "start_seconds": 53.65,
+          "end_seconds": 54.13
+        },
+        {
+          "index": 128,
+          "word": "of",
+          "start_seconds": 54.13,
+          "end_seconds": 54.25
+        },
+        {
+          "index": 129,
+          "word": "a",
+          "start_seconds": 54.25,
+          "end_seconds": 54.33
+        },
+        {
+          "index": 130,
+          "word": "better",
+          "start_seconds": 54.33,
+          "end_seconds": 54.77
+        }
+      ],
+      "style_hint": "IMPACT"
+    },
+    {
+      "cue_id": "cue_030",
+      "start_seconds": 54.73,
+      "end_seconds": 56.06,
+      "word_count": 2,
+      "text": "peak tomorrow.",
+      "words": [
+        {
+          "index": 131,
+          "word": "peak",
+          "start_seconds": 54.77,
+          "end_seconds": 55.17
+        },
+        {
+          "index": 132,
+          "word": "tomorrow",
+          "start_seconds": 55.17,
+          "end_seconds": 55.81
+        }
+      ],
+      "style_hint": "IMPACT"
+    },
+    {
+      "cue_id": "cue_031",
+      "start_seconds": 57.25,
+      "end_seconds": 58.2,
+      "word_count": 4,
+      "text": "What's the step back",
+      "words": [
+        {
+          "index": 133,
+          "word": "What's",
+          "start_seconds": 57.29,
+          "end_seconds": 57.57
+        },
+        {
+          "index": 134,
+          "word": "the",
+          "start_seconds": 57.57,
+          "end_seconds": 57.65
+        },
+        {
+          "index": 135,
+          "word": "step",
+          "start_seconds": 57.65,
+          "end_seconds": 57.93
+        },
+        {
+          "index": 136,
+          "word": "back",
+          "start_seconds": 57.93,
+          "end_seconds": 58.25
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_032",
-      "start_seconds": 57.95,
-      "end_seconds": 60.72,
-      "word_count": 5,
-      "text": "counting tasks, not weighing them.",
+      "start_seconds": 58.21,
+      "end_seconds": 59.37,
+      "word_count": 3,
+      "text": "you keep refusing?",
       "words": [
-        {
-          "index": 122,
-          "word": "counting",
-          "start_seconds": 57.99,
-          "end_seconds": 58.43
-        },
-        {
-          "index": 123,
-          "word": "tasks",
-          "start_seconds": 58.43,
-          "end_seconds": 59.27
-        },
-        {
-          "index": 124,
-          "word": "not",
-          "start_seconds": 59.51,
-          "end_seconds": 59.83
-        },
-        {
-          "index": 125,
-          "word": "weighing",
-          "start_seconds": 59.83,
-          "end_seconds": 60.19
-        },
-        {
-          "index": 126,
-          "word": "them",
-          "start_seconds": 60.19,
-          "end_seconds": 60.47
-        }
-      ],
-      "style_hint": "IMPACT"
-    },
-    {
-      "cue_id": "cue_033",
-      "start_seconds": 61.51,
-      "end_seconds": 63.88,
-      "word_count": 6,
-      "text": "Decide what you're trying to win.",
-      "words": [
-        {
-          "index": 127,
-          "word": "Decide",
-          "start_seconds": 61.55,
-          "end_seconds": 62.15
-        },
-        {
-          "index": 128,
-          "word": "what",
-          "start_seconds": 62.15,
-          "end_seconds": 62.27
-        },
-        {
-          "index": 129,
-          "word": "you're",
-          "start_seconds": 62.27,
-          "end_seconds": 62.39
-        },
-        {
-          "index": 130,
-          "word": "trying",
-          "start_seconds": 62.39,
-          "end_seconds": 63.07
-        },
-        {
-          "index": 131,
-          "word": "to",
-          "start_seconds": 63.07,
-          "end_seconds": 63.23
-        },
-        {
-          "index": 132,
-          "word": "win",
-          "start_seconds": 63.23,
-          "end_seconds": 63.63
-        }
-      ],
-      "style_hint": "NORMAL"
-    },
-    {
-      "cue_id": "cue_034",
-      "start_seconds": 64.59,
-      "end_seconds": 64.9,
-      "word_count": 1,
-      "text": "Or",
-      "words": [
-        {
-          "index": 133,
-          "word": "Or",
-          "start_seconds": 64.63,
-          "end_seconds": 64.95
-        }
-      ],
-      "style_hint": "NORMAL"
-    },
-    {
-      "cue_id": "cue_035",
-      "start_seconds": 64.91,
-      "end_seconds": 67.19,
-      "word_count": 6,
-      "text": "the easy wins eat your day.",
-      "words": [
-        {
-          "index": 134,
-          "word": "the",
-          "start_seconds": 64.95,
-          "end_seconds": 65.23
-        },
-        {
-          "index": 135,
-          "word": "easy",
-          "start_seconds": 65.23,
-          "end_seconds": 65.51
-        },
-        {
-          "index": 136,
-          "word": "wins",
-          "start_seconds": 65.51,
-          "end_seconds": 66.07
-        },
         {
           "index": 137,
-          "word": "eat",
-          "start_seconds": 66.35,
-          "end_seconds": 66.55
+          "word": "you",
+          "start_seconds": 58.25,
+          "end_seconds": 58.37
         },
         {
           "index": 138,
-          "word": "your",
-          "start_seconds": 66.55,
-          "end_seconds": 66.67
+          "word": "keep",
+          "start_seconds": 58.37,
+          "end_seconds": 58.65
         },
         {
           "index": 139,
-          "word": "day",
-          "start_seconds": 66.67,
-          "end_seconds": 67.03
+          "word": "refusing",
+          "start_seconds": 58.65,
+          "end_seconds": 59.21
         }
       ],
-      "style_hint": "IMPACT"
+      "style_hint": "NORMAL"
     }
   ]
 }

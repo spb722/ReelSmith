@@ -30,7 +30,7 @@ from orchestrator.contracts.veo import (
     sha256_file,
     shot_fingerprint,
 )
-from orchestrator.contracts.visual_plan import VisualPlanContract
+from orchestrator.contracts.visual_plan import Shot, VisualPlanContract
 from orchestrator.state.production_assets import load_production_assets, upsert_production_asset
 from orchestrator.state.run_manifest import load_run_manifest, save_run_manifest
 from orchestrator.tests.test_preflight import make_settings
@@ -684,7 +684,37 @@ def test_retryable_veo_failure_retries_with_correction_then_upserts(chain, monke
     assert list(load_production_assets(run.PRODUCTION_ASSETS_FILE).shots) == ["1"]
 
 
-def test_nonretryable_veo_failure_halts_with_structured_report(chain, monkeypatch):
+def _saved_mode(sequence: int) -> str:
+    plan = VisualPlanContract.model_validate_json(run.VISUAL_PLAN_FILE.read_text(encoding="utf-8"))
+    return next(shot.generation_mode for shot in plan.shots if shot.sequence == sequence)
+
+
+def test_a_veo_shot_that_fails_on_its_own_becomes_a_still(chain, monkeypatch):
+    """A Veo refusal the shot cannot get past leaves a still, not a hole in the reel."""
+    source, asset_id = chain
+    visual_plan = veo_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+    still_shots = []
+
+    async def agent(**kwargs):
+        return sdk_result(failed_outcome_for(visual_plan.shots[0], retryable=False, reason="policy blocked").model_dump(mode="json"), cost=0.1)
+
+    async def still_agent(**kwargs):
+        shot = Shot.model_validate(kwargs["shot"])
+        still_shots.append(shot)
+        return sdk_result(approved_still_outcome_for(shot).model_dump(mode="json"), cost=0.1)
+
+    monkeypatch.setattr(run, "generate_veo_asset", agent)
+    monkeypatch.setattr(run, "generate_still_asset", still_agent)
+    assert asyncio.run(run.run_veo_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 0
+    # the plan was rewritten first, so the image tools draw the STILL shot
+    assert [shot.generation_mode for shot in still_shots] == ["STILL"]
+    assert _saved_mode(1) == "STILL"
+    assert load_production_assets(run.PRODUCTION_ASSETS_FILE).shots["1"].generation_mode == "STILL"
+
+
+def test_a_shot_that_fails_as_video_and_as_still_halts_with_structured_report(chain, monkeypatch):
     source, asset_id = chain
     visual_plan = veo_visual_plan_for(asset_id)
     run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
@@ -693,16 +723,21 @@ def test_nonretryable_veo_failure_halts_with_structured_report(chain, monkeypatc
     async def agent(**kwargs):
         return sdk_result(failed_outcome_for(visual_plan.shots[0], retryable=False, reason="policy blocked").model_dump(mode="json"), cost=0.1)
 
+    async def still_agent(**kwargs):
+        shot = Shot.model_validate(kwargs["shot"])
+        return sdk_result(failed_still_outcome_for(shot, retryable=False, reason="still defect").model_dump(mode="json"), cost=0.1)
+
     monkeypatch.setattr(run, "generate_veo_asset", agent)
+    monkeypatch.setattr(run, "generate_still_asset", still_agent)
     assert asyncio.run(run.run_veo_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 1
-    reports = sorted(run.RUN_STATE_DIR.glob("failure_veo_agent_*.json"))
+    reports = sorted(run.RUN_STATE_DIR.glob("failure_stills_agent_*.json"))
     assert reports
     report = json.loads(reports[-1].read_text(encoding="utf-8"))
     assert report["attempt_count"] == 1
-    assert "policy blocked" in report["reason"]
+    assert "still defect" in report["reason"]
 
 
-def test_retryable_veo_failure_stops_at_attempt_ceiling(chain, monkeypatch):
+def test_retryable_veo_failure_stops_at_attempt_ceiling_then_becomes_a_still(chain, monkeypatch):
     source, asset_id = chain
     visual_plan = veo_visual_plan_for(asset_id)
     run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
@@ -713,15 +748,47 @@ def test_retryable_veo_failure_stops_at_attempt_ceiling(chain, monkeypatch):
         calls.append(kwargs["attempt"])
         return sdk_result(failed_outcome_for(visual_plan.shots[0], retryable=True, reason="still failing").model_dump(mode="json"), cost=0.1)
 
+    async def still_agent(**kwargs):
+        shot = Shot.model_validate(kwargs["shot"])
+        return sdk_result(approved_still_outcome_for(shot).model_dump(mode="json"), cost=0.1)
+
     monkeypatch.setattr(run, "generate_veo_asset", agent)
+    monkeypatch.setattr(run, "generate_still_asset", still_agent)
     manifest = load_run_manifest(run.RUN_STATE_DIR)
     manifest.max_attempts["veo_agent"] = 2
     save_run_manifest(manifest, state_dir=run.RUN_STATE_DIR)
-    assert asyncio.run(run.run_veo_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 1
+    assert asyncio.run(run.run_veo_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 0
     assert calls == [1, 2]
-    reports = sorted(run.RUN_STATE_DIR.glob("failure_veo_agent_*.json"))
-    assert reports
-    assert json.loads(reports[-1].read_text(encoding="utf-8"))["attempt_count"] == 2
+    assert load_run_manifest(run.RUN_STATE_DIR).iteration_counts["veo_agent_shot_1"] == 2
+    assert _saved_mode(1) == "STILL"
+
+
+def test_two_clip_qa_rejections_in_a_row_make_the_shot_a_still_early(chain, monkeypatch):
+    """The same motion failing clip QA twice is beyond Veo; the other tries are not spent."""
+    source, asset_id = chain
+    visual_plan = veo_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+    calls = []
+
+    async def agent(**kwargs):
+        calls.append(kwargs["attempt"])
+        outcome = failed_outcome_for(visual_plan.shots[0], retryable=True, reason="camera dollied forward")
+        outcome.failure.stage = "clip_qa"
+        return sdk_result(outcome.model_dump(mode="json"), cost=0.1)
+
+    async def still_agent(**kwargs):
+        shot = Shot.model_validate(kwargs["shot"])
+        return sdk_result(approved_still_outcome_for(shot).model_dump(mode="json"), cost=0.1)
+
+    monkeypatch.setattr(run, "generate_veo_asset", agent)
+    monkeypatch.setattr(run, "generate_still_asset", still_agent)
+    manifest = load_run_manifest(run.RUN_STATE_DIR)
+    manifest.max_attempts["veo_agent"] = 8
+    save_run_manifest(manifest, state_dir=run.RUN_STATE_DIR)
+    assert asyncio.run(run.run_veo_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 0
+    assert calls == [1, 2]
+    assert _saved_mode(1) == "STILL"
 
 
 def test_corrupt_production_manifest_halts_without_reset_or_agent_call(chain, monkeypatch):
@@ -1478,3 +1545,37 @@ def test_promotion_is_not_redone_once_decided(chain, monkeypatch):
 
     unchanged = VisualPlanContract.model_validate_json(run.VISUAL_PLAN_FILE.read_text())
     assert unchanged.shots[0].generation_mode == "STILL"
+
+
+def test_promotion_skips_motion_veo_cannot_hold_and_gives_the_slot_to_the_next():
+    """A subject walking away from the lens, or any camera move, made Veo
+    track after it take after take; such a nomination stays a still."""
+    plan = _promotion_plan("img_aaaaaaaaaaaa", [5.0] * 4, [1, 2, 3, 4])
+    plan.shots[0].video_motion_intent = "The figure lifts the bucket and trudges away down the corridor."
+    plan.shots[1].video_motion_intent = "Slow push-in on the cupped hands."
+    plan.shots[2].video_motion_intent = "She tilts her head and turns it away from the window."
+    plan.shots[3].video_motion_intent = "Steam curls up from the cup."
+    promoted = run._promote_video_candidates(plan, make_settings())
+    assert promoted == [3, 4]
+
+
+@pytest.mark.parametrize("text,phrase", [
+    ("He walks toward the camera", "toward the camera"),
+    ("The camera slowly drifts back", "camera slowly drifts"),
+    ("A tracking shot of the cyclist", "tracking shot"),
+    ("He runs off into the distance", "runs off"),
+])
+def test_unreliable_video_motion_names_the_phrase(text, phrase):
+    shot = still_visual_plan_for("img_aaaaaaaaaaaa", count=1).shots[0]
+    shot.video_motion_intent = text
+    assert run.unreliable_video_motion(shot).lower() == phrase.lower()
+
+
+@pytest.mark.parametrize("text", [
+    "She tilts her head and smiles", "Steam rises from the frying pan", "Smoke drifts away from the candle",
+    "The camera does not move; leaves flutter", "A cat crosses the frame from left to right",
+])
+def test_ordinary_motion_is_not_flagged(text):
+    shot = still_visual_plan_for("img_aaaaaaaaaaaa", count=1).shots[0]
+    shot.video_motion_intent = text
+    assert run.unreliable_video_motion(shot) is None

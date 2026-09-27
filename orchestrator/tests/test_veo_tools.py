@@ -380,7 +380,8 @@ def test_select_clip_duration_refuses_a_shot_longer_than_any_clip():
 def test_preview_positions_scale_with_the_real_clip_length(tmp_path, monkeypatch):
     """QA frames were sampled at a hardcoded 0.5/2.5/5.5s, which falls outside a
     shorter clip. They now track the clip's own duration, and still land on the
-    original positions for an 8s clip."""
+    original positions for an 8s clip, plus one near the end so the last
+    seconds of a clip are judged too."""
     calls: list[str] = []
 
     def fake_run(args, **kwargs):
@@ -395,40 +396,65 @@ def test_preview_positions_scale_with_the_real_clip_length(tmp_path, monkeypatch
     video.write_bytes(b"mp4")
 
     veo_tools.extract_video_previews(video, 1, 8)
-    assert calls == ["0.5", "2.5", "5.5"]
+    assert calls == ["0.5", "2.5", "5.5", "7.5"]
 
     calls.clear()
     veo_tools.extract_video_previews(video, 1, 6)
-    assert calls == ["0.375", "1.875", "4.125"]
+    assert calls == ["0.375", "1.875", "4.125", "5.625"]
 
 
-def test_video_prompt_bans_new_characters_but_protects_the_existing_face():
-    from orchestrator.contracts.veo import VeoSeedContract
-    from orchestrator.tools.veo_tools import build_video_prompt
-
-    shot = Shot.model_validate(
-        dict(
-            sequence=1,
-            generation_mode="VEO",
-            visual_treatment="AI_VIDEO_CANDIDATE",
-            source_asset_ids=["img_aaaaaaaaaaaa"],
-            shot_goal="Show the scene.",
-            frame_composition="Center the subject.",
-            motion_plan="Use quiet motion.",
-            text_overlay="",
-            source_support="Directly supported.",
-            video_candidate_rank=1,
-        )
+def _prompt_shot(**overrides) -> Shot:
+    fields = dict(
+        sequence=1,
+        generation_mode="VEO",
+        visual_treatment="AI_VIDEO_CANDIDATE",
+        source_asset_ids=["img_aaaaaaaaaaaa"],
+        shot_goal="Deliver the reversal as a physical act.",
+        frame_composition="Wide shot of a pale cream corridor with two buckets.",
+        motion_plan="The figure walks away while the camera drifts back.",
+        text_overlay="",
+        source_support="Directly supported.",
+        video_candidate_rank=1,
     )
-    seed = VeoSeedContract.model_construct()
-    prompt, negative_prompt = build_video_prompt(shot, seed)
+    fields.update(overrides)
+    return Shot.model_validate(fields)
 
-    assert "new characters, duplicate subjects" in prompt
-    assert "Keep every person already in the supplied frame exactly as drawn" in prompt
-    assert "never let a face drift" in prompt
-    # the negative prompt is deliberately unchanged: the character is already
-    # baked into the seed, so "extra people" still means "add nobody new"
-    assert "extra people, duplicate subjects" in negative_prompt
+
+def test_video_prompt_is_the_motion_only():
+    """Google's image-to-video guidance: the seed already fixes subject, scene
+    and style, so prompt the motion alone -- re-describing the picture confuses
+    the model, and Veo's always-on rewriter builds on every extra word."""
+    from orchestrator.tools.veo_tools import STATIC_CAMERA, build_video_prompt
+
+    shot = _prompt_shot(video_motion_intent='The man lifts the "near" bucket.')
+    prompt, negative_prompt = build_video_prompt(shot, VeoSeedContract.model_construct())
+
+    # the camera is always static, stated first in Google's own term
+    assert prompt.startswith(f"{STATIC_CAMERA} The man lifts the near bucket.")
+    assert '"' not in prompt  # quotation marks invite rendered text
+    assert shot.shot_goal not in prompt and shot.frame_composition not in prompt
+    assert shot.motion_plan not in prompt  # the video intent wins when there is one
+    assert "same faces throughout" in prompt
+    assert "editorial illustration" not in prompt  # the seed carries the reel's own style
+    assert len(prompt.split()) < 80
+    for term in ("text", "extra people", "duplicate subjects", "extra limbs", "photorealistic live action",
+                 "camera movement", "dolly", "zoom", "tracking shot"):
+        assert term in negative_prompt
+
+
+def test_video_prompt_falls_back_to_motion_plan_and_caps_the_correction():
+    from orchestrator.tools.veo_tools import STATIC_CAMERA, VIDEO_CORRECTION_MAX_WORDS, build_video_prompt
+
+    shot = _prompt_shot()
+    correction = "keep the camera still " + "and re-describe the corridor " * 100
+    prompt, _ = build_video_prompt(shot, VeoSeedContract.model_construct(), correction=correction)
+
+    assert prompt.startswith(f"{STATIC_CAMERA} {shot.motion_plan}")
+    adjustment = prompt.split("Adjustment from the last take: ")[1]
+    assert adjustment.startswith("keep the camera still")
+    assert len(adjustment.split()) <= VIDEO_CORRECTION_MAX_WORDS + len(
+        "The picture stays a clean plate with no writing anywhere.".split()
+    )
 
 
 def test_preview_extraction_failure_is_raised_not_swallowed(tmp_path, monkeypatch):
@@ -479,30 +505,91 @@ def test_resolve_binary_skips_a_broken_candidate(tmp_path, monkeypatch):
 
 
 def test_video_prompt_overrides_a_plan_that_asks_for_text():
-    """shot_goal/motion_plan reach Veo almost verbatim, and a real plan said
-    "text fades in softly over the closing seconds" -- which Veo obeyed,
-    burning garbled pseudo-text into an otherwise clean clip."""
-    from orchestrator.contracts.veo import VeoSeedContract
+    """The motion reaches Veo verbatim, and a real plan said "text fades in
+    softly over the closing seconds" -- which Veo obeyed, burning garbled
+    pseudo-text into an otherwise clean clip."""
     from orchestrator.tools.veo_tools import build_video_prompt
 
-    shot = Shot.model_validate(
-        dict(
-            sequence=6,
-            generation_mode="VEO",
-            visual_treatment="AI_VIDEO_CANDIDATE",
-            source_asset_ids=["img_aaaaaaaaaaaa"],
-            shot_goal="Close on a reflective note as the closing line lands.",
-            frame_composition="Settle the closing narration as text_overlay over the scene.",
-            motion_plan="Slow pull-back; text fades in softly over the closing seconds.",
-            text_overlay="Happiness isn't a finish line",
-            source_support="Directly supported.",
-            video_candidate_rank=1,
-        )
+    shot = _prompt_shot(
+        sequence=6,
+        motion_plan="Slow pull-back; text fades in softly over the closing seconds.",
+        text_overlay="Happiness isn't a finish line",
     )
-    prompt, _ = build_video_prompt(shot, VeoSeedContract.model_construct(), correction="redo it")
+    prompt, negative_prompt = build_video_prompt(shot, VeoSeedContract.model_construct(), correction="redo it")
 
-    assert "FINAL RULE, overriding anything above" in prompt
-    # the override must come after both the plan text and the correction
-    assert prompt.index("FINAL RULE") > prompt.index("text fades in softly")
-    assert prompt.index("FINAL RULE") > prompt.index("redo it")
-    assert prompt.rstrip().endswith("animate the clean plate without it.")
+    # the clean-plate line comes after both the plan text and the correction
+    assert prompt.rstrip().endswith("The picture stays a clean plate with no writing anywhere.")
+    assert prompt.index("clean plate") > prompt.index("text fades in softly")
+    assert prompt.index("clean plate") > prompt.index("redo it")
+    assert negative_prompt.startswith("text, captions, subtitles")
+    assert shot.text_overlay not in prompt
+
+
+def test_the_clip_tool_draws_the_saved_plan_not_an_agent_edited_shot(monkeypatch):
+    """A live agent rewrote frame_composition before each tool call; the seed
+    and clip fingerprints then disagreed and the run halted. The tools now
+    take the shot from the saved plan, so an edit changes nothing."""
+    import json
+
+    saved = shot_for(5)
+    seed = seed_for(saved)
+    Path("metadata").mkdir()
+    Path("metadata/visual_plan.json").write_text(
+        json.dumps({"shots": [saved.model_dump(mode="json")]}), encoding="utf-8"
+    )
+    edited = {**saved.model_dump(mode="json"), "frame_composition": "Much wider, camera high and far."}
+    used: list[Shot] = []
+
+    def fake_generation(client, *, shot, seed, **kwargs):
+        used.append(shot)
+        return veo_tools._failure(shot=shot, attempt=1, code="STOP", reason="stop", retryable=True, cost_usd=0.0)
+
+    monkeypatch.setattr(veo_tools, "run_veo_generation", fake_generation)
+    monkeypatch.setattr(veo_tools.genai, "Client", lambda **kwargs: object())
+    veo_tools._generate_veo_clip({
+        "shot": edited, "seed": seed.model_dump(mode="json"), "project_id": "p", "location": "global",
+        "model": "veo-model", "gcs_output_uri": "gs://b/", "resolution": "720p", "duration_seconds": 8,
+        "poll_seconds": 0.01, "max_poll_seconds": 1, "attempt": 1, "cost_usd": 1.2,
+    })
+
+    assert [shot.frame_composition for shot in used] == [saved.frame_composition]
+
+
+def test_without_a_saved_plan_the_relayed_shot_is_used():
+    from orchestrator.tools.gemini_tools import authoritative_shot
+
+    relayed = shot_for(2).model_dump(mode="json")
+    assert authoritative_shot(relayed) is relayed
+
+
+def test_the_result_carries_the_measured_camera_motion_and_survives_a_broken_measure(monkeypatch):
+    def _fake_previews(video_path, shot_sequence, clip_duration_seconds):
+        preview = veo_tools.VEO_PREVIEW_DIR / f"shot_{shot_sequence:02d}_01.jpg"
+        preview.parent.mkdir(parents=True, exist_ok=True)
+        preview.write_bytes(b"jpeg")
+        return [str(preview)]
+
+    monkeypatch.setattr(veo_tools, "extract_video_previews", _fake_previews)
+    shot = shot_for()
+    operation = {
+        "name": "operations/inline", "done": True,
+        "response": {"generated_videos": [{"video": {"video_bytes": base64.b64encode(b"mp4").decode()}}]},
+    }
+
+    def inspect():
+        return veo_tools.inspect_completed_operation(
+            operation, shot=shot, seed=seed_for(shot), model="veo-model", project_id="project",
+            attempt=1, cost_usd=1.2, clip_duration_seconds=8,
+        )
+
+    monkeypatch.setattr(veo_tools, "measure_camera_motion",
+                        lambda path: {"zoom": 1.31, "pan_x_percent": 1, "pan_y_percent": 0})
+    assert "zoom x1.31" in inspect().result.camera_motion
+
+    def broken(path):
+        raise RuntimeError("ffmpeg died")
+
+    monkeypatch.setattr(veo_tools, "measure_camera_motion", broken)
+    outcome = inspect()
+    assert outcome.status == "SUCCESS"
+    assert "could not be measured" in outcome.result.camera_motion

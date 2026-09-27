@@ -698,6 +698,33 @@ def _backfill_visual_plan_shot_timing_from_cues(settings: Settings) -> None:
         _atomic_write_json(VISUAL_PLAN_FILE, visual_plan.model_dump(mode="json"))
 
 
+# Motion the video model does not hold -- the visual-planning skills'
+# unreliable list. Every clip is made with a static camera, so a camera move
+# cannot be delivered, and a subject walking toward or away from the lens made
+# Veo track after them take after take. Only phrasings that cannot mean
+# anything else: "tilts her head" or "turns his head away" must not cost a
+# shot its clip.
+_CAMERA_MOVE = (
+    r"push(?:es|ed|ing)?[- ]in|pull(?:s|ed|ing)?[- ](?:back|out)|doll(?:y|ies|ying)|zoom\w*"
+    r"|tracking shot|crane shot|orbit\w*"
+    r"|camera\s+(?:slowly\s+|gently\s+|gradually\s+)?"
+    r"(?:push|pull|dolly|dollies|zoom|pan|tilt|track|follow|orbit|drift|move|glide|crane|arc)\w*"
+)
+_DEPTH_MOVE = (
+    r"(?:toward|towards|away from)\s+(?:the\s+)?(?:camera|lens|viewer)|(?:toward|towards)\s+us\b"
+    r"|(?:walk|run|trudg|strid|march|stroll|wander|jog|limp)\w*\s+(?:\w+\s+)?(?:away|off)\b"
+    r"|into the distance"
+)
+UNRELIABLE_VIDEO_MOTION = re.compile(rf"\b(?:{_CAMERA_MOVE}|{_DEPTH_MOVE})", re.IGNORECASE)
+
+
+def unreliable_video_motion(shot) -> str | None:
+    """The phrase in a nomination's video motion that Veo cannot hold, if any."""
+
+    match = UNRELIABLE_VIDEO_MOTION.search(shot.video_motion_intent or shot.motion_plan)
+    return match.group(0) if match else None
+
+
 def _promote_video_candidates(visual_plan: VisualPlanContract, settings: Settings) -> list[int]:
     """Turn `visual_agent`'s ranked nominations into real VEO-mode shots.
 
@@ -716,6 +743,14 @@ def _promote_video_candidates(visual_plan: VisualPlanContract, settings: Setting
     for shot in nominated:
         if len(promoted) >= MAX_VEO_SHOTS:
             log(f"Shot {shot.sequence}: stays a still picture (already have the maximum {MAX_VEO_SHOTS} video clips)", indent=2)
+            continue
+        unreliable = unreliable_video_motion(shot)
+        if unreliable:
+            log(
+                f"Shot {shot.sequence}: stays a still picture (its video motion asks for "
+                f"'{unreliable}', which the video model does not hold)",
+                indent=2,
+            )
             continue
         duration = shot.end_seconds - shot.start_seconds
         try:
@@ -1258,6 +1293,11 @@ VENDOR_HARD_MARKERS = (
     "unauthorized",
 )
 VENDOR_TRANSIENT_MARKERS = ("rate limit",)
+# Google's shared-capacity 429 reads "Resource has been exhausted (e.g. check
+# quota)". Google documents it as temporary contention on a shared pool, not a
+# spent quota ("it doesn't indicate that you've hit a fixed quota"), so its
+# "quota" must not make it hard. A spent fixed quota says "Quota exceeded".
+GOOGLE_CONTENTION_MARKER = "resource has been exhausted"
 VENDOR_HARD_HTTP_STATUSES = frozenset({401, 403})
 VENDOR_TRANSIENT_HTTP_STATUSES = frozenset({429})
 # google-genai errors read "<code> <STATUS>. {...}", e.g. "429 RESOURCE_EXHAUSTED".
@@ -1268,9 +1308,14 @@ def classify_vendor_refusal(text: str | None, http_status: int | None = None) ->
     """`transient`, `hard` or `none` for one error's text and optional HTTP status."""
 
     lowered = (text or "").lower().replace("_", " ")
-    if http_status in VENDOR_HARD_HTTP_STATUSES or any(m in lowered for m in VENDOR_HARD_MARKERS):
+    contention = GOOGLE_CONTENTION_MARKER in lowered
+    hard_markers = [m for m in VENDOR_HARD_MARKERS if not (contention and m == "quota")]
+    if http_status in VENDOR_HARD_HTTP_STATUSES or any(m in lowered for m in hard_markers):
         return "hard"
-    if http_status in VENDOR_TRANSIENT_HTTP_STATUSES or any(m in lowered for m in VENDOR_TRANSIENT_MARKERS):
+    if (
+        contention or http_status in VENDOR_TRANSIENT_HTTP_STATUSES
+        or any(m in lowered for m in VENDOR_TRANSIENT_MARKERS)
+    ):
         return "transient"
     return "none"
 
@@ -1284,9 +1329,11 @@ class VendorRefusal:
     kind: str  # "transient" | "hard"
     detail: str
     # The client already backed off before this reached us, so retrying again
-    # would double it: the Claude CLI retries 429/5xx itself, and the Gemini
-    # image path has QUOTA_RETRY_SECONDS. Veo (google-genai with no
-    # retry_options) and Codex (429 retries off for ChatGPT auth) do not.
+    # would double it: the Claude CLI retries 429/5xx itself. Veo (google-genai
+    # with no retry_options) and Codex (429 retries off for ChatGPT auth) do
+    # not. The Gemini image path's own QUOTA_RETRY_SECONDS (a minute in all)
+    # is too short for Google's shared-capacity contention, which halted two
+    # live runs, so its refusals are backed off here as well.
     retried_upstream: bool
 
 
@@ -1319,7 +1366,7 @@ def _vendor_refusal(
         kind = classify_vendor_refusal(text, int(match.group(1)) if match else None)
         if kind != "none":
             found.append(VendorRefusal(
-                kind, f"{failure.tool_name} ({failure.provider}) {text}", failure.provider == "gemini",
+                kind, f"{failure.tool_name} ({failure.provider}) {text}", False,
             ))
     return next((r for r in found if r.kind == "hard"), found[0] if found else None)
 
@@ -1584,6 +1631,9 @@ async def _handle_shot_vendor_refusal(
         and transient_retries < len(TRANSIENT_BACKOFF_SECONDS)
     )
     manifest.iteration_counts[stage_id] = count - 1
+    # Saved now: when this refusal halts the run, nothing later saves the
+    # manifest, and a resume would count the refused try after all.
+    save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
     _charge_guarded_attempt(
         agent=agent, sequence=sequence, count=count,
         status="TRANSIENT_VENDOR_REFUSAL" if retry else "VENDOR_LIMIT",
@@ -1809,6 +1859,36 @@ def _should_fall_back(outcome: object, shot_settings: Settings, settings: Settin
     return stage in IMAGE_FAILURE_STAGES
 
 
+# Two takes rejected at clip QA means the motion is beyond Veo, not unlucky: a
+# live shot then failed five more takes the same way. The shot becomes a still.
+VEO_CLIP_FAILURES_BEFORE_STILL = 2
+
+
+def _should_become_still(outcome: object) -> bool:
+    """A Veo shot that failed on its own becomes a still rather than a hole in the reel.
+
+    Only shot-specific failures: a vendor limit, the budget or a crash stops
+    the run, and a resume should try the video again.
+    """
+
+    return isinstance(outcome, ShotFailure) and outcome.shot_specific and outcome.stage_id == "veo_agent"
+
+
+def _demote_shot_to_still(sequence: int) -> Shot:
+    """Rewrite the saved plan with this shot as a STILL, and return that shot.
+
+    Written before the still is drawn: the image tools read the shot from the
+    saved plan, and a still's fingerprint includes its mode. Every shot keeps
+    still_motion, so the renderer has what it needs.
+    """
+
+    visual_plan = VisualPlanContract.model_validate_json(VISUAL_PLAN_FILE.read_text(encoding="utf-8"))
+    demoted = next(shot for shot in visual_plan.shots if shot.sequence == sequence)
+    demoted.generation_mode = "STILL"
+    _atomic_write_json(VISUAL_PLAN_FILE, visual_plan.model_dump(mode="json"))
+    return demoted
+
+
 def _switch_shot_to_fallback(agent: str, sequence: int, provider: str, manifest: RunManifest) -> None:
     """Give the shot a fresh round of tries on the fallback provider.
 
@@ -1983,6 +2063,19 @@ async def _run_shot_production(
                             shot, asset=asset, subtitle_text=subtitle_text,
                             settings=shot_settings, manifest=manifest, launch=launch,
                         )
+                    if video and _should_become_still(outcome):
+                        log(
+                            f"Shot {shot.sequence}: the video clip didn't work out ({outcome.reason[:120]}) "
+                            "— making it a still picture instead",
+                            error=True,
+                        )
+                        shot = _demote_shot_to_still(shot.sequence)
+                        video, agent = False, "stills_agent"
+                        shot_settings = _settings_for_shot(settings, agent, shot.sequence)
+                        outcome = await _produce_still_shot(
+                            shot, asset=asset, subtitle_text=subtitle_text,
+                            settings=shot_settings, manifest=manifest, launch=launch,
+                        )
                     if isinstance(outcome, ShotFailure):
                         shot_span.update(output=outcome.report_entry(), level="ERROR", status_message=outcome.reason)
                     else:
@@ -2129,6 +2222,7 @@ async def _review_shot_asset(
             character_reference_paths=references,
             ladder_note=ladder_note,
             max_budget_usd=cap,
+            camera_motion=outcome.result.camera_motion if video else "",
         )
     except SkillIsolationError as exc:
         # Before any review turn: nothing to charge. Systemic, like a producer
@@ -2256,6 +2350,7 @@ async def _produce_veo_shot(
     correction = ""
     previous_outcome: object = None
     transient_retries = 0
+    consecutive_clip_failures = 0
     # Which rung of the seed prompt ladder this shot's next attempt starts
     # on. Only a Veo likeness rejection moves it, and it never moves back.
     # Seeded from the attempts already on disk so a resumed run does not
@@ -2541,6 +2636,18 @@ async def _produce_veo_shot(
                 f"didn't work — {failure.reason}",
                 error=True,
             )
+            consecutive_clip_failures = consecutive_clip_failures + 1 if failure.stage == "clip_qa" else 0
+            if consecutive_clip_failures >= VEO_CLIP_FAILURES_BEFORE_STILL:
+                return fail(
+                    "veo_agent",
+                    "VeoFailureContract",
+                    f"Veo failed clip QA {consecutive_clip_failures} times in a row: {failure.reason}",
+                    attempt_count=count,
+                    partial_artifact_paths=attempt_paths + failure.partial_artifact_paths,
+                    reason_code="clip_qa_repeated",
+                    shot_specific=True,
+                    failure_stage=failure.stage,
+                )
             if _forces_simpler_character_wording(failure):
                 # Redrawing the same wording would produce the same face and
                 # be rejected again -- which is exactly what burned all three
@@ -3070,7 +3177,8 @@ def _run_after_start(args: argparse.Namespace, project: Path, log_path: Path | N
     # The style only matters when pictures are invented; checked here so a
     # misspelt name stops the run before any paid call.
     if source_mode_setting() == "content":
-        style_name = args.style or DEFAULT_STYLE
+        # `--style pixel_art.json` means the same file as `--style pixel_art`.
+        style_name = (args.style or DEFAULT_STYLE).strip().removesuffix(".json")
         try:
             load_style(style_name)
         except StyleError as exc:

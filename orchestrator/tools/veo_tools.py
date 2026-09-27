@@ -28,8 +28,10 @@ from orchestrator.contracts.visual_plan import Shot
 from orchestrator import tracing
 from orchestrator.progress import format_duration, log
 from orchestrator.settings import VEO_ALLOWED_DURATION_SECONDS
+from orchestrator.tools.camera_motion import describe_camera_motion, measure_camera_motion
 from orchestrator.state.run_manifest import _atomic_write_json
 from orchestrator.tools.deterministic_tools import resolve_binary
+from orchestrator.tools.gemini_tools import authoritative_shot
 from orchestrator.tools.vendor_limits import VEO, vendor_slot
 
 
@@ -193,8 +195,9 @@ def materialize_video_output(
 
 # Fractions of the clip's own length at which QA preview frames are taken.
 # They reproduce the original hardcoded 0.5/2.5/5.5s exactly for an 8s clip,
-# while staying inside a shorter one.
-PREVIEW_POSITION_FRACTIONS = (1 / 16, 5 / 16, 11 / 16)
+# while staying inside a shorter one. The last one sits near the end: without
+# it the final 2.5s of an 8s clip were never looked at.
+PREVIEW_POSITION_FRACTIONS = (1 / 16, 5 / 16, 11 / 16, 15 / 16)
 
 
 def select_clip_duration_seconds(
@@ -258,35 +261,55 @@ def extract_video_previews(
     return paths
 
 
+# A retry's correction is a note on the motion, not a second scene description:
+# live corrections grew past 500 words re-describing the whole corridor.
+VIDEO_CORRECTION_MAX_WORDS = 60
+STATIC_CAMERA = "Static shot: the camera remains completely still."
+
+
+def _prompt_text(text: str) -> str:
+    # Google's Veo guidance: quotation marks invite the model to render text.
+    return " ".join(text.replace('"', "").split())
+
+
 def build_video_prompt(shot: Shot, seed: VeoSeedContract, correction: str = "") -> tuple[str, str]:
+    """The motion-only prompt and the negative prompt for one image-to-video call.
+
+    The seed already fixes subject, scene and style, so Google's image-to-video
+    guidance is to prompt the motion alone: re-describing the picture confuses
+    the model. Veo 3.x also runs every prompt through a rewriter that adds
+    camera moves and cannot be turned off, and a long list of "do not"s only
+    hands it more words to build on -- so what to avoid goes in the negative
+    prompt, as plain nouns. `video_motion_intent` is the planner's motion for
+    this shot as video; `motion_plan` also serves the still fallback.
+
+    The camera is always static. Veo repeatedly ignored "locked-off" wording
+    and tracked or pushed in on its own, but holding still while the subject
+    moves is what it does most reliably, so that is the only camera it is
+    asked for -- first, in Google's own term, as its prompt guide advises.
+    """
+
+    motion = _prompt_text(shot.video_motion_intent or shot.motion_plan)
     prompt = (
-        "Animate the supplied recomposed illustration as the exact starting frame. "
-        "Preserve its subjects, object count, composition, palette, texture, and editorial illustration style. "
-        f"Shot goal: {shot.shot_goal}. Motion: {shot.motion_plan}. "
-        "Keep motion restrained and coherent. Do not add words, subtitles, UI, logos, watermarks, "
-        "new characters, duplicate subjects, photorealism, camera shake, or surreal distortions. "
-        "Keep every person already in the supplied frame exactly as drawn -- the same face, facial "
-        "features, beard, hairstyle, hair colour, skin tone, and clothing for the whole clip. Never "
-        "re-render, restyle, swap, blur, flatten, or dissolve a face, and never let a face drift "
-        "toward a different person."
+        f"{STATIC_CAMERA} {motion} Only what this describes moves; everything else in the frame "
+        "stays where it is. "
+        "Keep the starting frame's art style, colours and every person in it exactly as drawn, "
+        "with the same faces throughout."
     )
-    if correction.strip():
-        prompt += f" Correct the prior QA defect without changing the shot's assigned mode: {correction.strip()}"
-    # Last, so it also overrides the correction. shot_goal and motion_plan are
-    # passed almost verbatim, and a plan that says "text fades in softly over
-    # the closing seconds" made Veo burn garbled pseudo-text into a clip whose
-    # seed was clean. The image prompts have carried this override for exactly
-    # this reason; the video prompt was the gap.
-    prompt += (
-        " FINAL RULE, overriding anything above: render NO text of any kind -- no words, "
-        "letters, captions, subtitles, titles, quotes, signage, or handwriting, anywhere in "
-        "any frame of the clip. If any description above mentions a text overlay, on-screen "
-        "wording, a quote, or a line that fades in, that belongs to a later compositing step, "
-        "not to this video -- animate the clean plate without it."
-    )
+    words = correction.split()
+    if words:
+        prompt += (
+            " Adjustment from the last take: "
+            + _prompt_text(" ".join(words[:VIDEO_CORRECTION_MAX_WORDS]))
+        )
+    # Last, so it also outweighs the plan and the correction: a plan that said
+    # "text fades in softly over the closing seconds" made Veo burn garbled
+    # pseudo-text into a clip whose seed was clean.
+    prompt += " The picture stays a clean plate with no writing anywhere."
     negative_prompt = (
-        "text, subtitles, user interface, app chrome, logo, watermark, extra people, duplicate subjects, "
-        "photorealistic live action, camera shake, fast zoom, surreal distortion"
+        "text, captions, subtitles, logo, watermark, user interface, extra people, duplicate subjects, "
+        "extra limbs, morphing, photorealistic live action, camera movement, camera shake, dolly, zoom, "
+        "tracking shot"
     )
     return prompt, negative_prompt
 
@@ -409,6 +432,13 @@ def inspect_completed_operation(
             operation_name=operation_name,
             operation_dump_path=dump_path,
         )
+    # Evidence for clip QA, never a reason to lose a paid clip: a measurement
+    # that breaks is reported as unmeasured.
+    try:
+        camera_motion = describe_camera_motion(measure_camera_motion(local_path))
+    except Exception as exc:
+        camera_motion = f"Camera motion could not be measured ({type(exc).__name__}: {exc})."
+    log(f"Shot {shot.sequence}: {camera_motion}", indent=2)
     result = VeoResultContract(
         shot_sequence=shot.sequence,
         shot_fingerprint=shot_fingerprint(shot),
@@ -419,6 +449,7 @@ def inspect_completed_operation(
         operation_name=operation_name,
         operation_dump_path=str(dump_path),
         preview_paths=previews,
+        camera_motion=camera_motion,
         model=model,
         approved=False,
         qa_summary="",
@@ -621,7 +652,7 @@ def _traced_veo_clip(args: dict) -> dict:
 
 
 def _generate_veo_clip(args: dict) -> dict:
-    shot = Shot.model_validate(args["shot"])
+    shot = Shot.model_validate(authoritative_shot(args["shot"]))
     try:
         seed = VeoSeedContract.model_validate(args["seed"])
         seed.validate_for_shot(shot)

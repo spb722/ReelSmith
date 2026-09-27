@@ -89,13 +89,26 @@ skill.
 - Rank by what motion would add to the storytelling: a beat where something
   physically happens, where atmosphere carries the emotion, or where a static
   frame would feel inert.
-- On every nominated shot, set video_motion_intent to the specific motion you
-  would want if that shot became video -- what moves, how much, and why it
-  serves the beat. Leave it empty on shots you did not nominate.
-- Keep video motion simple, because video models break on complex motion:
-  one slow camera move, or one natural action by the focal subject. Avoid
-  long camera travel past many repeated objects, and anything that opens,
-  splits, multiplies, or transforms.
+- On every nominated shot, set video_motion_intent to the motion you would
+  want if that shot became video. It is sent to the video model word for word
+  as its whole instruction, after a fixed "static shot" opening: every clip is
+  made with a still camera, because the model will not hold a camera move it
+  is told to. So describe only what moves in the picture and how much -- the
+  subject's one action, or the atmosphere -- never the camera. Motion only,
+  under 40 words: no reasons, no re-description of the scene, no quotation
+  marks, and never text. Leave it empty on shots you did not nominate.
+- Nominate only motion from the video model's reliable list, and never one
+  from its unreliable list. A nomination whose video_motion_intent names a
+  camera move, or a subject moving toward or away from the camera, is not
+  taken up; the next-ranked nomination gets the slot instead.
+  - Reliable: a small gesture or action by one subject that stays roughly in
+    place (turning the head, lifting or setting down an object, breathing,
+    a slump or a straightening); hair, clothes, steam, smoke, rain, leaves,
+    water or light moving; a subject crossing the frame sideways.
+  - Unreliable: a subject walking or running toward or away from the camera
+    (the model follows them with the camera instead); any camera move;
+    precise hand work or exact object counts; two things moving at once;
+    anything that opens, splits, multiplies or transforms; fast action.
 - Generated clips are short, so favour beats whose narration is brief and
   punchy; a long, discursive beat is unlikely to be taken up.
 

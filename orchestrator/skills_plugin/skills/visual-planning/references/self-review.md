@@ -16,8 +16,10 @@ Judge especially:
 - SOURCE FIDELITY and SOURCE UNCERTAINTY: apply the visual-plan checks in
   the source-fidelity skill.
 - GENERATION MODE APPROPRIATENESS: the video nominations, and their order,
-  are the beats that genuinely gain most from real motion -- and every shot
-  still carries usable still_motion in case its nomination is not taken up.
+  are the beats that genuinely gain most from real motion, each with a
+  video_motion_intent from the reliable list that names no camera move -- and
+  every shot still carries usable still_motion in case its nomination is not
+  taken up.
 - VISUAL COHERENCE: shots read as one consistent visual style, not a
   disjointed patchwork.
 - NARRATIVE ALIGNMENT: each shot's visual direction actually serves its

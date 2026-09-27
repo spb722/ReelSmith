@@ -1,0 +1,20 @@
+{
+  "name": "neon_glow",
+  "description": "Modern cinematic illustration with vivid neon lighting, soft bloom, rim glow, moody night scenes, clean shapes, and subtle grain",
+  "palette": [
+    "electric pink",
+    "violet",
+    "cyan",
+    "deep indigo",
+    "soft lavender"
+  ],
+  "lighting": "night-time neon illumination, glowing accents, bloom around light sources, high contrast",
+  "mood": "vibrant, dreamy, youthful, slightly futuristic",
+  "avoid": [
+    "photorealism",
+    "any text, letters, numbers or logos",
+    "the name or look of a real artist",
+    "muddy colours",
+    "flat daylight lighting"
+  ]
+}

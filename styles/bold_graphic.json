@@ -1,0 +1,20 @@
+{
+  "name": "bold_graphic",
+  "description": "Bold graphic illustration with high contrast, simplified shapes, strong silhouettes, minimal detail, and poster-like composition",
+  "palette": [
+    "deep navy",
+    "burnt orange",
+    "warm cream",
+    "cobalt blue",
+    "sun yellow"
+  ],
+  "lighting": "graphic lighting with sharp value contrast and minimal shading",
+  "mood": "confident, modern, striking",
+  "avoid": [
+    "photorealism",
+    "any text, letters, numbers or logos",
+    "the name or look of a real artist",
+    "soft low-contrast scenes",
+    "busy fine detail"
+  ]
+}

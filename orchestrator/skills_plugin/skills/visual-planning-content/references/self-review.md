@@ -16,9 +16,10 @@ Judge especially:
 - SOURCE FIDELITY: apply the visual-plan checks in the source-fidelity-content
   skill.
 - GENERATION MODE APPROPRIATENESS: the video nominations, and their order,
-  are the beats that genuinely gain most from real motion, each with simple
-  motion a video model can render -- and every shot still carries usable
-  still_motion in case its nomination is not taken up.
+  are the beats that genuinely gain most from real motion, each with a
+  video_motion_intent from the reliable list that names no camera move -- and
+  every shot still carries usable still_motion in case its nomination is not
+  taken up.
 - VISUAL COHERENCE: overall_visual_style is the supplied style guide,
   unchanged, every shot suits it, and the shots read as one world, not a
   patchwork. Nothing in the plan describes the main person's looks.
