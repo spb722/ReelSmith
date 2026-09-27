@@ -19,6 +19,7 @@ import asyncio
 import json
 import math
 import shutil
+import signal
 import sys
 from pathlib import Path
 from typing import Optional, Sequence
@@ -32,7 +33,7 @@ from orchestrator.contracts.cover import (
 )
 from orchestrator.contracts.final_story_plan import FinalStoryPlanContract
 from orchestrator.contracts.visual_plan import VisualPlanContract
-from orchestrator.progress import banner, format_duration, log, start_run
+from orchestrator.progress import banner, format_duration, log, run_status, start_run
 from orchestrator.workspace import ProjectError, enter_project, resolve_project
 from orchestrator.settings import SettingsError, load_dotenv_file, load_settings
 from orchestrator.state.production_assets import PRODUCTION_ASSETS_FILE, load_production_assets
@@ -63,6 +64,7 @@ def _halt(reason: str, *, attempt_count: int = 0, partial: Optional[list[str]] =
         attempt_count=attempt_count, partial_artifact_paths=partial,
     )
     path = write_failure_report(report, output_dir=RUN_STATE_DIR)
+    run_status.halt(reason)
     log(f"STOPPED — {reason}", error=True)
     log(f"Details of what went wrong: {path}", error=True)
     return 1
@@ -307,7 +309,33 @@ async def _plan_with_retries(
     return None, spent, correction
 
 
+# Read by the UI (ui/CONTRACT.md section 5).
+COVER_STATUS_FILE = RUN_STATE_DIR / "cover_status.json"
+
+
+def _stop_by_operator(signum, frame) -> None:
+    run_status.halt("Stopped by you", stop_kind="operator")
+    raise SystemExit(128 + signum)
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
+    """The cover run, with its `cover_status.json` kept current for the UI."""
+
+    try:
+        previous_sigterm = signal.signal(signal.SIGTERM, _stop_by_operator)
+    except ValueError:  # not the main thread
+        previous_sigterm = None
+    exit_code = None
+    try:
+        exit_code = _main(argv)
+        return exit_code
+    finally:
+        if previous_sigterm is not None:
+            signal.signal(signal.SIGTERM, previous_sigterm)
+        run_status.close(exit_code)
+
+
+def _main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m orchestrator.cover",
         description="Generate an Instagram cover for the reel already in this directory.",
@@ -334,6 +362,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return 1
 
     log_path = start_run(RUN_STATE_DIR)
+    run_status.begin(COVER_STATUS_FILE, kind="cover")
     banner(f"Making the Instagram cover for project '{args.project}'")
     log(f"Everything this run writes stays in {project}")
     log(f"A copy of everything printed here is being saved to {log_path}")
@@ -397,6 +426,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             plan = plan.model_copy(update={"hook_text": args.hook})
 
     _atomic_write_json(COVER_PLAN_FILE, plan.model_dump(mode="json"))
+    run_status.set_percent(50)
     log(f"Cover plan: shot {plan.base_shot_sequence} · \"{plan.hook_text}\"")
     log(f"Why: {plan.rationale}", indent=2)
 

@@ -23,8 +23,10 @@ import dataclasses
 import functools
 import json
 import math
+import os
 import re
 import shutil
+import signal
 import sys
 import time
 import uuid
@@ -59,7 +61,8 @@ from orchestrator.contracts.veo import VeoFailureContract, VeoOutcomeContract, s
 from orchestrator.contracts.visual_plan import VisualPlanContract
 from orchestrator import tracing
 from orchestrator.styles import DEFAULT_STYLE, StyleError, load_style
-from orchestrator.progress import banner, format_duration, heartbeat, log, run_progress, start_run
+from orchestrator.progress import banner, format_duration, heartbeat, log, run_progress, run_status, start_run
+from orchestrator import ui_hooks
 from orchestrator.workspace import (
     SOURCE_IMAGES_DIR_NAME,
     ProjectError,
@@ -177,6 +180,7 @@ def _halt(
     )
     path = write_failure_report(report, output_dir=RUN_STATE_DIR)
     tracing.record_halt(report)
+    run_status.halt(reason, reason_code)
 
     log(f"STOPPED — {reason}", error=True)
     log(f"Details of what went wrong: {path}", error=True)
@@ -215,6 +219,8 @@ async def run_bounded_agent_stage(
     finalize_before_persist: Callable[[object], None] | None = None,
     review_before_persist: Callable[[object, float], Awaitable[StageReview]] | None = None,
     review_cap_usd: float = 0.0,
+    initial_feedback: str | None = None,
+    initial_previous_output: object = None,
 ) -> int:
     """Shared bounded-retry/resume/halt control flow (Story 1.2's
     `run_screenshot_stage` shape), reused by every stage in this shape:
@@ -236,9 +242,12 @@ async def run_bounded_agent_stage(
     `review_cap_usd`, its query's budget, which each attempt keeps back from
     the agent's own budget. Its cost is charged to the run; only an approval
     lets the contract persist, and a rejection is the next attempt's feedback.
+
+    `initial_feedback` / `initial_previous_output` seed the first attempt, for
+    an operator-requested rewrite of a contract that is no longer on disk.
     """
-    feedback = None
-    previous_output = None
+    feedback = initial_feedback
+    previous_output = initial_previous_output
     try:
         persisted = contract_cls.model_validate_json(persisted_file.read_text(encoding="utf-8"))
         validate_contract(persisted)
@@ -355,6 +364,7 @@ async def run_bounded_agent_stage(
         count += 1
         manifest.iteration_counts[stage_id] = count
         save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+        run_status.attempt(count, max_attempts)
         log(f"Try {count} of {max_attempts} · ${settings.max_budget_usd - manifest.budget_spent_usd:.2f} left to spend")
         try:
             with heartbeat("still working"):
@@ -511,13 +521,36 @@ async def run_narration_stage(settings: Settings, manifest: RunManifest) -> int:
             critic_span.update(output={"approved": verdict.approved, "feedback": verdict.feedback})
         return verdict
 
-    return await run_bounded_agent_stage(
+    # The UI's "rewrite" (ui/CONTRACT.md section 5): redo this step from the
+    # current script plus the operator's instructions, even though a plan exists.
+    max_attempts = manifest.attempts_allowed("story_agent")
+    rewrite_feedback = rewrite_previous = archive = None
+    instructions = os.environ.get("STORY_REWRITE_INSTRUCTIONS", "").strip()
+    if instructions and FINAL_STORY_PLAN_FILE.exists():
+        try:
+            rewrite_previous = json.loads(FINAL_STORY_PLAN_FILE.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            rewrite_previous = None
+        # The new script invalidates everything made from the old one.
+        archive = ui_hooks.archive_downstream(Path("."), label="narration_rewrite", include_story_plan=True)
+        rewrite_feedback = (
+            "This is not a validation failure: the operator read the approved narration below and "
+            "wants it rewritten. Keep what already works and follow these instructions from the "
+            f"operator:\n{instructions}"
+        )
+        # A fresh set of tries on top of the ones already used, so a rewrite
+        # never starts at the ceiling; attempt numbering (and its files) carries on.
+        used = manifest.iteration_counts.get("story_agent", 0)
+        max_attempts += used if type(used) is int and used > 0 else 0
+        log(f"Rewriting the narration with your instructions: {instructions}")
+
+    result = await run_bounded_agent_stage(
         stage_id="story_agent",
         failed_contract_name="FinalStoryPlanContract",
         contract_cls=FinalStoryPlanContract,
         persisted_file=FINAL_STORY_PLAN_FILE,
         validate_contract=validate_contract,
-        max_attempts=manifest.attempts_allowed("story_agent"),
+        max_attempts=max_attempts,
         settings=settings,
         manifest=manifest,
         base_partial_paths=[str(ANALYZED_ASSETS_FILE)],
@@ -525,7 +558,15 @@ async def run_narration_stage(settings: Settings, manifest: RunManifest) -> int:
         call_agent=call_agent,
         review_before_persist=review,
         review_cap_usd=settings.claude_reviewer_cap_usd,
+        initial_feedback=rewrite_feedback,
+        initial_previous_output=rewrite_previous,
     )
+    old_plan = archive / FINAL_STORY_PLAN_FILE if archive is not None else None
+    if result and old_plan is not None and old_plan.is_file() and not FINAL_STORY_PLAN_FILE.exists():
+        # A rewrite that didn't land keeps the script the operator already had.
+        shutil.copy2(old_plan, FINAL_STORY_PLAN_FILE)
+        log("The rewrite didn't work out, so the previous narration is back in place", error=True)
+    return result
 
 
 def story_critique_review(result: ResultMessage) -> StageReview:
@@ -1226,6 +1267,7 @@ async def run_voice_stage(settings: Settings, manifest: RunManifest, *, retry_vo
         count += 1
         manifest.iteration_counts["voice_agent"] = count
         save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+        run_status.attempt(count, max_voice_attempts)
         result = await run_voice_pipeline(story_plan, settings, manifest.budget_spent_usd)
         if result.total_cost_usd is None or not math.isfinite(result.total_cost_usd) or result.total_cost_usd < 0:
             return halt("Voice pipeline returned an unusable cost estimate")
@@ -2007,6 +2049,16 @@ async def _run_shot_production(
         )
 
     run_progress.shots_planned(len(shots) - len(pending), len(shots))
+    run_status.shots_planned([{
+        "number": shot.sequence,
+        "type": "video" if shot.generation_mode == "VEO" else "still",
+        "state": "queued" if shot in pending else "approved",
+        "attempt": manifest.iteration_counts.get(
+            f"{'veo_agent' if shot.generation_mode == 'VEO' else 'stills_agent'}_shot_{shot.sequence}") or None,
+        "max_attempts": manifest.attempts_allowed("veo_agent" if shot.generation_mode == "VEO" else "stills_agent"),
+        "preview": None if shot in pending else production_assets.shots[str(shot.sequence)].local_path,
+        "prompt": shot.shot_goal,
+    } for shot in shots])
     assets_by_id = {asset.asset_id: asset for asset in analyzed.assets}
     cues_by_id = {cue.cue_id: cue.text for cue in subtitle_cues.cues}
     # Veo clips take longest, so they go first; each mode in sequence order.
@@ -2071,6 +2123,8 @@ async def _run_shot_production(
                         )
                         shot = _demote_shot_to_still(shot.sequence)
                         video, agent = False, "stills_agent"
+                        run_status.shot(shot.sequence, type="still", state="queued", attempt=None,
+                                        max_attempts=manifest.attempts_allowed("stills_agent"))
                         shot_settings = _settings_for_shot(settings, agent, shot.sequence)
                         outcome = await _produce_still_shot(
                             shot, asset=asset, subtitle_text=subtitle_text,
@@ -2092,7 +2146,10 @@ async def _run_shot_production(
                         for path in sorted(RUN_STATE_DIR.glob(f"{agent}_shot_{shot.sequence}_attempt_*.json"))
                     ],
                 )
+            if outcome == "stopped":
+                run_status.shot(shot.sequence, state="queued")
             if isinstance(outcome, ShotFailure):
+                run_status.shot(shot.sequence, state="failed")
                 if outcome.shot_specific:
                     log(f"Shot {shot.sequence} failed ({outcome.reason}) — the other shots carry on", error=True)
                 else:
@@ -2396,6 +2453,7 @@ async def _produce_veo_shot(
             count += 1
             manifest.iteration_counts[stage_id] = count
             save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+            run_status.shot(shot.sequence, type="video", state="making", attempt=count, max_attempts=max_veo_attempts)
             # FR9: the hook denies a paid call this attempt's reservation can't
             # cover, counting every paid call already allowed in this session.
             guard = PaidToolGuard(
@@ -2578,6 +2636,7 @@ async def _produce_veo_shot(
             if outcome.status == "SUCCESS":
                 # FR12: approved only once an independent reviewer approves
                 # too, and before the upsert. The clip is already paid for.
+                run_status.shot(shot.sequence, state="reviewing")
                 reviewed = await _review_shot_asset(
                     agent="veo_agent", shot=shot, asset=asset, subtitle_text=subtitle_text,
                     outcome=outcome, settings=settings, manifest=manifest, launch=launch,
@@ -2614,6 +2673,7 @@ async def _produce_veo_shot(
                         partial_artifact_paths=attempt_paths,
                     )
                 run_progress.shot_finished()
+                run_status.shot(shot.sequence, state="approved", preview=entry.local_path)
                 log(f"Shot {shot.sequence}: video clip approved → {entry.local_path}"
                     f" · {run_progress.shots_done} of {run_progress.shots_total} shots · ~{run_progress.percent()}%",
                     indent=2)
@@ -2631,6 +2691,7 @@ async def _produce_veo_shot(
                     shot_specific=True,
                     failure_stage=failure.stage,
                 )
+            run_status.shot(shot.sequence, state="redo")
             log(
                 f"Shot {shot.sequence}: try {count} of {max_veo_attempts} "
                 f"didn't work — {failure.reason}",
@@ -2752,6 +2813,7 @@ async def _produce_still_shot(
             count += 1
             manifest.iteration_counts[stage_id] = count
             save_run_manifest(manifest, state_dir=RUN_STATE_DIR)
+            run_status.shot(shot.sequence, type="still", state="making", attempt=count, max_attempts=max_stills_attempts)
             # FR9: the hook denies a paid call this attempt's reservation can't
             # cover, counting every paid call already allowed in this session.
             guard = PaidToolGuard(
@@ -2929,6 +2991,7 @@ async def _produce_still_shot(
             reviewer_summary = ""
             if outcome.status == "SUCCESS":
                 # FR12: approved only once an independent reviewer approves too.
+                run_status.shot(shot.sequence, state="reviewing")
                 reviewed = await _review_shot_asset(
                     agent="stills_agent", shot=shot, asset=asset, subtitle_text=subtitle_text,
                     outcome=outcome, settings=settings, manifest=manifest, launch=launch,
@@ -2965,6 +3028,7 @@ async def _produce_still_shot(
                         partial_artifact_paths=attempt_paths,
                     )
                 run_progress.shot_finished()
+                run_status.shot(shot.sequence, state="approved", preview=entry.local_path)
                 log(f"Shot {shot.sequence}: picture approved → {entry.local_path}"
                     f" · {run_progress.shots_done} of {run_progress.shots_total} shots · ~{run_progress.percent()}%",
                     indent=2)
@@ -2982,6 +3046,7 @@ async def _produce_still_shot(
                     shot_specific=True,
                     failure_stage=failure.stage,
                 )
+            run_status.shot(shot.sequence, state="redo")
             log(
                 f"Shot {shot.sequence}: try {count} of {max_stills_attempts} "
                 f"didn't work — {failure.reason}",
@@ -3148,6 +3213,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return 1
 
     log_path = start_run(RUN_STATE_DIR)
+    run_status.begin(RUN_STATE_DIR / ui_hooks.STATUS_FILENAME)
+    previous_sigterm = None
+    if _started_by_ui():  # the UI's Stop; a terminal run keeps the default SIGTERM
+        try:
+            previous_sigterm = signal.signal(signal.SIGTERM, _stop_by_operator)
+        except ValueError:  # not the main thread
+            previous_sigterm = None
     # FR13: one trace per run, wrapping settings, preflight and every stage.
     # Off, and never imported, without the Langfuse keys (FR16).
     tracing.init_run_trace(args.project, log_path.stem if log_path else "run")
@@ -3156,6 +3228,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         exit_code = _run_after_start(args, project, log_path)
         return exit_code
     finally:
+        if previous_sigterm is not None:
+            signal.signal(signal.SIGTERM, previous_sigterm)
+        if run_status.active and run_status.stop_kind == "operator":
+            log("STOPPED — stopped by you. Run again to carry on from here.", error=True)
+        run_status.close(exit_code)
         tracing.end_run_trace(exit_code)
 
 
@@ -3174,6 +3251,7 @@ def _run_after_start(args: argparse.Namespace, project: Path, log_path: Path | N
         settings = load_settings()
     except SettingsError as exc:
         return _halt("settings", "Settings", str(exc))
+    run_status.attach_budget(lambda: manifest.budget_spent_usd, settings.max_budget_usd)
     # The style only matters when pictures are invented; checked here so a
     # misspelt name stops the run before any paid call.
     if source_mode_setting() == "content":
@@ -3241,27 +3319,77 @@ async def run_stages(source_images_dir: Path, settings: Settings, manifest: RunM
         gemini_image=settings.gemini_image_concurrency,
         codex_image=settings.codex_image_concurrency,
     )
+    # Which config.json ceiling each step's tries count against (steps 5-6
+    # have none of their own: shots count their own tries).
+    step_attempt_keys = {1: "asset_analyst", 2: "story_agent", 3: "visual_agent", 4: "voice_agent"}
+
+    def status_step_started(index: int) -> None:
+        key = step_attempt_keys.get(index)
+        run_status.step_started(
+            index,
+            attempt=manifest.iteration_counts.get(key) if key else None,
+            max_attempts=manifest.attempts_allowed(key) if key else None,
+        )
+
     banner(f"Step 1 of {total} — Looking at your screenshots · ~{run_progress.percent()}%")
     started = time.monotonic()
+    status_step_started(1)
     with tracing.span("asset_analyst") as stage_span:
         result = await run_screenshot_stage(source_images_dir, settings, manifest)
         tracing.mark_stage_result(stage_span, result, budget_spent_usd=manifest.budget_spent_usd)
     if result:
         return result
     run_progress.step_finished(1)
+    run_status.step_finished(1)
     log(f"Step 1 took {format_duration(time.monotonic() - started)} · ~{run_progress.percent()}% done")
     for index, (name, span_name, stage) in enumerate(steps, start=2):
         banner(f"Step {index} of {total} — {name} · ~{run_progress.percent()}%")
         started = time.monotonic()
+        status_step_started(index)
+        plan_before = _mtime_ns(FINAL_STORY_PLAN_FILE)
         with tracing.span(span_name) as stage_span:
             result = await stage(settings, manifest, retry_voice=True) if stage is run_voice_stage and retry_voice else await stage(settings, manifest)
             tracing.mark_stage_result(stage_span, result, budget_spent_usd=manifest.budget_spent_usd)
         if result:
             return result
         run_progress.step_finished(index)
+        run_status.step_finished(index)
         log(f"Step {index} took {format_duration(time.monotonic() - started)} · ${manifest.budget_spent_usd:.2f} spent so far"
             f" · ~{run_progress.percent()}% done")
+        # The narration checkpoint (ui/CONTRACT.md section 5). Only a script
+        # written in this run pauses: a resume that skipped step 2 is the
+        # operator's "continue", and must not stop at the same place again.
+        # Only runs the UI started: a flag left behind never pauses a terminal run.
+        if (
+            index == 2 and _started_by_ui() and ui_hooks.pause_flag_path(Path(".")).exists()
+            and _mtime_ns(FINAL_STORY_PLAN_FILE) != plan_before
+        ):
+            run_status.pause_for_narration()
+            log("Paused after the narration — waiting for you")
+            return 0
+    run_status.finish()
     return 0
+
+
+def _started_by_ui() -> bool:
+    """ui/server/runner.py sets REELSMITH_UI=1 on every run it starts."""
+    return os.environ.get("REELSMITH_UI") == "1"
+
+
+def _mtime_ns(path: Path) -> int | None:
+    try:
+        return path.stat().st_mtime_ns
+    except OSError:
+        return None
+
+
+def _stop_by_operator(signum, frame) -> None:
+    """SIGTERM (the UI's Stop): mark the status stopped, then unwind.
+
+    No `log` here: the main thread may hold the log lock when the signal lands.
+    """
+    run_status.halt("Stopped by you", stop_kind="operator")
+    raise SystemExit(128 + signum)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,58 @@
+/* App-level CSS: app_extra.css from the design, plus small shared helpers
+   for things the mockup did with inline styles or `style-hover`. */
+html, body { margin: 0; height: 100%; overflow: hidden; }
+#root { height: 100%; }
+a { color: var(--color-accent); } a:hover { color: var(--color-accent-600); }
+.btn, .tag, .seg-opt { white-space: nowrap; }
+@keyframes rs-spin { to { transform: rotate(360deg); } }
+@keyframes rs-pulse { 50% { opacity: .35; } }
+.rs-dark {
+  --color-bg: #1b1918; --color-surface: #262322; --color-text: #ece8e6;
+  --color-divider: color-mix(in srgb, #ece8e6 16%, transparent);
+  --color-accent: #38a6cf; --color-accent-2: #ff458e;
+  --color-neutral-100: #2d2b2b; --color-neutral-200: #444141; --color-neutral-300: #605d5d; --color-neutral-400: #7d7979; --color-neutral-500: #9b9797; --color-neutral-600: #bab6b6; --color-neutral-700: #d7d3d3; --color-neutral-800: #eae7e7; --color-neutral-900: #f8f4f4;
+  --color-accent-100: #0a303e; --color-accent-200: #004961; --color-accent-300: #006786; --color-accent-400: #1186ac; --color-accent-500: #38a6cf; --color-accent-600: #62c5ee; --color-accent-700: #99e0ff; --color-accent-800: #cbeeff; --color-accent-900: #e9f8ff;
+  --color-accent-2-100: #4b1528; --color-accent-2-200: #790e3d; --color-accent-2-300: #aa0b56; --color-accent-2-400: #d82071; --color-accent-2-500: #ff458e; --color-accent-2-600: #ff90b1; --color-accent-2-700: #ffc0d0; --color-accent-2-800: #ffdee6; --color-accent-2-900: #fff1f4;
+  --shadow-sm: 0 0 0 1px color-mix(in srgb, #fff 8%, transparent);
+  --shadow-md: 0 0 0 1px color-mix(in srgb, #fff 8%, transparent), 0 4px 14px rgba(0,0,0,.4);
+  --shadow-lg: 0 0 0 1px color-mix(in srgb, #fff 10%, transparent), 0 16px 40px rgba(0,0,0,.55);
+  color-scheme: dark;
+}
+
+/* — shell — */
+.rs-shell { height: 100vh; display: flex; flex-direction: column; background: var(--color-bg); color: var(--color-text); font-family: var(--font-body); overflow: hidden; }
+.rs-titlebar { height: 42px; flex: none; display: flex; align-items: center; gap: 15px; padding: 0 15px 0 18px; user-select: none; }
+.rs-body { flex: 1; display: flex; min-height: 0; }
+.rs-nav { width: 214px; flex: none; display: flex; flex-direction: column; gap: 30px; padding: 18px 15px 20px 18px; overflow: auto; }
+.rs-nav-item { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border: 0; border-radius: var(--radius-md); font: inherit; font-size: 15px; cursor: pointer; background: transparent; color: inherit; font-weight: 400; }
+.rs-nav-item:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+.rs-nav-item.is-active { background: var(--color-accent-100); color: var(--color-accent-800); font-weight: 600; }
+.rs-main { flex: 1; overflow: auto; min-width: 0; }
+/* the content column every screen renders into (padding + max width + 40px section gap) */
+.rs-content { padding: 30px 50px 90px 40px; max-width: 1320px; display: flex; flex-direction: column; gap: 40px; }
+
+/* — shared helpers — */
+.rs-muted { color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+.rs-dim { color: color-mix(in srgb, var(--color-text) 62%, transparent); font-size: 12px; }
+.rs-danger-text { color: var(--color-accent-2-700); }
+.rs-stack { display: flex; flex-direction: column; gap: 30px; }
+.rs-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rs-spacer { flex: 1; }
+/* page header: <div class="rs-page-head"><div><h1>Title</h1><div class="rs-sub">sub</div></div><span class="rs-spacer"/>actions</div> */
+.rs-page-head { display: flex; align-items: flex-end; gap: 20px; flex-wrap: wrap; }
+.rs-page-head h1 { margin: 0; }
+.rs-sub { font-size: 14px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+.rs-pulse-dot { width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--color-accent); animation: rs-pulse 1.6s ease-in-out infinite; }
+.rs-spinner { display: inline-block; animation: rs-spin 1s linear infinite; }
+.rs-bar { height: 2px; width: 100%; background: var(--color-neutral-200); display: block; }
+.rs-bar > span { display: block; height: 100%; background: var(--color-accent); }
+.rs-link-btn { border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+.rs-link-btn:hover { color: var(--color-accent); }
+/* popup menu: <div class="rs-menu"><button class="rs-menu-item">…</button><button class="rs-menu-item is-danger">…</button></div> */
+.rs-menu { position: absolute; right: 0; top: 32px; z-index: 20; min-width: 170px; display: flex; flex-direction: column; padding: 5px; background: var(--color-surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); }
+.rs-menu-item { display: flex; gap: 10px; align-items: center; padding: 8px 10px; border: 0; background: none; font: inherit; font-size: 14px; color: inherit; cursor: pointer; border-radius: var(--radius-md); text-align: left; }
+.rs-menu-item:hover { background: var(--color-accent-100); }
+.rs-menu-item.is-danger { color: var(--color-accent-2-700); }
+.rs-menu-item.is-danger:hover { background: var(--color-accent-2-100); }
+.rs-hover-accent:hover { background: var(--color-accent-100); }
+.rs-mono { font-family: ui-monospace, Menlo, Consolas, monospace; }

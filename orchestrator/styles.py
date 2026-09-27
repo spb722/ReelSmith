@@ -37,6 +37,8 @@ class Style(BaseModel):
     lighting: Text
     mood: Text
     avoid: list[Text]
+    # Shown by the studio UI only; never part of the image prompt.
+    display_name: Text | None = None
 
     def guide(self) -> str:
         """The style as one paragraph, as it goes into every image request.

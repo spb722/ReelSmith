@@ -19,3 +19,8 @@ generated_before_character/
 *.wav
 *.mp3
 *.webp
+
+# ReelSmith Studio UI
+ui/web/node_modules/
+ui/web/dist/
+ui/data/*.json

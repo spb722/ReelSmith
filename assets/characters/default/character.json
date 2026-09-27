@@ -1,0 +1,9 @@
+{
+  "id": "default",
+  "name": "Default",
+  "description": "",
+  "is_default": true,
+  "main": "main.png",
+  "turnaround": "turnaround.png",
+  "face": null
+}
