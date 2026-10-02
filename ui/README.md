@@ -59,6 +59,7 @@ cp -R styles $DEMO/styles && cp -R assets/character $DEMO/assets/character
 REELSMITH_ROOT=$DEMO \
 REELSMITH_RUN_CMD="$PY -m ui.server.fake_runner" \
 REELSMITH_COVER_CMD="$PY -m ui.server.fake_runner --cover" \
+REELSMITH_CAPTION_CMD="$PY -m ui.server.fake_runner --caption" \
 FAKE_RUN_SECONDS=40 \
 $PY -m ui.server.app
 ```
@@ -93,6 +94,9 @@ Options:
 Projects made before the studio have no `ui_settings.json`. They are shown with
 the default settings plus the attempt limits from their `config.json`. They are
 only changed when you save their settings or run them.
+
+The "Longer video shots" switch (Settings, Models) is `veo_extend_long_shots`, passed to runs as
+`VEO_EXTEND_LONG_SHOTS` (default off). It applies to new shot plans only.
 
 ## Tests
 

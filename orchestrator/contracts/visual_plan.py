@@ -37,9 +37,12 @@ REQUIRED_SCORE_DIMENSIONS = (
 
 # AD-4: generation_mode may be VEO only for these visual_treatment values;
 # every other treatment must be STILL.
-# How many shots `visual_agent` must nominate for video. Deliberately larger
-# than the orchestrator's own MAX_VEO_SHOTS cap so there are spare candidates
-# once the ones too long for a single Veo clip are dropped.
+# How many shots `visual_agent` must nominate for video (a floor, not a
+# ceiling). Deliberately larger than the orchestrator's default MAX_VEO_SHOTS
+# cap so there are spare candidates once the ones too long for a single Veo
+# clip are dropped. A project that raises the cap relies on `visual_agent`
+# nominating more than this floor; raising the floor itself would reject
+# every saved plan with only four nominations.
 MIN_VIDEO_NOMINATIONS = 4
 
 

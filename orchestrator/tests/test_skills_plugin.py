@@ -38,6 +38,7 @@ EXPECTED_SKILLS = {
     "asset-analysis", "story-craft", "story-craft-easy", "visual-planning", "source-fidelity",
     "visual-planning-content", "source-fidelity-content",
     "veo-production", "still-production", "visual-qa", "character-likeness-qa",
+    "instagram-caption",
 }
 AGENT_SKILLS = {
     "asset_analyst": ["book-reels:asset-analysis"],
@@ -45,6 +46,7 @@ AGENT_SKILLS = {
     "visual_agent": ["book-reels:visual-planning", "book-reels:source-fidelity"],
     "veo_agent": ["book-reels:veo-production", "book-reels:visual-qa", "book-reels:character-likeness-qa"],
     "stills_agent": ["book-reels:still-production", "book-reels:visual-qa", "book-reels:character-likeness-qa"],
+    "caption_agent": ["book-reels:instagram-caption"],
 }
 AGENT_CALLS = {
     "asset_analyst": ("analyze_assets", {"assets": []}),
@@ -56,8 +58,11 @@ AGENT_CALLS = {
     "stills_agent": ("generate_still_asset", {
         "shot": {}, "asset": {}, "subtitle_text": "", "settings": {}, "attempt": 1,
     }),
+    "caption_agent": ("write_caption", {
+        "story_title": "", "narration_script": "", "story_arc": {}, "source_text": [],
+    }),
 }
-GUARDED = {"story_agent", "visual_agent", "veo_agent", "stills_agent"}
+GUARDED = {"story_agent", "visual_agent", "veo_agent", "stills_agent", "caption_agent"}
 
 
 def frontmatter(path: Path) -> dict[str, str]:
@@ -93,7 +98,7 @@ def test_plugin_manifest_names_book_reels():
     assert PLUGIN_DIR.is_absolute()
 
 
-def test_plugin_holds_exactly_the_eleven_skills():
+def test_plugin_holds_exactly_the_twelve_skills():
     assert {p.name for p in SKILLS_DIR.iterdir() if p.is_dir()} == EXPECTED_SKILLS
     for name in EXPECTED_SKILLS:
         assert (SKILLS_DIR / name / "SKILL.md").is_file()

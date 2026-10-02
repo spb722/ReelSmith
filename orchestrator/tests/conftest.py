@@ -65,12 +65,14 @@ def _no_repo_dotenv(tmp_path):
 def _no_pipeline_switches_from_the_shell():
     """`STORY_SKILL` and `SOURCE_MODE` change which skills load and how images
     are drawn, so one exported in the operator's shell would change every
-    test; tests that need one set it themselves. A private MonkeyPatch, for
-    the same teardown-order reason as `_no_live_claude_calls`."""
+    test; tests that need one set it themselves. `VEO_EXTEND_LONG_SHOTS`
+    likewise changes which shots become video and what they cost. A private
+    MonkeyPatch, for the same teardown-order reason as `_no_live_claude_calls`."""
 
     with pytest.MonkeyPatch.context() as patch:
         patch.delenv("STORY_SKILL", raising=False)
         patch.delenv("SOURCE_MODE", raising=False)
+        patch.delenv("VEO_EXTEND_LONG_SHOTS", raising=False)
         yield
 
 
@@ -110,3 +112,18 @@ def _restore_workspace_state():
     yield
     os.chdir(before_cwd)
     workspace._active_project = before_project
+
+
+@pytest.fixture(autouse=True)
+def _no_live_spoken_form_referee():
+    """Same guard for the Gemini spoken-form referee. `pytest.fail` is not an
+    `Exception`, so the referee's own error handling cannot swallow it."""
+
+    from orchestrator.tools import spoken_form_referee
+
+    def refuse(*args, **kwargs):
+        pytest.fail("a test reached the real spoken-form referee; mock it")
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(spoken_form_referee, "judge_spoken_forms", refuse)
+        yield

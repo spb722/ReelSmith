@@ -78,6 +78,7 @@ from orchestrator.settings import (
     GEMINI_TTS_INPUT_TOKEN_COST_USD,
     GEMINI_TTS_OUTPUT_TOKEN_COST_USD,
     STT_COST_PER_SECOND_USD,
+    DEFAULT_MAX_VEO_SHOTS,
     Settings,
     SettingsError,
     load_settings,
@@ -125,7 +126,7 @@ from orchestrator.state.voice_cache import (
     AUDIO_CACHE_FILE, TTS_MODEL, discard_audio_cache, load_audio_cache, save_audio_cache,
     selected_voice_name,
 )
-from orchestrator.tools.veo_tools import select_clip_duration_seconds
+from orchestrator.tools.veo_tools import is_extension_length, select_clip_plan
 from orchestrator.tools.vendor_limits import configure_vendor_limits
 from orchestrator.tools.timeline_converter import build_timeline_data
 
@@ -142,12 +143,14 @@ TIMELINE_FILE = Path("metadata/timeline.json")
 # sibling single-shot bounded retry loop; a plain module constant rather than
 # a new Settings field, since settings.py's existing image-cost fields are
 # the only stills-specific configuration this story needs (Code Map).
-# How many shots per reel may become real Veo video. `visual_agent` nominates
-# more than this (MIN_VIDEO_NOMINATIONS) so there are spares once the shots too
-# long for a single clip are dropped.
-MAX_VEO_SHOTS = 3
+# The default cap on how many shots per reel may become real Veo video; the
+# cap a run uses is `settings.max_veo_shots` (MAX_VEO_SHOTS, per project).
+# `visual_agent` nominates at least MIN_VIDEO_NOMINATIONS so there are spares
+# once the shots too long for a single clip are dropped.
+MAX_VEO_SHOTS = DEFAULT_MAX_VEO_SHOTS
 # Advisory only: falling short is logged loudly but never halts a run. A reel
-# whose beats are all long legitimately ends up with fewer video shots.
+# whose beats are all long legitimately ends up with fewer video shots. A cap
+# raised above the default hopes for the whole cap (`_hoped_for_veo_shots`).
 TARGET_MIN_VEO_SHOTS = 2
 
 
@@ -766,6 +769,12 @@ def unreliable_video_motion(shot) -> str | None:
     return match.group(0) if match else None
 
 
+def _hoped_for_veo_shots(cap: int) -> int:
+    """How many video shots falling short of is worth a loud warning."""
+
+    return min(cap, TARGET_MIN_VEO_SHOTS) if cap <= DEFAULT_MAX_VEO_SHOTS else cap
+
+
 def _promote_video_candidates(visual_plan: VisualPlanContract, settings: Settings) -> list[int]:
     """Turn `visual_agent`'s ranked nominations into real VEO-mode shots.
 
@@ -780,48 +789,87 @@ def _promote_video_candidates(visual_plan: VisualPlanContract, settings: Setting
         (shot for shot in visual_plan.shots if shot.video_candidate_rank is not None),
         key=lambda shot: shot.video_candidate_rank,
     )
+    cap = settings.max_veo_shots
     promoted: list[int] = []
+    # Why each nomination stays a still, logged once under the summary line.
+    left_still: list[tuple[int, str]] = []
     for shot in nominated:
-        if len(promoted) >= MAX_VEO_SHOTS:
-            log(f"Shot {shot.sequence}: stays a still picture (already have the maximum {MAX_VEO_SHOTS} video clips)", indent=2)
+        if len(promoted) >= cap:
+            left_still.append((shot.sequence, f"already have the maximum {cap} video clips"))
             continue
         unreliable = unreliable_video_motion(shot)
         if unreliable:
-            log(
-                f"Shot {shot.sequence}: stays a still picture (its video motion asks for "
-                f"'{unreliable}', which the video model does not hold)",
-                indent=2,
-            )
+            left_still.append((
+                shot.sequence,
+                f"its video motion asks for '{unreliable}', which the video model does not hold",
+            ))
             continue
         duration = shot.end_seconds - shot.start_seconds
         try:
-            clip_seconds = select_clip_duration_seconds(duration, settings.veo_duration_seconds)
+            clip_seconds, extension_seconds = select_clip_plan(
+                duration, settings.veo_duration_seconds,
+                extend=settings.veo_extend_long_shots, resolution=settings.veo_resolution,
+            )
         except ValueError as exc:
-            log(f"Shot {shot.sequence}: stays a still picture ({exc})", indent=2)
+            left_still.append((shot.sequence, str(exc)))
             continue
         shot.generation_mode = "VEO"
         promoted.append(shot.sequence)
-        log(f"Shot {shot.sequence}: will be a moving video clip ({duration:.2f}s of narration → {clip_seconds}s clip)", indent=2)
+        if extension_seconds == 0:
+            log(f"Shot {shot.sequence}: will be a moving video clip ({duration:.2f}s of narration → {clip_seconds}s clip)", indent=2)
+        else:
+            log(
+                f"Shot {shot.sequence}: will be a moving video clip ({duration:.2f}s of narration → "
+                f"{clip_seconds}s clip + {extension_seconds}s extension, 2 video calls)",
+                indent=2,
+            )
 
     for shot in visual_plan.shots:
         shot.video_promotion_decided = True
 
+    log(f"Video shots: asked for up to {cap}, got {len(promoted)}")
+    for sequence, reason in left_still:
+        log(f"Shot {sequence}: stays a still picture ({reason})", indent=2)
+    hoped_for = _hoped_for_veo_shots(cap)
+    if cap > DEFAULT_MAX_VEO_SHOTS:
+        # A raised cap on a short reel cannot hope for more shots than were put forward.
+        hoped_for = min(hoped_for, len(nominated))
     if not nominated:
         log("No shots were put forward for video — every shot will be a still picture")
-    elif len(promoted) < TARGET_MIN_VEO_SHOTS:
+    elif len(promoted) < hoped_for:
         log(
             f"Only {len(promoted)} of {len(nominated)} candidate shot(s) fit inside a "
-            f"{settings.veo_duration_seconds}s clip (hoped for {TARGET_MIN_VEO_SHOTS}) — "
+            f"{settings.veo_duration_seconds}s clip"
+            f"{' (15s with an extension)' if settings.veo_extend_long_shots else ''}"
+            f" (hoped for {hoped_for}) — "
             "the rest stay still pictures",
             error=True,
         )
     return promoted
 
 
-def shot_attempt_reservation(settings: Settings, generation_mode: str) -> tuple[float, float]:
+def veo_calls_for_shot(shot, settings: Settings) -> int:
+    """Veo calls one attempt of this shot makes: 2 for an extended clip, else 1."""
+
+    if not settings.veo_extend_long_shots or shot.generation_mode != "VEO":
+        return 1
+    d = getattr(shot, "end_seconds", 0.0) - getattr(shot, "start_seconds", 0.0)
+    try:
+        _, extension_seconds = select_clip_plan(
+            d, settings.veo_duration_seconds, extend=True, resolution=settings.veo_resolution,
+        )
+    except ValueError:
+        return 1
+    return 2 if extension_seconds > 0 else 1
+
+
+def shot_attempt_reservation(
+    settings: Settings, generation_mode: str, veo_calls: int = 1,
+) -> tuple[float, float]:
     """(Claude share, paid-call costs) one attempt of a shot in this mode reserves.
 
-    A Veo attempt draws a seed and a clip, a still attempt one image. The
+    A Veo attempt draws a seed and a clip (two Veo calls for an extended
+    clip), a still attempt one image. The
     Claude share is the producer's cap plus one independent visual-QA review
     at its own cap (Story 4.5); the producer's query still gets only
     `claude_shot_attempt_cap_usd`.
@@ -829,7 +877,7 @@ def shot_attempt_reservation(settings: Settings, generation_mode: str) -> tuple[
 
     external = settings.image_call_cost_usd
     if generation_mode == "VEO":
-        external += settings.veo_call_cost_usd
+        external += settings.veo_call_cost_usd * veo_calls
     return settings.claude_shot_attempt_cap_usd + settings.claude_reviewer_cap_usd, external
 
 
@@ -846,10 +894,11 @@ def plan_first_attempt_demotions(
     its ladder state and step around its retry ceiling.
     """
 
-    def needed(mode: str) -> float:
-        return sum(shot_attempt_reservation(settings, mode))
+    def needed_for(shot) -> float:
+        return sum(shot_attempt_reservation(settings, shot.generation_mode, veo_calls_for_shot(shot, settings)))
 
-    total = sum(needed(shot.generation_mode) for shot in pending)
+    needed_still = sum(shot_attempt_reservation(settings, "STILL"))
+    total = sum(needed_for(shot) for shot in pending)
     demotable = sorted(
         (shot for shot in pending if shot.generation_mode == "VEO" and shot.sequence not in started),
         key=lambda shot: (
@@ -862,7 +911,7 @@ def plan_first_attempt_demotions(
     for shot in demotable:
         if total <= unreserved_usd + 1e-9:
             break
-        total -= needed("VEO") - needed("STILL")
+        total -= needed_for(shot) - needed_still
         demoted.append(shot.sequence)
     return demoted, total
 
@@ -898,6 +947,25 @@ async def run_production_planning(settings: Settings, manifest: RunManifest) -> 
         log("Every shot is already made — nothing to reserve")
         return 0
 
+    # An extended shot (over 8s) the current settings can no longer make is a
+    # still before any paid call, started or not: it can never be a video now.
+    unextendable: list[tuple[int, float, str]] = []
+    for shot in pending:
+        d = shot.end_seconds - shot.start_seconds
+        if shot.generation_mode != "VEO" or not is_extension_length(d):
+            continue
+        try:
+            select_clip_plan(
+                d, settings.veo_duration_seconds,
+                extend=settings.veo_extend_long_shots, resolution=settings.veo_resolution,
+            )
+        except ValueError as exc:
+            shot.generation_mode = "STILL"
+            unextendable.append((
+                shot.sequence, d,
+                "VEO_EXTEND_LONG_SHOTS is now off" if not settings.veo_extend_long_shots else str(exc),
+            ))
+
     unreserved = run_ledger(manifest, max_budget_usd=settings.max_budget_usd).unreserved_usd()
     started = frozenset(
         shot.sequence for shot in pending
@@ -913,17 +981,43 @@ async def run_production_planning(settings: Settings, manifest: RunManifest) -> 
             partial_artifact_paths=[str(VISUAL_PLAN_FILE)],
             reason_code="budget_exhausted",
         )
-    if demoted:
+    for sequence, d, why in unextendable:
+        log(
+            f"Shot {sequence}: switched from video to a still picture — it is {d:.2f}s, which needs "
+            f"an 8s clip plus a 7s extension, and {why}",
+            error=True,
+        )
+    if demoted or unextendable:
+        # What keeping the demoted shots as video would have needed on top of
+        # `needed`, priced while they are still VEO.
+        if settings.veo_extend_long_shots:
+            needed_still = sum(shot_attempt_reservation(settings, "STILL"))
+            extra = sum(
+                sum(shot_attempt_reservation(settings, "VEO", veo_calls_for_shot(shot, settings))) - needed_still
+                for shot in pending if shot.sequence in demoted
+            )
+        else:
+            extra = len(demoted) * (
+                sum(shot_attempt_reservation(settings, "VEO")) - sum(shot_attempt_reservation(settings, "STILL"))
+            )
         for shot in visual_plan.shots:
             if shot.sequence in demoted:
                 shot.generation_mode = "STILL"
         _atomic_write_json(VISUAL_PLAN_FILE, visual_plan.model_dump(mode="json"))
+    if demoted:
         for sequence in demoted:
             log(
                 f"Shot {sequence}: switched from video to a still picture — the budget can't also "
                 "reserve its first try as a video",
                 error=True,
             )
+        log(
+            f"BUDGET: {len(demoted)} video shot(s) were turned into still pictures. Keeping them as "
+            f"video needs about ${needed + extra:.2f} for the first tries, but only ${unreserved:.2f} "
+            "of the budget is left. Raise MAX_BUDGET_USD (per project in the UI) and redo the shot "
+            "plan to keep them.",
+            error=True,
+        )
     # Checked, not held: each attempt reserves for itself when it starts.
     log(
         f"The first try of {len(pending)} shot(s) needs ${needed:.2f} of the ${unreserved:.2f} left"
@@ -1550,14 +1644,39 @@ def _stamp_still_outcome(
     return outcome.model_copy(update=updates)
 
 
+def _with_authoritative_fingerprint(structured_output, expected_fingerprint: str):
+    """Put the orchestrator's fingerprint into every slot before validation.
+
+    The contracts reject an outcome whose fingerprints disagree, and that
+    check runs before `_stamp_still_outcome` / `_stamp_veo_outcome` could
+    overwrite them. The agent is never given the shot fingerprint, so it
+    guesses: a live stills agent copied the shot's `scene_content_fingerprint`
+    into the top level while the tool's nested value was right, and one
+    approved still halted the whole reel.
+    """
+
+    if not isinstance(structured_output, dict):
+        return structured_output
+    stamped = {**structured_output, "shot_fingerprint": expected_fingerprint}
+    for key in ("result", "failure"):
+        if isinstance(stamped.get(key), dict):
+            stamped[key] = {**stamped[key], "shot_fingerprint": expected_fingerprint}
+    if isinstance(stamped.get("result"), dict) and isinstance(stamped["result"].get("seed"), dict):
+        stamped["result"]["seed"] = {**stamped["result"]["seed"], "shot_fingerprint": expected_fingerprint}
+    return stamped
+
+
 # A Veo attempt that never got past its seed did not pay for a clip. Any other
-# outcome is charged for both calls, which over-charges an RAI-filtered clip
-# Google does not bill -- the same conservative direction the STT accounting
-# already takes.
+# outcome is charged for every call, which over-charges an RAI-filtered clip
+# Google does not bill, and an extended shot stopped at FIRST_CLIP_CAMERA_MOVED
+# by one call -- the same conservative direction the STT accounting already
+# takes.
 VEO_SEED_ONLY_FAILURE_STAGES = {"seed_generation", "seed_qa"}
 
 
-def _veo_attempt_cost(outcome: VeoOutcomeContract, settings: Settings) -> tuple[float, float]:
+def _veo_attempt_cost(
+    outcome: VeoOutcomeContract, settings: Settings, veo_calls: int = 1,
+) -> tuple[float, float]:
     """(seed cost, clip cost) the orchestrator knows this attempt incurred."""
 
     if (
@@ -1566,7 +1685,7 @@ def _veo_attempt_cost(outcome: VeoOutcomeContract, settings: Settings) -> tuple[
         and outcome.failure.stage in VEO_SEED_ONLY_FAILURE_STAGES
     ):
         return settings.image_call_cost_usd, 0.0
-    return settings.image_call_cost_usd, settings.veo_call_cost_usd
+    return settings.image_call_cost_usd, settings.veo_call_cost_usd * veo_calls
 
 
 def _stamp_veo_outcome(
@@ -2396,7 +2515,8 @@ async def _produce_veo_shot(
     fail = functools.partial(ShotFailure, shot.sequence)
     ledger = launch.ledger
     settings_payload = _veo_settings_payload(settings)
-    claude_cap, reserved_external_cost = shot_attempt_reservation(settings, "VEO")
+    veo_calls = veo_calls_for_shot(shot, settings)
+    claude_cap, reserved_external_cost = shot_attempt_reservation(settings, "VEO", veo_calls)
     # Ceilings come from the project's config.json and nowhere else, so there
     # is one file to edit when a stage needs more room.
     max_veo_attempts = manifest.attempts_allowed("veo_agent")
@@ -2423,6 +2543,12 @@ async def _produce_veo_shot(
         str(path)
         for path in sorted(RUN_STATE_DIR.glob(f"veo_agent_shot_{shot.sequence}_attempt_*.json"))
     ]
+    if veo_calls == 2:
+        log(
+            f"Shot {shot.sequence}: {shot.end_seconds - shot.start_seconds:.2f}s shot — an 8s clip "
+            "plus a 7s extension, so each try makes 2 video calls",
+            indent=2,
+        )
 
     while count < max_veo_attempts:
         # FR7: this attempt's worst case is held before its query starts.
@@ -2458,7 +2584,7 @@ async def _produce_veo_shot(
             # cover, counting every paid call already allowed in this session.
             guard = PaidToolGuard(
                 limit_usd=reservation.paid_tool_allowance_usd,
-                costs={VEO_SEED_TOOL: settings.image_call_cost_usd, VEO_CLIP_TOOL: settings.veo_call_cost_usd},
+                costs={VEO_SEED_TOOL: settings.image_call_cost_usd, VEO_CLIP_TOOL: settings.veo_call_cost_usd * veo_calls},
             )
             try:
                 agent_result = await generate_veo_asset(
@@ -2564,9 +2690,11 @@ async def _produce_veo_shot(
                     raise ValueError(
                         f"Claude failed ({agent_result.subtype}): {agent_result.errors or agent_result.result}"
                     )
-                outcome = VeoOutcomeContract.model_validate(agent_result.structured_output)
                 expected_fingerprint = shot_fingerprint(shot)
-                seed_cost, clip_cost = _veo_attempt_cost(outcome, settings)
+                outcome = VeoOutcomeContract.model_validate(
+                    _with_authoritative_fingerprint(agent_result.structured_output, expected_fingerprint)
+                )
+                seed_cost, clip_cost = _veo_attempt_cost(outcome, settings, veo_calls)
                 outcome = _stamp_veo_outcome(
                     outcome,
                     shot_sequence=shot.sequence,
@@ -2923,8 +3051,10 @@ async def _produce_still_shot(
                     raise ValueError(
                         f"Claude failed ({agent_result.subtype}): {agent_result.errors or agent_result.result}"
                     )
-                outcome = StillOutcomeContract.model_validate(agent_result.structured_output)
                 expected_fingerprint = shot_fingerprint(shot)
+                outcome = StillOutcomeContract.model_validate(
+                    _with_authoritative_fingerprint(agent_result.structured_output, expected_fingerprint)
+                )
                 # One paid image call per attempt, at the rate the orchestrator
                 # already reserved -- so the cost is stamped, never read back
                 # from the agent and re-checked against a ceiling.

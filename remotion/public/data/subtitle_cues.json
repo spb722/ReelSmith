@@ -1,1203 +1,1218 @@
 {
   "produced_by": "voice_agent",
-  "source_narration_script": "You're not unhappy at work. You're just stuck. Every small change you can think of makes things a little worse, so you stay put. Picture a lobster in a trap. To get out, it has to crawl deeper into the cage, back toward the center, before it can reach the opening. But every instinct pulls it toward the light. So it stays trapped by its own good sense, because the way out is the one direction that feels wrong. That's you on a hill in thick fog. The ground falls away in every direction, so it feels like the top. But a far higher peak could be hidden across the valley. You'll never find it unless you walk downhill. A worse move today can be the price of a better peak tomorrow. What's the step back you keep refusing?",
+  "source_narration_script": "You have probably called yourself lazy. A coach named Gary John Bishop coached thousands of people, and he heard that word constantly. Underneath it, he almost never found laziness. They weren't unable. They just weren't willing. And calling it a flaw let them off the hook. So Bishop pushes a harder question. Are you willing to do what the goal actually costs? You want wealth? Are you willing to work eighty-hour weeks and risk everything? If your honest answer is no, that's not failure. That's clarity. Because willingness isn't a mood you wait for. It's a stance you take. Say I'm willing, and a door opens. Say I'm unwilling, and you draw a line. Both are power. What drains you is pretending. Refuse to act, and this is the life you chose. You have the life you tolerate.",
   "alignment_ratio": 1.0,
   "audio_provenance": {
     "version": 1,
-    "narration_script": "You're not unhappy at work. You're just stuck. Every small change you can think of makes things a little worse, so you stay put. Picture a lobster in a trap. To get out, it has to crawl deeper into the cage, back toward the center, before it can reach the opening. But every instinct pulls it toward the light. So it stays trapped by its own good sense, because the way out is the one direction that feels wrong. That's you on a hill in thick fog. The ground falls away in every direction, so it feels like the top. But a far higher peak could be hidden across the valley. You'll never find it unless you walk downhill. A worse move today can be the price of a better peak tomorrow. What's the step back you keep refusing?",
+    "narration_script": "You have probably called yourself lazy. A coach named Gary John Bishop coached thousands of people, and he heard that word constantly. Underneath it, he almost never found laziness. They weren't unable. They just weren't willing. And calling it a flaw let them off the hook. So Bishop pushes a harder question. Are you willing to do what the goal actually costs? You want wealth? Are you willing to work eighty-hour weeks and risk everything? If your honest answer is no, that's not failure. That's clarity. Because willingness isn't a mood you wait for. It's a stance you take. Say I'm willing, and a door opens. Say I'm unwilling, and you draw a line. Both are power. What drains you is pretending. Refuse to act, and this is the life you chose. You have the life you tolerate.",
     "voice_direction": {
-      "persona": "A warm, grounded friend explaining an idea that quietly rearranged how they think",
+      "persona": "A warm, grounded friend telling you something that quietly rearranged how they see their own life — steady, unhurried, never preachy",
       "tone": [
-        "calm",
         "warm",
-        "curious",
-        "quietly certain"
+        "calm",
+        "confident",
+        "direct",
+        "compassionate"
       ],
-      "pace_wpm": 150,
+      "pace_wpm": 160,
       "delivery_notes": [
-        "Open flat and familiar, almost a shrug — this is a feeling the listener already knows.",
-        "Lean gently on 'small' and 'a little' in the opening; the smallness of the failed moves is the setup for the whole idea.",
-        "Slow down on the lobster's movement so the listener can picture the direction of travel.",
-        "Say 'the one direction that feels wrong' softly, as a realization, not a punchline.",
-        "Let 'That's you' land as a gentle turn toward the listener, not an accusation.",
-        "Deliver the closing line as the settled truth of the piece, then ask the final question quietly."
+        "Open conversationally, almost gently — the first line is recognition, not accusation",
+        "Slow down on the two short reversal sentences so each lands on its own",
+        "Ask the cost question like a real question, with genuine curiosity, not a challenge",
+        "Let 'That's clarity' come out softer and kinder than the lines before it",
+        "Keep the willing/unwilling pair balanced in energy — neither one is the 'good' answer",
+        "Deliver the final line quietly and squarely to the listener, then stop"
       ],
       "emphasis_phrases": [
-        "just stuck",
-        "a little worse",
-        "deeper into the cage",
-        "its own good sense",
-        "the one direction that feels wrong",
-        "That's you",
-        "walk downhill",
-        "a better peak tomorrow"
+        "called yourself lazy",
+        "They just weren't willing",
+        "what the goal actually costs",
+        "That's clarity",
+        "Both are power",
+        "You have the life you tolerate"
       ],
       "pause_after_phrases": [
-        "You're just stuck.",
-        "before it can reach the opening.",
-        "the one direction that feels wrong.",
-        "so it feels like the top.",
-        "the price of a better peak tomorrow."
+        "You have probably called yourself lazy.",
+        "he almost never found laziness.",
+        "They just weren't willing.",
+        "what the goal actually costs?",
+        "That's clarity.",
+        "Both are power.",
+        "What drains you is pretending."
       ]
     },
-    "voice_name": "Gacrux",
+    "voice_name": "Algieba",
     "model": "gemini-3.1-flash-tts-preview",
-    "audio_sha256": "f23bf12770bf5af5cb774b64605bbc7bbc93dbedb756f72ae9955c26c3b7695d"
+    "audio_sha256": "61b1b64716f2857567148e11168b7d6a1f45f3c4fbb977ad2bd55c769eb44436"
   },
   "cues": [
     {
       "cue_id": "cue_001",
-      "start_seconds": 0.2,
-      "end_seconds": 2.61,
-      "word_count": 5,
-      "text": "You're not unhappy at work.",
+      "start_seconds": 0.24,
+      "end_seconds": 1.43,
+      "word_count": 3,
+      "text": "You have probably",
       "words": [
         {
           "index": 1,
-          "word": "You're",
-          "start_seconds": 0.24,
-          "end_seconds": 0.44
+          "word": "You",
+          "start_seconds": 0.28,
+          "end_seconds": 0.52
         },
         {
           "index": 2,
-          "word": "not",
-          "start_seconds": 0.44,
-          "end_seconds": 0.96
+          "word": "have",
+          "start_seconds": 0.52,
+          "end_seconds": 0.72
         },
         {
           "index": 3,
-          "word": "unhappy",
-          "start_seconds": 0.96,
-          "end_seconds": 1.72
-        },
-        {
-          "index": 4,
-          "word": "at",
-          "start_seconds": 1.72,
-          "end_seconds": 1.88
-        },
-        {
-          "index": 5,
-          "word": "work",
-          "start_seconds": 1.88,
-          "end_seconds": 2.36
+          "word": "probably",
+          "start_seconds": 0.72,
+          "end_seconds": 1.48
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_002",
-      "start_seconds": 2.88,
-      "end_seconds": 4.65,
+      "start_seconds": 1.44,
+      "end_seconds": 3.41,
       "word_count": 3,
-      "text": "You're just stuck.",
+      "text": "called yourself lazy.",
       "words": [
         {
+          "index": 4,
+          "word": "called",
+          "start_seconds": 1.48,
+          "end_seconds": 1.84
+        },
+        {
+          "index": 5,
+          "word": "yourself",
+          "start_seconds": 1.84,
+          "end_seconds": 2.52
+        },
+        {
           "index": 6,
-          "word": "You're",
-          "start_seconds": 2.92,
-          "end_seconds": 3.04
-        },
-        {
-          "index": 7,
-          "word": "just",
-          "start_seconds": 3.04,
-          "end_seconds": 3.68
-        },
-        {
-          "index": 8,
-          "word": "stuck",
-          "start_seconds": 3.68,
-          "end_seconds": 4.4
+          "word": "lazy",
+          "start_seconds": 2.52,
+          "end_seconds": 3.16
         }
       ],
       "style_hint": "IMPACT"
     },
     {
       "cue_id": "cue_003",
-      "start_seconds": 5.48,
-      "end_seconds": 6.91,
-      "word_count": 5,
-      "text": "Every small change you can",
+      "start_seconds": 3.88,
+      "end_seconds": 4.95,
+      "word_count": 4,
+      "text": "A coach named Gary",
       "words": [
         {
+          "index": 7,
+          "word": "A",
+          "start_seconds": 3.92,
+          "end_seconds": 4.0
+        },
+        {
+          "index": 8,
+          "word": "coach",
+          "start_seconds": 4.0,
+          "end_seconds": 4.36
+        },
+        {
           "index": 9,
-          "word": "Every",
-          "start_seconds": 5.52,
-          "end_seconds": 5.96
+          "word": "named",
+          "start_seconds": 4.36,
+          "end_seconds": 4.64
         },
         {
           "index": 10,
-          "word": "small",
-          "start_seconds": 5.96,
-          "end_seconds": 6.32
-        },
-        {
-          "index": 11,
-          "word": "change",
-          "start_seconds": 6.32,
-          "end_seconds": 6.72
-        },
-        {
-          "index": 12,
-          "word": "you",
-          "start_seconds": 6.72,
-          "end_seconds": 6.8
-        },
-        {
-          "index": 13,
-          "word": "can",
-          "start_seconds": 6.8,
-          "end_seconds": 6.96
+          "word": "Gary",
+          "start_seconds": 4.64,
+          "end_seconds": 5.0
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_004",
-      "start_seconds": 6.92,
-      "end_seconds": 8.43,
+      "start_seconds": 4.96,
+      "end_seconds": 6.91,
       "word_count": 4,
-      "text": "think of makes things",
+      "text": "John Bishop coached thousands",
       "words": [
         {
+          "index": 11,
+          "word": "John",
+          "start_seconds": 5.0,
+          "end_seconds": 5.4
+        },
+        {
+          "index": 12,
+          "word": "Bishop",
+          "start_seconds": 5.4,
+          "end_seconds": 5.88
+        },
+        {
+          "index": 13,
+          "word": "coached",
+          "start_seconds": 5.88,
+          "end_seconds": 6.4
+        },
+        {
           "index": 14,
-          "word": "think",
-          "start_seconds": 6.96,
-          "end_seconds": 7.28
-        },
-        {
-          "index": 15,
-          "word": "of",
-          "start_seconds": 7.28,
-          "end_seconds": 7.72
-        },
-        {
-          "index": 16,
-          "word": "makes",
-          "start_seconds": 7.88,
-          "end_seconds": 8.16
-        },
-        {
-          "index": 17,
-          "word": "things",
-          "start_seconds": 8.16,
-          "end_seconds": 8.48
+          "word": "thousands",
+          "start_seconds": 6.4,
+          "end_seconds": 6.96
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_005",
-      "start_seconds": 8.44,
-      "end_seconds": 9.73,
-      "word_count": 3,
-      "text": "a little worse,",
+      "start_seconds": 6.92,
+      "end_seconds": 7.99,
+      "word_count": 4,
+      "text": "of people, and he",
       "words": [
         {
+          "index": 15,
+          "word": "of",
+          "start_seconds": 6.96,
+          "end_seconds": 7.04
+        },
+        {
+          "index": 16,
+          "word": "people",
+          "start_seconds": 7.04,
+          "end_seconds": 7.56
+        },
+        {
+          "index": 17,
+          "word": "and",
+          "start_seconds": 7.8,
+          "end_seconds": 7.92
+        },
+        {
           "index": 18,
-          "word": "a",
-          "start_seconds": 8.48,
-          "end_seconds": 8.52
-        },
-        {
-          "index": 19,
-          "word": "little",
-          "start_seconds": 8.52,
-          "end_seconds": 8.92
-        },
-        {
-          "index": 20,
-          "word": "worse",
-          "start_seconds": 8.92,
-          "end_seconds": 9.48
+          "word": "he",
+          "start_seconds": 7.92,
+          "end_seconds": 8.04
         }
       ],
-      "style_hint": "EMPHASIS"
+      "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_006",
-      "start_seconds": 9.92,
-      "end_seconds": 11.21,
+      "start_seconds": 8.0,
+      "end_seconds": 10.17,
       "word_count": 4,
-      "text": "so you stay put.",
+      "text": "heard that word constantly.",
       "words": [
         {
+          "index": 19,
+          "word": "heard",
+          "start_seconds": 8.04,
+          "end_seconds": 8.28
+        },
+        {
+          "index": 20,
+          "word": "that",
+          "start_seconds": 8.28,
+          "end_seconds": 8.52
+        },
+        {
           "index": 21,
-          "word": "so",
-          "start_seconds": 9.96,
-          "end_seconds": 10.12
+          "word": "word",
+          "start_seconds": 8.52,
+          "end_seconds": 9.0
         },
         {
           "index": 22,
-          "word": "you",
-          "start_seconds": 10.12,
-          "end_seconds": 10.24
-        },
-        {
-          "index": 23,
-          "word": "stay",
-          "start_seconds": 10.24,
-          "end_seconds": 10.48
-        },
-        {
-          "index": 24,
-          "word": "put",
-          "start_seconds": 10.48,
-          "end_seconds": 10.96
+          "word": "constantly",
+          "start_seconds": 9.04,
+          "end_seconds": 9.92
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_007",
-      "start_seconds": 12.08,
-      "end_seconds": 14.53,
-      "word_count": 6,
-      "text": "Picture a lobster in a trap.",
+      "start_seconds": 10.6,
+      "end_seconds": 11.69,
+      "word_count": 2,
+      "text": "Underneath it,",
       "words": [
         {
-          "index": 25,
-          "word": "Picture",
-          "start_seconds": 12.12,
-          "end_seconds": 12.68
+          "index": 23,
+          "word": "Underneath",
+          "start_seconds": 10.64,
+          "end_seconds": 11.16
         },
         {
-          "index": 26,
-          "word": "a",
-          "start_seconds": 12.68,
-          "end_seconds": 12.76
-        },
-        {
-          "index": 27,
-          "word": "lobster",
-          "start_seconds": 12.76,
-          "end_seconds": 13.48
-        },
-        {
-          "index": 28,
-          "word": "in",
-          "start_seconds": 13.48,
-          "end_seconds": 13.64
-        },
-        {
-          "index": 29,
-          "word": "a",
-          "start_seconds": 13.64,
-          "end_seconds": 13.68
-        },
-        {
-          "index": 30,
-          "word": "trap",
-          "start_seconds": 13.68,
-          "end_seconds": 14.28
+          "index": 24,
+          "word": "it",
+          "start_seconds": 11.16,
+          "end_seconds": 11.44
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_008",
-      "start_seconds": 14.8,
-      "end_seconds": 16.39,
-      "word_count": 6,
-      "text": "To get out, it has to",
+      "start_seconds": 11.88,
+      "end_seconds": 14.05,
+      "word_count": 5,
+      "text": "he almost never found laziness.",
       "words": [
         {
-          "index": 31,
-          "word": "To",
-          "start_seconds": 14.84,
-          "end_seconds": 15.0
+          "index": 25,
+          "word": "he",
+          "start_seconds": 11.92,
+          "end_seconds": 12.12
         },
         {
-          "index": 32,
-          "word": "get",
-          "start_seconds": 15.0,
-          "end_seconds": 15.24
+          "index": 26,
+          "word": "almost",
+          "start_seconds": 12.12,
+          "end_seconds": 12.48
         },
         {
-          "index": 33,
-          "word": "out",
-          "start_seconds": 15.24,
-          "end_seconds": 15.8
+          "index": 27,
+          "word": "never",
+          "start_seconds": 12.48,
+          "end_seconds": 12.84
         },
         {
-          "index": 34,
-          "word": "it",
-          "start_seconds": 15.96,
-          "end_seconds": 16.08
+          "index": 28,
+          "word": "found",
+          "start_seconds": 12.84,
+          "end_seconds": 13.16
         },
         {
-          "index": 35,
-          "word": "has",
-          "start_seconds": 16.08,
-          "end_seconds": 16.32
-        },
-        {
-          "index": 36,
-          "word": "to",
-          "start_seconds": 16.32,
-          "end_seconds": 16.44
+          "index": 29,
+          "word": "laziness",
+          "start_seconds": 13.16,
+          "end_seconds": 13.8
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_009",
-      "start_seconds": 16.4,
-      "end_seconds": 18.55,
-      "word_count": 5,
-      "text": "crawl deeper into the cage,",
+      "start_seconds": 14.44,
+      "end_seconds": 16.09,
+      "word_count": 3,
+      "text": "They weren't unable.",
       "words": [
         {
-          "index": 37,
-          "word": "crawl",
-          "start_seconds": 16.44,
-          "end_seconds": 16.76
+          "index": 30,
+          "word": "They",
+          "start_seconds": 14.48,
+          "end_seconds": 14.6
         },
         {
-          "index": 38,
-          "word": "deeper",
-          "start_seconds": 16.76,
-          "end_seconds": 17.36
+          "index": 31,
+          "word": "weren't",
+          "start_seconds": 14.6,
+          "end_seconds": 15.12
         },
         {
-          "index": 39,
-          "word": "into",
-          "start_seconds": 17.36,
-          "end_seconds": 17.6
-        },
-        {
-          "index": 40,
-          "word": "the",
-          "start_seconds": 17.6,
-          "end_seconds": 17.68
-        },
-        {
-          "index": 41,
-          "word": "cage",
-          "start_seconds": 17.68,
-          "end_seconds": 18.36
-        }
-      ],
-      "style_hint": "IMPACT"
-    },
-    {
-      "cue_id": "cue_010",
-      "start_seconds": 18.56,
-      "end_seconds": 20.09,
-      "word_count": 4,
-      "text": "back toward the center,",
-      "words": [
-        {
-          "index": 42,
-          "word": "back",
-          "start_seconds": 18.6,
-          "end_seconds": 18.88
-        },
-        {
-          "index": 43,
-          "word": "toward",
-          "start_seconds": 18.88,
-          "end_seconds": 19.16
-        },
-        {
-          "index": 44,
-          "word": "the",
-          "start_seconds": 19.16,
-          "end_seconds": 19.28
-        },
-        {
-          "index": 45,
-          "word": "center",
-          "start_seconds": 19.28,
-          "end_seconds": 19.84
+          "index": 32,
+          "word": "unable",
+          "start_seconds": 15.16,
+          "end_seconds": 15.84
         }
       ],
       "style_hint": "NORMAL"
     },
     {
-      "cue_id": "cue_011",
-      "start_seconds": 20.16,
-      "end_seconds": 22.05,
-      "word_count": 6,
-      "text": "before it can reach the opening.",
+      "cue_id": "cue_010",
+      "start_seconds": 16.4,
+      "end_seconds": 18.01,
+      "word_count": 4,
+      "text": "They just weren't willing.",
       "words": [
         {
-          "index": 46,
-          "word": "before",
-          "start_seconds": 20.2,
-          "end_seconds": 20.68
+          "index": 33,
+          "word": "They",
+          "start_seconds": 16.44,
+          "end_seconds": 16.56
         },
         {
-          "index": 47,
+          "index": 34,
+          "word": "just",
+          "start_seconds": 16.56,
+          "end_seconds": 16.84
+        },
+        {
+          "index": 35,
+          "word": "weren't",
+          "start_seconds": 16.84,
+          "end_seconds": 17.2
+        },
+        {
+          "index": 36,
+          "word": "willing",
+          "start_seconds": 17.2,
+          "end_seconds": 17.76
+        }
+      ],
+      "style_hint": "IMPACT"
+    },
+    {
+      "cue_id": "cue_011",
+      "start_seconds": 18.4,
+      "end_seconds": 20.07,
+      "word_count": 6,
+      "text": "And calling it a flaw let",
+      "words": [
+        {
+          "index": 37,
+          "word": "And",
+          "start_seconds": 18.44,
+          "end_seconds": 18.6
+        },
+        {
+          "index": 38,
+          "word": "calling",
+          "start_seconds": 18.6,
+          "end_seconds": 18.92
+        },
+        {
+          "index": 39,
           "word": "it",
-          "start_seconds": 20.68,
-          "end_seconds": 20.76
+          "start_seconds": 18.92,
+          "end_seconds": 19.0
         },
         {
-          "index": 48,
-          "word": "can",
-          "start_seconds": 20.76,
-          "end_seconds": 20.92
+          "index": 40,
+          "word": "a",
+          "start_seconds": 19.0,
+          "end_seconds": 19.08
         },
         {
-          "index": 49,
-          "word": "reach",
-          "start_seconds": 20.92,
-          "end_seconds": 21.16
+          "index": 41,
+          "word": "flaw",
+          "start_seconds": 19.08,
+          "end_seconds": 19.76
         },
         {
-          "index": 50,
-          "word": "the",
-          "start_seconds": 21.16,
-          "end_seconds": 21.32
-        },
-        {
-          "index": 51,
-          "word": "opening",
-          "start_seconds": 21.32,
-          "end_seconds": 21.8
+          "index": 42,
+          "word": "let",
+          "start_seconds": 19.96,
+          "end_seconds": 20.12
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_012",
-      "start_seconds": 22.44,
-      "end_seconds": 24.47,
+      "start_seconds": 20.08,
+      "end_seconds": 21.25,
       "word_count": 4,
-      "text": "But every instinct pulls",
+      "text": "them off the hook.",
       "words": [
         {
-          "index": 52,
-          "word": "But",
-          "start_seconds": 22.48,
-          "end_seconds": 22.8
+          "index": 43,
+          "word": "them",
+          "start_seconds": 20.12,
+          "end_seconds": 20.28
         },
         {
-          "index": 53,
-          "word": "every",
-          "start_seconds": 22.84,
-          "end_seconds": 23.4
+          "index": 44,
+          "word": "off",
+          "start_seconds": 20.28,
+          "end_seconds": 20.48
         },
         {
-          "index": 54,
-          "word": "instinct",
-          "start_seconds": 23.4,
-          "end_seconds": 24.08
+          "index": 45,
+          "word": "the",
+          "start_seconds": 20.48,
+          "end_seconds": 20.56
         },
         {
-          "index": 55,
-          "word": "pulls",
-          "start_seconds": 24.08,
-          "end_seconds": 24.52
+          "index": 46,
+          "word": "hook",
+          "start_seconds": 20.56,
+          "end_seconds": 21.0
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_013",
-      "start_seconds": 24.48,
-      "end_seconds": 25.77,
-      "word_count": 4,
-      "text": "it toward the light.",
+      "start_seconds": 21.64,
+      "end_seconds": 24.09,
+      "word_count": 6,
+      "text": "So Bishop pushes a harder question.",
       "words": [
         {
-          "index": 56,
-          "word": "it",
-          "start_seconds": 24.52,
-          "end_seconds": 24.68
+          "index": 47,
+          "word": "So",
+          "start_seconds": 21.68,
+          "end_seconds": 21.96
         },
         {
-          "index": 57,
-          "word": "toward",
-          "start_seconds": 24.68,
-          "end_seconds": 24.92
+          "index": 48,
+          "word": "Bishop",
+          "start_seconds": 22.04,
+          "end_seconds": 22.44
         },
         {
-          "index": 58,
-          "word": "the",
-          "start_seconds": 24.92,
-          "end_seconds": 25.04
+          "index": 49,
+          "word": "pushes",
+          "start_seconds": 22.44,
+          "end_seconds": 22.8
         },
         {
-          "index": 59,
-          "word": "light",
-          "start_seconds": 25.04,
-          "end_seconds": 25.52
+          "index": 50,
+          "word": "a",
+          "start_seconds": 22.8,
+          "end_seconds": 22.84
+        },
+        {
+          "index": 51,
+          "word": "harder",
+          "start_seconds": 22.84,
+          "end_seconds": 23.28
+        },
+        {
+          "index": 52,
+          "word": "question",
+          "start_seconds": 23.28,
+          "end_seconds": 23.84
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_014",
-      "start_seconds": 26.04,
-      "end_seconds": 27.73,
-      "word_count": 4,
-      "text": "So it stays trapped",
+      "start_seconds": 24.4,
+      "end_seconds": 25.99,
+      "word_count": 5,
+      "text": "Are you willing to do",
       "words": [
         {
-          "index": 60,
-          "word": "So",
-          "start_seconds": 26.08,
-          "end_seconds": 26.28
+          "index": 53,
+          "word": "Are",
+          "start_seconds": 24.44,
+          "end_seconds": 24.6
         },
         {
-          "index": 61,
-          "word": "it",
-          "start_seconds": 26.28,
-          "end_seconds": 26.4
+          "index": 54,
+          "word": "you",
+          "start_seconds": 24.6,
+          "end_seconds": 24.92
         },
         {
-          "index": 62,
-          "word": "stays",
-          "start_seconds": 26.4,
-          "end_seconds": 26.8
+          "index": 55,
+          "word": "willing",
+          "start_seconds": 24.92,
+          "end_seconds": 25.56
         },
         {
-          "index": 63,
-          "word": "trapped",
-          "start_seconds": 26.8,
-          "end_seconds": 27.48
+          "index": 56,
+          "word": "to",
+          "start_seconds": 25.6,
+          "end_seconds": 25.8
+        },
+        {
+          "index": 57,
+          "word": "do",
+          "start_seconds": 25.8,
+          "end_seconds": 26.04
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_015",
-      "start_seconds": 27.84,
-      "end_seconds": 29.49,
+      "start_seconds": 26.0,
+      "end_seconds": 28.41,
       "word_count": 5,
-      "text": "by its own good sense,",
+      "text": "what the goal actually costs?",
       "words": [
         {
-          "index": 64,
-          "word": "by",
-          "start_seconds": 27.88,
-          "end_seconds": 28.04
+          "index": 58,
+          "word": "what",
+          "start_seconds": 26.04,
+          "end_seconds": 26.2
         },
         {
-          "index": 65,
-          "word": "its",
-          "start_seconds": 28.04,
-          "end_seconds": 28.24
+          "index": 59,
+          "word": "the",
+          "start_seconds": 26.2,
+          "end_seconds": 26.32
         },
         {
-          "index": 66,
-          "word": "own",
-          "start_seconds": 28.24,
-          "end_seconds": 28.44
+          "index": 60,
+          "word": "goal",
+          "start_seconds": 26.32,
+          "end_seconds": 26.8
         },
         {
-          "index": 67,
-          "word": "good",
-          "start_seconds": 28.44,
-          "end_seconds": 28.68
+          "index": 61,
+          "word": "actually",
+          "start_seconds": 26.84,
+          "end_seconds": 27.4
         },
         {
-          "index": 68,
-          "word": "sense",
-          "start_seconds": 28.68,
-          "end_seconds": 29.24
+          "index": 62,
+          "word": "costs",
+          "start_seconds": 27.4,
+          "end_seconds": 28.16
         }
       ],
-      "style_hint": "EMPHASIS"
+      "style_hint": "IMPACT"
     },
     {
       "cue_id": "cue_016",
-      "start_seconds": 29.8,
-      "end_seconds": 31.31,
-      "word_count": 5,
-      "text": "because the way out is",
+      "start_seconds": 28.8,
+      "end_seconds": 29.93,
+      "word_count": 3,
+      "text": "You want wealth?",
       "words": [
         {
-          "index": 69,
-          "word": "because",
-          "start_seconds": 29.84,
-          "end_seconds": 30.08
+          "index": 63,
+          "word": "You",
+          "start_seconds": 28.84,
+          "end_seconds": 29.0
         },
         {
-          "index": 70,
-          "word": "the",
-          "start_seconds": 30.08,
-          "end_seconds": 30.2
+          "index": 64,
+          "word": "want",
+          "start_seconds": 29.0,
+          "end_seconds": 29.24
         },
         {
-          "index": 71,
-          "word": "way",
-          "start_seconds": 30.2,
-          "end_seconds": 30.48
-        },
-        {
-          "index": 72,
-          "word": "out",
-          "start_seconds": 30.48,
-          "end_seconds": 31.0
-        },
-        {
-          "index": 73,
-          "word": "is",
-          "start_seconds": 31.2,
-          "end_seconds": 31.36
+          "index": 65,
+          "word": "wealth",
+          "start_seconds": 29.24,
+          "end_seconds": 29.68
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_017",
-      "start_seconds": 31.32,
-      "end_seconds": 33.77,
+      "start_seconds": 30.28,
+      "end_seconds": 31.87,
       "word_count": 6,
-      "text": "the one direction that feels wrong.",
+      "text": "Are you willing to work eighty-hour",
       "words": [
         {
-          "index": 74,
-          "word": "the",
-          "start_seconds": 31.36,
-          "end_seconds": 31.48
+          "index": 66,
+          "word": "Are",
+          "start_seconds": 30.32,
+          "end_seconds": 30.44
         },
         {
-          "index": 75,
-          "word": "one",
-          "start_seconds": 31.48,
-          "end_seconds": 31.8
+          "index": 67,
+          "word": "you",
+          "start_seconds": 30.44,
+          "end_seconds": 30.6
         },
         {
-          "index": 76,
-          "word": "direction",
-          "start_seconds": 31.8,
-          "end_seconds": 32.32
+          "index": 68,
+          "word": "willing",
+          "start_seconds": 30.6,
+          "end_seconds": 30.84
         },
         {
-          "index": 77,
-          "word": "that",
-          "start_seconds": 32.32,
-          "end_seconds": 32.48
+          "index": 69,
+          "word": "to",
+          "start_seconds": 30.84,
+          "end_seconds": 31.0
         },
         {
-          "index": 78,
-          "word": "feels",
-          "start_seconds": 32.48,
-          "end_seconds": 33.0
+          "index": 70,
+          "word": "work",
+          "start_seconds": 31.0,
+          "end_seconds": 31.32
         },
         {
-          "index": 79,
-          "word": "wrong",
-          "start_seconds": 33.0,
-          "end_seconds": 33.52
+          "index": 71,
+          "word": "eighty-hour",
+          "start_seconds": 31.32,
+          "end_seconds": 31.92
         }
       ],
-      "style_hint": "IMPACT"
+      "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_018",
-      "start_seconds": 34.52,
-      "end_seconds": 36.07,
-      "word_count": 5,
-      "text": "That's you on a hill",
+      "start_seconds": 31.88,
+      "end_seconds": 33.89,
+      "word_count": 4,
+      "text": "weeks and risk everything?",
       "words": [
         {
-          "index": 80,
-          "word": "That's",
-          "start_seconds": 34.56,
-          "end_seconds": 34.88
+          "index": 72,
+          "word": "weeks",
+          "start_seconds": 31.92,
+          "end_seconds": 32.32
         },
         {
-          "index": 81,
-          "word": "you",
-          "start_seconds": 34.88,
-          "end_seconds": 35.28
+          "index": 73,
+          "word": "and",
+          "start_seconds": 32.32,
+          "end_seconds": 32.52
         },
         {
-          "index": 82,
-          "word": "on",
-          "start_seconds": 35.52,
-          "end_seconds": 35.68
+          "index": 74,
+          "word": "risk",
+          "start_seconds": 32.52,
+          "end_seconds": 32.92
         },
         {
-          "index": 83,
-          "word": "a",
-          "start_seconds": 35.68,
-          "end_seconds": 35.72
-        },
-        {
-          "index": 84,
-          "word": "hill",
-          "start_seconds": 35.72,
-          "end_seconds": 36.12
+          "index": 75,
+          "word": "everything",
+          "start_seconds": 32.96,
+          "end_seconds": 33.64
         }
       ],
-      "style_hint": "EMPHASIS"
+      "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_019",
-      "start_seconds": 36.08,
-      "end_seconds": 37.37,
-      "word_count": 3,
-      "text": "in thick fog.",
+      "start_seconds": 34.44,
+      "end_seconds": 36.21,
+      "word_count": 6,
+      "text": "If your honest answer is no,",
       "words": [
         {
-          "index": 85,
-          "word": "in",
-          "start_seconds": 36.12,
-          "end_seconds": 36.24
+          "index": 76,
+          "word": "If",
+          "start_seconds": 34.48,
+          "end_seconds": 34.6
         },
         {
-          "index": 86,
-          "word": "thick",
-          "start_seconds": 36.24,
-          "end_seconds": 36.56
+          "index": 77,
+          "word": "your",
+          "start_seconds": 34.6,
+          "end_seconds": 34.76
         },
         {
-          "index": 87,
-          "word": "fog",
-          "start_seconds": 36.56,
-          "end_seconds": 37.12
+          "index": 78,
+          "word": "honest",
+          "start_seconds": 34.76,
+          "end_seconds": 35.08
+        },
+        {
+          "index": 79,
+          "word": "answer",
+          "start_seconds": 35.08,
+          "end_seconds": 35.36
+        },
+        {
+          "index": 80,
+          "word": "is",
+          "start_seconds": 35.36,
+          "end_seconds": 35.48
+        },
+        {
+          "index": 81,
+          "word": "no",
+          "start_seconds": 35.48,
+          "end_seconds": 35.96
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_020",
-      "start_seconds": 37.88,
-      "end_seconds": 39.07,
-      "word_count": 4,
-      "text": "The ground falls away",
+      "start_seconds": 36.32,
+      "end_seconds": 37.73,
+      "word_count": 3,
+      "text": "that's not failure.",
       "words": [
         {
-          "index": 88,
-          "word": "The",
-          "start_seconds": 37.92,
-          "end_seconds": 38.04
+          "index": 82,
+          "word": "that's",
+          "start_seconds": 36.36,
+          "end_seconds": 36.56
         },
         {
-          "index": 89,
-          "word": "ground",
-          "start_seconds": 38.04,
-          "end_seconds": 38.48
+          "index": 83,
+          "word": "not",
+          "start_seconds": 36.56,
+          "end_seconds": 36.8
         },
         {
-          "index": 90,
-          "word": "falls",
-          "start_seconds": 38.48,
-          "end_seconds": 38.8
-        },
-        {
-          "index": 91,
-          "word": "away",
-          "start_seconds": 38.8,
-          "end_seconds": 39.12
+          "index": 84,
+          "word": "failure",
+          "start_seconds": 36.8,
+          "end_seconds": 37.48
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_021",
-      "start_seconds": 39.08,
-      "end_seconds": 41.07,
-      "word_count": 4,
-      "text": "in every direction, so",
+      "start_seconds": 37.84,
+      "end_seconds": 39.25,
+      "word_count": 2,
+      "text": "That's clarity.",
       "words": [
         {
-          "index": 92,
-          "word": "in",
-          "start_seconds": 39.12,
-          "end_seconds": 39.4
+          "index": 85,
+          "word": "That's",
+          "start_seconds": 37.88,
+          "end_seconds": 38.2
         },
         {
-          "index": 93,
-          "word": "every",
-          "start_seconds": 39.44,
-          "end_seconds": 39.84
-        },
-        {
-          "index": 94,
-          "word": "direction",
-          "start_seconds": 39.84,
-          "end_seconds": 40.48
-        },
-        {
-          "index": 95,
-          "word": "so",
-          "start_seconds": 40.96,
-          "end_seconds": 41.12
-        }
-      ],
-      "style_hint": "NORMAL"
-    },
-    {
-      "cue_id": "cue_022",
-      "start_seconds": 41.08,
-      "end_seconds": 42.53,
-      "word_count": 5,
-      "text": "it feels like the top.",
-      "words": [
-        {
-          "index": 96,
-          "word": "it",
-          "start_seconds": 41.12,
-          "end_seconds": 41.24
-        },
-        {
-          "index": 97,
-          "word": "feels",
-          "start_seconds": 41.24,
-          "end_seconds": 41.48
-        },
-        {
-          "index": 98,
-          "word": "like",
-          "start_seconds": 41.48,
-          "end_seconds": 41.64
-        },
-        {
-          "index": 99,
-          "word": "the",
-          "start_seconds": 41.64,
-          "end_seconds": 41.72
-        },
-        {
-          "index": 100,
-          "word": "top",
-          "start_seconds": 41.72,
-          "end_seconds": 42.28
+          "index": 86,
+          "word": "clarity",
+          "start_seconds": 38.2,
+          "end_seconds": 39.0
         }
       ],
       "style_hint": "IMPACT"
     },
     {
-      "cue_id": "cue_023",
-      "start_seconds": 43.04,
-      "end_seconds": 44.35,
-      "word_count": 4,
-      "text": "But a far higher",
+      "cue_id": "cue_022",
+      "start_seconds": 40.04,
+      "end_seconds": 41.35,
+      "word_count": 3,
+      "text": "Because willingness isn't",
       "words": [
         {
-          "index": 101,
-          "word": "But",
-          "start_seconds": 43.08,
-          "end_seconds": 43.28
+          "index": 87,
+          "word": "Because",
+          "start_seconds": 40.08,
+          "end_seconds": 40.44
         },
         {
-          "index": 102,
+          "index": 88,
+          "word": "willingness",
+          "start_seconds": 40.44,
+          "end_seconds": 41.12
+        },
+        {
+          "index": 89,
+          "word": "isn't",
+          "start_seconds": 41.12,
+          "end_seconds": 41.4
+        }
+      ],
+      "style_hint": "NORMAL"
+    },
+    {
+      "cue_id": "cue_023",
+      "start_seconds": 41.36,
+      "end_seconds": 43.07,
+      "word_count": 5,
+      "text": "a mood you wait for.",
+      "words": [
+        {
+          "index": 90,
           "word": "a",
-          "start_seconds": 43.28,
-          "end_seconds": 43.32
+          "start_seconds": 41.4,
+          "end_seconds": 41.44
         },
         {
-          "index": 103,
-          "word": "far",
-          "start_seconds": 43.32,
-          "end_seconds": 43.92
+          "index": 91,
+          "word": "mood",
+          "start_seconds": 41.44,
+          "end_seconds": 42.0
         },
         {
-          "index": 104,
-          "word": "higher",
-          "start_seconds": 43.92,
-          "end_seconds": 44.4
+          "index": 92,
+          "word": "you",
+          "start_seconds": 42.0,
+          "end_seconds": 42.16
+        },
+        {
+          "index": 93,
+          "word": "wait",
+          "start_seconds": 42.16,
+          "end_seconds": 42.44
+        },
+        {
+          "index": 94,
+          "word": "for",
+          "start_seconds": 42.44,
+          "end_seconds": 42.84
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_024",
-      "start_seconds": 44.36,
-      "end_seconds": 45.39,
-      "word_count": 3,
-      "text": "peak could be",
+      "start_seconds": 43.08,
+      "end_seconds": 44.81,
+      "word_count": 5,
+      "text": "It's a stance you take.",
       "words": [
         {
-          "index": 105,
-          "word": "peak",
-          "start_seconds": 44.4,
-          "end_seconds": 44.96
+          "index": 95,
+          "word": "It's",
+          "start_seconds": 43.12,
+          "end_seconds": 43.28
         },
         {
-          "index": 106,
-          "word": "could",
-          "start_seconds": 45.12,
-          "end_seconds": 45.28
+          "index": 96,
+          "word": "a",
+          "start_seconds": 43.28,
+          "end_seconds": 43.36
         },
         {
-          "index": 107,
-          "word": "be",
-          "start_seconds": 45.28,
-          "end_seconds": 45.44
+          "index": 97,
+          "word": "stance",
+          "start_seconds": 43.36,
+          "end_seconds": 43.96
+        },
+        {
+          "index": 98,
+          "word": "you",
+          "start_seconds": 43.96,
+          "end_seconds": 44.08
+        },
+        {
+          "index": 99,
+          "word": "take",
+          "start_seconds": 44.08,
+          "end_seconds": 44.56
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_025",
-      "start_seconds": 45.4,
-      "end_seconds": 47.01,
-      "word_count": 4,
-      "text": "hidden across the valley.",
+      "start_seconds": 45.0,
+      "end_seconds": 46.67,
+      "word_count": 3,
+      "text": "Say I'm willing,",
       "words": [
         {
-          "index": 108,
-          "word": "hidden",
-          "start_seconds": 45.44,
-          "end_seconds": 45.8
+          "index": 100,
+          "word": "Say",
+          "start_seconds": 45.04,
+          "end_seconds": 45.36
         },
         {
-          "index": 109,
-          "word": "across",
-          "start_seconds": 45.8,
-          "end_seconds": 46.16
+          "index": 101,
+          "word": "I'm",
+          "start_seconds": 45.52,
+          "end_seconds": 45.92
         },
         {
-          "index": 110,
-          "word": "the",
-          "start_seconds": 46.16,
-          "end_seconds": 46.28
-        },
-        {
-          "index": 111,
-          "word": "valley",
-          "start_seconds": 46.28,
-          "end_seconds": 46.76
+          "index": 102,
+          "word": "willing",
+          "start_seconds": 45.92,
+          "end_seconds": 46.48
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_026",
-      "start_seconds": 47.45,
-      "end_seconds": 49.0,
+      "start_seconds": 46.68,
+      "end_seconds": 48.05,
       "word_count": 4,
-      "text": "You'll never find it",
+      "text": "and a door opens.",
       "words": [
         {
-          "index": 112,
-          "word": "You'll",
-          "start_seconds": 47.49,
-          "end_seconds": 47.77
+          "index": 103,
+          "word": "and",
+          "start_seconds": 46.72,
+          "end_seconds": 46.84
         },
         {
-          "index": 113,
-          "word": "never",
-          "start_seconds": 47.77,
-          "end_seconds": 48.05
+          "index": 104,
+          "word": "a",
+          "start_seconds": 46.84,
+          "end_seconds": 46.88
         },
         {
-          "index": 114,
-          "word": "find",
-          "start_seconds": 48.05,
-          "end_seconds": 48.41
+          "index": 105,
+          "word": "door",
+          "start_seconds": 46.88,
+          "end_seconds": 47.28
         },
         {
-          "index": 115,
-          "word": "it",
-          "start_seconds": 48.41,
-          "end_seconds": 48.89
+          "index": 106,
+          "word": "opens",
+          "start_seconds": 47.28,
+          "end_seconds": 47.8
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_027",
-      "start_seconds": 49.01,
-      "end_seconds": 51.06,
-      "word_count": 4,
-      "text": "unless you walk downhill.",
+      "start_seconds": 48.4,
+      "end_seconds": 50.07,
+      "word_count": 3,
+      "text": "Say I'm unwilling,",
       "words": [
         {
-          "index": 116,
-          "word": "unless",
-          "start_seconds": 49.05,
-          "end_seconds": 49.41
+          "index": 107,
+          "word": "Say",
+          "start_seconds": 48.44,
+          "end_seconds": 48.72
         },
         {
-          "index": 117,
-          "word": "you",
-          "start_seconds": 49.41,
-          "end_seconds": 49.57
+          "index": 108,
+          "word": "I'm",
+          "start_seconds": 48.72,
+          "end_seconds": 49.0
         },
         {
-          "index": 118,
-          "word": "walk",
-          "start_seconds": 49.57,
-          "end_seconds": 50.05
-        },
-        {
-          "index": 119,
-          "word": "downhill",
-          "start_seconds": 50.05,
-          "end_seconds": 50.81
+          "index": 109,
+          "word": "unwilling",
+          "start_seconds": 49.12,
+          "end_seconds": 49.88
         }
       ],
-      "style_hint": "IMPACT"
+      "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_028",
-      "start_seconds": 51.69,
-      "end_seconds": 53.52,
-      "word_count": 6,
-      "text": "A worse move today can be",
+      "start_seconds": 50.08,
+      "end_seconds": 51.53,
+      "word_count": 5,
+      "text": "and you draw a line.",
       "words": [
         {
-          "index": 120,
-          "word": "A",
-          "start_seconds": 51.73,
-          "end_seconds": 51.85
+          "index": 110,
+          "word": "and",
+          "start_seconds": 50.12,
+          "end_seconds": 50.24
         },
         {
-          "index": 121,
-          "word": "worse",
-          "start_seconds": 51.85,
-          "end_seconds": 52.21
+          "index": 111,
+          "word": "you",
+          "start_seconds": 50.24,
+          "end_seconds": 50.32
         },
         {
-          "index": 122,
-          "word": "move",
-          "start_seconds": 52.21,
-          "end_seconds": 52.45
+          "index": 112,
+          "word": "draw",
+          "start_seconds": 50.32,
+          "end_seconds": 50.6
         },
         {
-          "index": 123,
-          "word": "today",
-          "start_seconds": 52.45,
-          "end_seconds": 52.97
+          "index": 113,
+          "word": "a",
+          "start_seconds": 50.6,
+          "end_seconds": 50.68
         },
         {
-          "index": 124,
-          "word": "can",
-          "start_seconds": 53.29,
-          "end_seconds": 53.45
-        },
-        {
-          "index": 125,
-          "word": "be",
-          "start_seconds": 53.45,
-          "end_seconds": 53.57
+          "index": 114,
+          "word": "line",
+          "start_seconds": 50.68,
+          "end_seconds": 51.28
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_029",
-      "start_seconds": 53.53,
-      "end_seconds": 54.72,
-      "word_count": 5,
-      "text": "the price of a better",
+      "start_seconds": 52.0,
+      "end_seconds": 53.69,
+      "word_count": 3,
+      "text": "Both are power.",
       "words": [
         {
-          "index": 126,
-          "word": "the",
-          "start_seconds": 53.57,
-          "end_seconds": 53.65
+          "index": 115,
+          "word": "Both",
+          "start_seconds": 52.04,
+          "end_seconds": 52.48
         },
         {
-          "index": 127,
-          "word": "price",
-          "start_seconds": 53.65,
-          "end_seconds": 54.13
+          "index": 116,
+          "word": "are",
+          "start_seconds": 52.52,
+          "end_seconds": 52.68
         },
         {
-          "index": 128,
-          "word": "of",
-          "start_seconds": 54.13,
-          "end_seconds": 54.25
-        },
-        {
-          "index": 129,
-          "word": "a",
-          "start_seconds": 54.25,
-          "end_seconds": 54.33
-        },
-        {
-          "index": 130,
-          "word": "better",
-          "start_seconds": 54.33,
-          "end_seconds": 54.77
+          "index": 117,
+          "word": "power",
+          "start_seconds": 52.68,
+          "end_seconds": 53.44
         }
       ],
       "style_hint": "IMPACT"
     },
     {
       "cue_id": "cue_030",
-      "start_seconds": 54.73,
-      "end_seconds": 56.06,
-      "word_count": 2,
-      "text": "peak tomorrow.",
+      "start_seconds": 53.81,
+      "end_seconds": 56.74,
+      "word_count": 5,
+      "text": "What drains you is pretending.",
       "words": [
         {
-          "index": 131,
-          "word": "peak",
-          "start_seconds": 54.77,
-          "end_seconds": 55.17
+          "index": 118,
+          "word": "What",
+          "start_seconds": 53.85,
+          "end_seconds": 54.49
         },
         {
-          "index": 132,
-          "word": "tomorrow",
-          "start_seconds": 55.17,
-          "end_seconds": 55.81
+          "index": 119,
+          "word": "drains",
+          "start_seconds": 54.49,
+          "end_seconds": 55.01
+        },
+        {
+          "index": 120,
+          "word": "you",
+          "start_seconds": 55.01,
+          "end_seconds": 55.29
+        },
+        {
+          "index": 121,
+          "word": "is",
+          "start_seconds": 55.57,
+          "end_seconds": 55.73
+        },
+        {
+          "index": 122,
+          "word": "pretending",
+          "start_seconds": 55.73,
+          "end_seconds": 56.49
         }
       ],
-      "style_hint": "IMPACT"
+      "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_031",
-      "start_seconds": 57.25,
-      "end_seconds": 58.2,
-      "word_count": 4,
-      "text": "What's the step back",
+      "start_seconds": 57.45,
+      "end_seconds": 59.0,
+      "word_count": 3,
+      "text": "Refuse to act,",
       "words": [
         {
-          "index": 133,
-          "word": "What's",
-          "start_seconds": 57.29,
-          "end_seconds": 57.57
+          "index": 123,
+          "word": "Refuse",
+          "start_seconds": 57.49,
+          "end_seconds": 58.05
         },
         {
-          "index": 134,
-          "word": "the",
-          "start_seconds": 57.57,
-          "end_seconds": 57.65
+          "index": 124,
+          "word": "to",
+          "start_seconds": 58.05,
+          "end_seconds": 58.21
         },
         {
-          "index": 135,
-          "word": "step",
-          "start_seconds": 57.65,
-          "end_seconds": 57.93
-        },
-        {
-          "index": 136,
-          "word": "back",
-          "start_seconds": 57.93,
-          "end_seconds": 58.25
+          "index": 125,
+          "word": "act",
+          "start_seconds": 58.21,
+          "end_seconds": 58.77
         }
       ],
       "style_hint": "NORMAL"
     },
     {
       "cue_id": "cue_032",
-      "start_seconds": 58.21,
-      "end_seconds": 59.37,
+      "start_seconds": 59.01,
+      "end_seconds": 59.76,
       "word_count": 3,
-      "text": "you keep refusing?",
+      "text": "and this is",
       "words": [
         {
-          "index": 137,
-          "word": "you",
-          "start_seconds": 58.25,
-          "end_seconds": 58.37
+          "index": 126,
+          "word": "and",
+          "start_seconds": 59.05,
+          "end_seconds": 59.33
         },
         {
-          "index": 138,
-          "word": "keep",
-          "start_seconds": 58.37,
-          "end_seconds": 58.65
+          "index": 127,
+          "word": "this",
+          "start_seconds": 59.33,
+          "end_seconds": 59.65
         },
         {
-          "index": 139,
-          "word": "refusing",
-          "start_seconds": 58.65,
-          "end_seconds": 59.21
+          "index": 128,
+          "word": "is",
+          "start_seconds": 59.65,
+          "end_seconds": 59.81
         }
       ],
       "style_hint": "NORMAL"
+    },
+    {
+      "cue_id": "cue_033",
+      "start_seconds": 59.77,
+      "end_seconds": 61.18,
+      "word_count": 4,
+      "text": "the life you chose.",
+      "words": [
+        {
+          "index": 129,
+          "word": "the",
+          "start_seconds": 59.81,
+          "end_seconds": 59.93
+        },
+        {
+          "index": 130,
+          "word": "life",
+          "start_seconds": 59.93,
+          "end_seconds": 60.21
+        },
+        {
+          "index": 131,
+          "word": "you",
+          "start_seconds": 60.21,
+          "end_seconds": 60.33
+        },
+        {
+          "index": 132,
+          "word": "chose",
+          "start_seconds": 60.33,
+          "end_seconds": 60.93
+        }
+      ],
+      "style_hint": "NORMAL"
+    },
+    {
+      "cue_id": "cue_034",
+      "start_seconds": 61.77,
+      "end_seconds": 64.01,
+      "word_count": 6,
+      "text": "You have the life you tolerate.",
+      "words": [
+        {
+          "index": 133,
+          "word": "You",
+          "start_seconds": 61.81,
+          "end_seconds": 62.01
+        },
+        {
+          "index": 134,
+          "word": "have",
+          "start_seconds": 62.01,
+          "end_seconds": 62.61
+        },
+        {
+          "index": 135,
+          "word": "the",
+          "start_seconds": 62.61,
+          "end_seconds": 62.73
+        },
+        {
+          "index": 136,
+          "word": "life",
+          "start_seconds": 62.73,
+          "end_seconds": 63.05
+        },
+        {
+          "index": 137,
+          "word": "you",
+          "start_seconds": 63.05,
+          "end_seconds": 63.17
+        },
+        {
+          "index": 138,
+          "word": "tolerate",
+          "start_seconds": 63.17,
+          "end_seconds": 63.85
+        }
+      ],
+      "style_hint": "IMPACT"
     }
   ]
 }

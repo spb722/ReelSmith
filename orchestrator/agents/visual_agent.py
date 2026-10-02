@@ -22,7 +22,13 @@ from orchestrator.agents._skills import (
 )
 from orchestrator.agents._stream import log_tool_uses
 from orchestrator.contracts.visual_plan import VisualPlanContract
-from orchestrator.settings import load_settings, source_mode_setting
+from orchestrator.settings import (
+    DEFAULT_MAX_VEO_SHOTS,
+    _max_veo_shots_setting,
+    load_settings,
+    source_mode_setting,
+    veo_extend_long_shots_setting,
+)
 from orchestrator.tracing import agent_query
 
 # Resolved through the SDK module at call time, so the tracing instrumentation
@@ -120,6 +126,23 @@ async def plan_visuals(
         prompt += (
             "\nThe reel's style guide is fixed by the operator. Copy it into "
             "overall_visual_style unchanged and plan every shot to suit it:\n" + style_guide
+        )
+    # More Veo slots need more nominations to choose from. Up to the default
+    # cap the skill's "four" covers it, so the prompt is left unchanged. Read
+    # like SOURCE_MODE, without a full settings load: the same MAX_VEO_SHOTS.
+    max_veo_shots = _max_veo_shots_setting()
+    if max_veo_shots > DEFAULT_MAX_VEO_SHOTS:
+        nominations = max_veo_shots + 2
+        prompt += (
+            f"\nNominate at least {nominations} shots for video (video_candidate_rank "
+            f"1 to {nominations}), or every shot if the reel has fewer."
+        )
+    if veo_extend_long_shots_setting():
+        prompt += (
+            "\nVideo extension is on: a video shot may run up to 15 seconds of narration, so read the "
+            "skill's 8-second video limit as 15 seconds. For a beat longer than 8 seconds, plan one action "
+            "that is finished within its first 8 seconds, after which the subject holds a settled pose, face "
+            "to the viewer."
         )
     if feedback:
         prompt += "\nPrevious attempt failed validation. Correct these errors:\n" + feedback

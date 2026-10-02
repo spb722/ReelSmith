@@ -46,6 +46,11 @@ def get_meta():
     return store.meta()
 
 
+@app.get("/api/voices/{voice}/sample")
+def voice_sample(voice: str):
+    return FileResponse(store.voice_sample(voice), media_type="audio/wav")
+
+
 # ---------------------------------------------------------------- projects
 
 def project_summary(name: str) -> dict:
@@ -553,6 +558,100 @@ def restore_cover(name: str, body: dict = Body(...)):
     except Exception:  # the grid is a preview; a stale one is not worth failing the restore
         pass
     return cover_payload(name)
+
+
+# ----------------------------------------------------------------- caption
+
+def caption_payload(name: str) -> dict:
+    from orchestrator.contracts.caption import caption_problems
+
+    project = store.existing_project(name)
+    folder = project / "generated" / "caption"
+    current = folder / "caption.txt"
+    history = read_json(folder / "history.json", []) or []
+    by_file = {h.get("previous_caption"): h for h in history if isinstance(h, dict)}
+    # caption_vN.txt are the earlier captions; the history entry for caption_vN holds
+    # the change that replaced it, i.e. the change that made version N+1.
+    versions = []
+    for path in folder.glob("caption_v*.txt"):
+        if m := re.match(r"caption_v(\d+)$", path.stem):
+            n = int(m[1])
+            h = by_file.get(f"caption_v{n - 1}.txt", {})
+            versions.append({"version": n, "text": path.read_text(encoding="utf-8").strip(),
+                             "change": h.get("change"), "feedback": h.get("feedback"), "current": False})
+    text = current.read_text(encoding="utf-8").strip() if current.is_file() else ""
+    if current.is_file():  # the live caption is the newest version
+        n = max([v["version"] for v in versions] or [0]) + 1
+        h = by_file.get(f"caption_v{n - 1}.txt", {})
+        versions.append({"version": n, "text": text, "change": h.get("change"),
+                         "feedback": h.get("feedback"), "current": True})
+    return {
+        "enabled": (project / "metadata" / "final_story_plan.json").is_file(), "exists": current.is_file(),
+        "text": text, "problems": caption_problems(text) if text else [],
+        "versions": sorted(versions, key=lambda v: v["version"]),
+        "status": runner.caption_status(name),
+    }
+
+
+def _caption_not_running(name: str) -> None:
+    # A reel run never touches the caption, so only a caption run blocks an edit.
+    if (runner.live_run(name) or {}).get("kind") == "caption":
+        raise StoreError("The caption is being written. Wait for it to finish.", 409)
+
+
+def _replace_caption(name: str, text: str, change: str) -> None:
+    from orchestrator.caption import keep_current_version
+
+    project = store.existing_project(name)
+    current = project / "generated" / "caption" / "caption.txt"
+    if current.is_file() and current.read_text(encoding="utf-8").strip() == text.strip():
+        return
+    keep_current_version(project, change)
+    current.parent.mkdir(parents=True, exist_ok=True)
+    current.write_text(text.strip() + "\n", encoding="utf-8")
+
+
+@app.get("/api/projects/{name}/caption")
+def get_caption(name: str):
+    return caption_payload(name)
+
+
+@app.post("/api/projects/{name}/caption/run")
+def run_caption(name: str, body: dict = Body(default={})):
+    runner.start_caption(name, force=bool(body.get("force")))
+    return caption_payload(name)
+
+
+@app.post("/api/projects/{name}/caption/revise")
+def revise_caption(name: str, body: dict = Body(...)):
+    feedback = (body.get("feedback") or "").strip()
+    if not feedback:
+        raise StoreError("Say what should change, e.g. \"make the hook shorter\".")
+    if not (store.existing_project(name) / "generated" / "caption" / "caption.txt").is_file():
+        raise StoreError("There is no caption to revise yet. Write one first.")
+    runner.start_caption(name, feedback=feedback)
+    return caption_payload(name)
+
+
+@app.put("/api/projects/{name}/caption")
+def edit_caption(name: str, body: dict = Body(...)):
+    text = (body.get("text") or "").strip()
+    if not text:
+        raise StoreError("The caption can't be empty.")
+    _caption_not_running(name)
+    _replace_caption(name, text, "edit")
+    return caption_payload(name)
+
+
+@app.post("/api/projects/{name}/caption/restore")
+def restore_caption(name: str, body: dict = Body(...)):
+    project = store.existing_project(name)
+    _caption_not_running(name)
+    chosen = project / "generated" / "caption" / f"caption_v{int(body.get('version') or 0)}.txt"
+    if not chosen.is_file():
+        raise StoreError("That caption version does not exist.", 404)
+    _replace_caption(name, chosen.read_text(encoding="utf-8"), "restore")
+    return caption_payload(name)
 
 
 # -------------------------------------------------------------- characters

@@ -30,10 +30,11 @@ MIN_TRACKED_PATCHES = 8
 _WINDOW = np.outer(np.hanning(PATCH), np.hanning(PATCH))
 
 
-def _sample_frames(video_path: Path) -> np.ndarray:
+def _sample_frames(video_path: Path, max_seconds: float | None = None) -> np.ndarray:
+    limit = [] if max_seconds is None else ["-t", f"{max_seconds:.3f}"]
     completed = subprocess.run(
         [
-            resolve_binary("ffmpeg"), "-hide_banner", "-loglevel", "error", "-i", str(video_path),
+            resolve_binary("ffmpeg"), "-hide_banner", "-loglevel", "error", *limit, "-i", str(video_path),
             "-vf", f"fps={SAMPLE_FPS},scale={WIDTH}:{HEIGHT},format=gray", "-f", "rawvideo", "-",
         ],
         capture_output=True,
@@ -100,16 +101,17 @@ def _pair_motion(before: np.ndarray, after: np.ndarray) -> tuple[float, float, f
     return 1 + k, k * WIDTH / 2 + tx, k * HEIGHT / 2 + ty
 
 
-def measure_camera_motion(video_path: Path) -> dict | None:
+def measure_camera_motion(video_path: Path, max_seconds: float | None = None) -> dict | None:
     """How much the background grew and slid from the first frame to the last.
 
     `zoom` > 1 means the camera pushed in or moved forward, < 1 pulled back.
     Pans are percentages of the frame width/height. None when too little of
     the clip had texture to track, so the caller can say it is unmeasured
     rather than report a guess.
+    max_seconds: measure only the first N seconds, the part the reel shows.
     """
 
-    frames = _sample_frames(video_path)
+    frames = _sample_frames(video_path, max_seconds)
     zoom, pan_x, pan_y, measured = 1.0, 0.0, 0.0, 0
     for before, after in zip(frames[:-1], frames[1:]):
         motion = _pair_motion(before, after)

@@ -68,6 +68,15 @@ only on those files and your skills' files.
   it must stay within zoom x0.92-x1.08 and pan within 5%, whatever the plan's
   wording says; outside that is a "clip_qa" defect. When it says it could not
   be measured, judge the camera from the frames.
+- For a VEO shot apply visual-qa's VEO checks, reading the motion from the
+  shot's "video_motion_intent". Compare the first and last preview frames:
+  when the intent names a subject action and that body part has not visibly
+  changed pose, the clip is frozen, a "clip_qa" defect (an atmosphere-only
+  intent is exempt). A face that leaves the frame, turns away or stops being
+  recognisable in any preview, a body or clothes that morph between frames,
+  and effects the intent did not ask for (rain, particles, extra mist) are
+  also "clip_qa" defects; a planned push-in never excuses the face leaving.
+  The preview frames come from the part of the clip the reel shows.
 - A STILL shot lists one image; any defect is "still_qa".
 The input's "ladder_note", when present, says which character wording the image
 model actually accepted. Follow it: never reject for something it says was not

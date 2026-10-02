@@ -75,6 +75,8 @@ Add these to the Step 3 command.
 | A different drawing style *(only for B, text screenshots)* | `--style <name>` at the **end** | `SOURCE_MODE=content python -m orchestrator.run --project atomic_habits --style watercolour` |
 | Free pictures (slower) | `IMAGE_PROVIDER=codex` at the start | `IMAGE_PROVIDER=codex python -m orchestrator.run --project atomic_habits` |
 | To allow more spending | `MAX_BUDGET_USD=60` at the start | The normal limit is $40 per reel |
+| More moving video shots | `MAX_VEO_SHOTS=5 MAX_BUDGET_USD=60` at the start | The normal count is 3. Only a new shot plan uses it. Raise the budget too, or the extra videos become still pictures |
+| Video shots up to 15 s long | `VEO_EXTEND_LONG_SHOTS=true` at the start | Off normally, so a shot longer than 8 s stays a still. Only a new shot plan uses it. Each such shot costs two video clips (about $2.40 a try) |
 | A different narrator voice | `TTS_VOICE_NAME=Algieba` at the start | The normal voice is `Gacrux` |
 STORY_SKILL=story-craft-easy
 You can combine them:

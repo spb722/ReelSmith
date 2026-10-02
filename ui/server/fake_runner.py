@@ -2,6 +2,7 @@
 
     python -m ui.server.fake_runner --project NAME [--style S] [--retry-voice]
     python -m ui.server.fake_runner --cover --project NAME [--hook T] [--shot N] [--force] [--feedback T]
+    python -m ui.server.fake_runner --caption --project NAME [--force] [--feedback T]
 
 Writes the same files the real pipeline does (run_<ts>.log in the terminal's
 wording, status.json, story/shot attempt files, metadata, stills, a reel).
@@ -478,18 +479,87 @@ def cover(args) -> int:
     return 0
 
 
+# --------------------------------------------------------------- caption
+
+FAKE_CAPTION = (
+    "37 percent. That's how long you should look before you commit. 🏠\n\n"
+    "It's the optimal stopping rule.\n\n"
+    "You have one month to find an apartment.\n"
+    "Every place you tour is another one that gets snapped up.\n\n"
+    "Looking isn't wasted time. It's your benchmark.\n\n"
+    "✅ Next time you choose, look at the first few options without committing.\n\n"
+    "📌 Save this for your next big decision, and send it to the friend who is flat hunting.\n\n"
+    "💬 How long do you look before you commit?\n\n"
+    "#optimalstopping #decisionmaking #apartmenthunting #37percentrule #bookreels"
+)
+
+
+def caption(args) -> int:
+    project = ROOT / "projects" / args.project
+    if not project.is_dir():
+        print(f"STOPPED — No project called {args.project!r}", file=sys.stderr)
+        return 1
+    run = Run(project, "caption")
+    total = float(os.environ.get("FAKE_RUN_SECONDS", "30")) / 6
+    status_path = run.runs / "caption_status.json"
+    state = {"kind": "caption", "state": "running", "percent": 0, "stop_reason": None, "started_at": iso()}
+
+    def save(percent):
+        state.update({"percent": percent, "updated_at": iso()})
+        write_json(status_path, state)
+
+    def on_term(signum, frame):
+        state.update({"state": "stopped", "stop_reason": "You stopped the run.", "stop_kind": "operator"})
+        save(state["percent"])
+        sys.exit(143)
+
+    signal.signal(signal.SIGTERM, on_term)
+    folder = project / "generated" / "caption"
+    folder.mkdir(parents=True, exist_ok=True)
+    run.banner(f"Writing the Instagram caption for project '{args.project}'")
+    run.log("(fake run: no vendor is called and nothing is spent)")
+    save(10)
+    current = folder / "caption.txt"
+    if current.is_file() and not args.force and not args.feedback:
+        run.log("A caption already exists; use --force to write a fresh one")
+        state["state"] = "finished"
+        save(100)
+        return 0
+    run.log("Try 1 of 3 · writing the caption")
+    time.sleep(total)
+    text = FAKE_CAPTION
+    if current.is_file():
+        version = 1 + max([int(p.stem.split("_v")[1]) for p in folder.glob("caption_v*.txt")] or [0])
+        shutil.copyfile(current, folder / f"caption_v{version}.txt")
+        history = read_json(folder / "history.json", []) or []
+        history.append({"previous_caption": f"caption_v{version}.txt",
+                        "change": "feedback" if args.feedback else "fresh", "feedback": args.feedback or None})
+        write_json(folder / "history.json", history)
+        run.log(f"Kept the previous caption as generated/caption/caption_v{version}.txt")
+        if args.feedback:
+            text = FAKE_CAPTION.replace("It's the optimal stopping rule.",
+                                        f"It's the optimal stopping rule. (revised: {args.feedback})")
+    current.write_text(text + "\n", encoding="utf-8")
+    run.log(f"Caption written to generated/caption/caption.txt ({len(text)} characters)")
+    state["state"] = "finished"
+    save(100)
+    run.log("Finished! Your caption is at generated/caption/caption.txt")
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="python -m ui.server.fake_runner")
     parser.add_argument("--project", required=True)
     parser.add_argument("--style", default=None)
     parser.add_argument("--retry-voice", action="store_true")
     parser.add_argument("--cover", action="store_true")
+    parser.add_argument("--caption", action="store_true")
     parser.add_argument("--hook", default="")
     parser.add_argument("--shot", type=int, default=None)
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--feedback", default="")
     args = parser.parse_args(argv)
-    return cover(args) if args.cover else reel(args)
+    return caption(args) if args.caption else cover(args) if args.cover else reel(args)
 
 
 if __name__ == "__main__":

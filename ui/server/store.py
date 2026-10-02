@@ -228,6 +228,7 @@ POSITIVE_NUMBERS = {
 NON_NEGATIVE_NUMBERS = {
     "image_call_cost_usd": ("Estimated cost per image", float),
     "veo_call_cost_usd": ("Estimated cost per video clip", float),
+    "max_veo_shots": ("Max video shots", int),
 }
 TEXT_FIELDS = {
     "voice": "Narrator voice", "claude_model": "Claude model", "reviewer_model": "Critic / reviewer model",
@@ -262,6 +263,9 @@ def _env_overrides() -> dict:
                 out[key] = kind(raw)
         except ValueError:
             pass  # a bad value is the run's own settings check to report
+    extend = (env.get("VEO_EXTEND_LONG_SHOTS") or "").strip().lower()
+    if extend in S.BOOL_TRUE or extend in S.BOOL_FALSE:
+        out["veo_extend_long_shots"] = extend in S.BOOL_TRUE  # anything else is the run's check to report
     if out.get("image_fallback_provider") in ("none", "off"):
         out["image_fallback_provider"] = ""
     return out
@@ -299,6 +303,8 @@ def _builtin_constants() -> dict:
         "veo_max_poll_seconds": S.DEFAULT_VEO_MAX_POLL_SECONDS,
         "image_call_cost_usd": S.DEFAULT_IMAGE_CALL_COST_USD,
         "veo_call_cost_usd": S.DEFAULT_VEO_CALL_COST_USD,
+        "max_veo_shots": S.DEFAULT_MAX_VEO_SHOTS,
+        "veo_extend_long_shots": False,
         "cover": {"hook_mode": "claude", "shot_mode": "claude", "image_provider": ""},
     }
 
@@ -341,6 +347,10 @@ def validate_settings(raw: dict, base: dict | None = None) -> dict:
     for group, positive in ((POSITIVE_NUMBERS, True), (NON_NEGATIVE_NUMBERS, False)):
         for key, (label, kind) in group.items():
             out[key] = _number(out[key], label, kind, positive)
+    if out["max_veo_shots"] > S.MAX_VEO_SHOTS_LIMIT:
+        raise StoreError(f"Max video shots must be {S.MAX_VEO_SHOTS_LIMIT} or fewer.")
+    if not isinstance(out["veo_extend_long_shots"], bool):  # strict: the string "false" must not read as on
+        raise StoreError("Longer video shots must be true or false.")
     for key in list(out["max_attempts"]):
         if key not in ATTEMPT_KEYS:
             del out["max_attempts"][key]
@@ -800,6 +810,44 @@ VOICES = ["Achernar", "Achird", "Algenib", "Algieba", "Alnilam", "Aoede", "Auton
           "Despina", "Enceladus", "Erinome", "Fenrir", "Gacrux", "Iapetus", "Kore", "Laomedeia", "Leda", "Orus",
           "Puck", "Pulcherrima", "Rasalgethi", "Sadachbia", "Sadaltager", "Schedar", "Sulafat", "Umbriel",
           "Vindemiatrix", "Zephyr", "Zubenelgenubi"]
+SAMPLE_LINE = "Hi, I'm {voice}. This is how I'll sound when I narrate your book reel."
+
+
+def synthesize_sample(voice: str, path: Path) -> None:
+    """Speak SAMPLE_LINE with the pipeline's own TTS model and prompt wrapper, and write it as a WAV.
+    Sent bare, a line naming the voice is blocked by Gemini's safety filter (PROHIBITED_CONTENT)."""
+    from google import genai
+    from google.genai import types
+    from orchestrator.state.voice_cache import TTS_MODEL
+    from orchestrator.tools.gemini_tools import TTS_LANGUAGE_CODE, build_tts_prompt, extract_pcm, write_wave
+
+    setup = setup_values()
+    client = genai.Client(vertexai=True, project=setup["project_id"], location=setup["location"])
+    response = client.models.generate_content(
+        model=TTS_MODEL, contents=build_tts_prompt(SAMPLE_LINE.format(voice=voice), {}),
+        config=types.GenerateContentConfig(speech_config=types.SpeechConfig(
+            language_code=TTS_LANGUAGE_CODE,
+            voice_config=types.VoiceConfig(prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice)))))
+    blocked = getattr(getattr(response, "prompt_feedback", None), "block_reason", None)
+    if blocked:
+        raise RuntimeError(f"Gemini blocked the sample text ({blocked}).")
+    write_wave(path, extract_pcm(response))
+
+
+def voice_sample(voice: str) -> Path:
+    """The voice's sample clip, made once and kept in assets/voice_samples/."""
+    if voice not in VOICES and voice != TTS_VOICE_NAME:
+        raise StoreError(f"Unknown voice: {voice}.", 404)
+    path = root() / "assets" / "voice_samples" / f"{voice}.wav"
+    if not path.is_file():
+        tmp = path.with_suffix(".part.wav")
+        try:
+            synthesize_sample(voice, tmp)
+        except Exception as e:
+            tmp.unlink(missing_ok=True)
+            raise StoreError(f"Couldn't make a sample of {voice}: {e}", 502) from e
+        tmp.replace(path)
+    return path
 
 
 def meta() -> dict:

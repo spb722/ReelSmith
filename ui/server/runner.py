@@ -127,8 +127,9 @@ def settings_env(settings: dict) -> dict:
     for key in ("max_budget_usd", "claude_shot_attempt_cap_usd", "claude_reviewer_cap_usd", "shot_concurrency",
                 "veo_concurrency", "gemini_image_concurrency", "codex_image_concurrency",
                 "codex_image_timeout_seconds", "veo_poll_seconds", "veo_max_poll_seconds",
-                "image_call_cost_usd", "veo_call_cost_usd"):
+                "image_call_cost_usd", "veo_call_cost_usd", "max_veo_shots"):
         env[key.upper()] = str(s[key])
+    env["VEO_EXTEND_LONG_SHOTS"] = "true" if s["veo_extend_long_shots"] else "false"
     # Left unset, the pipeline prices a Codex image at $0; only pass an explicit override.
     from orchestrator.settings import DEFAULT_IMAGE_CALL_COST_USD
     if "codex" == s["image_provider"] and s["image_call_cost_usd"] == DEFAULT_IMAGE_CALL_COST_USD:
@@ -241,6 +242,23 @@ def start_cover(name: str, hook: str = "", shot: int | None = None, force: bool 
     return cover_status(name)
 
 
+def start_caption(name: str, force: bool = False, feedback: str = "") -> dict:
+    store.existing_project(name)
+    if not (store.project_dir(name) / "metadata" / "final_story_plan.json").is_file():
+        raise StoreError("Write the narration first: the caption is written from it.")
+    cmd = _command("REELSMITH_CAPTION_CMD", ["orchestrator.caption"]) + ["--project", name]
+    if force:
+        cmd.append("--force")
+    if feedback:
+        cmd += ["--feedback", feedback]
+    _spawn(name, "caption", cmd, settings_env(store.get_project_settings(name)))
+    return caption_status(name)
+
+
+def _kind_status(name: str, kind: str) -> dict:
+    return {"reel": status, "cover": cover_status, "caption": caption_status}[kind](name)
+
+
 def stop(name: str) -> dict:
     """SIGTERM the run's process group, SIGKILL after 10 s, then record an operator stop."""
     info = live_run(name)
@@ -250,7 +268,7 @@ def stop(name: str) -> dict:
             raise StoreError("This run was started from the terminal, so stop it there (Ctrl+C).", 409)
         return current
     kind = info.get("kind", "reel")
-    before = status(name) if kind == "reel" else cover_status(name)
+    before = _kind_status(name, kind)
     pid = info["pid"]
     try:
         os.killpg(os.getpgid(pid), signal.SIGTERM)
@@ -268,7 +286,7 @@ def stop(name: str) -> dict:
         if proc is not None:
             proc.wait(timeout=5)
     live_run(name)  # reaps and removes the pid file
-    status_file = runs_dir(name) / ("status.json" if kind == "reel" else "cover_status.json")
+    status_file = runs_dir(name) / ("status.json" if kind == "reel" else f"{kind}_status.json")
     current = read_json(status_file, {}) or {}
     if current.get("state") not in ("stopped", "finished", "paused_for_narration"):
         if kind == "reel":
@@ -281,7 +299,7 @@ def stop(name: str) -> dict:
         current.update({"kind": kind, "state": "stopped", "stop_kind": "operator",
                         "stop_reason": "You stopped the run.", "updated_at": store.now_iso()})
         write_json(status_file, current)
-    return status(name) if kind == "reel" else cover_status(name)
+    return _kind_status(name, kind)
 
 
 def set_flag(name: str, enabled: bool) -> None:
@@ -309,7 +327,9 @@ def _log_kind(path: Path) -> str:
             head = fh.read(2000)
     except OSError:
         return "reel"
-    return "cover" if "Making the Instagram cover" in head else "reel"
+    if "Making the Instagram cover" in head:
+        return "cover"
+    return "caption" if "Writing the Instagram caption" in head else "reel"
 
 
 def log_files(name: str) -> list[Path]:
@@ -392,10 +412,10 @@ def _stop_kind(reason: str | None) -> str | None:
 
 
 def _latest_failure(name: str) -> tuple[float, str] | None:
-    """Newest failure_*.json that is not about the cover: (mtime, reason)."""
+    """Newest failure_*.json that is not about the cover or caption: (mtime, reason)."""
     best = None
     for path in runs_dir(name).glob("failure_*.json"):
-        if path.name.startswith("failure_cover"):
+        if path.name.startswith(("failure_cover", "failure_caption")):
             continue
         mtime = path.stat().st_mtime
         if best is None or mtime > best[0]:
@@ -566,26 +586,35 @@ def _log_start(path: Path | None) -> float | None:
     return datetime.strptime(m[1], "%Y%m%dT%H%M%S").timestamp()
 
 
-def cover_status(name: str) -> dict:
+def _side_status(name: str, kind: str) -> dict:
+    """Status of a cover or caption run, from its <kind>_status.json and its log."""
     store.existing_project(name)
     live = live_run(name)
-    log_path = latest_log(name, "cover")
-    st = read_json(runs_dir(name) / "cover_status.json", {}) or {}
+    log_path = latest_log(name, kind)
+    st = read_json(runs_dir(name) / f"{kind}_status.json", {}) or {}
     parsed = _parse_log(log_path)
-    if live and live.get("kind") == "cover":
+    if live and live.get("kind") == kind:
         state, reason = "running", None
     elif st.get("state") in ("running", "stopped", "finished"):
         state, reason = st["state"], st.get("stop_reason")
         if state == "running":  # its process is gone
-            state, reason = "stopped", parsed["stop_reason"] or "The cover run ended without finishing."
+            state, reason = "stopped", parsed["stop_reason"] or f"The {kind} run ended without finishing."
     elif log_path is not None:
         state = "finished" if parsed["finished"] else "stopped"
-        reason = None if state == "finished" else parsed["stop_reason"] or "The cover run did not finish."
+        reason = None if state == "finished" else parsed["stop_reason"] or f"The {kind} run did not finish."
     else:
         state, reason = "idle", None
     percent = 100 if state == "finished" else int(st.get("percent") or 0)
-    return {"state": state, "kind": "cover", "percent": percent, "stop_reason": reason,
+    return {"state": state, "kind": kind, "percent": percent, "stop_reason": reason,
             "log_tail": _tail(log_path, 20) if log_path else []}
+
+
+def cover_status(name: str) -> dict:
+    return _side_status(name, "cover")
+
+
+def caption_status(name: str) -> dict:
+    return _side_status(name, "caption")
 
 
 def summary(name: str) -> dict:

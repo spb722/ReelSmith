@@ -60,36 +60,70 @@ source-fidelity skill.
 
 ## Video nominations
 
-- Rank at least four shots (or every shot, if the reel has fewer) by how much
-  they would gain from real generated video rather than a moving still. Set
-  video_candidate_rank = 1 on the strongest candidate, 2 on the next, and so
-  on with no gaps and no repeats. Leave it null on the rest.
-- Rank by what motion would add to the storytelling: a beat where something
-  physically happens, where atmosphere carries the emotion, or where a static
-  frame would feel inert. A beat that is already well served by its
-  illustration ranks lower.
+- Rank at least the number of shots your task asks for (four if not stated),
+  or every shot if the reel has fewer, by how much they would gain from real
+  generated video rather than a moving still. Set video_candidate_rank = 1 on
+  the strongest candidate, 2 on the next, and so on with no gaps and no
+  repeats. Leave it null on the rest.
+- Rank by what motion would add to the storytelling: a beat where the subject
+  itself acts -- turns, sits, lifts something -- ranks above one where only
+  the atmosphere moves (steam, mist, light), which plays like a moving still.
+  A beat already well served by its illustration ranks lower.
+- A nominated shot's frame_composition should leave the action room: a
+  medium or medium-close crop, headroom above the head, space on the side
+  the gesture goes, and the face turned to the viewer.
+- Only a beat of about 8 seconds of narration or less can become video;
+  shorter beats are better candidates. A long, discursive beat is not taken up.
+- When your task asks for more than four nominations, spread them through the
+  reel: the hook (shot 1) if its subject acts and the beat fits 8 seconds; the
+  turn or climax beat; and alternate still and video where you can -- avoid
+  three stills in a row and two videos in a row. Keep the final shot a still:
+  nominate it only when the count you must reach leaves no other shot.
+
+### The motion
+
+- One visible, body-scale action by one subject, from a readable pose to a
+  settled pose, with the camera locked. The video model holds these reliably
+  in a stylised picture:
+  - Reliable: a head turn or lift; a glance up or down; the shoulders
+    dropping or rising; a slump or a straightening; leaning in or back;
+    sitting down in place; lifting, lowering or setting down one large
+    object; one slow arm gesture.
+  - Fails: walking or running toward or away from the camera (the model
+    follows with the camera instead); any camera move; fine finger or hand
+    work with small items; fast action; lip-sync or speaking; two subjects
+    moving; props that open, split or transform; anything with text; effects
+    nobody asked for (rain, extra mist); a face turned away for most of the
+    clip; crossing the frame sideways or standing up (the face turns away or
+    leaves the frame).
+  - Too small to read: a clench or a twitch on its own reads as a frozen
+    frame. Make it part of a bigger movement, or pick another action.
+  - Secondary only: one breath, a blink, a change of expression, or hair or
+    clothes stirring end in the pose they began in, so the clip is judged
+    frozen. Use them only as the optional secondary motion, never as the
+    one action.
+- A nomination whose video_motion_intent names a camera move, or a subject
+  moving toward or away from the camera, is not taken up; the next-ranked
+  nomination gets the slot instead.
+
+### video_motion_intent
+
 - On every nominated shot, set video_motion_intent to the motion you would
   want if that shot became video. It is sent to the video model word for word
-  as its whole instruction, after a fixed "static shot" opening: every clip is
-  made with a still camera, because the model will not hold a camera move it
-  is told to. So describe only what moves in the picture and how much -- the
-  subject's one action, or the atmosphere -- never the camera. Motion only,
-  under 40 words: no reasons, no re-description of the scene, no quotation
-  marks, and never text. Leave it empty on shots you did not nominate.
-- Nominate only motion from the video model's reliable list, and never one
-  from its unreliable list. A nomination whose video_motion_intent names a
-  camera move, or a subject moving toward or away from the camera, is not
-  taken up; the next-ranked nomination gets the slot instead.
-  - Reliable: a small gesture or action by one subject that stays roughly in
-    place (turning the head, lifting or setting down an object, breathing,
-    a slump or a straightening); hair, clothes, steam, smoke, rain, leaves,
-    water or light moving; a subject crossing the frame sideways.
-  - Unreliable: a subject walking or running toward or away from the camera
-    (the model follows them with the camera instead); any camera move;
-    precise hand work or exact object counts; two things moving at once;
-    anything that opens, splits, multiplies or transforms; fast action.
-- Generated clips are short, so favour beats whose narration is brief and
-  punchy; a long, discursive beat is unlikely to be taken up.
+  as its whole instruction, after a fixed "static shot" opening, so describe
+  only what moves in the picture -- never the camera. Under 40 words: no
+  reasons, no re-description of the scene, no quotation marks, and never
+  text. Leave it empty on shots you did not nominate.
+- Follow this template: [Subject] [one action, start pose to end pose],
+  slowly or gently, then holds still. [Optionally one secondary motion: hair
+  or cloth sways.] Face stays turned to the viewer.
+  For example: The man lifts his head from his hands and looks up, slowly,
+  then holds still. His coat stirs. Face stays turned to the viewer.
+- Write "turned to the viewer", never "toward the viewer" or "toward the
+  camera": those words read as a subject moving in depth, and the shot loses
+  its clip.
+- The action should finish within the first 60% or so of the clip and then
+  hold; the end of a generated clip may not be shown.
 
 ## Overall style
 

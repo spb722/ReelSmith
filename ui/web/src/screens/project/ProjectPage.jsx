@@ -9,6 +9,7 @@ import RunTab, { StopDialog, StartOverDialog } from './RunTab.jsx';
 import ReviewsTab from './ReviewsTab.jsx';
 import OutputsTab from './OutputsTab.jsx';
 import CoverTab from './CoverTab.jsx';
+import CaptionTab from './CaptionTab.jsx';
 import NarrationEditor from './NarrationEditor.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
 import { useToast } from '../../components/Toast.jsx';
@@ -20,6 +21,7 @@ import { money, MUTED } from '../../components/Stepper.jsx';
 const TABS = [
   ['overview', 'Overview', OverviewTab], ['screenshots', 'Screenshots', ScreenshotsTab], ['settings', 'Settings', SettingsTab],
   ['run', 'Run', RunTab], ['reviews', 'Reviews', ReviewsTab], ['outputs', 'Outputs', OutputsTab], ['cover', 'Cover', CoverTab],
+  ['caption', 'Caption', CaptionTab],
 ];
 const LIVE = ['running', 'paused', 'stopped'];
 

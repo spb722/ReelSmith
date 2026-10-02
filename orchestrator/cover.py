@@ -7,7 +7,8 @@ re-running the reel neither triggers nor invalidates a cover.
 
 The split follows the same line as the rest of the repo. Claude judges what
 cannot be measured -- which frame is most arresting, which of the reel's own
-lines hooks hardest -- and Codex designs the finished cover, headline included.
+lines hooks hardest -- and the image maker (Gemini or Codex, per IMAGE_PROVIDER) designs the
+finished cover, headline included.
 Deterministic Python does what has a correct answer: resolving the frame and
 verifying the hook really came from the narration.
 """
@@ -23,6 +24,9 @@ import signal
 import sys
 from pathlib import Path
 from typing import Optional, Sequence
+
+from google import genai
+from google.genai import types
 
 from orchestrator.agents.cover_agent import plan_cover
 from orchestrator.contracts.cover import (
@@ -46,7 +50,7 @@ from orchestrator.state.run_manifest import (
 from orchestrator.tools.codex_image_tools import run_codex_image_edit
 from orchestrator.tools.cover_tools import extract_video_frame, write_grid_preview
 from orchestrator.tools.deterministic_tools import normalize_word, tokenize
-from orchestrator.tools.gemini_tools import resolve_character_references
+from orchestrator.tools.gemini_tools import resolve_character_references, run_gemini_image_edit
 
 FINAL_STORY_PLAN_FILE = Path("metadata/final_story_plan.json")
 VISUAL_PLAN_FILE = Path("metadata/visual_plan.json")
@@ -181,14 +185,37 @@ def _next_cover_version() -> Path:
     return COVER_DIR / f"cover_v{n}.png"
 
 
+def _edit_image(provider: str, source: Path, prompt: str, references: list[Path], settings):
+    if provider == "codex":
+        return run_codex_image_edit(
+            source_image_path=source,
+            prompt=prompt,
+            reference_image_paths=references,
+            timeout_seconds=settings.codex_image_timeout_seconds,
+            label="Cover",
+        )
+    client = genai.Client(vertexai=True, project=settings.project_id, location=settings.location,
+                          http_options=types.HttpOptions(api_version="v1"))
+    return run_gemini_image_edit(client, source_image_path=source, prompt=prompt,
+                                 model=settings.image_model, reference_image_paths=references)
+
+
 def _draw_cover(source: Path, prompt: str, settings) -> None:
-    image, note = run_codex_image_edit(
-        source_image_path=source,
-        prompt=prompt,
-        reference_image_paths=resolve_character_references(),
-        timeout_seconds=settings.codex_image_timeout_seconds,
-        label="Cover",
-    )
+    """Draw with the run's image maker; on failure, try its fallback maker once if one is set."""
+    references = resolve_character_references()
+    providers = [settings.image_provider] + [p for p in [settings.image_fallback_provider]
+                                             if p and p != settings.image_provider]
+    for i, provider in enumerate(providers):
+        if provider != "codex":  # the Codex tool logs its own tries
+            log(f"Cover: asking {provider.capitalize()} to draw it", indent=2)
+        try:
+            image, note = _edit_image(provider, source, prompt, references, settings)
+            break
+        except Exception as exc:
+            if i == len(providers) - 1:
+                raise
+            log(f"{provider.capitalize()} failed ({type(exc).__name__}: {str(exc)[:200]}); "
+                f"trying {providers[i + 1].capitalize()}", indent=2)
     COVER_FILE.parent.mkdir(parents=True, exist_ok=True)
     image.save(COVER_FILE, format="PNG", optimize=True)
     if note:

@@ -170,3 +170,84 @@ def test_a_clean_take_is_unaffected():
     _, stats = align_words(tokenize(script), words_at(["you", "win", "the", "game"]))
     assert stats["trailing_extra_words"] == 0
     assert stats["normalized_match_ratio"] == 1.0
+
+
+def _write_silence(path):
+    with wave.open(str(path), "wb") as handle:
+        handle.setnchannels(1)
+        handle.setsampwidth(2)
+        handle.setframerate(1000)
+        handle.writeframes(b"\0\0" * 2000)
+
+
+def _run_word_timing(tmp_path, monkeypatch, narration, heard, judge):
+    audio = tmp_path / "narration.wav"
+    _write_silence(audio)
+    monkeypatch.setattr(dt, "transcribe_audio_path_with_word_offsets", lambda *_: (" ".join(heard), observed(heard)))
+    monkeypatch.setattr(dt.spoken_form_referee, "judge_spoken_forms", judge)
+    path = tmp_path / "run-state" / "diagnostics.json"
+    response = asyncio.run(dt.extract_word_timing.handler({
+        "audio_path": str(audio), "narration_script": narration, "project_id": "test", "diagnostics_path": str(path)}))
+    return json.loads(response["content"][0]["text"]), path.parent / "spoken_form_verdicts.json"
+
+
+# Long enough that three unmatched words pass the 0.85 gate but not 0.98.
+PAD = "it only took him two minutes to draw that little sketch on a paper napkin in the cafe"
+MONEY_SCRIPT = f"He says twenty thousand dollars. She protests {PAD}."
+MONEY_HEARD = ["He", "says,", '"$20,000."', "She", "protests", *PAD.split()]
+
+
+def test_mismatch_spans_group_adjacent_edits_and_mark_anchors():
+    _, stats = align_words(tokenize(MONEY_SCRIPT), observed(MONEY_HEARD))
+    assert stats["mismatch_spans"] == [{"script_words": ["twenty", "thousand", "dollars"],
+                                        "heard_words": ['"$20,000."'], "anchored": True}]
+    _, stats = align_words(["keep", "going", "now"], observed(["keep", "going"]))
+    assert stats["mismatch_spans"][0]["anchored"] is False
+
+
+def test_referee_approval_counts_as_equivalent_and_keeps_observed_timing(tmp_path, monkeypatch):
+    calls = []
+    def judge(script, heard):
+        calls.append((script, heard))
+        return {"same_speech": True, "reason": "currency written as digits"}
+    payload, cache = _run_word_timing(tmp_path, monkeypatch, MONEY_SCRIPT, MONEY_HEARD, judge)
+    stats = payload["alignment_stats"]
+    assert calls == [(["twenty", "thousand", "dollars"], ['"$20,000."'])]
+    assert stats["normalized_match_ratio"] == 1 and not stats["mismatches"]
+    money = [w for w in payload["words"] if w["canonical_word"] in {"twenty", "thousand", "dollars"}]
+    assert money[0]["start_seconds"] == .8 and money[-1]["end_seconds"] == 1.1
+    assert payload["spoken_form_verdicts"][0]["same_speech"] is True
+
+    # The cached verdict is reused: a second run makes no call.
+    def refuse(*_):
+        raise AssertionError("cached verdict should be reused")
+    payload, _ = _run_word_timing(tmp_path, monkeypatch, MONEY_SCRIPT, MONEY_HEARD, refuse)
+    assert payload["alignment_stats"]["normalized_match_ratio"] == 1
+    assert cache.is_file()
+
+
+def test_referee_rejection_and_failure_leave_the_mismatch(tmp_path, monkeypatch):
+    payload, _ = _run_word_timing(tmp_path, monkeypatch, MONEY_SCRIPT, MONEY_HEARD,
+                                  lambda *_: {"same_speech": False, "reason": "different amount"})
+    assert payload["alignment_stats"]["normalized_match_ratio"] < .98
+
+    def broken(*_):
+        raise ConnectionError("offline")
+    (tmp_path / "second").mkdir()
+    payload, cache = _run_word_timing(tmp_path / "second", monkeypatch, MONEY_SCRIPT, MONEY_HEARD, broken)
+    assert payload["alignment_stats"]["normalized_match_ratio"] < .98
+    assert "offline" in payload["spoken_form_verdicts"][0]["reason"]
+    assert json.loads(cache.read_text()) == {}
+
+
+def test_long_or_unanchored_differences_never_reach_the_referee(tmp_path, monkeypatch):
+    def refuse(*_):
+        raise AssertionError("must not be asked")
+    # Unanchored: the difference is at the very start.
+    payload, _ = _run_word_timing(tmp_path, monkeypatch, f"twenty dollars {PAD}", ["$20", *PAD.split()], refuse)
+    assert payload["spoken_form_verdicts"] == []
+    # Longer than MAX_REFEREE_SPAN_WORDS on the script side.
+    long_gap = "one two three four five six seven"
+    _, stats = align_words(tokenize(f"{PAD} {long_gap} {PAD}"), observed([*PAD.split(), "numbers", *PAD.split()]))
+    assert stats["mismatch_spans"][0]["anchored"]
+    assert dt.referee_spoken_forms(stats, tmp_path / "verdicts.json") == []

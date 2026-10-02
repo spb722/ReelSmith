@@ -72,3 +72,43 @@ def test_a_push_in_measures_as_zoom(tmp_path):
 
 def test_unmeasured_motion_says_so():
     assert "could not be measured" in describe_camera_motion(None)
+
+
+def test_measure_limits_sampling_to_max_seconds(monkeypatch, tmp_path):
+    from orchestrator.tools import camera_motion
+
+    calls = []
+
+    def fake_run(argv, **kwargs):
+        calls.append(argv)
+        return subprocess.CompletedProcess(argv, 0, stdout=b"")
+
+    monkeypatch.setattr(camera_motion.subprocess, "run", fake_run)
+    clip = tmp_path / "clip.mp4"
+    ffmpeg = camera_motion.resolve_binary("ffmpeg")
+
+    assert measure_camera_motion(clip, max_seconds=10.84) is None
+    limited = calls[-1]
+    at = limited.index("-i")
+    assert limited[at - 2:at] == ["-t", "10.840"]
+
+    measure_camera_motion(clip)
+    assert calls[-1] == [
+        ffmpeg, "-hide_banner", "-loglevel", "error", "-i", str(clip),
+        "-vf", "fps=3,scale=288:512,format=gray", "-f", "rawvideo", "-",
+    ]
+
+
+def test_max_seconds_measures_only_the_shown_part(tmp_path):
+    # Still for the first 2 s (48 frames), then zooming 1.0 -> 1.3 by 4 s.
+    clip = _render(
+        tmp_path, "still_then_push",
+        "scale=720:1280,zoompan=z='if(lt(on,48),1,1+0.3*(on-48)/48)'"
+        ":x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=576x1024:fps=24",
+    )
+    shown = measure_camera_motion(clip, max_seconds=2)
+    assert shown is not None
+    assert 0.98 <= shown["zoom"] <= 1.02
+    whole = measure_camera_motion(clip)
+    assert whole is not None
+    assert whole["zoom"] > 1.03

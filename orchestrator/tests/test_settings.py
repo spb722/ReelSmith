@@ -10,6 +10,7 @@ from orchestrator.settings import (
     DEFAULT_LOCATION,
     DEFAULT_MAX_BUDGET_USD,
     DEFAULT_MAX_VEO_ATTEMPTS,
+    DEFAULT_MAX_VEO_SHOTS,
     DEFAULT_PROJECT_ID,
     DEFAULT_VEO_CALL_COST_USD,
     DEFAULT_VEO_DURATION_SECONDS,
@@ -34,12 +35,14 @@ ENV_VARS = (
     "VEO_POLL_SECONDS",
     "VEO_MAX_POLL_SECONDS",
     "MAX_VEO_ATTEMPTS",
+    "MAX_VEO_SHOTS",
     "IMAGE_CALL_COST_USD",
     "VEO_CALL_COST_USD",
     "IMAGE_PROVIDER",
     "CODEX_IMAGE_TIMEOUT_SECONDS",
     "STORY_SKILL",
     "SOURCE_MODE",
+    "VEO_EXTEND_LONG_SHOTS",
 )
 
 
@@ -66,6 +69,7 @@ def test_defaults_when_no_env_vars_set():
     assert settings.max_veo_attempts == DEFAULT_MAX_VEO_ATTEMPTS
     assert settings.image_call_cost_usd == DEFAULT_IMAGE_CALL_COST_USD
     assert settings.veo_call_cost_usd == DEFAULT_VEO_CALL_COST_USD
+    assert settings.max_veo_shots == DEFAULT_MAX_VEO_SHOTS
 
 
 def test_project_id_env_override(monkeypatch):
@@ -138,6 +142,12 @@ def test_veo_generation_settings_are_externally_configurable(monkeypatch):
     assert settings.veo_call_cost_usd == 2.4
 
 
+@pytest.mark.parametrize("value", [5, 0, 10])
+def test_max_veo_shots_env_override(value, monkeypatch):
+    monkeypatch.setenv("MAX_VEO_SHOTS", str(value))
+    assert load_settings().max_veo_shots == value
+
+
 @pytest.mark.parametrize(
     ("name", "value"),
     [
@@ -145,6 +155,8 @@ def test_veo_generation_settings_are_externally_configurable(monkeypatch):
         ("VEO_DURATION_SECONDS", "not-an-int"),
         ("IMAGE_CALL_COST_USD", "nan"),
         ("VEO_CALL_COST_USD", "-1"),
+        ("MAX_VEO_SHOTS", "11"),
+        ("MAX_VEO_SHOTS", "-1"),
     ],
 )
 def test_invalid_veo_settings_fail_loud(name, value, monkeypatch):
@@ -241,4 +253,19 @@ def test_story_skill_defaults_to_story_craft_and_accepts_easy(monkeypatch):
 def test_unknown_story_skill_is_rejected(monkeypatch):
     monkeypatch.setenv("STORY_SKILL", "story-craft-hard")
     with pytest.raises(SettingsError, match="STORY_SKILL"):
+        load_settings()
+
+
+def test_veo_extend_long_shots_defaults_off_and_parses_booleans(monkeypatch):
+    assert load_settings().veo_extend_long_shots is False
+    monkeypatch.setenv("VEO_EXTEND_LONG_SHOTS", "")
+    assert load_settings().veo_extend_long_shots is False
+    for value in ("true", "1", "ON", "yes"):
+        monkeypatch.setenv("VEO_EXTEND_LONG_SHOTS", value)
+        assert load_settings().veo_extend_long_shots is True
+    for value in ("false", "0", "off", "No"):
+        monkeypatch.setenv("VEO_EXTEND_LONG_SHOTS", value)
+        assert load_settings().veo_extend_long_shots is False
+    monkeypatch.setenv("VEO_EXTEND_LONG_SHOTS", "maybe")
+    with pytest.raises(SettingsError, match="VEO_EXTEND_LONG_SHOTS"):
         load_settings()

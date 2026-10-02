@@ -2,11 +2,12 @@
 // Props: { value, defaults, meta, onChange(next), showRawConfig?, projectName? }
 // - value/defaults are settings objects (CONTRACT.md section 4). When `defaults` is given, changed fields
 //   get a dot + Reset. The raw view edits the same settings object as JSON, so form and raw stay in sync.
-import { useRef, useState } from 'react';
-import { getConfig, listCharacters, listStyles } from '../api.js';
+import { useEffect, useRef, useState } from 'react';
+import { getConfig, listCharacters, listStyles, voiceSampleUrl } from '../api.js';
 import { useAsync } from '../hooks.js';
 import StylePicker from './StylePicker.jsx';
 import CharacterPicker from './CharacterPicker.jsx';
+import { useToast } from './Toast.jsx';
 
 const MUTED = 'color-mix(in srgb,var(--color-text) 62%,transparent)';
 const H6 = { margin: 0, color: 'color-mix(in srgb,var(--color-text) 60%,transparent)' };
@@ -37,6 +38,7 @@ const FALLBACK_MODES = [
 const NUM_GROUPS = [
   { title: 'Budget & limits', help: 'Running out of attempts, or reaching the budget, stops the run with a reason.', fields: [
     ['max_budget_usd', 'Budget ceiling for the whole run', { prefix: '$', step: 1 }],
+    ['max_veo_shots', 'Max video shots', { max: 10, help: 'New shot plans only; a finished plan keeps its videos. Each video reserves about $1.20 more than a still, and ~10 shots already need about $40 of budget, so raise the budget too (about $50–60 for 5) or the extras become stills.' }],
     ['max_attempts.asset_analyst', 'Max attempts — screenshots'],
     ['max_attempts.story_agent', 'Max attempts — narration'],
     ['max_attempts.visual_agent', 'Max attempts — shot planning'],
@@ -60,7 +62,7 @@ const NUM_GROUPS = [
     ['veo_call_cost_usd', 'Estimated cost per video clip', { prefix: '$', step: 0.1 }],
   ] },
 ];
-const BASIC_PATHS = ['source_mode', 'story_skill', 'style', 'pause_after_narration', 'character_id', 'voice', 'claude_model', 'reviewer_model', 'image_provider', 'image_fallback_provider', 'image_model', 'veo_model', 'veo_resolution'];
+const BASIC_PATHS = ['source_mode', 'story_skill', 'style', 'pause_after_narration', 'character_id', 'voice', 'claude_model', 'reviewer_model', 'image_provider', 'image_fallback_provider', 'image_model', 'veo_model', 'veo_resolution', 'veo_extend_long_shots'];
 const ALL_PATHS = [...BASIC_PATHS, ...NUM_GROUPS.flatMap((g) => g.fields.map((f) => f[0]))];
 
 function same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
@@ -115,6 +117,43 @@ function highlight(text) {
   }
   out.push(text.slice(last));
   return out;
+}
+
+/** Play / stop a short sample of the voice. The first play of a voice takes a few seconds while the server makes it. */
+function VoiceSample({ voice }) {
+  const toast = useToast();
+  const [state, setState] = useState('idle'); // idle | loading | playing
+  const audio = useRef(null);
+  const req = useRef(0); // bumped by stop(), so a sample still loading is dropped
+  const stop = () => {
+    req.current += 1;
+    if (audio.current) { audio.current.pause(); URL.revokeObjectURL(audio.current.src); }
+    audio.current = null;
+    setState('idle');
+  };
+  useEffect(() => stop, [voice]);
+  async function play() {
+    if (state !== 'idle') return stop();
+    setState('loading');
+    const id = req.current;
+    try {
+      const res = await fetch(voiceSampleUrl(voice));
+      if (!res.ok) throw new Error((await res.json().catch(() => null))?.detail || `${res.status} ${res.statusText}`);
+      const blob = await res.blob();
+      if (id !== req.current) return;
+      const a = new Audio(URL.createObjectURL(blob));
+      a.onended = stop;
+      audio.current = a;
+      await a.play();
+      setState('playing');
+    } catch (e) {
+      if (id !== req.current) return;
+      stop();
+      toast(e.message, 'error');
+    }
+  }
+  const [icon, label] = { idle: ['ph-play', 'Play sample'], loading: ['ph-spinner', 'Loading…'], playing: ['ph-stop', 'Stop'] }[state];
+  return <button type="button" className="btn btn-secondary" disabled={!voice} onClick={play} style={{ whiteSpace: 'nowrap', minWidth: 140, justifyContent: 'center' }}><i className={'ph-duotone ' + icon} />{label}</button>;
 }
 
 export default function SettingsPanel({ value, defaults, meta, onChange, showRawConfig, projectName }) {
@@ -261,7 +300,7 @@ export default function SettingsPanel({ value, defaults, meta, onChange, showRaw
                 <select className="input" value={v.voice || ''} onChange={(e) => set('voice', e.target.value)}>
                   {withCurrent(M.voices, v.voice).map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
-                <button type="button" className="btn btn-secondary" disabled title="Voice samples are not available yet" style={{ whiteSpace: 'nowrap' }}><i className="ph-duotone ph-play" />Play sample</button>
+                <VoiceSample voice={v.voice} />
               </div>
             </div>
           </section>
@@ -286,6 +325,16 @@ export default function SettingsPanel({ value, defaults, meta, onChange, showRaw
                 </div>
               </div>
             ))}
+            <div style={ROW}>
+              <Head path="veo_extend_long_shots" label="Longer video shots" help="Lets a shot of up to 15 s become video: an 8 s clip extended by 7 s more (720p only). Such a shot costs two video clips (about $2.40 a try). New shot plans only — redo the shot plan to apply it to an existing project." />
+              <button type="button" role="switch" aria-checked={!!v.veo_extend_long_shots} onClick={() => set('veo_extend_long_shots', !v.veo_extend_long_shots)}
+                style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 0, padding: 0, cursor: 'pointer', font: 'inherit', color: 'inherit', alignSelf: 'start' }}>
+                <span style={{ width: 40, height: 22, borderRadius: 11, position: 'relative', background: v.veo_extend_long_shots ? 'var(--color-accent)' : 'var(--color-neutral-400)', transition: 'background .15s' }}>
+                  <span style={{ position: 'absolute', top: 3, left: v.veo_extend_long_shots ? 21 : 3, width: 16, height: 16, borderRadius: '50%', background: 'var(--color-bg)', boxShadow: 'var(--shadow-sm)', transition: 'left .15s' }} />
+                </span>
+                <span style={{ fontSize: 14 }}>{v.veo_extend_long_shots ? 'On — shots up to 15 s can be video' : 'Off — only shots up to 8 s can be video'}</span>
+              </button>
+            </div>
           </section>
 
           <div style={{ display: 'flex' }}>
@@ -312,9 +361,10 @@ export default function SettingsPanel({ value, defaults, meta, onChange, showRaw
                         </label>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <span style={{ fontSize: 13, minWidth: 10, color: 'color-mix(in srgb,var(--color-text) 60%,transparent)' }}>{o.prefix || ''}</span>
-                          <input className="input" type="number" min="0" step={o.step || 1} value={getIn(v, path) ?? ''} onChange={(e) => { const n = parseFloat(e.target.value); set(path, Number.isNaN(n) ? 0 : n); }} style={{ maxWidth: 130 }} />
+                          <input className="input" type="number" min="0" max={o.max} step={o.step || 1} value={getIn(v, path) ?? ''} onChange={(e) => { const n = parseFloat(e.target.value); set(path, Number.isNaN(n) ? 0 : n); }} style={{ maxWidth: 130 }} />
                           <span style={{ fontSize: 13, color: 'color-mix(in srgb,var(--color-text) 60%,transparent)' }}>{o.unit || ''}</span>
                         </div>
+                        {o.help && <div style={{ fontSize: 13, color: MUTED }}>{o.help}</div>}
                       </div>
                     ))}
                   </div>

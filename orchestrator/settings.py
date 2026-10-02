@@ -82,9 +82,21 @@ DEFAULT_VEO_DURATION_SECONDS = 8
 # Configuration, not model knowledge (same framing as the cost estimates
 # below) -- narrow it to (8,) if a model rejects the shorter values.
 VEO_ALLOWED_DURATION_SECONDS = (4, 6, 8)
+# Veo "extend video": one 8 s clip + one 7 s extension, tested only this way
+# (veo-3.1-fast-generate-001, 720p, 9:16, 2026-09-30). Constants, not env settings.
+VEO_EXTENSION_SECONDS = 7
+VEO_EXTENSION_RESOLUTIONS = ("720p",)
+DEFAULT_VEO_EXTEND_LONG_SHOTS = False
+BOOL_TRUE = ("1", "true", "yes", "on")
+BOOL_FALSE = ("0", "false", "no", "off")
 DEFAULT_VEO_POLL_SECONDS = 15.0
 DEFAULT_VEO_MAX_POLL_SECONDS = 900.0
 DEFAULT_MAX_VEO_ATTEMPTS = 3
+# How many shots per reel may become real Veo video (AD-15). Three is what
+# every reel before this setting got; raise it per project for more motion.
+# The ceiling keeps a typo from reserving budget for a whole reel of clips.
+DEFAULT_MAX_VEO_SHOTS = 3
+MAX_VEO_SHOTS_LIMIT = 10
 # How many tries each stage gets before the run halts. These were constants
 # scattered through run.py; they live here so a project's config.json can be
 # seeded from one place and the operator can raise a ceiling without editing
@@ -187,6 +199,8 @@ class Settings:
     veo_poll_seconds: float = DEFAULT_VEO_POLL_SECONDS
     veo_max_poll_seconds: float = DEFAULT_VEO_MAX_POLL_SECONDS
     max_veo_attempts: int = DEFAULT_MAX_VEO_ATTEMPTS
+    max_veo_shots: int = DEFAULT_MAX_VEO_SHOTS
+    veo_extend_long_shots: bool = DEFAULT_VEO_EXTEND_LONG_SHOTS
     image_call_cost_usd: float = DEFAULT_IMAGE_CALL_COST_USD
     veo_call_cost_usd: float = DEFAULT_VEO_CALL_COST_USD
     claude_shot_attempt_cap_usd: float = DEFAULT_CLAUDE_SHOT_ATTEMPT_CAP_USD
@@ -254,6 +268,25 @@ def _int_setting(name: str, default: int, *, positive: bool = False) -> int:
     return value
 
 
+def _bool_setting(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None or not raw.strip():
+        return default
+    value = raw.strip().lower()
+    if value in BOOL_TRUE:
+        return True
+    if value in BOOL_FALSE:
+        return False
+    raise SettingsError(f"{name}={raw!r} is not true or false")
+
+
+def _max_veo_shots_setting() -> int:
+    value = _int_setting("MAX_VEO_SHOTS", DEFAULT_MAX_VEO_SHOTS)
+    if value > MAX_VEO_SHOTS_LIMIT:
+        raise SettingsError(f"MAX_VEO_SHOTS must be {MAX_VEO_SHOTS_LIMIT} or fewer, got {value}")
+    return value
+
+
 def _image_provider_setting() -> str:
     raw = _str_setting("IMAGE_PROVIDER", DEFAULT_IMAGE_PROVIDER).strip().lower()
     if raw not in IMAGE_PROVIDERS:
@@ -302,6 +335,16 @@ def source_mode_setting() -> str:
     return raw
 
 
+def veo_extend_long_shots_setting() -> bool:
+    """Whether `VEO_EXTEND_LONG_SHOTS` lets 8-15 s shots be an extended Veo clip.
+
+    A plain function for the same reason as `story_skill_setting`: the Veo
+    tool and the planner read it without a full settings load.
+    """
+
+    return _bool_setting("VEO_EXTEND_LONG_SHOTS", DEFAULT_VEO_EXTEND_LONG_SHOTS)
+
+
 def image_call_cost_for_provider(provider: str) -> float:
     """Per-image budget reservation for the selected provider.
 
@@ -346,6 +389,8 @@ def load_settings() -> Settings:
             "VEO_MAX_POLL_SECONDS", DEFAULT_VEO_MAX_POLL_SECONDS, positive=True
         ),
         max_veo_attempts=_int_setting("MAX_VEO_ATTEMPTS", DEFAULT_MAX_VEO_ATTEMPTS, positive=True),
+        max_veo_shots=_max_veo_shots_setting(),
+        veo_extend_long_shots=veo_extend_long_shots_setting(),
         image_provider=image_provider,
         image_fallback_provider=_image_fallback_provider_setting(image_provider),
         codex_image_timeout_seconds=_float_setting(

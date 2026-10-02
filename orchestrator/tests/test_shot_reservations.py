@@ -250,6 +250,24 @@ def test_planning_demotes_the_lowest_ranked_veo_shots_before_any_paid_call(chain
     assert run.VISUAL_PLAN_FILE.read_text(encoding="utf-8") == before
 
 
+def test_a_budget_demotion_warns_loudly_with_what_keeping_the_videos_needs(chain, capsys):
+    _, asset_id = chain
+    write_plan(veo_visual_plan_for(asset_id, count=5))
+    manifest = load_run_manifest(run.RUN_STATE_DIR)
+    budget = 2 * VEO_RESERVATION + 3 * STILL_RESERVATION + 0.1
+    assert asyncio.run(run.run_production_planning(make_settings(max_budget_usd=budget), manifest)) == 0
+    assert list(plan_modes().values()).count("VEO") == 2
+    err = capsys.readouterr().err
+    assert err.count("BUDGET: 3 video shot(s) were turned into still pictures") == 1
+    assert f"about ${5 * VEO_RESERVATION:.2f} for the first tries, but only ${budget:.2f}" in err
+    assert "Raise MAX_BUDGET_USD (per project in the UI) and redo the shot plan" in err
+
+    # Nothing demoted, nothing to warn about.
+    write_plan(veo_visual_plan_for(asset_id, count=5))
+    assert asyncio.run(run.run_production_planning(make_settings(max_budget_usd=40.0), manifest)) == 0
+    assert "BUDGET:" not in capsys.readouterr().err
+
+
 def test_planning_never_demotes_a_veo_shot_that_already_has_attempts(chain):
     _, asset_id = chain
     write_plan(veo_visual_plan_for(asset_id, count=2))
@@ -300,6 +318,111 @@ def test_planning_halts_before_any_paid_call_when_even_stills_cannot_fit(chain, 
     [report] = reports("production_planning")
     assert (report["reason_code"], report["resumable"]) == ("budget_exhausted", True)
     assert "MAX_BUDGET_USD" in report["reason"]
+
+
+# --- Veo extend: an extended shot reserves and is priced at two clips ----------
+
+EXTENDED_RESERVATION = CAP + 0.04 + 2 * 1.2
+
+
+def timed_veo_plan(asset_id: str, durations: list[float]) -> VisualPlanContract:
+    plan = veo_visual_plan_for(asset_id, count=len(durations))
+    start = 0.0
+    for shot, duration in zip(plan.shots, durations):
+        shot.start_seconds, shot.end_seconds = round(start, 2), round(start + duration, 2)
+        start += duration
+    return plan
+
+
+def test_an_extended_shot_reserves_two_veo_calls():
+    settings = make_settings(claude_shot_attempt_cap_usd=0.7)
+    assert run.shot_attempt_reservation(settings, "VEO", 2)[1] == pytest.approx(0.04 + 2 * 1.2)
+    assert run.shot_attempt_reservation(settings, "VEO") == pytest.approx((0.7, 0.04 + 1.2))
+
+
+def test_veo_calls_for_shot():
+    on = make_settings(veo_extend_long_shots=True)
+    long_veo = SimpleNamespace(generation_mode="VEO", start_seconds=0.0, end_seconds=10.84)
+    assert run.veo_calls_for_shot(long_veo, on) == 2
+    assert run.veo_calls_for_shot(long_veo, make_settings()) == 1
+    assert run.veo_calls_for_shot(SimpleNamespace(**{**vars(long_veo), "generation_mode": "STILL"}), on) == 1
+    assert run.veo_calls_for_shot(SimpleNamespace(generation_mode="VEO", start_seconds=0.0, end_seconds=6.0), on) == 1
+    assert run.veo_calls_for_shot(long_veo, make_settings(veo_extend_long_shots=True, veo_resolution="1080p")) == 1
+    assert run.veo_calls_for_shot(SimpleNamespace(sequence=1, generation_mode="VEO"), on) == 1
+
+
+def test_demotion_prices_extended_shots_at_two_calls():
+    shots = [
+        SimpleNamespace(sequence=1, generation_mode="VEO", video_candidate_rank=2, start_seconds=0.0, end_seconds=10.84),
+        SimpleNamespace(sequence=2, generation_mode="VEO", video_candidate_rank=1, start_seconds=10.84, end_seconds=16.84),
+    ]
+    budget = 2 * VEO_RESERVATION + 0.1
+    # Off: the long shot is priced as one clip, as today, and both fit.
+    assert run.plan_first_attempt_demotions(shots, make_settings(), budget) == ([], pytest.approx(2 * VEO_RESERVATION))
+    # On: one normal plus one extended shot does not fit, so the lower rank goes.
+    on = make_settings(veo_extend_long_shots=True)
+    assert run.plan_first_attempt_demotions(shots, on, 2 * VEO_RESERVATION + 1.3)[0] == []
+    demoted, needed = run.plan_first_attempt_demotions(shots, on, budget)
+    assert demoted == [1]
+    assert needed == pytest.approx(STILL_RESERVATION + VEO_RESERVATION)
+    assert needed == pytest.approx(
+        sum(run.shot_attempt_reservation(on, "STILL")) + sum(run.shot_attempt_reservation(on, "VEO"))
+    )
+
+
+def counted_writes(monkeypatch) -> list:
+    writes = []
+    real = run._atomic_write_json
+
+    def write(path, data):
+        writes.append(Path(path))
+        real(path, data)
+
+    monkeypatch.setattr(run, "_atomic_write_json", write)
+    return writes
+
+
+@pytest.mark.parametrize("overrides,why", [
+    ({}, "VEO_EXTEND_LONG_SHOTS is now off"),
+    ({"veo_extend_long_shots": True, "veo_resolution": "1080p"}, "only used at 720p, not 1080p"),
+])
+def test_planning_turns_extended_shots_into_stills_when_the_setting_is_now_off(
+    chain, monkeypatch, capsys, overrides, why,
+):
+    _, asset_id = chain
+    write_plan(timed_veo_plan(asset_id, [6.0, 10.84]))
+    monkeypatch.setattr(run, "generate_veo_asset", refuse_agent("veo_agent"))
+    writes = counted_writes(monkeypatch)
+    manifest = load_run_manifest(run.RUN_STATE_DIR)
+
+    assert asyncio.run(run.run_production_planning(make_settings(**overrides), manifest)) == 0
+    assert plan_modes() == {1: "VEO", 2: "STILL"}
+    assert writes == [run.VISUAL_PLAN_FILE]
+    assert manifest.budget_spent_usd == 0.0
+    err = capsys.readouterr().err
+    assert err.count("Shot 2: switched from video to a still picture — it is 10.84s, which needs an 8s "
+                     "clip plus a 7s extension, and ") == 1
+    assert why in err
+    assert "BUDGET:" not in err
+
+
+def test_planning_with_setting_off_leaves_todays_plans_byte_identical(chain, monkeypatch, capsys):
+    _, asset_id = chain
+    write_plan(timed_veo_plan(asset_id, [6.0, 8.0]))
+    before = run.VISUAL_PLAN_FILE.read_bytes()
+    mtime = run.VISUAL_PLAN_FILE.stat().st_mtime_ns
+    writes = counted_writes(monkeypatch)
+    manifest = load_run_manifest(run.RUN_STATE_DIR)
+    capsys.readouterr()
+
+    assert asyncio.run(run.run_production_planning(make_settings(), manifest)) == 0
+    assert run.VISUAL_PLAN_FILE.read_bytes() == before
+    assert run.VISUAL_PLAN_FILE.stat().st_mtime_ns == mtime
+    assert writes == []
+    captured = capsys.readouterr()
+    assert captured.err == ""
+    [line] = captured.out.splitlines()
+    assert line.endswith(f"The first try of 2 shot(s) needs ${2 * VEO_RESERVATION:.2f} of the $10.00 left")
 
 
 # --- per-attempt reservations in the shot loops --------------------------------
@@ -375,6 +498,48 @@ def test_shot_queries_get_the_claude_cap_and_the_guard_gets_the_reservation(chai
     [report] = reports("veo_agent")
     assert report["reason_code"] == "budget_exhausted"
     assert not run.PRODUCTION_ASSETS_FILE.exists()
+
+
+@pytest.mark.parametrize("stage,code,veo_calls_charged", [
+    (None, None, 2),
+    ("veo_generation", "EXTENSION_OPERATION_ERROR", 2),
+    ("seed_qa", "SEED_REJECTED", 0),
+])
+def test_extended_attempt_guard_and_ledger_charge_two_clips(chain, monkeypatch, stage, code, veo_calls_charged):
+    _, asset_id = chain
+    plan = timed_veo_plan(asset_id, [10.84])
+    write_plan(plan)
+    shot = plan.shots[0]
+    seen = {}
+
+    async def agent(**kwargs):
+        guard = kwargs["guard"]
+        seen["costs"] = guard.costs
+        seen["limit_usd"] = guard.limit_usd
+        if stage is None:
+            outcome = approved_outcome_for(shot)
+        else:
+            outcome = failed_outcome_for(shot, retryable=False)
+            outcome.failure.stage, outcome.failure.code = stage, code
+        return result_message(outcome.model_dump(mode="json"), cost=0.2)
+
+    async def still(**kwargs):
+        return result_message(approved_still_outcome_for(plan.shots[0]).model_dump(mode="json"), cost=0.0)
+
+    monkeypatch.setattr(run, "generate_veo_asset", agent)
+    monkeypatch.setattr(run, "generate_still_asset", still)
+    manifest = load_run_manifest(run.RUN_STATE_DIR)
+    assert asyncio.run(run.run_veo_stage(make_settings(veo_extend_long_shots=True), manifest)) == 0
+
+    assert seen["costs"] == {VEO_SEED_TOOL: pytest.approx(0.04), VEO_CLIP_TOOL: pytest.approx(2 * 1.2)}
+    assert seen["limit_usd"] == pytest.approx(0.04 + 2 * 1.2)
+    record = json.loads((run.RUN_STATE_DIR / "veo_agent_shot_1_attempt_1.json").read_text())
+    assert record["claude_cost_usd"] + record["paid_tool_cost_usd"] == pytest.approx(
+        0.2 + 0.04 + veo_calls_charged * 1.2
+    )
+    # A failed video falls back to a still, which costs its one image on top.
+    still_cost = 0.0 if stage is None else 0.04
+    assert manifest.budget_spent_usd == pytest.approx(0.2 + 0.04 + veo_calls_charged * 1.2 + still_cost)
 
 
 def test_still_queries_get_the_claude_cap_and_one_image_of_guard_limit(chain, monkeypatch):

@@ -15,11 +15,16 @@ fails source fidelity or consistency downstream.
 Judge especially:
 - SOURCE FIDELITY and SOURCE UNCERTAINTY: apply the visual-plan checks in
   the source-fidelity skill.
-- GENERATION MODE APPROPRIATENESS: the video nominations, and their order,
-  are the beats that genuinely gain most from real motion, each with a
-  video_motion_intent from the reliable list that names no camera move -- and
-  every shot still carries usable still_motion in case its nomination is not
-  taken up.
+- GENERATION MODE APPROPRIATENESS: there are at least as many video
+  nominations as your task asks for, and they and their order are the beats
+  that genuinely gain most from real motion -- the subject acting, not only
+  the atmosphere. Each nominated beat fits about 8 seconds of narration; the
+  nominations alternate with stills where they can (no three stills in a row,
+  no two videos in a row) and leave the final shot a still. Each
+  video_motion_intent follows the template -- one body-scale action from the
+  reliable list, start pose to settled pose, then holds still, face turned to
+  the viewer -- and names no camera move. Every shot still carries usable
+  still_motion in case its nomination is not taken up.
 - VISUAL COHERENCE: shots read as one consistent visual style, not a
   disjointed patchwork.
 - NARRATIVE ALIGNMENT: each shot's visual direction actually serves its

@@ -1,0 +1,9 @@
+{
+  "id": "subin",
+  "name": "subin",
+  "description": "",
+  "is_default": false,
+  "main": "main.png",
+  "turnaround": "turnaround.png",
+  "face": null
+}

@@ -419,6 +419,48 @@ def test_result_without_usable_cost_is_not_accepted(stage, monkeypatch):
     assert "cost" in failure_report()["reason"]
 
 
+@pytest.mark.parametrize("max_veo_shots", [0, 3, 5])
+def test_nomination_count_follows_max_veo_shots(stage, monkeypatch, max_veo_shots):
+    import asyncio
+
+    _, asset_ids, output = stage
+    story_plan, analyzed = final_story_plan_for(asset_ids), [analysis_for(i) for i in asset_ids]
+    monkeypatch.setenv("MAX_VEO_SHOTS", str(max_veo_shots))
+    calls = mock_query(monkeypatch, [sdk_result(output)])
+    asyncio.run(agent_module.plan_visuals(story_plan, analyzed, max_budget_usd=1.0))
+    prompt, options = calls[0]
+    # Today's task text, byte for byte: the default cap adds nothing to it.
+    base = "Plan visuals from this validated final story plan and analyzed-assets bundle:\n" + json.dumps(
+        {"final_story_plan": story_plan, "analyzed_assets": analyzed}, ensure_ascii=False,
+    )
+    assert options.system_prompt == agent_module.system_prompt(agent_module.skills())
+    if max_veo_shots <= 3:
+        assert prompt == base
+    else:
+        assert prompt == base + (
+            "\nNominate at least 7 shots for video (video_candidate_rank 1 to 7), "
+            "or every shot if the reel has fewer."
+        )
+
+
+def test_extension_setting_adds_the_15s_line_only_when_on(stage, monkeypatch):
+    import asyncio
+
+    _, asset_ids, output = stage
+    story_plan, analyzed = final_story_plan_for(asset_ids), [analysis_for(i) for i in asset_ids]
+    base = "Plan visuals from this validated final story plan and analyzed-assets bundle:\n" + json.dumps(
+        {"final_story_plan": story_plan, "analyzed_assets": analyzed}, ensure_ascii=False,
+    )
+    calls = mock_query(monkeypatch, [sdk_result(output), sdk_result(output)])
+    asyncio.run(agent_module.plan_visuals(story_plan, analyzed, max_budget_usd=1.0))
+    monkeypatch.setenv("VEO_EXTEND_LONG_SHOTS", "true")
+    asyncio.run(agent_module.plan_visuals(story_plan, analyzed, max_budget_usd=1.0))
+    (off, _), (on, _) = calls
+    assert off == base
+    assert on.startswith(base + "\nVideo extension is on:")
+    assert "15 seconds" in on and "15 seconds" not in off
+
+
 @pytest.mark.parametrize("mutation", ["missing_field", "bad_verdict", "score_too_low"])
 def test_contract_rejects_invalid_quality_plan(stage, mutation):
     _, asset_ids, output = stage

@@ -173,7 +173,7 @@ so it isn't counted as run time.
 - Shot number and type: **Still** or **Video clip**
 - State: queued · making · being reviewed · redo requested · approved · failed
 - Attempt count (e.g. "attempt 2 of 3")
-- Preview image when ready (for video clips, three preview frames or a small player)
+- Preview image when ready (for video clips, four preview frames or a small player)
 - Click → shot detail drawer: the prompt used, each attempt's image/video, the
   reviewer's comments per attempt
 

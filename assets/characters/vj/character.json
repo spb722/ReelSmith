@@ -1,0 +1,9 @@
+{
+  "id": "vj",
+  "name": "vj",
+  "description": "",
+  "is_default": false,
+  "main": "main.png",
+  "turnaround": "turnaround.png",
+  "face": null
+}

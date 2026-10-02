@@ -1077,6 +1077,44 @@ def test_stills_agent_wrong_fingerprint_is_stamped_from_requested_shot(chain, mo
     assert attempt["structured_output"]["shot_fingerprint"] == expected_fp
 
 
+def test_stills_agent_disagreeing_fingerprints_are_stamped_before_validation(chain, monkeypatch):
+    """A live agent copied `scene_content_fingerprint` into the top level while
+    the tool's nested value was right; the contract's "fingerprints differ"
+    check rejected an approved still and halted the reel."""
+    source, asset_id = chain
+    visual_plan = still_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+    shot = visual_plan.shots[0]
+
+    async def agent(**kwargs):
+        outcome = approved_still_outcome_for(shot).model_dump(mode="json")
+        outcome["shot_fingerprint"] = "c" * 64
+        return sdk_result(outcome, cost=0.1)
+
+    monkeypatch.setattr(run, "generate_still_asset", agent)
+    assert asyncio.run(run.run_stills_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 0
+    assert json.loads(run.PRODUCTION_ASSETS_FILE.read_text(encoding="utf-8"))["shots"]["1"]["shot_fingerprint"] == shot_fingerprint(shot)
+
+
+def test_veo_agent_disagreeing_fingerprints_are_stamped_before_validation(chain, monkeypatch):
+    source, asset_id = chain
+    visual_plan = veo_visual_plan_for(asset_id)
+    run.VISUAL_PLAN_FILE.write_text(visual_plan.model_dump_json(), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(subtitle_cues_for()), encoding="utf-8")
+    shot = visual_plan.shots[0]
+
+    async def agent(**kwargs):
+        outcome = approved_outcome_for(shot, attempt=kwargs["attempt"]).model_dump(mode="json")
+        outcome["shot_fingerprint"] = "c" * 64
+        outcome["result"]["seed"]["shot_fingerprint"] = "d" * 64
+        return sdk_result(outcome, cost=0.1)
+
+    monkeypatch.setattr(run, "generate_veo_asset", agent)
+    assert asyncio.run(run.run_veo_stage(make_settings(), load_run_manifest(run.RUN_STATE_DIR))) == 0
+    assert load_production_assets(run.PRODUCTION_ASSETS_FILE).shots["1"].shot_fingerprint == shot_fingerprint(shot)
+
+
 def test_stills_agent_wrong_sequence_halts_and_persists_invalid_outcome(chain, monkeypatch):
     source, asset_id = chain
     visual_plan = still_visual_plan_for(asset_id, count=2)
@@ -1483,6 +1521,62 @@ def test_promotion_follows_rank_not_shot_order():
     assert promoted == [4, 3, 2]
 
 
+def test_promotion_cap_comes_from_settings():
+    """MAX_VEO_SHOTS (per project) raises or removes the cap; the module
+    constant stays the default every earlier reel got."""
+    assert run.MAX_VEO_SHOTS == 3
+    plan = _promotion_plan("img_aaaaaaaaaaaa", [5.0] * 6, [1, 2, 3, 4, 5, 6])
+    assert run._promote_video_candidates(plan, make_settings(max_veo_shots=5)) == [1, 2, 3, 4, 5]
+    assert [shot.generation_mode for shot in plan.shots] == ["VEO"] * 5 + ["STILL"]
+
+
+def test_promotion_cap_of_zero_leaves_an_all_still_reel_without_a_warning(capsys):
+    plan = _promotion_plan("img_aaaaaaaaaaaa", [5.0] * 4, [1, 2, 3, 4])
+    assert run._promote_video_candidates(plan, make_settings(max_veo_shots=0)) == []
+    assert all(shot.generation_mode == "STILL" for shot in plan.shots)
+    assert all(shot.video_promotion_decided for shot in plan.shots)
+    assert "hoped for" not in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("cap,hoped_for", [(0, 0), (1, 1), (2, 2), (3, 2), (4, 4), (5, 5), (10, 10)])
+def test_hoped_for_video_shots_is_unchanged_at_the_default_and_the_whole_cap_above_it(cap, hoped_for):
+    assert run._hoped_for_veo_shots(cap) == hoped_for
+
+
+def test_a_raised_cap_warns_when_fewer_than_the_cap_fit(capsys):
+    plan = _promotion_plan("img_aaaaaaaaaaaa", [5.0, 5.0, 5.0, 11.0, 12.0], [1, 2, 3, 4, 5])
+    assert run._promote_video_candidates(plan, make_settings(max_veo_shots=5)) == [1, 2, 3]
+    assert "(hoped for 5)" in capsys.readouterr().err
+
+
+def test_a_raised_cap_does_not_warn_when_every_nomination_fits(capsys):
+    plan = _promotion_plan("img_aaaaaaaaaaaa", [5.0] * 7, [1, 2, 3, 4, 5, 6, 7])
+    assert run._promote_video_candidates(plan, make_settings(max_veo_shots=10)) == [1, 2, 3, 4, 5, 6, 7]
+    assert "hoped for" not in capsys.readouterr().err
+
+
+def test_the_default_cap_still_hopes_for_two(capsys):
+    plan = _promotion_plan("img_aaaaaaaaaaaa", [5.0, 11.0, 12.0, 13.0], [1, 2, 3, 4])
+    assert run._promote_video_candidates(plan, make_settings()) == [1]
+    assert "(hoped for 2)" in capsys.readouterr().err
+    plan = _promotion_plan("img_aaaaaaaaaaaa", [5.0, 5.0, 12.0, 13.0], [1, 2, 3, 4])
+    assert run._promote_video_candidates(plan, make_settings()) == [1, 2]
+    assert "hoped for" not in capsys.readouterr().err
+
+
+def test_promotion_logs_one_summary_then_each_still_reason_once(capsys):
+    plan = _promotion_plan("img_aaaaaaaaaaaa", [5.0, 11.0, 5.0, 5.0, 5.0], [1, 2, 3, 4, 5])
+    plan.shots[2].video_motion_intent = "Slow push-in on the cupped hands."
+    assert run._promote_video_candidates(plan, make_settings()) == [1, 4, 5]
+    out = capsys.readouterr().out
+    assert out.count("Video shots: asked for up to 3, got 3") == 1
+    summary = out.index("Video shots:")
+    for sequence in (2, 3):
+        assert out.count(f"Shot {sequence}: stays a still picture") == 1
+        assert out.index(f"Shot {sequence}: stays a still picture") > summary
+    assert "'push-in', which the video model does not hold" in out
+
+
 def test_promotion_degrades_when_too_few_shots_fit_rather_than_halting():
     """A reel whose beats are nearly all long legitimately ends up with fewer
     video shots -- it must still produce a video."""
@@ -1547,6 +1641,27 @@ def test_promotion_is_not_redone_once_decided(chain, monkeypatch):
     assert unchanged.shots[0].generation_mode == "STILL"
 
 
+def test_a_decided_plan_is_not_repromoted_when_the_cap_is_raised(chain, monkeypatch):
+    """Raising MAX_VEO_SHOTS on a project whose plan is already decided must
+    not turn its stills into videos (their fingerprints would churn)."""
+    source, asset_id = chain
+    cues = subtitle_cues_for()
+    plan = visual_plan_for(asset_id)
+    cue = cues["cues"][0]
+    plan["shots"][0]["start_seconds"] = 0.0
+    plan["shots"][0]["end_seconds"] = 5.0  # short enough to fit one clip
+    plan["shots"][0]["primary_subtitle_cue_ids"] = [cue["cue_id"]]
+    plan["shots"][0]["video_promotion_decided"] = True
+    plan["shots"][0]["generation_mode"] = "STILL"
+    run.VISUAL_PLAN_FILE.write_text(json.dumps(plan), encoding="utf-8")
+    run.SUBTITLE_CUES_FILE.write_text(json.dumps(cues), encoding="utf-8")
+    before = run.VISUAL_PLAN_FILE.read_text(encoding="utf-8")
+
+    run._backfill_visual_plan_shot_timing_from_cues(make_settings(max_veo_shots=10))
+
+    assert run.VISUAL_PLAN_FILE.read_text(encoding="utf-8") == before
+
+
 def test_promotion_skips_motion_veo_cannot_hold_and_gives_the_slot_to_the_next():
     """A subject walking away from the lens, or any camera move, made Veo
     track after it take after take; such a nomination stays a still."""
@@ -1579,3 +1694,56 @@ def test_ordinary_motion_is_not_flagged(text):
     shot = still_visual_plan_for("img_aaaaaaaaaaaa", count=1).shots[0]
     shot.video_motion_intent = text
     assert run.unreliable_video_motion(shot) is None
+
+
+def _log_lines(text: str) -> list[str]:
+    """Logged lines without their timestamp or indent."""
+    return [line.split("] ", 1)[1].strip() for line in text.splitlines()]
+
+
+def test_promotion_extends_long_nominations_only_when_on(capsys):
+    off_plan = _promotion_plan("img_aaaaaaaaaaaa", [6.0, 10.84, 16.0], [1, 2, 3])
+    on_plan = off_plan.model_copy(deep=True)
+    keys_before = [set(shot.model_dump(mode="json")) for shot in off_plan.shots]
+
+    assert run._promote_video_candidates(off_plan, make_settings()) == [1]
+    off = capsys.readouterr()
+    # Exactly today's lines, reasons and shortfall warning.
+    assert _log_lines(off.out) == [
+        "Shot 1: will be a moving video clip (6.00s of narration → 6s clip)",
+        "Video shots: asked for up to 3, got 1",
+        "Shot 2: stays a still picture (Shot is 10.84s, longer than the longest available Veo clip (8s))",
+        "Shot 3: stays a still picture (Shot is 16.00s, longer than the longest available Veo clip (8s))",
+    ]
+    assert _log_lines(off.err) == [
+        "Only 1 of 3 candidate shot(s) fit inside a 8s clip (hoped for 2) — the rest stay still pictures",
+    ]
+
+    assert run._promote_video_candidates(on_plan, make_settings(veo_extend_long_shots=True)) == [1, 2]
+    on = capsys.readouterr()
+    assert ("Shot 2: will be a moving video clip (10.84s of narration → 8s clip + 7s extension, "
+            "2 video calls)") in _log_lines(on.out)
+    [still_reason] = [line for line in _log_lines(on.out) if line.startswith("Shot 3: stays a still picture")]
+    assert "(15s)" in still_reason
+    assert [shot.generation_mode for shot in on_plan.shots] == ["VEO", "VEO", "STILL"]
+
+    # No stored field: the saved shots carry the same keys, and the short
+    # shot's fingerprint is the same either way.
+    for plan in (off_plan, on_plan):
+        assert [set(shot.model_dump(mode="json")) for shot in plan.shots] == keys_before
+    assert shot_fingerprint(off_plan.shots[0]) == shot_fingerprint(on_plan.shots[0])
+
+
+@pytest.mark.parametrize("overrides,reason", [
+    ({"veo_resolution": "1080p"}, "only used at 720p, not 1080p"),
+    ({"veo_duration_seconds": 6}, "needs VEO_DURATION_SECONDS of 8, but it is 6"),
+])
+def test_promotion_never_extends_at_1080p_or_below_an_8s_ceiling(capsys, overrides, reason):
+    plan = _promotion_plan("img_aaaaaaaaaaaa", [6.0, 10.84, 16.0], [1, 2, 3])
+    settings = make_settings(veo_extend_long_shots=True, **overrides)
+    assert run._promote_video_candidates(plan, settings) == [1]
+    captured = capsys.readouterr()
+    assert not any("extension, 2 video calls" in line for line in _log_lines(captured.out))
+    [still_reason] = [line for line in _log_lines(captured.out) if line.startswith("Shot 2: stays a still picture")]
+    assert reason in still_reason
+    assert "clip (15s with an extension) (hoped for 2)" in captured.err

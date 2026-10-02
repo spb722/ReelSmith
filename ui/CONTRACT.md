@@ -73,7 +73,7 @@ Routes (hash router):
 | --- | --- |
 | `#/` | `screens/Home.jsx` |
 | `#/new` | `screens/Wizard.jsx` |
-| `#/p/:name` and `#/p/:name/:tab` | `screens/project/ProjectPage.jsx` (tabs: `overview`, `screenshots`, `settings`, `run`, `reviews`, `outputs`, `cover`) |
+| `#/p/:name` and `#/p/:name/:tab` | `screens/project/ProjectPage.jsx` (tabs: `overview`, `screenshots`, `settings`, `run`, `reviews`, `outputs`, `cover`, `caption`) |
 | `#/p/:name/narration` | `screens/project/NarrationEditor.jsx` (rendered inside ProjectPage) |
 | `#/characters` | `screens/Characters.jsx` |
 | `#/styles` | `screens/Styles.jsx` |
@@ -81,7 +81,7 @@ Routes (hash router):
 | `#/setup` | `screens/Setup.jsx` |
 
 Project tab files: `screens/project/OverviewTab.jsx`, `ScreenshotsTab.jsx`,
-`SettingsTab.jsx`, `RunTab.jsx`, `ReviewsTab.jsx`, `OutputsTab.jsx`, `CoverTab.jsx`.
+`SettingsTab.jsx`, `RunTab.jsx`, `ReviewsTab.jsx`, `OutputsTab.jsx`, `CoverTab.jsx`, `CaptionTab.jsx`.
 
 Shared components (each has one owner; others import them):
 
@@ -125,6 +125,7 @@ Errors: HTTP 4xx/5xx with `{ "detail": "plain words message" }`.
 
 ### Meta
 - `GET /api/meta` → `{ styles:[{id,name}], characters:[{id,name}], story_skills:[{id,label,words,seconds}], source_modes:[{id,label}], voices:[str], claude_models:[str], image_providers:["gemini","codex"], image_models:[str], veo_models:[str], veo_resolutions:["720p","1080p"] }`
+- `GET /api/voices/{voice}/sample` → `audio/wav`, a short clip of that voice. Made with the pipeline's TTS model on first request, then kept in `assets/voice_samples/`. 404 for a voice not in `voices`; 502 with `detail` when TTS fails.
 
 ### Projects
 - `GET /api/projects` → `[ProjectSummary]`
@@ -181,6 +182,13 @@ Errors: HTTP 4xx/5xx with `{ "detail": "plain words message" }`.
 - `POST /api/projects/{name}/cover/revise` `{ feedback }` → cover status
 - `POST /api/projects/{name}/cover/restore` `{ version }` → cover payload
 
+### Caption
+- `GET /api/projects/{name}/caption` → `{ enabled (narration written), exists, text, problems:[str], versions:[{version, text, change: "fresh"|"feedback"|"edit"|"restore"|null, feedback, current}], status: {state, percent, log_tail, stop_reason} }`. `problems` lists the limits the saved text breaks (Instagram's 2,200 characters, a first line of 125 or fewer, exactly 5 hashtags with `#bookreels`, hashtags together on the last line, no markdown). A version's `change` is what produced it; the first caption has none.
+- `POST /api/projects/{name}/caption/run` `{ force?: bool }` → caption payload
+- `POST /api/projects/{name}/caption/revise` `{ feedback }` → caption payload
+- `PUT /api/projects/{name}/caption` `{ text }` → caption payload. A hand edit: saved even if it breaks a limit (see `problems`); the previous text is kept as a version. Refused (409) only while a caption run is going.
+- `POST /api/projects/{name}/caption/restore` `{ version }` → caption payload
+
 ### Characters (`Character = { id, name, description, is_default, main_url, turnaround_url, face_url, used_by:[project] }`)
 - `GET /api/characters` → `[Character]`
 - `POST /api/characters` multipart `name, description, main (file, required), turnaround?, face?` → `Character`
@@ -232,6 +240,8 @@ Errors: HTTP 4xx/5xx with `{ "detail": "plain words message" }`.
   "veo_max_poll_seconds": 900,
   "image_call_cost_usd": 0.04,
   "veo_call_cost_usd": 1.2,
+  "max_veo_shots": 3,
+  "veo_extend_long_shots": false,
   "cover": { "hook_mode": "claude", "shot_mode": "claude", "image_provider": "" }
 }
 ```
@@ -246,7 +256,7 @@ subprocess (names exactly as read in `orchestrator/settings.py`: `SOURCE_MODE`,
 `CLAUDE_SHOT_ATTEMPT_CAP_USD`, `CLAUDE_REVIEWER_CAP_USD`, `SHOT_CONCURRENCY`,
 `VEO_CONCURRENCY`, `GEMINI_IMAGE_CONCURRENCY`, `CODEX_IMAGE_CONCURRENCY`,
 `CODEX_IMAGE_TIMEOUT_SECONDS`, `VEO_POLL_SECONDS`, `VEO_MAX_POLL_SECONDS`,
-`IMAGE_CALL_COST_USD`, `VEO_CALL_COST_USD`, `TTS_VOICE_NAME`,
+`IMAGE_CALL_COST_USD`, `VEO_CALL_COST_USD`, `MAX_VEO_SHOTS`, `VEO_EXTEND_LONG_SHOTS`, `TTS_VOICE_NAME`,
 `CHARACTER_REFERENCE_PATH`, `CHARACTER_TURNAROUND_REFERENCE_PATH`,
 `CHARACTER_FACE_REFERENCE_PATH` (absolute paths; empty string = no character),
 plus the critic/reviewer model variable if settings.py reads one), the
@@ -256,9 +266,10 @@ plus the critic/reviewer model variable if settings.py reads one), the
 
 Command: `REELSMITH_RUN_CMD` env var on the server (default
 `<PY> -m orchestrator.run`), cover `REELSMITH_COVER_CMD` (default
-`<PY> -m orchestrator.cover`). Tests and demos set both to
-`<PY> -m ui.server.fake_runner` (reel) / `<PY> -m ui.server.fake_runner --cover`.
-With `REELSMITH_ROOT` set, both must be set too (the server refuses with 409
+`<PY> -m orchestrator.cover`), caption `REELSMITH_CAPTION_CMD` (default
+`<PY> -m orchestrator.caption`). Tests and demos set them to
+`<PY> -m ui.server.fake_runner` (reel) / `... --cover` / `... --caption`.
+With `REELSMITH_ROOT` set, all three must be set too (the server refuses with 409
 rather than run the real pipeline on the repo's own projects). Every run the
 server starts gets `REELSMITH_UI=1`.
 Subprocess cwd = repo root; it gets `--project <name>` like the real CLI.
@@ -289,7 +300,13 @@ progress event by `orchestrator/progress.py`:
 ```
 
 The cover run writes `orchestrator_runs/cover_status.json` with the same basic
-fields (`kind: "cover"`, `state`, `percent`, `stop_reason`).
+fields (`kind: "cover"`, `state`, `percent`, `stop_reason`). The caption run
+(`python -m orchestrator.caption`) writes `orchestrator_runs/caption_status.json`
+the same way (`kind: "caption"`, percent 0, then 10 while Claude writes, then
+100), `generated/caption/caption.txt` (the caption), `caption_v<N>.txt` (earlier
+ones), `history.json` (`[{previous_caption, change, feedback}]`) and
+`metadata/caption_plan.json` (the parts). Its log starts with "Writing the
+Instagram caption", which is how the server tells it from reel and cover logs.
 
 Narration checkpoint: at the end of step 2, `orchestrator/run.py` pauses when
 `REELSMITH_UI=1` (only UI-started runs; its SIGTERM handler is also UI-only) and
@@ -333,3 +350,5 @@ plus these instructions (then the flag pauses again).
   - `GET /api/projects/{name}/log` always reads the latest *reel* log (the Run tab's). The cover's progress lines come from the cover payload's `status.log_tail`.
   - `orchestrator/styles.py` `Style` now accepts the optional `display_name` field, so a style uploaded with one also works in a real run.
   - A narration edit outside the story skill's word range is refused (400) because the pipeline's story plan contract rejects it; the editor warns before saving.
+- **Veo subject motion v1:** the settings object has `max_veo_shots` (whole number `0`–`10`, default `3` from `DEFAULT_MAX_VEO_SHOTS`; a saved settings file without it reads as the default). Runs get it as `MAX_VEO_SHOTS`. It applies only when a new shot plan is made; a finished plan keeps its videos.
+- **Veo subject motion v2:** `veo_extend_long_shots` (bool, default false; missing reads as false) → `VEO_EXTEND_LONG_SHOTS`; applies to new shot plans only.

@@ -25,9 +25,10 @@ dropping it silently redraws a seed Veo has already rejected.
   budget goes to the clip.
 - Otherwise -- no previous outcome, or its failure.stage is "seed_qa" or
   "seed_generation" -- give the seed your normal full inspection: reject it if
-  it fails the visual-qa reject list, shows the wrong scene or emotion, or has
-  a composition that does not serve the shot, and judge any character
-  reference with character-likeness-qa.
+  it fails the visual-qa reject list (including its VEO seed check: no room
+  for the planned gesture, or the face turned away), shows the wrong scene or
+  emotion, or has a composition that does not serve the shot, and judge any
+  character reference with character-likeness-qa.
 
 On rejection, return a structured retryable seed_qa failure. Include the seed's
 cost and path in partial_artifact_paths. Do not call Veo.
@@ -58,6 +59,15 @@ motion, no UI/text/extra subjects/distortion, and serves the shot. If the approv
 character's face stays stable and recognisable in every preview frame -- reject
 warping, melting, face swapping, a face drifting toward a different person, or a
 face dissolving into a blank or generic figure.
+
+Apply the visual-qa skill's VEO clip checks to the previews too. Compare the
+first and last previews against the shot's video_motion_intent: when it names
+a subject action and that body part has not visibly changed pose, the clip is
+frozen and fails (an atmosphere-only intent is exempt). The face must be inside
+the frame and recognisable in every preview -- a planned push-in never excuses
+it leaving. Sleeves, limbs or clothes changing shape within the clip, and
+effects the intent did not ask for (rain, particles, extra mist), also fail.
+The previews are sampled from the part of the clip the reel actually shows.
 
 Judge the camera by the result's camera_motion, measured from the clip's
 pixels -- still previews cannot tell a camera move from a subject move. Every

@@ -205,7 +205,7 @@ def test_feedback_revises_the_current_cover_and_keeps_the_old_one(tmp_path, monk
     calls = cover_project(tmp_path, monkeypatch)
 
     assert cover.revise_cover("make the headline bigger", hook="", shot=None,
-                              settings=make_settings(), visual_plan=None) == 0
+                              settings=make_settings(image_provider="codex"), visual_plan=None) == 0
 
     [call] = calls
     assert call["source"] == cover.COVER_FILE
@@ -216,7 +216,7 @@ def test_feedback_revises_the_current_cover_and_keeps_the_old_one(tmp_path, monk
     assert entry["feedback"] == "make the headline bigger" and entry["previous_cover"].endswith("cover_v1.png")
 
     assert cover.revise_cover("warmer colours", hook="A new hook", shot=None,
-                              settings=make_settings(), visual_plan=None) == 0
+                              settings=make_settings(image_provider="codex"), visual_plan=None) == 0
     assert (cover.COVER_DIR / "cover_v2.png").is_file()
     assert '"A new hook"' in calls[-1]["prompt"]
     assert json.loads(cover.COVER_PLAN_FILE.read_text())["hook_text"] == "A new hook"
@@ -231,7 +231,7 @@ def test_a_failed_revision_puts_the_previous_cover_back(tmp_path, monkeypatch):
         raise RuntimeError("codex down")
 
     monkeypatch.setattr(cover, "run_codex_image_edit", broken)
-    assert cover.revise_cover("bigger", hook="", shot=None, settings=make_settings(), visual_plan=None) == 1
+    assert cover.revise_cover("bigger", hook="", shot=None, settings=make_settings(image_provider="codex"), visual_plan=None) == 1
     with Image.open(cover.COVER_FILE) as image:
         assert image.getpixel((0, 0)) == (0, 0, 128)
 
@@ -240,4 +240,43 @@ def test_feedback_needs_an_existing_cover(tmp_path, monkeypatch):
     from orchestrator.tests.test_preflight import make_settings
 
     monkeypatch.chdir(tmp_path)
-    assert cover.revise_cover("bigger", hook="", shot=None, settings=make_settings(), visual_plan=None) == 1
+    assert cover.revise_cover("bigger", hook="", shot=None, settings=make_settings(image_provider="codex"), visual_plan=None) == 1
+
+
+# --- which image maker draws the cover ------------------------------------------
+
+def test_the_cover_is_drawn_by_the_chosen_image_maker(tmp_path, monkeypatch):
+    """Regression: the cover always went to Codex, whatever the Image maker said."""
+    from orchestrator.tests.test_preflight import make_settings
+
+    codex_calls = cover_project(tmp_path, monkeypatch)
+    gemini_calls = []
+
+    def fake_gemini(client, *, source_image_path, prompt, model, **kwargs):
+        gemini_calls.append(model)
+        return Image.new("RGB", (COVER_WIDTH, COVER_HEIGHT), "teal"), ""
+
+    monkeypatch.setattr(cover, "run_gemini_image_edit", fake_gemini)
+    monkeypatch.setattr(cover.genai, "Client", lambda **kwargs: object())
+    settings = make_settings(image_provider="gemini", image_fallback_provider="", image_model="img-model")
+    assert cover.revise_cover("bigger", hook="", shot=None, settings=settings, visual_plan=None) == 0
+    assert gemini_calls == ["img-model"] and codex_calls == []
+
+
+def test_a_failed_image_maker_falls_back_once(tmp_path, monkeypatch):
+    from orchestrator.tests.test_preflight import make_settings
+
+    codex_calls = cover_project(tmp_path, monkeypatch)
+
+    def broken_gemini(client, **kwargs):
+        raise RuntimeError("gemini down")
+
+    monkeypatch.setattr(cover, "run_gemini_image_edit", broken_gemini)
+    monkeypatch.setattr(cover.genai, "Client", lambda **kwargs: object())
+    with_fallback = make_settings(image_provider="gemini", image_fallback_provider="codex")
+    assert cover.revise_cover("bigger", hook="", shot=None, settings=with_fallback, visual_plan=None) == 0
+    assert len(codex_calls) == 1
+
+    without = make_settings(image_provider="gemini", image_fallback_provider="")
+    assert cover.revise_cover("bigger", hook="", shot=None, settings=without, visual_plan=None) == 1
+    assert len(codex_calls) == 1

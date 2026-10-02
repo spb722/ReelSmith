@@ -35,6 +35,7 @@ from google.auth.transport.requests import AuthorizedSession
 from PIL import Image
 
 from orchestrator.progress import log
+from orchestrator.tools import spoken_form_referee
 from orchestrator.workspace import repo_path
 
 
@@ -465,12 +466,15 @@ def _equivalence_parts(words: list[str]) -> tuple[str, ...]:
     return tuple(parts)
 
 
-def align_words(canonical_words: list[str], recognized_words: list[dict]) -> tuple[list[dict], dict]:
+def align_words(canonical_words: list[str], recognized_words: list[dict],
+                approved_spans: frozenset = frozenset()) -> tuple[list[dict], dict]:
     """Global edit alignment with bounded, deterministic many-to-many matches.
 
     Equivalent spans receive observed outer timestamps; multiple canonical
     words partition that span uniformly, explicitly labelled as estimates.
     Missing words remain mismatches even when a bounded gap supplies timing.
+    `approved_spans` holds (script words, heard words) pairs the spoken-form
+    referee accepted; they match exactly like the built-in equivalences.
     """
     canon = [normalize_word(word) for word in canonical_words]
     recog = [normalize_word(item["word"]) for item in recognized_words]
@@ -481,6 +485,7 @@ def align_words(canonical_words: list[str], recognized_words: list[dict]) -> tup
                 for end in range(1, len(words)+1) for size in range(1, min(limit, end)+1)}
     canonical_signatures = signatures(canonical_words)
     recognized_signatures = signatures([item["word"] for item in recognized_words])
+    heard = [item["word"] for item in recognized_words]
     dp = [[0] * (m + 1) for _ in range(n + 1)]
     back = [[None] * (m + 1) for _ in range(n + 1)]
     for i in range(1, n + 1):
@@ -499,6 +504,10 @@ def align_words(canonical_words: list[str], recognized_words: list[dict]) -> tup
                 for b in range(1, min(limit, j)+1):
                     if signature and signature == recognized_signatures[j, b]:
                         choices.append((dp[i-a][j-b], ("equivalent", a, b)))
+            for script_span, heard_span in approved_spans:
+                a, b = len(script_span), len(heard_span)
+                if a <= i and b <= j and tuple(canonical_words[i-a:i]) == script_span and tuple(heard[j-b:j]) == heard_span:
+                    choices.append((dp[i-a][j-b], ("equivalent", a, b)))
             dp[i][j], back[i][j] = min(choices, key=lambda candidate: candidate[0])
     operations = []
     i, j = n, m
@@ -570,6 +579,24 @@ def align_words(canonical_words: list[str], recognized_words: list[dict]) -> tup
             break
         trailing_insertions += 1
     scoreable_insertions = insertions - trailing_insertions
+    # Adjacent mismatches form one span ("twenty thousand dollars" against
+    # "$20,000." is two deletes and a substitute). A span with matched words on
+    # both sides has measured timing, so only its meaning is in doubt.
+    mismatch_spans, run = [], None
+    for position, (op, c0, c1, r0, r1) in enumerate(reversed(operations)):
+        if op in {"exact", "equivalent"}:
+            if run:
+                mismatch_spans.append(run)
+                run = None
+            continue
+        if run is None:
+            run = {"c0": c0, "r0": r0, "anchored": position > 0}
+        run.update(c1=c1, r1=r1)
+    if run:
+        mismatch_spans.append(run | {"anchored": False})
+    mismatch_spans = [{"script_words": canonical_words[span["c0"]:span["c1"]],
+                       "heard_words": heard[span["r0"]:span["r1"]], "anchored": span["anchored"]}
+                      for span in mismatch_spans]
 
     stats = {"canonical_word_count": n, "recognized_word_count": m, "exact_matches": exact_matches,
              "equivalent_matches": equivalent_matches, "substitutions": substitutions,
@@ -577,8 +604,47 @@ def align_words(canonical_words: list[str], recognized_words: list[dict]) -> tup
              "trailing_extra_words": trailing_insertions,
              "exact_match_ratio": exact_matches/n if n else 0.0,
              "normalized_match_ratio": (exact_matches+equivalent_matches)/(n+scoreable_insertions) if n else 0.0,
-             "edit_distance": dp[n][m], "mismatches": mismatches, "timing_errors": timing_errors}
+             "edit_distance": dp[n][m], "mismatches": mismatches, "mismatch_spans": mismatch_spans,
+             "timing_errors": timing_errors}
     return aligned, stats
+
+
+# Longest difference (in words, on either side) the spoken-form referee may
+# judge. Longer ones are real disagreements, not a number written as digits.
+MAX_REFEREE_SPAN_WORDS = 6
+
+
+def referee_spoken_forms(stats: dict, cache_path: Path) -> list[dict]:
+    """Ask Gemini about each short, anchored mismatch; verdicts are cached.
+
+    A failed call counts as "not the same", so the run behaves as it did
+    before the referee existed, and is not cached so the next try asks again.
+    """
+    candidates = [span for span in stats["mismatch_spans"] if span["anchored"]
+                  and 1 <= len(span["script_words"]) <= MAX_REFEREE_SPAN_WORDS
+                  and 1 <= len(span["heard_words"]) <= MAX_REFEREE_SPAN_WORDS]
+    if not candidates:
+        return []
+    cache = json.loads(cache_path.read_text(encoding="utf-8")) if cache_path.is_file() else {}
+    verdicts = []
+    for span in candidates:
+        key = json.dumps([span["script_words"], span["heard_words"]], ensure_ascii=False)
+        script, heard = " ".join(span["script_words"]), " ".join(span["heard_words"])
+        if key not in cache:
+            try:
+                cache[key] = spoken_form_referee.judge_spoken_forms(span["script_words"], span["heard_words"])
+            except Exception as exc:
+                log(f'Could not ask Gemini about "{script}" vs "{heard}": {type(exc).__name__}: {exc}', indent=2)
+                verdicts.append({**span, "same_speech": False, "reason": f"referee call failed: {exc}"})
+                continue
+        verdict = {**span, **cache[key]}
+        log(f'"{script}" was written down as "{heard}": '
+            + ("same words, written differently" if verdict["same_speech"] else "different words")
+            + f' ({verdict["reason"]})', indent=2)
+        verdicts.append(verdict)
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    cache_path.write_text(json.dumps(cache, indent=2, ensure_ascii=False), encoding="utf-8")
+    return verdicts
 
 
 @tool(
@@ -600,11 +666,16 @@ async def extract_word_timing(args: dict) -> dict:
     )
     aligned_words, stats = align_words(canonical_words, recognized_words)
     diagnostics_path = Path(args.get("diagnostics_path") or audio_path.parent / "word_timing_diagnostics.json")
+    verdicts = referee_spoken_forms(stats, diagnostics_path.parent / "spoken_form_verdicts.json")
+    approved = frozenset((tuple(v["script_words"]), tuple(v["heard_words"])) for v in verdicts if v["same_speech"])
+    if approved:
+        aligned_words, stats = align_words(canonical_words, recognized_words, approved)
     payload = {
         "locked_narration": narration,
         "recognized_transcript": recognized_transcript,
         "recognized_words": recognized_words,
         "alignment_stats": stats,
+        "spoken_form_verdicts": verdicts,
         "words": aligned_words,
         "attempted_audio_seconds": wav_duration_seconds(audio_path),
         "diagnostics_path": str(diagnostics_path),

@@ -31,6 +31,7 @@ def root(tmp_path, monkeypatch):
     monkeypatch.setenv("REELSMITH_ROOT", str(tmp_path))
     monkeypatch.setenv("REELSMITH_RUN_CMD", f"{sys.executable} -m ui.server.fake_runner")
     monkeypatch.setenv("REELSMITH_COVER_CMD", f"{sys.executable} -m ui.server.fake_runner --cover")
+    monkeypatch.setenv("REELSMITH_CAPTION_CMD", f"{sys.executable} -m ui.server.fake_runner --caption")
     monkeypatch.setenv("FAKE_RUN_SECONDS", "3")
     monkeypatch.delenv("FAKE_FAIL", raising=False)
     return tmp_path
@@ -55,7 +56,7 @@ def wait_for(client, name, states, timeout=40, path="status"):
     deadline = time.time() + timeout
     while time.time() < deadline:
         body = client.get(f"/api/projects/{name}/{path}").json()
-        current = body["status"] if path == "cover" else body
+        current = body["status"] if path in ("cover", "caption") else body
         if current["state"] in states:
             return body
         time.sleep(0.2)

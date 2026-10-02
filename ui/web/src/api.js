@@ -43,6 +43,8 @@ function form(fields) {
 // — Meta —
 /** GET /api/meta */
 export const getMeta = () => get('/api/meta');
+/** GET /api/voices/{voice}/sample — a WAV clip, made on first request. Returns its URL. */
+export const voiceSampleUrl = (voice) => `/api/voices/${enc(voice)}/sample`;
 
 // — Projects —
 /** GET /api/projects */
@@ -133,6 +135,18 @@ export const runCover = (name, opts = {}) => post(`${P(name)}/cover/run`, opts);
 export const reviseCover = (name, feedback) => post(`${P(name)}/cover/revise`, { feedback });
 /** POST /api/projects/{name}/cover/restore { version } */
 export const restoreCover = (name, version) => post(`${P(name)}/cover/restore`, { version });
+
+// — Caption —
+/** GET /api/projects/{name}/caption */
+export const getCaption = (name) => get(`${P(name)}/caption`);
+/** POST /api/projects/{name}/caption/run { force? } */
+export const runCaption = (name, opts = {}) => post(`${P(name)}/caption/run`, opts);
+/** POST /api/projects/{name}/caption/revise { feedback } */
+export const reviseCaption = (name, feedback) => post(`${P(name)}/caption/revise`, { feedback });
+/** PUT /api/projects/{name}/caption { text } — a hand edit */
+export const saveCaption = (name, text) => put(`${P(name)}/caption`, { text });
+/** POST /api/projects/{name}/caption/restore { version } */
+export const restoreCaption = (name, version) => post(`${P(name)}/caption/restore`, { version });
 
 // — Characters —
 /** GET /api/characters */

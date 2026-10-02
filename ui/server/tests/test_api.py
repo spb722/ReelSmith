@@ -78,6 +78,56 @@ def test_settings_validation_and_defaults(client, project):
     assert client.get("/api/presets").json() == []
 
 
+def test_max_veo_shots_setting(client, project, root, monkeypatch):
+    from ui.server.runner import settings_env
+    monkeypatch.delenv("MAX_VEO_SHOTS", raising=False)
+    settings = client.get(f"/api/projects/{project}/settings").json()["settings"]
+    assert settings["max_veo_shots"] == 3
+    for value, words in ((-1, "not be negative"), (11, "10 or fewer"), (2.5, "whole number"), ("many", "whole number")):
+        r = client.put(f"/api/projects/{project}/settings", json={**settings, "max_veo_shots": value})
+        assert r.status_code == 400 and words in r.json()["detail"], r.json()
+    saved = client.put(f"/api/projects/{project}/settings", json={**settings, "max_veo_shots": 0}).json()["settings"]
+    assert saved["max_veo_shots"] == 0
+    assert client.get(f"/api/projects/{project}/settings").json()["settings"]["max_veo_shots"] == 0
+    assert settings_env(saved)["MAX_VEO_SHOTS"] == "0"
+    # Settings saved before the key existed read as the default.
+    old = {k: v for k, v in settings.items() if k != "max_veo_shots"}
+    (root / "projects" / project / "ui_settings.json").write_text(json.dumps(old))
+    (root / "ui" / "data").mkdir(parents=True, exist_ok=True)
+    (root / "ui" / "data" / "defaults.json").write_text(json.dumps(old))
+    assert client.get("/api/defaults").json()["max_veo_shots"] == 3
+    assert client.get(f"/api/projects/{project}/settings").json()["settings"]["max_veo_shots"] == 3
+    assert client.put("/api/defaults", json={**old, "max_veo_shots": 5}).json()["max_veo_shots"] == 5
+
+
+def test_veo_extend_long_shots_setting(client, project, root, monkeypatch):
+    from ui.server.runner import settings_env
+    monkeypatch.delenv("VEO_EXTEND_LONG_SHOTS", raising=False)
+    settings = client.get(f"/api/projects/{project}/settings").json()["settings"]
+    assert settings["veo_extend_long_shots"] is False
+    assert settings_env(settings)["VEO_EXTEND_LONG_SHOTS"] == "false"
+    for value in ("false", 1):  # strict: the string "false" must not read as on
+        r = client.put(f"/api/projects/{project}/settings", json={**settings, "veo_extend_long_shots": value})
+        assert r.status_code == 400 and "true or false" in r.json()["detail"], r.json()
+    saved = client.put(f"/api/projects/{project}/settings", json={**settings, "veo_extend_long_shots": True}).json()["settings"]
+    assert saved["veo_extend_long_shots"] is True
+    assert client.get(f"/api/projects/{project}/settings").json()["settings"]["veo_extend_long_shots"] is True
+    assert settings_env(saved)["VEO_EXTEND_LONG_SHOTS"] == "true"
+    # Settings saved before the key existed read as off.
+    old = {k: v for k, v in settings.items() if k != "veo_extend_long_shots"}
+    (root / "projects" / project / "ui_settings.json").write_text(json.dumps(old))
+    (root / "ui" / "data").mkdir(parents=True, exist_ok=True)
+    (root / "ui" / "data" / "defaults.json").write_text(json.dumps(old))
+    assert client.get("/api/defaults").json()["veo_extend_long_shots"] is False
+    assert client.get(f"/api/projects/{project}/settings").json()["settings"]["veo_extend_long_shots"] is False
+    # The environment sets the built-in default; a value that is not a boolean is left to the run to report.
+    (root / "ui" / "data" / "defaults.json").unlink()
+    monkeypatch.setenv("VEO_EXTEND_LONG_SHOTS", "on")
+    assert client.get("/api/defaults").json()["veo_extend_long_shots"] is True
+    monkeypatch.setenv("VEO_EXTEND_LONG_SHOTS", "maybe")
+    assert client.get("/api/defaults").json()["veo_extend_long_shots"] is False
+
+
 # --------------------------------------------------------------------- run
 
 def test_run_to_finish_then_reviews_outputs_and_cover(client, project):
@@ -274,6 +324,43 @@ def test_styles_upload_validation_conflict(client, project):
     assert client.get("/api/styles/neon_test/image").status_code == 404
 
 
+# ----------------------------------------------------------------- caption
+
+def test_caption_write_edit_revise_and_restore(client, project, root):
+    assert client.get(f"/api/projects/{project}/caption").json()["enabled"] is False
+    assert client.post(f"/api/projects/{project}/caption/run", json={}).status_code == 400  # no narration
+    (root / "projects" / project / "metadata").mkdir(parents=True, exist_ok=True)
+    (root / "projects" / project / "metadata" / "final_story_plan.json").write_text(
+        json.dumps({"narration_script": "You have one month."}))
+
+    body = client.post(f"/api/projects/{project}/caption/run", json={}).json()
+    assert body["enabled"] and body["status"]["state"] == "running"
+    body = wait_for(client, project, {"finished", "stopped"}, path="caption")
+    assert body["status"]["state"] == "finished" and body["text"].endswith("#bookreels")
+    assert body["problems"] == [] and [(v["version"], v["current"]) for v in body["versions"]] == [(1, True)]
+
+    edited = body["text"].replace("It's your benchmark.", "It's your yardstick.")
+    body = client.put(f"/api/projects/{project}/caption", json={"text": edited}).json()
+    assert "yardstick" in body["text"]
+    assert [(v["version"], v["change"], v["current"]) for v in body["versions"]] == [
+        (1, None, False), (2, "edit", True)]
+    assert client.put(f"/api/projects/{project}/caption", json={"text": " "}).status_code == 400
+    # A hand edit that breaks a limit is saved, and its problems are listed.
+    body = client.put(f"/api/projects/{project}/caption", json={"text": "No tags at all"}).json()
+    assert any("0 hashtags" in p for p in body["problems"])
+
+    client.post(f"/api/projects/{project}/caption/revise", json={"feedback": "friendlier"})
+    body = wait_for(client, project, {"finished"}, path="caption")
+    assert "revised: friendlier" in body["text"]
+    assert [(v["change"], v["feedback"]) for v in body["versions"]][-1] == ("feedback", "friendlier")
+
+    body = client.post(f"/api/projects/{project}/caption/restore", json={"version": 2}).json()
+    assert "yardstick" in body["text"] and body["versions"][-1]["change"] == "restore"
+    assert client.post(f"/api/projects/{project}/caption/restore", json={"version": 99}).status_code == 404
+    # The reel's own status is untouched by caption runs.
+    assert client.get(f"/api/projects/{project}/status").json()["state"] == "idle"
+
+
 # ------------------------------------------------------------------- files
 
 def test_files_refuse_paths_outside_the_project(client, project, root):
@@ -294,3 +381,38 @@ def test_setup_env_roundtrip(client, root):
     key = next(k for k in body["keys"] if k["name"] == "LANGFUSE_SECRET_KEY")
     assert key["set"] and "1234567890" not in key["masked"]
     assert client.put("/api/setup", json={"gcs_bucket_uri": "http://nope"}).status_code == 400
+
+
+# ------------------------------------------------------------------ voices
+
+def test_voice_sample_is_made_once_then_reused(client, root, monkeypatch):
+    from ui.server import store
+    calls = []
+
+    def fake_tts(voice, path):
+        calls.append(voice)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"RIFF-" + voice.encode())
+
+    monkeypatch.setattr(store, "synthesize_sample", fake_tts)
+    for _ in range(2):
+        r = client.get("/api/voices/Puck/sample")
+        assert r.status_code == 200 and r.headers["content-type"] == "audio/wav"
+        assert r.content == b"RIFF-Puck"
+    assert calls == ["Puck"]
+    assert (root / "assets" / "voice_samples" / "Puck.wav").is_file()
+    assert client.get("/api/voices/NotAVoice/sample").status_code == 404
+
+
+def test_voice_sample_tts_failure_leaves_no_file(client, root, monkeypatch):
+    from ui.server import store
+
+    def broken_tts(voice, path):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"half")
+        raise RuntimeError("503 Service Unavailable")
+
+    monkeypatch.setattr(store, "synthesize_sample", broken_tts)
+    r = client.get("/api/voices/Kore/sample")
+    assert r.status_code == 502 and "503 Service Unavailable" in r.json()["detail"]
+    assert not any((root / "assets" / "voice_samples").iterdir())

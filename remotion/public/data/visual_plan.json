@@ -1,40 +1,75 @@
 {
   "produced_by": "visual_agent",
-  "overall_visual_style": "Stylised anime-inspired illustration with expressive eyes, clean line art, cel shading, dynamic compositions, and polished modern character design. Palette: sky blue, peach, cream, navy, leaf green. Lighting: clean cinematic light, cel-shaded shadows, bright highlights. Mood: youthful, emotive, cinematic, polished. Avoid: photorealism, any text, letters, numbers or logos, the name or look of a real artist, hyper-detailed skin texture, messy painterly strokes.",
+  "overall_visual_style": "Bold graphic illustration with high contrast, simplified shapes, strong silhouettes, minimal detail, and poster-like composition. Palette: deep navy, burnt orange, warm cream, cobalt blue, sun yellow. Lighting: graphic lighting with sharp value contrast and minimal shading. Mood: confident, modern, striking. Avoid: photorealism, any text, letters, numbers or logos, the name or look of a real artist, soft low-contrast scenes, busy fine detail.",
   "shots": [
     {
       "sequence": 1,
       "generation_mode": "STILL",
       "visual_treatment": "AI_VIDEO_CANDIDATE",
       "source_asset_ids": [
-        "img_f2a854c34981"
+        "img_82c3f6d3d788"
       ],
-      "shot_goal": "Name the viewer's own quiet plateau in a single recognisable image: a fine job, a fine routine, and no movement in it.",
-      "frame_composition": "Interior of a calm, tidy office in early morning. Medium shot from slightly behind and to one side of the reel's recurring character, who sits motionless at a plain cream desk, shoulders lowered, chin propped on one hand, gaze aimed past the desk at nothing in particular. The desk is bare except for a cold mug and a small leaf-green potted plant; no screens, papers, boards or signage anywhere in the room. A tall window on the left throws clean cinematic sky-blue daylight across cream walls, cel-shaded shadow pooling under the desk and along the navy chair back. The upper third of the frame is open empty wall.",
-      "motion_plan": "Very slow push in on the seated figure, closing gently from medium to medium-close over the whole shot, so the room quietly tightens around a person who is not moving.",
-      "text_overlay": "You're just stuck",
-      "source_support": "The cited card describes being plateaued in a job and routine that are fine, with every small change looking worse, so the person stays put exactly where they are. The picture shows only that: an ordinary workplace and a person holding still, adding no event or outcome the card does not state.",
-      "video_candidate_rank": 4,
-      "video_motion_intent": "The seated figure breathes out and their shoulders slump slightly lower, then settle and hold still.",
+      "shot_goal": "Name the viewer in the first second: show the familiar private moment of sitting and not starting, so the word in the narration lands as recognition.",
+      "frame_composition": "A small bedroom at grey dawn. One person sits alone on the edge of an unmade bed, feet flat on the floor, forearms on their knees, head low, body squared to the viewer. Medium shot from chest height with generous headroom and open space to the left. Behind them a bare wall in deep navy with hard burnt-orange slats of light thrown across it by a window blind just out of frame; warm cream floor, cobalt bedsheet. Flat graphic shapes, sharp value contrast, no clutter in the room.",
+      "motion_plan": "Very slow push-in on the seated figure with a faint upward drift, tightening from the whole bed to the person's shoulders and head; camera otherwise locked.",
+      "text_overlay": "called yourself lazy",
+      "source_support": "The cited card opens with the reader having called themselves lazy, unmotivated or a procrastinator; the picture is the ordinary private moment of not getting started that this self-label describes, with no fact added beyond it.",
+      "video_candidate_rank": 2,
+      "video_motion_intent": "The person lets their shoulders slump and lowers their gaze, slowly, then holds still. The bedsheet stirs faintly. Face stays turned to the viewer.",
       "shows_character": true,
-      "scene_content_fingerprint": "8b485877d45a22944e5502a04b6a0b36bb4662a17bec5547c2e6fe1e321d738e",
-      "start_seconds": 0.2,
-      "end_seconds": 12.08,
+      "scene_content_fingerprint": "66107b3a0c37388e2d9d6a15ce7baae1f49f93fa59e91c1b68d5ac59922086f6",
+      "start_seconds": 0.24,
+      "end_seconds": 3.88,
       "primary_subtitle_cue_ids": [
         "cue_001",
-        "cue_002",
-        "cue_003",
-        "cue_004",
-        "cue_005",
-        "cue_006"
+        "cue_002"
       ],
       "fade_in_frames": 12,
-      "fade_out_frames": 8,
+      "fade_out_frames": 6,
       "still_motion": {
         "scale_from": 1.0,
         "scale_to": 1.08,
         "translate_x_from": 0.0,
-        "translate_x_to": -0.01,
+        "translate_x_to": 0.0,
+        "translate_y_from": 0.0,
+        "translate_y_to": -2.0,
+        "easing": "easeOut"
+      },
+      "video_promotion_decided": true
+    },
+    {
+      "sequence": 2,
+      "generation_mode": "STILL",
+      "visual_treatment": "SUBTLE_ANIMATION",
+      "source_asset_ids": [
+        "img_82c3f6d3d788"
+      ],
+      "shot_goal": "Introduce the coach as a figure with real volume of experience, without showing any real person's likeness, so his finding carries weight.",
+      "frame_composition": "A plain hall in warm cream. One anonymous figure in silhouette is seated in a simple wooden chair, seen from behind, shoulders relaxed, facing a wide sweeping arc of empty chairs that recedes row after row into deep navy shadow at the back of the room. Wide shot, low horizon, the seated figure small and centred in the lower third. Cobalt blue chair backs, a single shaft of sun-yellow light falling from a high window onto the empty rows. Graphic flat shapes, strong silhouettes, no faces visible.",
+      "motion_plan": "Slow push-in from the full hall toward the seated figure, with a slight rightward drift that lets the ranks of empty chairs slide past; camera locked otherwise.",
+      "text_overlay": "",
+      "source_support": "The card states Gary John Bishop coached thousands of people and heard the same self-labels constantly; the many empty chairs facing one anonymous seated coach pictures that scale, and the figure is shown from behind so no real person's likeness is drawn.",
+      "video_candidate_rank": null,
+      "video_motion_intent": "",
+      "shows_character": false,
+      "scene_content_fingerprint": "ced4eba022b877eb8cca82f0ebc168b05f2f50736439dd60ee183951fecf9bc2",
+      "start_seconds": 3.88,
+      "end_seconds": 14.44,
+      "primary_subtitle_cue_ids": [
+        "cue_003",
+        "cue_004",
+        "cue_005",
+        "cue_006",
+        "cue_007",
+        "cue_008"
+      ],
+      "fade_in_frames": 8,
+      "fade_out_frames": 10,
+      "still_motion": {
+        "scale_from": 1.0,
+        "scale_to": 1.12,
+        "translate_x_from": 2.0,
+        "translate_x_to": 0.0,
         "translate_y_from": 0.0,
         "translate_y_to": 0.0,
         "easing": "ease"
@@ -42,77 +77,37 @@
       "video_promotion_decided": true
     },
     {
-      "sequence": 2,
-      "generation_mode": "STILL",
+      "sequence": 3,
+      "generation_mode": "VEO",
       "visual_treatment": "AI_VIDEO_CANDIDATE",
       "source_asset_ids": [
-        "img_db36560c2f08"
+        "img_82c3f6d3d788"
       ],
-      "shot_goal": "Hand the idea to one concrete creature and make the direction of travel physical: the exit begins by going deeper in.",
-      "frame_composition": "Underwater, inside a slatted wooden lobster trap resting on pale sand. Medium-close, fully side-on framing: a single peach-shelled lobster low in the frame, body angled toward the shadowed centre of the cage on the left, legs mid-stride, antennae trailing behind it. To the right, the funnel entrance glows with bright sky-blue open water; the cage interior the lobster faces is deep navy, banded by hard cel-shaded slat shadows falling across the sand. Clean cinematic underwater light, crisp line art on the shell, bright highlights along its back. No lettering, markings or buoys anywhere in frame.",
-      "motion_plan": "Slow lateral drift of the frame from right to left, travelling with the lobster away from the bright opening and into the banded shadow at the cage's centre.",
-      "text_overlay": "",
-      "source_support": "The cited card states the lobster must move deeper into the cage first, back toward the centre, before it can ever reach the opening. The frame stages exactly that geometry — bright opening behind, dark centre ahead — and shows no escape, which the card does not grant.",
-      "video_candidate_rank": 2,
-      "video_motion_intent": "The lobster walks steadily sideways across the frame into the darker part of the cage, legs stepping in rhythm, antennae trailing.",
-      "shows_character": false,
-      "scene_content_fingerprint": "4df15bb36e1ef9a82c0ca26fd764365ca6f9e47427e02eb07f6b28b7af6d765f",
-      "start_seconds": 12.08,
-      "end_seconds": 22.44,
+      "shot_goal": "Carry the reversal in the body: the person is not incapable, so they sit up and the excuse falls away.",
+      "frame_composition": "The same person from the opening, now seated upright in a straight-backed wooden chair in the middle of their bare apartment room, body squared to the viewer, hands resting open on their knees. Medium shot at eye level with clear headroom and open space on both sides. Behind them a closed door in deep navy, warm sun-yellow light burning along its edges as if a lit room waits beyond; warm cream wall, burnt-orange floorboards. Flat poster-like shapes, hard-edged light, nothing else in the room.",
+      "motion_plan": "Camera locked at a very slight pull-back that settles the figure and the closed door into the frame together, with a small downward settle at the end.",
+      "text_overlay": "They just weren't willing",
+      "source_support": "The cited card says people were not incapable, merely unwilling, and that calling it a flaw let them off the hook; a capable person sitting up with an unopened lit door right behind them shows ability present and the choice untaken, adding no claim.",
+      "video_candidate_rank": 1,
+      "video_motion_intent": "The person straightens up in the chair and squares their shoulders, slowly, then holds still. Face stays turned to the viewer.",
+      "shows_character": true,
+      "scene_content_fingerprint": "5987ff178a3725a0c42b85f9a3282150496eefc60e4dbaa0443ca23da1298d1e",
+      "start_seconds": 14.44,
+      "end_seconds": 21.64,
       "primary_subtitle_cue_ids": [
-        "cue_007",
-        "cue_008",
         "cue_009",
         "cue_010",
-        "cue_011"
-      ],
-      "fade_in_frames": 8,
-      "fade_out_frames": 6,
-      "still_motion": {
-        "scale_from": 1.04,
-        "scale_to": 1.04,
-        "translate_x_from": 0.05,
-        "translate_x_to": -0.05,
-        "translate_y_from": 0.0,
-        "translate_y_to": 0.0,
-        "easing": "linear"
-      },
-      "video_promotion_decided": true
-    },
-    {
-      "sequence": 3,
-      "generation_mode": "STILL",
-      "visual_treatment": "AI_VIDEO_CANDIDATE",
-      "source_asset_ids": [
-        "img_db36560c2f08"
-      ],
-      "shot_goal": "Land the reversal: the instinct toward the light is sensible, and it is exactly what keeps the creature caught.",
-      "frame_composition": "Close side-on shot inside the same slatted wooden trap. The peach-shelled lobster is pressed up against the bright wall of the cage, claws raised against the slats, its whole body leaning toward the glow. Behind and around it the cage interior falls away into navy shadow. Sky-blue light blooms hard through the gaps between the slats, cutting bright cel-shaded bars across the shell and the sand below and throwing long stripes into the dark behind. Fine silt hangs in the beams. Clean cinematic underwater light, bright rim highlights on the raised claws. No lettering or markings anywhere.",
-      "motion_plan": "Slow push in past the lobster's raised claws toward the blooming light between the slats, so the glow steadily fills more of the frame while the creature stays exactly where it is.",
-      "text_overlay": "the one direction that feels wrong",
-      "source_support": "The cited card states every instinct pulls the lobster away from the tight space and toward the light, so it stays trapped by its own good sense. The picture shows the creature still pressed to the lit wall and still inside the trap, asserting no escape.",
-      "video_candidate_rank": 3,
-      "video_motion_intent": "Light through the slats ripples and shifts gently across the lobster's shell and the sand, as the water above slowly moves.",
-      "shows_character": false,
-      "scene_content_fingerprint": "6a1682d9e50c02f9da71cb71f809e1fe57d25ccdea4621f717e0490891955929",
-      "start_seconds": 22.44,
-      "end_seconds": 34.52,
-      "primary_subtitle_cue_ids": [
-        "cue_012",
-        "cue_013",
-        "cue_014",
-        "cue_015",
-        "cue_016",
-        "cue_017"
+        "cue_011",
+        "cue_012"
       ],
       "fade_in_frames": 6,
-      "fade_out_frames": 10,
+      "fade_out_frames": 4,
       "still_motion": {
-        "scale_from": 1.0,
-        "scale_to": 1.1,
+        "scale_from": 1.1,
+        "scale_to": 1.0,
         "translate_x_from": 0.0,
-        "translate_x_to": 0.03,
-        "translate_y_from": 0.0,
+        "translate_x_to": 0.0,
+        "translate_y_from": 2.0,
         "translate_y_to": 0.0,
         "easing": "easeOut"
       },
@@ -121,37 +116,38 @@
     {
       "sequence": 4,
       "generation_mode": "STILL",
-      "visual_treatment": "AI_VIDEO_CANDIDATE",
+      "visual_treatment": "SUBTLE_ANIMATION",
       "source_asset_ids": [
-        "img_4fd6d502d4ff"
+        "img_28bd53d606f0"
       ],
-      "shot_goal": "Turn the metaphor toward the viewer: a small rise in fog that feels, from inside it, like the summit.",
-      "frame_composition": "Wide exterior shot of a low grassy rise swallowed in thick pale fog. The reel's recurring character stands near the crest, small in the frame and seen from behind, facing out into blank white. Leaf-green grass and a few bent stems show at their feet, and the ground falls gently away on every visible side before dissolving into cream-white fog within a few metres. Cool sky-blue daylight comes diffuse from above with soft cel-shaded shadow under the grass tufts; a faint peach warmth glows somewhere high in the murk. Nothing else is visible — no path, marker, structure or signage.",
-      "motion_plan": "Begin slightly tight on the figure and ease outward to a wider frame, letting the featureless fog grow around them until the small rise reads as the only ground there is.",
-      "text_overlay": "",
-      "source_support": "The cited card describes standing on a hill in thick fog where the ground falls away in every direction so it feels like the very top. The frame illustrates that described situation and nothing more.",
-      "video_candidate_rank": 1,
-      "video_motion_intent": "Thick fog drifts slowly and continuously sideways across the slope, thinning and thickening as it passes the standing figure.",
+      "shot_goal": "Make the price of the goal physical, so the viewer feels the cost question before answering it.",
+      "frame_composition": "A narrow stairwell at night. The same person stands alone at the foot of a steep flight of stairs that climbs away in hard zigzag flights toward a small sun-yellow window high at the top of the frame. They are seen small in the lower third, back three-quarters to us, head tilted up at the climb; a heavy crate sits on the floor beside their feet. Wide vertical composition, deep navy walls, burnt-orange banister, warm cream treads catching the light from above. Flat graphic shapes, strong silhouette, minimal detail.",
+      "motion_plan": "Slow push-in that drifts upward along the stairwell, from the person at the bottom toward the distant lit window, camera locked.",
+      "text_overlay": "what the goal actually costs",
+      "source_support": "The card asks whether you are willing to do what the goal actually costs, giving wealth and eighty-hour weeks as the example; a steep climb toward a far-off lit window with a heavy load waiting at the bottom pictures that price without naming any outcome the card does not state.",
+      "video_candidate_rank": null,
+      "video_motion_intent": "",
       "shows_character": true,
-      "scene_content_fingerprint": "04ca29559cce98f77b8ea8789b10c6e0fab9222bcf8c6749dceedb185f8d11ad",
-      "start_seconds": 34.52,
-      "end_seconds": 43.04,
+      "scene_content_fingerprint": "bcdc30ac22eec43c737893467bea050315e36dbb270d06e9fcd2b81842b4d4fb",
+      "start_seconds": 21.64,
+      "end_seconds": 34.44,
       "primary_subtitle_cue_ids": [
-        "cue_018",
-        "cue_019",
-        "cue_020",
-        "cue_021",
-        "cue_022"
+        "cue_013",
+        "cue_014",
+        "cue_015",
+        "cue_016",
+        "cue_017",
+        "cue_018"
       ],
-      "fade_in_frames": 14,
+      "fade_in_frames": 10,
       "fade_out_frames": 8,
       "still_motion": {
-        "scale_from": 1.14,
-        "scale_to": 1.0,
+        "scale_from": 1.0,
+        "scale_to": 1.15,
         "translate_x_from": 0.0,
         "translate_x_to": 0.0,
-        "translate_y_from": 0.02,
-        "translate_y_to": -0.01,
+        "translate_y_from": 4.0,
+        "translate_y_to": -4.0,
         "easing": "ease"
       },
       "video_promotion_decided": true
@@ -161,73 +157,113 @@
       "generation_mode": "STILL",
       "visual_treatment": "AI_VIDEO_CANDIDATE",
       "source_asset_ids": [
-        "img_4fd6d502d4ff"
+        "img_28bd53d606f0"
       ],
-      "shot_goal": "Open the trapped feeling into possibility: something far higher exists across the valley, reachable only by going down first.",
-      "frame_composition": "Wide exterior shot from just behind and to one side of the same rise. The recurring character stands in profile at the crest's edge, one foot already set on the ground sloping downward, body turned toward a deep fog-filled valley. Across that valley the thinning cloud shows the faint navy silhouette of a far larger mountain, its upper flank catching clean peach light, its base still buried in cream-white fog. Leaf-green grass at the crest, sky-blue sky brightening above the cloud layer, crisp cel-shaded shadow along the slope. No path, markers or structures anywhere.",
-      "motion_plan": "Gentle lateral drift across the valley from the figure at the crest toward the distant peak, with a barely perceptible lift, so the far summit slides into view as the frame travels.",
-      "text_overlay": "",
-      "source_support": "The cited card states a far higher peak could be sitting just across the valley, hidden in the clouds, and that you would never find it while you refuse to walk downhill. The peak is drawn faint and half-hidden and the figure has only begun to step down — the card promises no arrival.",
-      "video_candidate_rank": 5,
-      "video_motion_intent": "Fog drifts steadily across the valley, thinning and gathering so the distant peak's silhouette firms and softens again.",
+      "shot_goal": "Release the pressure: an honest no is permission, so the person stands unburdened and calm.",
+      "frame_composition": "The same person stands in their own open doorway, empty-handed, body squared to the viewer, chin level. Medium-close shot at eye level with headroom above and open space to their right. Warm cream light floods the doorway from behind them, throwing a clean graphic shape across burnt-orange floorboards; deep navy wall on the left, a cobalt doorframe. Calm, uncluttered room, flat poster-like shapes, sharp value contrast, no objects in their hands.",
+      "motion_plan": "Camera locked with a gentle easing pull-back that opens a little air around the figure as the frame settles.",
+      "text_overlay": "That's clarity",
+      "source_support": "The card states that if the honest answer is no, that is not failure but clarity; a person standing still, empty-handed and unhurried in their own lit doorway shows relief and permission rather than any new event.",
+      "video_candidate_rank": 3,
+      "video_motion_intent": "The person's shoulders drop and release as they lift their head, slowly, then holds still. Face stays turned to the viewer.",
       "shows_character": true,
-      "scene_content_fingerprint": "43d2a500e80e8188eabdfa454ceaab353bc63e936a4c7bab042c79ed9d07c09c",
-      "start_seconds": 43.04,
-      "end_seconds": 51.69,
+      "scene_content_fingerprint": "e54a74050483d936e70d66058b8311c7bf74b01e98f1c00c2702e9aecb2cd128",
+      "start_seconds": 34.44,
+      "end_seconds": 40.04,
       "primary_subtitle_cue_ids": [
-        "cue_023",
-        "cue_024",
-        "cue_025",
-        "cue_026",
-        "cue_027"
+        "cue_019",
+        "cue_020",
+        "cue_021"
       ],
-      "fade_in_frames": 8,
-      "fade_out_frames": 12,
+      "fade_in_frames": 14,
+      "fade_out_frames": 10,
       "still_motion": {
-        "scale_from": 1.02,
-        "scale_to": 1.06,
-        "translate_x_from": 0.04,
-        "translate_x_to": -0.04,
-        "translate_y_from": 0.01,
-        "translate_y_to": -0.01,
-        "easing": "ease"
+        "scale_from": 1.06,
+        "scale_to": 1.0,
+        "translate_x_from": -2.0,
+        "translate_x_to": 0.0,
+        "translate_y_from": 0.0,
+        "translate_y_to": 0.0,
+        "easing": "easeOut"
       },
       "video_promotion_decided": true
     },
     {
       "sequence": 6,
       "generation_mode": "STILL",
-      "visual_treatment": "MIXED",
+      "visual_treatment": "SUBTLE_ANIMATION",
       "source_asset_ids": [
-        "img_6f249baebdba"
+        "img_5360af1e9aad"
       ],
-      "shot_goal": "Settle the payoff and leave the question with the viewer: the descent already begun, the cost accepted.",
-      "frame_composition": "Medium-wide exterior seen from slightly below, on the descending hillside. The recurring character stands a few steps down from the crest, fog now at waist height around them, body half-turned toward the valley and head lifted toward the far ridge. The crest they left sits small and pale behind and above them. Warm peach light spreads along the distant ridgeline and catches the top of the fog; cool sky-blue shadow fills the slope below. Leaf-green grass breaks through the fog near the figure's feet. Generous empty fog in the lower third of the frame. No path, structures, markers or signage.",
-      "motion_plan": "Slow, steady push in on the figure standing below the crest, easing to a near stop on the held frame so the shot settles rather than arrives.",
-      "text_overlay": "What's the step back you keep refusing?",
-      "source_support": "The cited card's closing line is that a worse move today can be exactly the price of a better peak tomorrow, reached by accepting a step backward on purpose. The picture shows a figure who has taken a lower position on the slope with the far ridge lit ahead — the card's own payoff, with no author, book or named term depicted, since that card's uncertainties leave their identity unestablished.",
+      "shot_goal": "Show willingness as a stance with two equally strong answers: a door that opens and a line that is drawn.",
+      "frame_composition": "A bare, wide room in warm cream. The same person stands planted in the exact centre, feet apart, arms loose at their sides, body squared to the viewer. Medium-wide shot at eye level. On the left of the frame an open door pours sun-yellow light in a hard graphic wedge across the floor toward them; on the right a single deep navy line is scored straight across the floorboards and runs off the edge of the frame. Cobalt wall behind, burnt-orange floor, flat poster-like shapes, sharp value contrast, nothing else in the room.",
+      "motion_plan": "Slow lateral drift from the lit open doorway across to the drawn line, holding the standing figure near centre, with a barely perceptible scale settle; camera otherwise locked.",
+      "text_overlay": "Both are power",
+      "source_support": "The card says willingness is a stance, that saying I am willing opens a door toward action and saying I am unwilling draws a line in the sand, and that both are power; the open door and the drawn line give those two answers equal weight on either side of one standing figure.",
       "video_candidate_rank": null,
       "video_motion_intent": "",
       "shows_character": true,
-      "scene_content_fingerprint": "59589ab462ad1bf570bf8487ab485a68f17861c65e55e8c09a1c9ca6f2e22602",
-      "start_seconds": 51.69,
-      "end_seconds": 59.37,
+      "scene_content_fingerprint": "2e2b02d44345a2faf8be121284632ab6a1c292b9b8b29520b43ddf1c503e3e26",
+      "start_seconds": 40.04,
+      "end_seconds": 53.81,
       "primary_subtitle_cue_ids": [
+        "cue_022",
+        "cue_023",
+        "cue_024",
+        "cue_025",
+        "cue_026",
+        "cue_027",
         "cue_028",
-        "cue_029",
+        "cue_029"
+      ],
+      "fade_in_frames": 8,
+      "fade_out_frames": 12,
+      "still_motion": {
+        "scale_from": 1.08,
+        "scale_to": 1.04,
+        "translate_x_from": -3.0,
+        "translate_x_to": 3.0,
+        "translate_y_from": 0.0,
+        "translate_y_to": 0.0,
+        "easing": "linear"
+      },
+      "video_promotion_decided": true
+    },
+    {
+      "sequence": 7,
+      "generation_mode": "STILL",
+      "visual_treatment": "AI_VIDEO_CANDIDATE",
+      "source_asset_ids": [
+        "img_5360af1e9aad",
+        "img_e6637586ba2e"
+      ],
+      "shot_goal": "Close on quiet accountability: the same room, the same person, settled and looking straight back at the viewer.",
+      "frame_composition": "The same apartment room at dusk. The person sits in the straight-backed wooden chair beside the window, hands resting in their lap, body and face squared to the viewer, still and composed. Medium shot at eye level with clear headroom and quiet space on the left. Last burnt-orange light lies in a hard band across the warm cream wall; deep navy shadow fills the rest of the room, the door behind them closed, cobalt window frame. Flat graphic shapes, strong silhouette, minimal detail, no other objects.",
+      "motion_plan": "Very slow push-in with a faint upward drift that ends close on the seated figure, holding there as the reel finishes; camera locked.",
+      "text_overlay": "You have the life you tolerate",
+      "source_support": "The cards state that pretending to want what you were never willing to work for is what drains you, and that refusing to act means this is the life you have chosen; the person sitting still in the unchanged room, facing the viewer, pictures that chosen life without adding any outcome.",
+      "video_candidate_rank": 4,
+      "video_motion_intent": "The person settles back into the chair and lifts their head, slowly, then holds still. Face stays turned to the viewer.",
+      "shows_character": true,
+      "scene_content_fingerprint": "6aca9ea5d252b915c3ef3564e40e8c446dbc6f8eb1353711c144ce7985951b32",
+      "start_seconds": 53.81,
+      "end_seconds": 64.01,
+      "primary_subtitle_cue_ids": [
         "cue_030",
         "cue_031",
-        "cue_032"
+        "cue_032",
+        "cue_033",
+        "cue_034"
       ],
       "fade_in_frames": 10,
-      "fade_out_frames": 24,
+      "fade_out_frames": 30,
       "still_motion": {
-        "scale_from": 1.02,
-        "scale_to": 1.12,
+        "scale_from": 1.0,
+        "scale_to": 1.06,
         "translate_x_from": 0.0,
         "translate_x_to": 0.0,
-        "translate_y_from": -0.01,
-        "translate_y_to": 0.01,
+        "translate_y_from": 0.0,
+        "translate_y_to": -1.0,
         "easing": "easeOut"
       },
       "video_promotion_decided": true
@@ -236,15 +272,15 @@
   "quality_review": {
     "verdict": "APPROVE",
     "ready_for_generation": true,
-    "confidence": 0.88,
+    "confidence": 0.86,
     "scores": {
       "source_fidelity": 9,
-      "generation_mode_appropriateness": 9,
+      "generation_mode_appropriateness": 8,
       "visual_coherence": 9,
       "narrative_alignment": 9,
-      "internal_consistency": 10
+      "internal_consistency": 9
     }
   },
   "source_mode": "content",
-  "style_name": "anime_inspired"
+  "style_name": "bold_graphic"
 }

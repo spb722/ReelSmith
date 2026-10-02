@@ -194,12 +194,15 @@ PY=/opt/homebrew/anaconda3/envs/kayak-video/bin/python
 | A new reel, easy-to-follow narration | `STORY_SKILL=story-craft-easy $PY -m orchestrator.run --project <name>_easy` (see [Two narration styles](#two-narration-styles)) |
 | Resume a halted reel | same command again — finished stages print `Already done` and cost nothing |
 | More headroom | `MAX_BUDGET_USD=30 IMAGE_PROVIDER=codex $PY -m orchestrator.run --project <name>` |
+| More video shots (new shot plans only) | `MAX_VEO_SHOTS=5 MAX_BUDGET_USD=60 $PY -m orchestrator.run --project <name>` |
 | A different narrator | `TTS_VOICE_NAME=Algieba IMAGE_PROVIDER=codex $PY -m orchestrator.run --project <name>` |
 | Redo the voice from scratch | `TTS_VOICE_NAME=Algieba $PY -m orchestrator.run --project <name> --retry-voice` |
 | A cover, Claude picks frame and hook | `IMAGE_PROVIDER=codex $PY -m orchestrator.cover --project <name>` |
 | A cover, your words | `IMAGE_PROVIDER=codex $PY -m orchestrator.cover --project <name> --hook "your line" --force` |
 | A cover, your frame and words (no Claude call) | `IMAGE_PROVIDER=codex $PY -m orchestrator.cover --project <name> --shot 6 --hook "your line" --force` |
 | Change the existing cover | `$PY -m orchestrator.cover --project <name> --feedback "make the headline bigger"` (add `--hook` to change the words, `--shot N` to redraw from another shot) |
+| The Instagram caption and hashtags | `$PY -m orchestrator.caption --project <name>` (needs only the narration; `--force` writes a fresh one) |
+| Change the existing caption | `$PY -m orchestrator.caption --project <name> --feedback "make the hook shorter"` |
 | Compare cover designs, free | `$PY test/try_cover.py --sweep --shot 6 --hook "your line"` |
 | Move a pre-projects reel in | `$PY -m orchestrator.migrate <name>` |
 
@@ -662,6 +665,8 @@ Everything is environment-variable overridable, with defaults in `orchestrator/s
 | `IMAGE_FALLBACK_PROVIDER` | unset (off) | `codex`, `gemini` or `none`. When a shot runs out of tries because of its images (a still, or a Veo seed; not a Veo clip failure), it gets a fresh set of tries on this provider. Its earlier attempt records move to `orchestrator_runs/provider_fallback_history/`, and a rerun remembers the switch. Spend already charged stays charged |
 | `CODEX_IMAGE_TIMEOUT_SECONDS` | `900` | Ceiling on one Codex image call |
 | `MAX_VEO_ATTEMPTS` | `3` | |
+| `MAX_VEO_SHOTS` | `3` | Most shots made as Veo clips, `0`–`10`. Read only when a new shot plan is made; a saved plan keeps its videos. Each video shot reserves about $1.20 more than a still, so raise `MAX_BUDGET_USD` with it (about $50–60 for 5), or the extra videos become stills |
+| `VEO_EXTEND_LONG_SHOTS` | off | `true` lets a shot longer than 8 s and up to 15 s become video: an 8 s Veo clip plus a 7 s extension. Only at 720p with `VEO_DURATION_SECONDS=8`. Each try makes 2 video calls (about $2.40). Decided when the shot plan is made; turning it off later makes such shots stills before any paid call |
 | `VEO_CALL_COST_USD` / `IMAGE_CALL_COST_USD` | `1.20` / `0.04` | Estimates for budget reservation, not billing |
 | `CLAUDE_SHOT_ATTEMPT_CAP_USD` | `3.0` | Claude spend one shot attempt may use. Each attempt reserves this plus its image/Veo costs before it starts; if the first tries of all remaining shots can't fit the budget, video shots become stills, and a run where even stills don't fit stops before any paid call |
 | `VEO_CONCURRENCY` / `GEMINI_IMAGE_CONCURRENCY` / `CODEX_IMAGE_CONCURRENCY` | `3` / `2` / `1` | Most calls to each vendor in flight at once |
